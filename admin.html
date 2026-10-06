@@ -1,1 +1,19 @@
-
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Administração — QUADRO-AZNY</title>
+  <link rel="stylesheet" href="CSS/style.css"><link rel="stylesheet" href="CSS/admin.css">
+</head>
+<body class="app-body">
+  <header class="topbar"><div class="brand"><span class="brand-mark">Q</span><div><strong>QUADRO-AZNY</strong><small>Administração dos professores</small></div></div><a class="btn ghost" href="index.html">Voltar</a></header>
+  <main class="admin-page">
+    <div class="admin-head"><div><span class="eyebrow">Administração</span><h1>Professores e quadros</h1><p>Crie a configuração de cada professor que comprar o quadro.</p></div><button id="newTeacher" class="btn primary">+ Novo Professor</button></div>
+    <section class="admin-grid">
+      <div class="admin-card"><h2>Dados do professor</h2><form id="adminTeacherForm" class="form-grid"><label>Nome<input id="aName" required></label><label>Curso / Escola<input id="aCourse" required></label><label>WhatsApp<input id="aWhatsApp"></label><label>Foto (URL)<input id="aPhoto"></label><label>Logotipo (URL)<input id="aLogo"></label><label>Slug<input id="aSlug" placeholder="prof-maria"></label><button class="btn primary full">Guardar Professor</button></form></div>
+      <div class="admin-card"><h2>Professores cadastrados</h2><div id="teachersList" class="teachers-list"><p class="muted">A carregar...</p></div></div>
+    </section>
+  </main>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
