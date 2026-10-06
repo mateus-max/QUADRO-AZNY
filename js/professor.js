@@ -1,222 +1,103 @@
 import { db } from "./firebase-config.js";
-import { ref, push, set, update, onValue } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+import { ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
-const $ = (id) => document.getElementById(id);
-const params = new URLSearchParams(location.search);
-let teacherId = params.get("teacher") || localStorage.getItem("qaz_teacher_id");
-let currentTeacher = null;
-let currentRoom = null;
+const $=id=>document.getElementById(id);
+const params=new URLSearchParams(location.search);
+let teacherId=params.get("teacher")||localStorage.getItem("qaz_teacher_id");
+let currentTeacher=null,currentRoom=null;
 
-function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  }[c]));
-}
+function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function classLink(room){return new URL("aula.html?room="+encodeURIComponent(room),location.href).href}
 
-function classLink(room) {
-  return new URL("aula.html?room=" + encodeURIComponent(room), location.href).href;
-}
-
-function imageToDataURL(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) return resolve("");
-    if (!file.type.startsWith("image/")) return reject(new Error("Selecione uma imagem válida."));
-    if (file.size > 5 * 1024 * 1024) return reject(new Error("A fotografia deve ter no máximo 5 MB."));
-
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Não foi possível ler a fotografia."));
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const max = 900;
-        const scale = Math.min(1, max / Math.max(img.width, img.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(img.width * scale));
-        canvas.height = Math.max(1, Math.round(img.height * scale));
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.78));
+function photoData(file){
+  return new Promise((resolve,reject)=>{
+    if(!file)return resolve("");
+    if(!file.type.startsWith("image/"))return reject(new Error("Selecione uma imagem válida."));
+    if(file.size>5*1024*1024)return reject(new Error("A fotografia deve ter no máximo 5 MB."));
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error("Não foi possível ler a fotografia."));
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const max=800,scale=Math.min(1,max/Math.max(img.width,img.height));
+        const c=document.createElement("canvas");
+        c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+        resolve(c.toDataURL("image/jpeg",0.75));
       };
-      img.onerror = () => reject(new Error("A fotografia não é válida."));
-      img.src = reader.result;
+      img.onerror=()=>reject(new Error("Fotografia inválida."));
+      img.src=reader.result;
     };
     reader.readAsDataURL(file);
   });
 }
 
-function showTeacher(t) {
-  currentTeacher = t;
+function showTeacher(t){
+  currentTeacher=t;
   $("setupScreen").classList.add("hidden");
   $("teacherApp").classList.remove("hidden");
-
-  ["headerTeacher", "sideTeacher"].forEach(id => $(id).textContent = t.name || "Professor");
-  ["headerCourse", "sideCourse"].forEach(id => $(id).textContent = t.courseName || "Quadro Virtual");
-
-  const avatar = $("teacherAvatar");
-  if (t.photo) {
-    avatar.innerHTML = '<img src="' + t.photo + '" alt="Foto do professor">';
-    avatar.style.overflow = "hidden";
-    avatar.style.padding = "0";
-  } else {
-    avatar.textContent = (t.name || "P").trim().charAt(0).toUpperCase();
-  }
+  $("headerTeacher").textContent=t.name||"Professor";
+  $("sideTeacher").textContent=t.name||"Professor";
+  $("headerCourse").textContent=t.courseName||"Quadro Virtual";
+  $("sideCourse").textContent=t.courseName||"Quadro Virtual";
+  const a=$("teacherAvatar");
+  if(t.photo){a.innerHTML='<img src="'+t.photo+'" alt="Foto">';a.style.overflow="hidden";a.style.padding="0"}else a.textContent=(t.name||"P").charAt(0).toUpperCase();
 }
 
-function watchStudents(room) {
-  onValue(ref(db, "participants/" + room), (snapshot) => {
-    const data = snapshot.val() || {};
-    const list = $("studentList");
-    let count = 0;
-    list.innerHTML = "";
+async function createTeacher(e){
+  e.preventDefault();
+  const b=e.submitter||$("teacherForm").querySelector("button");
+  const name=$("teacherName").value.trim(),course=$("courseName").value.trim(),whatsapp=$("teacherWhatsapp").value.trim(),file=$("teacherPhoto").files?.[0];
+  if(!name||!course)return alert("Preencha o nome do professor e o nome do curso.");
+  b.disabled=true;b.textContent="A criar quadro...";
+  try{
+    const photo=await photoData(file);
+    const r=push(ref(db,"teachers"));
+    const data={name,courseName:course,whatsapp,photo,createdAt:Date.now(),active:true};
+    await set(r,data);
+    teacherId=r.key;localStorage.setItem("qaz_teacher_id",teacherId);
+    showTeacher(data);
+  }catch(err){console.error(err);alert(err.message||"Não foi possível criar o quadro.");b.disabled=false;b.textContent="Criar / Abrir meu quadro"}
+}
 
-    Object.values(data).forEach((student) => {
-      if (student.online !== false) {
-        count++;
-        const row = document.createElement("div");
-        row.className = "student-row";
-        row.innerHTML = "<span>" + esc(student.name || "Aluno") + "</span><span class='dot'></span>";
-        list.appendChild(row);
-      }
-    });
+async function startClass(){
+  if(!currentTeacher)return alert("Configure primeiro o professor.");
+  if(currentRoom)return location.href="aula.html?room="+encodeURIComponent(currentRoom);
+  const r=push(ref(db,"classes"));currentRoom=r.key;
+  await set(r,{teacherId,title:currentTeacher.courseName||"Aula online",status:"live",createdAt:Date.now(),startedAt:Date.now(),accessCode:r.key});
+  $("activeTitle").textContent=currentTeacher.courseName||"Aula online";
+  $("activeRoom").textContent="Sala: "+r.key;
+  $("classLink").value=classLink(r.key);$("linkArea").classList.remove("hidden");
+  $("liveStatus").textContent="Aula em andamento";$("stateStat").textContent="Ao vivo";$("startClass").textContent="↗ Abrir Quadro";
+  watchStudents(r.key);
+}
 
-    $("onlineCount").textContent = count;
-    $("studentStat").textContent = count;
+function watchStudents(room){
+  onValue(ref(db,"participants/"+room),s=>{
+    const d=s.val()||{},list=$("studentList");let n=0;list.innerHTML="";
+    Object.values(d).forEach(p=>{if(p.online!==false){n++;const row=document.createElement("div");row.className="student-row";row.innerHTML="<span>"+esc(p.name||"Aluno")+"</span><span class='dot'></span>";list.appendChild(row)}});
+    $("onlineCount").textContent=n;$("studentStat").textContent=n;
   });
 }
 
-async function startClass() {
-  if (!currentTeacher) {
-    alert("Configure primeiro o professor.");
-    return;
-  }
+$("teacherPhoto")?.addEventListener("change",e=>{
+  const f=e.target.files?.[0],box=$("photoPreview"),img=$("photoPreviewImg");
+  if(!f){box.classList.add("hidden");return}
+  if(!f.type.startsWith("image/")){alert("Selecione uma imagem válida.");e.target.value="";box.classList.add("hidden");return}
+  img.src=URL.createObjectURL(f);box.classList.remove("hidden");
+});
+$("teacherForm")?.addEventListener("submit",createTeacher);
+$("startClass")?.addEventListener("click",startClass);
+$("copyLink")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("classLink").value)}catch{$("classLink").select();document.execCommand("copy")}$("copyLink").textContent="Copiado ✓";setTimeout(()=>$("copyLink").textContent="Copiar link",1500)});
+$("waLink")?.addEventListener("click",()=>window.open("https://wa.me/?text="+encodeURIComponent("Entre na minha aula: "+$("classLink").value),"_blank"));
 
-  if (currentRoom) {
-    location.href = "aula.html?room=" + encodeURIComponent(currentRoom);
-    return;
-  }
-
-  const roomRef = push(ref(db, "classes"));
-  currentRoom = roomRef.key;
-
-  await set(roomRef, {
-    teacherId,
-    title: currentTeacher.courseName || "Aula online",
-    status: "live",
-    createdAt: Date.now(),
-    startedAt: Date.now(),
-    accessCode: currentRoom
+if(teacherId){
+  onValue(ref(db,"teachers/"+teacherId),s=>{
+    if(s.exists())showTeacher(s.val());
+    else{teacherId=null;localStorage.removeItem("qaz_teacher_id")}
   });
-
-  $("activeTitle").textContent = currentTeacher.courseName || "Aula online";
-  $("activeRoom").textContent = "Sala: " + currentRoom;
-  $("classLink").value = classLink(currentRoom);
-  $("linkArea").classList.remove("hidden");
-  $("liveStatus").textContent = "Aula em andamento";
-  $("stateStat").textContent = "Ao vivo";
-  $("startClass").textContent = "↗ Abrir Quadro";
-
-  watchStudents(currentRoom);
-}
-
-async function createTeacher(event) {
-  event.preventDefault();
-
-  const button = event.submitter || $("teacherForm").querySelector("button[type='submit']");
-  const name = $("teacherName").value.trim();
-  const courseName = $("courseName").value.trim();
-  const whatsapp = $("teacherWhatsapp").value.trim();
-  const file = $("teacherPhoto").files?.[0];
-
-  if (!name || !courseName) {
-    alert("Preencha o nome do professor e o nome do curso.");
-    return;
-  }
-
-  button.disabled = true;
-  button.textContent = "A criar quadro...";
-
-  try {
-    const photo = await imageToDataURL(file);
-    const teacherRef = push(ref(db, "teachers"));
-    teacherId = teacherRef.key;
-
-    await set(teacherRef, {
-      name,
-      courseName,
-      whatsapp,
-      photo,
-      createdAt: Date.now(),
-      active: true
-    });
-
-    localStorage.setItem("qaz_teacher_id", teacherId);
-    showTeacher({ name, courseName, whatsapp, photo });
-  } catch (error) {
-    console.error(error);
-    alert(error?.message || "Não foi possível criar o quadro.");
-    button.disabled = false;
-    button.textContent = "Criar / Abrir meu quadro";
-  }
-}
-
-$("teacherPhoto")?.addEventListener("change", (event) => {
-  const file = event.target.files?.[0];
-  const preview = $("photoPreview");
-  const image = $("photoPreviewImg");
-
-  if (!file) {
-    preview.classList.add("hidden");
-    return;
-  }
-
-  if (!file.type.startsWith("image/")) {
-    alert("Selecione uma imagem válida.");
-    event.target.value = "";
-    preview.classList.add("hidden");
-    return;
-  }
-
-  image.src = URL.createObjectURL(file);
-  preview.classList.remove("hidden");
-});
-
-$("teacherForm")?.addEventListener("submit", createTeacher);
-
-$("startClass")?.addEventListener("click", startClass);
-
-$("copyLink")?.addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText($("classLink").value);
-    $("copyLink").textContent = "Copiado ✓";
-    setTimeout(() => $("copyLink").textContent = "Copiar link", 1500);
-  } catch {
-    $("classLink").select();
-    document.execCommand("copy");
-  }
-});
-
-$("waLink")?.addEventListener("click", () => {
-  const text = "Entre na minha aula: " + $("classLink").value;
-  window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
-});
-
-if (teacherId) {
-  onValue(ref(db, "teachers/" + teacherId), (snapshot) => {
-    if (snapshot.exists()) {
-      showTeacher(snapshot.val());
-    } else {
-      teacherId = null;
-      localStorage.removeItem("qaz_teacher_id");
-    }
-  });
-
-  onValue(ref(db, "classes"), (snapshot) => {
-    const all = snapshot.val() || {};
-    const mine = Object.values(all).filter(item => item.teacherId === teacherId);
-    $("classCount").textContent = mine.length;
+  onValue(ref(db,"classes"),s=>{
+    const all=s.val()||{};
+    $("classCount").textContent=Object.values(all).filter(x=>x.teacherId===teacherId).length;
   });
 }
