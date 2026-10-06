@@ -12,7 +12,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="CSS/style.css"><link rel="stylesheet" href="CSS/aula.css?v=8">
+<link rel="stylesheet" href="CSS/style.css"><link rel="stylesheet" href="CSS/aula.css?v=10">
 </head>
 <body class="class-body">
 <div id="joinScreen" class="join-screen"><div class="join-card">
@@ -29,7 +29,10 @@
 <div class="class-layout">
 <aside class="participants-panel"><div class="panel-title">Participantes <b id="participantCount">0</b></div><div id="participants"></div></aside>
 <main class="board-area">
-<div class="media-stage" id="mediaStage"><div class="media-title">Vídeo e áudio</div><div id="videoGrid" class="video-grid"></div><div id="mediaMessage" class="media-message">Ao entrar, permita câmera e microfone para participar por vídeo e áudio.</div></div>
+<div class="media-stage" id="mediaStage"><div class="media-title">Vídeo e áudio</div><div class="host-media-controls host-only">
+<button id="hostCameraQuick" class="call-btn" type="button" title="Abrir/desligar a câmera do professor">📹 Minha câmera</button>
+<button id="hostMicQuick" class="call-btn" type="button" title="Ligar/desligar o microfone do professor">🎙 Microfone</button>
+</div><div id="videoGrid" class="video-grid"></div><div id="mediaMessage" class="media-message">Ao entrar, permita câmera e microfone para participar por vídeo e áudio.</div></div>
 <div id="teacherToolbar" class="board-toolbar host-only">
 <button data-tool="select" title="Selecionar">↖</button><button data-tool="pen" class="active" title="Caneta">✎</button><button data-tool="eraser" title="Borracha">⌫</button><button data-tool="text" title="Texto">T</button><button data-tool="rect" title="Retângulo">□</button><button data-tool="line" title="Linha">╱</button><button data-tool="image" title="Inserir imagem">▧</button><button data-tool="staff" title="Pauta musical">♬</button><button data-tool="piano" title="Piano">🎹</button><button data-tool="undo" title="Desfazer">↶</button><button data-tool="redo" title="Refazer">↷</button><button data-tool="clear" title="Limpar quadro">🗑</button><button id="boardBackgrounds" class="board-style-button host-only" title="Tipos de quadro">🎨 Quadro</button>
 <span class="divider"></span><button data-color="#111827" class="color-dot black" title="Preto"></button><button data-color="#ffffff" class="color-dot white" title="Branco"></button><button data-color="#ef4444" class="color-dot red" title="Vermelho"></button><button data-color="#eab308" class="color-dot yellow" title="Amarelo"></button><button data-color="#2563eb" class="color-dot blue" title="Azul"></button>
@@ -42,5 +45,5 @@
 <aside class="chat-panel"><div class="panel-tabs"><button class="tab-active">Chat</button><button>Materiais</button><button>Notas</button></div><div id="chatMessages" class="chat-messages"></div><form id="chatForm" class="chat-form"><input id="chatInput" maxlength="500" placeholder="Escreva uma mensagem..."><button type="submit">➤</button></form></aside>
 </div></div>
 <input id="imagePicker" type="file" accept="image/*" class="hidden">
-<script type="module" src="js/aula.js?v=9"></script>
+<script type="module" src="js/aula.js?v=10"></script>
 </body></html>
