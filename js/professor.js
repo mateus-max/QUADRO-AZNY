@@ -62,7 +62,7 @@ async function createTeacher(e){
 
 async function startClass(){
   if(!currentTeacher)return alert("Configure primeiro o professor.");
-  if(currentRoom)return location.href="aula.html?room="+encodeURIComponent(currentRoom);
+  if(currentRoom)return location.href="aula.html?room="+encodeURIComponent(currentRoom)+"&host=1&teacher="+encodeURIComponent(teacherId);
   const r=push(ref(db,"classes"));currentRoom=r.key;
   await set(r,{teacherId,title:currentTeacher.courseName||"Aula online",status:"live",createdAt:Date.now(),startedAt:Date.now(),accessCode:r.key});
   $("activeTitle").textContent=currentTeacher.courseName||"Aula online";
