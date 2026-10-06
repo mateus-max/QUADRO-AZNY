@@ -58,14 +58,14 @@ async function enterClass(name){
   bindBoard();
   watchBoard();
   watchChat();
-  await startMedia();
-  await update(meRef,{camera:hasEnabledTrack("video"),mic:hasEnabledTrack("audio")});
   watchParticipants();
   watchSignals();
   if(!hostMode)watchRemoteControls();
   watchClock();
-  $("mediaMessage").textContent=mediaReady?"Câmera e microfone ativos.":"Pode participar sem câmera/microfone; use os botões abaixo para tentar novamente.";
-  setupPeerRefresh();
+  startMedia().then(async()=>{
+    await update(meRef,{camera:hasEnabledTrack("video"),mic:hasEnabledTrack("audio")});
+    $("mediaMessage").textContent=mediaReady?"Câmera e microfone ativos.":"Pode participar sem câmera/microfone; use os botões abaixo para tentar novamente.";
+  }).catch(err=>console.warn("Mídia:",err));
 }
 
 function hasTrack(kind){return !!localStream?.getTracks().some(t=>t.kind===kind)}
