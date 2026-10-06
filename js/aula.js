@@ -477,11 +477,11 @@ function bindBoard(){
     drawing=false;points.push(point(e));
     clearTimeout(liveWriteTimer);
     const final={type:"stroke",points:points.map(p=>({x:p.x,y:p.y})),color:tool==="eraser"?"#fff":color,size:tool==="eraser"?Math.max(size*3,12):size};
-    await addObject(final);
-    delete liveStrokes[meId];redrawAll();
-    await remove(ref(db,"whiteboards/"+room+"/live/"+meId));
+    if(tool==="pen"||tool==="eraser")await addObject(final);
     if(tool==="line")await addObject({type:"line",a:points[0],b:points[points.length-1],color,size});
     if(tool==="rect")await addObject({type:"rect",a:points[0],b:points[points.length-1],color,size});
+    delete liveStrokes[meId];redrawAll();
+    await remove(ref(db,"whiteboards/"+room+"/live/"+meId));
     points=[];
   };
   board.onpointercancel=async()=>{drawing=false;points=[];clearTimeout(liveWriteTimer);delete liveStrokes[meId];redrawAll();await remove(ref(db,"whiteboards/"+room+"/live/"+meId))};
@@ -539,12 +539,6 @@ function playNote(freq){
   try{const ac=new (window.AudioContext||window.webkitAudioContext)(),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;o.type="sine";g.gain.value=.08;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.45);o.stop(ac.currentTime+.5)}catch{}
 }
 
-function watchBoard(){
-  onValue(ref(db,"whiteboards/"+room+"/objects"),s=>{
-    if(!ctx)return;ctx.clearRect(0,0,board.width,board.height);ctx.fillStyle="#fff";ctx.fillRect(0,0,board.width,board.height);
-    Object.values(s.val()||{}).forEach(renderObject);
-  });
-}
 function watchChat(){
   onValue(ref(db,"messages/"+room),s=>{
     const d=s.val()||{};$("chatMessages").innerHTML=Object.values(d).map(m=>'<div class="message"><div class="msg-name">'+esc(m.name)+'</div><div class="msg-text">'+esc(m.text)+'</div></div>').join("");
