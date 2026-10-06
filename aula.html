@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#071a2f"><title>Aula — QUADRO-AZNY</title>
+<script>
+(function(){
+  const p=new URLSearchParams(location.search);
+  if(p.get("host")==="1"){
+    document.documentElement.classList.add("professor-entry");
+    document.write('<style>.professor-entry #joinScreen{display:none!important}.professor-entry #classApp{display:block!important}.professor-entry #classApp.hidden{display:block!important}</style>');
+  }
+})();
+</script>
 <link rel="stylesheet" href="CSS/style.css"><link rel="stylesheet" href="CSS/aula.css?v=7">
 </head>
 <body class="class-body">
