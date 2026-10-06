@@ -330,7 +330,7 @@ function redrawAll(){
 
 function renderStroke(o){
   if(!o?.points?.length)return;
-  ctx.save();ctx.strokeStyle=o.color||"#111827";ctx.lineWidth=o.size||4;ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.save();ctx.globalCompositeOperation=o.tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=o.color||"#111827";ctx.lineWidth=o.size||4;ctx.lineCap="round";ctx.lineJoin="round";
   ctx.beginPath();o.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.restore();
 }
 
