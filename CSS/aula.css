@@ -70,3 +70,18 @@
 .host-media-controls{display:flex;align-items:center;gap:5px;position:absolute;left:10px;top:7px;z-index:40}
 .host-media-controls .call-btn{min-height:34px;padding:6px 10px;font-weight:800}
 @media(max-width:650px){.board-wrap{min-height:280px}.host-media-controls{left:7px;top:5px;gap:4px}.host-media-controls .call-btn{min-height:32px;padding:6px 8px;font-size:11px}}
+
+.new-board-toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:7px;background:#0b2033;border-bottom:1px solid #31506a}
+.board-tool-group{display:flex;gap:4px;align-items:center}
+.new-board-toolbar button,.board-pagebar button{min-width:36px;height:36px;border:1px solid #31506a;background:#102a42;color:#eef6fc;border-radius:7px;cursor:pointer}
+.new-board-toolbar button.active,.new-board-toolbar button:hover,.board-pagebar button:hover{background:#1d5578;border-color:#69b9e8}
+.board-color{width:25px!important;min-width:25px!important;height:25px!important;border-radius:50%!important;background:#111827!important;padding:0}
+.board-color.white{background:#fff!important}.board-color.red{background:#ef4444!important}.board-color.blue{background:#2563eb!important}.board-color.green{background:#16a34a!important}.board-color.yellow{background:#eab308!important}
+.board-size{font-size:10px;color:#b8cad8;display:flex;align-items:center;gap:5px}.board-size input{width:75px}
+.board-pagebar{display:flex;gap:5px;align-items:center;padding:5px 7px;background:#071a2c;border-bottom:1px solid #203b54;overflow-x:auto}
+.board-pagebar button{height:30px;min-width:30px;font-size:11px}.board-pagebar span{font-size:11px;color:#dce8f0;white-space:nowrap}
+.board-page-spacer{flex:1}.board-wrap{min-height:320px!important;background:#fff!important;border:0!important;padding:0!important;position:relative!important}
+.board-wrap canvas{display:block;width:100%;height:100%;background:#fff}
+.board-bg-panel{position:absolute;top:8px;right:8px;z-index:50;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:220px;padding:9px;background:#071a2c;border:1px solid #31506a;border-radius:9px;box-shadow:0 10px 25px #0008}
+.board-bg-panel.hidden{display:none}.board-bg-panel b{grid-column:1/-1;color:#fff;font-size:11px}.board-bg-panel button{border:1px solid #31506a;background:#102a42;color:#fff;border-radius:6px;padding:7px;cursor:pointer}
+@media(max-width:650px){.new-board-toolbar{overflow-x:auto;flex-wrap:nowrap}.board-pagebar{font-size:10px}.board-wrap{min-height:280px!important}}
