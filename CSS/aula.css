@@ -67,3 +67,5 @@
 .board-wrap{background:#fff!important}
 .board-wrap canvas{background:transparent!important}
 @media(max-width:650px){.board-style-panel{top:5px}.board-style-grid button,.board-pattern-grid button{padding:8px 4px;font-size:10px}}
+
+.color-dot.white{background:#fff!important;border:1px solid #71869a!important}
