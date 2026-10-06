@@ -54,8 +54,3 @@
 .participant-control:hover{background:#1b4b6d}
 .participant-control.off{background:#4b2029;border-color:#8c3d49}
 .video-card{user-select:none}
-
-/* Entrada direta do professor: nunca mostrar o formulário destinado ao aluno. */
-html.host-entry #joinScreen{display:none!important}
-html.host-entry #classApp{display:block!important}
-html.host-entry #classApp.hidden{display:block!important}
