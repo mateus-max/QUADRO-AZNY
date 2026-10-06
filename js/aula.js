@@ -94,34 +94,44 @@ async function shareClass(){
 
 async function startMedia(){
   if(!navigator.mediaDevices?.getUserMedia){
-    $("mediaMessage").textContent="O navegador não disponibilizou câmera/microfone. Abra o site em HTTPS.";
+    $("mediaMessage").textContent="Câmera/microfone indisponíveis neste navegador. Use o site em HTTPS.";
     return;
   }
-  const tracks=[];
   try{
-    const videoStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
-    videoStream.getVideoTracks().forEach(t=>tracks.push(t));
-  }catch(err){console.warn("Câmera:",err)}
-  try{
-    const audioStream=await navigator.mediaDevices.getUserMedia({video:false,audio:true});
-    audioStream.getAudioTracks().forEach(t=>tracks.push(t));
-  }catch(err){console.warn("Microfone:",err)}
-  if(tracks.length){
-    localStream=new MediaStream(tracks);
+    // Uma única solicitação evita que o navegador bloqueie a câmera por múltiplas permissões seguidas.
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},
+      audio:true
+    });
+    localStream=stream;
     mediaReady=true;
     addVideoCard(meId,meName,localStream,true);
+    const localVideo=document.querySelector('[data-video-id="'+CSS.escape(meId)+'"] video');
+    if(localVideo){
+      localVideo.srcObject=localStream;
+      localVideo.muted=true;
+      localVideo.playsInline=true;
+      await localVideo.play().catch(()=>{});
+    }
     attachLocalTracksToPeers();
     setButtonState("toggleMic",hasEnabledTrack("audio"),"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
     setButtonState("toggleCamera",hasEnabledTrack("video"),"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
-  }else{
-    localStream=null;
+    $("mediaMessage").textContent="Câmera e microfone ativos.";
+  }catch(err){
+    console.error("Câmera/microfone:",err);
     mediaReady=false;
+    $("mediaMessage").textContent="Não foi possível abrir a câmera/microfone. Clique em Câmera e autorize o acesso.";
+    setButtonState("toggleCamera",false,"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
+    // Ainda tenta o microfone sozinho, sem impedir a tentativa posterior da câmera.
+    try{
+      const audio=await navigator.mediaDevices.getUserMedia({video:false,audio:true});
+      localStream=new MediaStream(audio.getAudioTracks());
+      addVideoCard(meId,meName,localStream,true);
+      attachLocalTracksToPeers();
+      setButtonState("toggleMic",true,"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
+    }catch{}
   }
-  $("mediaMessage").textContent=hasEnabledTrack("video")||hasEnabledTrack("audio")
-    ?"Vídeo e áudio ativos. Pode mover cada câmera pela sala."
-    :"Pode participar sem câmera/microfone; use os botões abaixo para tentar novamente.";
 }
-
 async function ensureTrack(kind){
   if(localStream?.getTracks().some(t=>t.kind===kind))return localStream.getTracks().find(t=>t.kind===kind);
   try{
