@@ -69,6 +69,59 @@ async function enterClass(name){
 }
 
 function hasTrack(kind){return !!localStream?.getTracks().some(t=>t.kind===kind)}
+function attachLocalTracksToPeers(){
+  if(!localStream)return;
+  Object.values(peers).forEach(peer=>{
+    const pc=peer?.pc||peer;
+    if(!pc||pc.connectionState==="closed")return;
+    const existing=pc.getSenders().map(sender=>sender.track).filter(Boolean);
+    localStream.getTracks().forEach(track=>{
+      if(!existing.some(t=>t.kind===track.kind)){
+        try{pc.addTrack(track,localStream)}catch(err){console.warn("Adicionar track WebRTC:",err)}
+      }
+    });
+  });
+}
+function addVideoCard(id,name,stream,isLocal=false){
+  if(!id||!stream)return;
+  let card=document.querySelector('[data-video-id="'+CSS.escape(id)+'"]');
+  if(!card){
+    card=document.createElement("div");
+    card.className="video-card"+(isLocal?" local":"");
+    card.dataset.videoId=id;
+    card.innerHTML='<video autoplay playsinline muted></video><div class="video-name"></div><div class="video-badges"><span class="video-badge camera-badge">📹</span><span class="video-badge mic-badge">🎙</span></div>';
+    $("videoGrid").appendChild(card);
+  }
+  const video=card.querySelector("video");
+  video.autoplay=true;video.playsInline=true;video.srcObject=stream;
+  video.muted=!!isLocal;video.volume=isLocal?0:1;
+  card.querySelector(".video-name").textContent=name||"Participante";
+  applySpeaker();makeVideoDraggable(card);
+  video.play().catch(err=>console.warn("Reprodução de vídeo:",err?.name||err));
+}
+function makeVideoDraggable(card){
+  if(card.dataset.draggable==="1")return;
+  card.dataset.draggable="1";
+  card.style.left=card.style.left||"20px";card.style.top=card.style.top||"25px";
+  let dragging=false,startX=0,startY=0,baseX=0,baseY=0;
+  card.addEventListener("pointerdown",e=>{dragging=true;card.setPointerCapture?.(e.pointerId);startX=e.clientX;startY=e.clientY;baseX=parseFloat(card.style.left)||0;baseY=parseFloat(card.style.top)||0;card.style.zIndex="40";e.preventDefault()});
+  card.addEventListener("pointermove",e=>{
+    if(!dragging)return;
+    const parent=$("videoGrid").getBoundingClientRect(),w=card.offsetWidth,h=card.offsetHeight;
+    card.style.left=Math.max(0,Math.min(Math.max(0,parent.width-w),baseX+e.clientX-startX))+"px";
+    card.style.top=Math.max(0,Math.min(Math.max(0,parent.height-h),baseY+e.clientY-startY))+"px";
+  });
+  const stop=()=>{dragging=false};card.addEventListener("pointerup",stop);card.addEventListener("pointercancel",stop);
+}
+function removeVideoCard(id){document.querySelector('[data-video-id="'+CSS.escape(id)+'"]')?.remove()}
+function updateVideoStatus(id,data){
+  const card=document.querySelector('[data-video-id="'+CSS.escape(id)+'"]');if(!card)return;
+  card.querySelector(".camera-badge")?.textContent;
+  const camera=card.querySelector(".camera-badge"),mic=card.querySelector(".mic-badge");
+  if(camera)camera.textContent=data.camera===false?"🚫":"📹";
+  if(mic)mic.textContent=data.mic===false?"🔇":"🎙";
+}
+
 
 function configureRoleUI(){
   document.querySelectorAll(".host-only").forEach(el=>el.classList.toggle("hidden",!hostMode));
@@ -97,36 +150,36 @@ async function startMedia(){
     $("mediaMessage").textContent="Câmera/microfone indisponíveis neste navegador. Use o site em HTTPS.";
     return;
   }
+  const tracks=[];
+  let cameraError=null,micError=null;
   try{
-    // Uma única solicitação evita que o navegador bloqueie a câmera por múltiplas permissões seguidas.
-    const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-    localStream=stream;
+    const videoStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},
+      audio:false
+    });
+    videoStream.getVideoTracks().forEach(t=>tracks.push(t));
+  }catch(err){cameraError=err;console.warn("Câmera:",err?.name,err?.message)}
+  try{
+    const audioStream=await navigator.mediaDevices.getUserMedia({video:false,audio:true});
+    audioStream.getAudioTracks().forEach(t=>tracks.push(t));
+  }catch(err){micError=err;console.warn("Microfone:",err?.name,err?.message)}
+
+  if(tracks.length){
+    localStream=new MediaStream(tracks);
     mediaReady=true;
     addVideoCard(meId,meName,localStream,true);
-    const localVideo=document.querySelector('[data-video-id="'+CSS.escape(meId)+'"] video');
-    if(localVideo){
-      localVideo.srcObject=localStream;
-      localVideo.muted=true;
-      localVideo.playsInline=true;
-      await localVideo.play().catch(()=>{});
-    }
     attachLocalTracksToPeers();
-    setButtonState("toggleMic",hasEnabledTrack("audio"),"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
-    setButtonState("toggleCamera",hasEnabledTrack("video"),"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
-    $("mediaMessage").textContent="Câmera e microfone ativos.";
-  }catch(err){
-    console.error("Câmera/microfone:",err);
-    mediaReady=false;
-    $("mediaMessage").textContent="Não foi possível abrir a câmera/microfone. Clique em Câmera e autorize o acesso.";
+    const hasVideo=hasEnabledTrack("video"),hasAudio=hasEnabledTrack("audio");
+    await update(ref(db,"participants/"+room+"/"+meId),{camera:hasVideo,mic:hasAudio});
+    setButtonState("toggleMic",hasAudio,"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
+    setButtonState("toggleCamera",hasVideo,"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
+    $("mediaMessage").textContent=hasVideo&&hasAudio?"Câmera e microfone ativos.":hasVideo?"Câmera ativa. Microfone indisponível.":hasAudio?"Microfone ativo. Câmera indisponível.":"Mídia parcialmente disponível.";
+  }else{
+    localStream=null;mediaReady=false;
+    await update(ref(db,"participants/"+room+"/"+meId),{camera:false,mic:false}).catch(()=>{});
+    $("mediaMessage").textContent="Não foi possível ativar câmera/microfone ("+(cameraError?.name||"indisponível")+" / "+(micError?.name||"indisponível")+"). Toque nos botões para tentar novamente.";
     setButtonState("toggleCamera",false,"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
-    // Ainda tenta o microfone sozinho, sem impedir a tentativa posterior da câmera.
-    try{
-      const audio=await navigator.mediaDevices.getUserMedia({video:false,audio:true});
-      localStream=new MediaStream(audio.getAudioTracks());
-      addVideoCard(meId,meName,localStream,true);
-      attachLocalTracksToPeers();
-      setButtonState("toggleMic",true,"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
-    }catch{}
+    setButtonState("toggleMic",false,"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
   }
 }
 async function ensureTrack(kind){
@@ -257,6 +310,12 @@ async function createPeer(remoteId,remoteName){
     }catch(err){console.warn("Negociação WebRTC",err)}
     finally{peer.makingOffer=false}
   };
+  pc.oniceconnectionstatechange=()=>{
+    const state=pc.iceConnectionState;
+    if(state==="connected"||state==="completed")$("mediaMessage").textContent="Vídeo e áudio ligados em tempo real.";
+    else if(state==="failed")$("mediaMessage").textContent="A ligação de vídeo falhou. Verifique a rede.";
+  };
+  pc.onicecandidateerror=e=>console.warn("ICE:",e.errorCode,e.url,e.errorText);
   pc.onconnectionstatechange=()=>{
     const state=pc.connectionState;
     if(state==="connected")$("mediaMessage").textContent="Vídeo e áudio ligados em tempo real.";
