@@ -54,3 +54,16 @@
 .participant-control:hover{background:#1b4b6d}
 .participant-control.off{background:#4b2029;border-color:#8c3d49}
 .video-card{user-select:none}
+
+/* Tipos de quadro inspirados em ferramentas de sala de aula como OpenBoard. */
+.board-style-button{font-weight:800}
+.board-style-panel{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:50;width:min(430px,calc(100% - 20px));padding:12px;background:#071a2c; border:1px solid #31506a;border-radius:12px;box-shadow:0 14px 35px #0008;color:#fff}
+.board-style-panel.hidden{display:none}
+.board-style-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:#9bb1c5;margin-bottom:8px}
+.board-style-grid,.board-pattern-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.board-style-grid button,.board-pattern-grid button{border:1px solid #31506a;background:#102a42;color:#edf5fb;border-radius:8px;padding:9px 6px;cursor:pointer;font-size:11px}
+.board-style-grid button:hover,.board-pattern-grid button:hover,.board-style-grid button.active,.board-pattern-grid button.active{background:#1c5378;border-color:#65b6e8}
+.board-pattern-title{margin-top:12px}
+.board-wrap{background:#fff!important}
+.board-wrap canvas{background:transparent!important}
+@media(max-width:650px){.board-style-panel{top:5px}.board-style-grid button,.board-pattern-grid button{padding:8px 4px;font-size:10px}}
