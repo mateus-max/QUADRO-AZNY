@@ -46,3 +46,11 @@
 .video-card{pointer-events:auto!important}
 
 .board-area{position:relative}.media-stage{position:static!important}.video-grid{position:absolute!important;inset:0!important;z-index:30!important;pointer-events:none!important}.video-card{pointer-events:auto!important}
+/* Controles do professor sobre cada aluno. */
+.participant{position:relative;display:flex;align-items:center;gap:8px}
+.participant-name{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.participant-controls{display:flex;gap:3px;margin-left:auto}
+.participant-control{width:27px;height:27px;border:1px solid #31506a;background:#12324c;color:#eef7ff;border-radius:6px;cursor:pointer;font-size:12px;padding:0}
+.participant-control:hover{background:#1b4b6d}
+.participant-control.off{background:#4b2029;border-color:#8c3d49}
+.video-card{user-select:none}
