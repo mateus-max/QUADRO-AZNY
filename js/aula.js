@@ -85,13 +85,9 @@ function configureRoleUI(){
 async function shareClass(){
   const link=new URL("aula.html?room="+encodeURIComponent(room),location.href).href;
   const textMsg="Entre na minha aula ao vivo: "+link;
-  if(navigator.share){
-    try{await navigator.share({title:teacher?.courseName||"Aula online",text:"Entre na minha aula ao vivo.",url:link});return}catch{}
-  }
-  try{
-    await navigator.clipboard.writeText(link);
-    const b=$("shareClass"); if(b){b.textContent="✓ Link copiado";setTimeout(()=>b.textContent="🔗 Partilhar",1800)}
-  }catch{}
+  try{await navigator.clipboard.writeText(link)}catch{}
+  const b=$("shareClass");
+  if(b){b.textContent="✓ Link copiado";setTimeout(()=>b.textContent="🔗 Partilhar",1800)}
   window.open("https://wa.me/?text="+encodeURIComponent(textMsg),"_blank");
 }
 
