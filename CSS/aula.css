@@ -27,19 +27,7 @@
   .call-btn{min-height:36px;padding:7px 9px}
 }
 
-/* Ajustes solicitados: folha branca sem grelha e vídeos móveis. */
-.board-wrap{background:#fff!important}
-.board-wrap canvas{background:#fff!important;background-image:none!important}
-.video-grid{position:absolute;inset:0;height:auto!important;padding:0!important;display:block!important;overflow:hidden}
-.video-card{position:absolute;left:20px;top:25px;cursor:grab;touch-action:none}
-.video-card:active{cursor:grabbing}
-.host-only.hidden{display:none!important}
-.readonly-board{cursor:default!important}
-@media(max-width:650px){
-  .video-card{width:120px;height:76px;min-width:120px}
-}
 
-/* Vídeos flutuantes: podem ser arrastados pelo professor/aluno para qualquer posição da sala. */
 .board-area{position:relative}
 .media-stage{position:static!important}
 .video-grid{position:absolute!important;inset:0!important;z-index:30!important;pointer-events:none!important}
@@ -55,66 +43,7 @@
 .participant-control.off{background:#4b2029;border-color:#8c3d49}
 .video-card{user-select:none}
 
-/* Tipos de quadro inspirados em ferramentas de sala de aula como OpenBoard. */
-.board-style-button{font-weight:800}
-.board-style-panel{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:50;width:min(430px,calc(100% - 20px));padding:12px;background:#071a2c; border:1px solid #31506a;border-radius:12px;box-shadow:0 14px 35px #0008;color:#fff}
-.board-style-panel.hidden{display:none}
-.board-style-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:#9bb1c5;margin-bottom:8px}
-.board-style-grid,.board-pattern-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.board-style-grid button,.board-pattern-grid button{border:1px solid #31506a;background:#102a42;color:#edf5fb;border-radius:8px;padding:9px 6px;cursor:pointer;font-size:11px}
-.board-style-grid button:hover,.board-pattern-grid button:hover,.board-style-grid button.active,.board-pattern-grid button.active{background:#1c5378;border-color:#65b6e8}
-.board-pattern-title{margin-top:12px}
-.board-wrap{background:#fff!important}
-.board-wrap canvas{background:transparent!important}
-@media(max-width:650px){.board-style-panel{top:5px}.board-style-grid button,.board-pattern-grid button{padding:8px 4px;font-size:10px}}
 
-.color-dot.white{background:#fff!important;border:1px solid #71869a!important}
-
-
-/* Quadro estilo sala de aula: verde de ardósia, moldura de madeira e bandeja de giz. */
-.board-wrap{
-  background:#6b3f20!important;
-  border:10px solid #5a341d;
-  border-top-color:#7b4b28;
-  border-left-color:#6d3f20;
-  border-right-color:#4d2b18;
-  border-bottom-color:#4d2b18;
-  border-radius:10px 10px 7px 7px;
-  box-shadow:inset 0 0 0 2px #2d1a0f, 0 10px 24px #0007;
-  padding:0 5px 24px;
-  position:relative;
-  overflow:hidden;
-}
-.board-wrap::after{
-  content:"";
-  position:absolute;
-  left:9%;
-  right:9%;
-  bottom:4px;
-  height:20px;
-  border-radius:7px 7px 3px 3px;
-  background:linear-gradient(#9a6032,#6e3e20 55%,#4b2815);
-  border:1px solid #3b1f11;
-  box-shadow:inset 0 2px 2px #d69a5a66, 0 -2px 8px #0005;
-  z-index:3;
-  pointer-events:none;
-}
-.board-wrap canvas{
-  background:transparent!important;
-  border-radius:2px;
-  position:relative;
-  z-index:1;
-}
-.board-wrap #boardHint{
-  color:#d9e8dc;
-  text-shadow:0 1px 2px #0008;
-}
-@media(max-width:650px){
-  .board-wrap{border-width:7px;padding-bottom:22px}
-  .board-wrap::after{height:17px;bottom:3px}
-}
-
-/* Controles claros do professor para a própria câmera e microfone. */
 .host-media-controls{
   display:flex;
   align-items:center;
@@ -134,3 +63,10 @@
   .host-media-controls{left:7px;top:5px;gap:4px}
   .host-media-controls .call-btn{min-height:32px;padding:6px 8px;font-size:11px}
 }
+
+/* QUADRO REINICIADO — área limpa para nova implementação. */
+.board-wrap{min-height:320px;background:#fff;border:0;border-radius:0;box-shadow:none;padding:0;overflow:hidden;position:relative}
+.board-wrap canvas{display:block;width:100%;height:100%;background:#fff}
+.host-media-controls{display:flex;align-items:center;gap:5px;position:absolute;left:10px;top:7px;z-index:40}
+.host-media-controls .call-btn{min-height:34px;padding:6px 10px;font-weight:800}
+@media(max-width:650px){.board-wrap{min-height:280px}.host-media-controls{left:7px;top:5px;gap:4px}.host-media-controls .call-btn{min-height:32px;padding:6px 8px;font-size:11px}}
