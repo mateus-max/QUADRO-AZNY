@@ -596,8 +596,11 @@ async function nbAddPdf(file){
       out.getContext("2d").drawImage(c,0,0,out.width,out.height);
       inserted.push({type:"image",src:out.toDataURL("image/jpeg",.78),x:20,y:20,w:out.width,h:out.height,pdfPage:i});
     }
-    nbPages.splice(nbPage+1,0,...inserted.map(x=>[x]));
-    if(inserted.length){nbPage++;nbPages[nbPage]=[inserted[0]];for(let i=1;i<inserted.length;i++)nbPages[nbPage+i]=[inserted[i]]}
+    if(inserted.length){
+      const newPages=inserted.map(x=>[x]);
+      nbPages.splice(nbPage+1,0,...newPages);
+      nbPage++;
+    }
     nbSelected=-1;nbRender();nbUpdatePage();await nbCommit();
   }catch(err){
     console.error("PDF:",err);alert("Não foi possível importar este PDF. Tente um PDF menor.");
