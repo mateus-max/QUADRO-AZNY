@@ -60,7 +60,7 @@ async function enterClass(name){
   watchChat();
   watchSignals();
   await startMedia();
-  await update(meRef,{camera=hasTrack("video"),mic=hasTrack("audio")});
+  await update(meRef,{camera:hasTrack("video"),mic:hasTrack("audio")});
   watchClock();
   $("mediaMessage").textContent=mediaReady?"Câmera e microfone ativos.":"Pode participar sem câmera/microfone; use os botões abaixo para tentar novamente.";
   setupPeerRefresh();
