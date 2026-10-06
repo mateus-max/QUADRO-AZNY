@@ -384,7 +384,7 @@ function redrawAll(){
   ctx.clearRect(0,0,board.width,board.height);
   ctx.fillStyle="#fff";ctx.fillRect(0,0,board.width,board.height);
   Object.values(boardObjects||{}).forEach(renderObject);
-  Object.values(liveStrokes||{}).forEach(o=>renderStroke(o));
+  Object.values(liveStrokes||{}).forEach(o=>renderObject(o));
 }
 
 function renderStroke(o){
@@ -409,7 +409,7 @@ function boardBgColor(){\n  return ({white:"#ffffff",green:"#245b3a",black:"#111
   return{x:(e.clientX-r.left)*board.width/r.width,y:(e.clientY-r.top)*board.height/r.height};
 }
 
-function addObject(o){return set(push(ref(db,"whiteboards/"+room+"/objects")),o)}
+function addObject(o){redoStack=[];return set(push(ref(db,"whiteboards/"+room+"/objects")),o)}
 
 function queueLiveStroke(){
   clearTimeout(liveWriteTimer);
@@ -426,43 +426,87 @@ function bindBoard(){
   board.onpointerdown=async e=>{
     if(!hostMode||tool==="select")return;
     const p=point(e);
+
     if(tool==="text"){const t=prompt("Texto:");if(t)addObject({type:"text",x:p.x,y:p.y,text:t,color,font:"24px sans-serif"});return}
     if(tool==="image"){$("imagePicker").click();return}
     if(tool==="staff"){addObject({type:"staff",x:p.x,y:p.y,w:420,color});return}
     if(tool==="piano"){$("pianoOverlay").classList.toggle("hidden");return}
     if(tool==="undo"){await undoLast();tool="pen";return}
-    if(tool==="redo")return;
-    if(tool==="clear"){if(confirm("Limpar o quadro para todos?")){await set(ref(db,"whiteboards/"+room+"/objects"),null);await set(ref(db,"whiteboards/"+room+"/live"),null)}return}
-    drawing=true;points=[p];board.setPointerCapture?.(e.pointerId);
-    liveStrokes[meId]={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:[p],color:color,size:tool==="eraser"?Math.max(size*3,12):size};
-    redrawAll();queueLiveStroke();
+    if(tool==="redo"){await redoLast();tool="pen";return}
+    if(tool==="clear"){
+      if(confirm("Limpar o quadro para todos?")){
+        await set(ref(db,"whiteboards/"+room+"/objects"),null);
+        await set(ref(db,"whiteboards/"+room+"/live"),null);
+      }
+      return;
+    }
+
+    drawing=true;
+    points=[p];
+    board.setPointerCapture?.(e.pointerId);
+
+    if(tool==="line"||tool==="rect"){
+      liveStrokes[meId]={type:tool,a:p,b:p,color,size};
+    }else{
+      liveStrokes[meId]={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:[p],color,size:tool==="eraser"?Math.max(size*3,12):size};
+    }
+    redrawAll();
+    queueLiveStroke();
   };
 
   board.onpointermove=e=>{
     if(!drawing)return;
-    points.push(point(e));
-    liveStrokes[meId]={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color:color,size:tool==="eraser"?Math.max(size*3,12):size};
-    redrawAll();queueLiveStroke();
+    const p=point(e);
+    points.push(p);
+
+    if(tool==="line"||tool==="rect"){
+      liveStrokes[meId]={type:tool,a:points[0],b:p,color,size};
+    }else{
+      liveStrokes[meId]={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color,size:tool==="eraser"?Math.max(size*3,12):size};
+    }
+    redrawAll();
+    queueLiveStroke();
   };
 
   board.onpointerup=async e=>{
     if(!drawing)return;
-    drawing=false;points.push(point(e));
+    drawing=false;
+    points.push(point(e));
     clearTimeout(liveWriteTimer);
-    const final={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color,size:tool==="eraser"?Math.max(size*3,12):size};
-    await addObject(final);
-    delete liveStrokes[meId];redrawAll();
+
+    const a=points[0],b=points[points.length-1];
+    if(tool==="line"||tool==="rect"){
+      await addObject({type:tool,a,b,color,size});
+    }else{
+      await addObject({type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color,size:tool==="eraser"?Math.max(size*3,12):size});
+    }
+
+    delete liveStrokes[meId];
+    redrawAll();
     await remove(ref(db,"whiteboards/"+room+"/live/"+meId));
-    if(tool==="line")await addObject({type:"line",a:points[0],b:points[points.length-1],color,size});
-    if(tool==="rect")await addObject({type:"rect",a:points[0],b:points[points.length-1],color,size});
     points=[];
   };
-  board.onpointercancel=async()=>{drawing=false;points=[];clearTimeout(liveWriteTimer);delete liveStrokes[meId];redrawAll();await remove(ref(db,"whiteboards/"+room+"/live/"+meId))};
+
+  board.onpointercancel=async()=>{
+    drawing=false;points=[];clearTimeout(liveWriteTimer);
+    delete liveStrokes[meId];redrawAll();
+    await remove(ref(db,"whiteboards/"+room+"/live/"+meId));
+  };
 }
 
 async function undoLast(){
-  const s=await once("whiteboards/"+room+"/objects");const d=s||{};const keys=Object.keys(d);
-  if(keys.length)await remove(ref(db,"whiteboards/"+room+"/objects/"+keys[keys.length-1]));
+  const s=await once("whiteboards/"+room+"/objects");
+  const d=s||{};
+  const keys=Object.keys(d);
+  if(keys.length){
+    const key=keys[keys.length-1];
+    redoStack.push(d[key]);
+    await remove(ref(db,"whiteboards/"+room+"/objects/"+key));
+  }
+}
+async function redoLast(){
+  const item=redoStack.pop();
+  if(item)await set(push(ref(db,"whiteboards/"+room+"/objects")),item);
 }
 
 function watchBoard(){
