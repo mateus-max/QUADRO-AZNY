@@ -70,6 +70,8 @@ async function startClass(){
   $("classLink").value=classLink(r.key);$("linkArea").classList.remove("hidden");
   $("liveStatus").textContent="Aula em andamento";$("stateStat").textContent="Ao vivo";$("startClass").textContent="↗ Abrir Quadro";
   watchStudents(r.key);
+  // Abrir imediatamente a sala real do professor, em vez de deixar apenas o painel em "Aula em andamento".
+  location.href="aula.html?room="+encodeURIComponent(r.key)+"&host=1&teacher="+encodeURIComponent(teacherId);
 }
 
 function watchStudents(room){
