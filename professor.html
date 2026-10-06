@@ -15,7 +15,7 @@
         <label>Nome do professor<input id="teacherName" required placeholder="Prof. Maria"></label>
         <label>Nome do curso<input id="courseName" required placeholder="Curso de Inglês"></label>
         <label>WhatsApp<input id="teacherWhatsapp" placeholder="+244 9xx xxx xxx"></label>
-        <label>URL da fotografia<input id="teacherPhoto" placeholder="https://..."></label>
+        <label>Fotografia do professor<input id="teacherPhoto" type="file" accept="image/*"><small class="file-help">Carregue uma fotografia JPG, PNG ou WEBP.</small><div id="photoPreview" class="photo-preview hidden"><img id="photoPreviewImg" alt="Pré-visualização"></div></label>
         <button class="btn primary full" type="submit">Criar / Abrir meu quadro</button>
       </form>
       <p class="muted">Se já tens um quadro, podes abrir usando <code>?teacher=ID</code> no endereço.</p>
