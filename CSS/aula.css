@@ -69,3 +69,68 @@
 @media(max-width:650px){.board-style-panel{top:5px}.board-style-grid button,.board-pattern-grid button{padding:8px 4px;font-size:10px}}
 
 .color-dot.white{background:#fff!important;border:1px solid #71869a!important}
+
+
+/* Quadro estilo sala de aula: verde de ardósia, moldura de madeira e bandeja de giz. */
+.board-wrap{
+  background:#6b3f20!important;
+  border:10px solid #5a341d;
+  border-top-color:#7b4b28;
+  border-left-color:#6d3f20;
+  border-right-color:#4d2b18;
+  border-bottom-color:#4d2b18;
+  border-radius:10px 10px 7px 7px;
+  box-shadow:inset 0 0 0 2px #2d1a0f, 0 10px 24px #0007;
+  padding:0 5px 24px;
+  position:relative;
+  overflow:hidden;
+}
+.board-wrap::after{
+  content:"";
+  position:absolute;
+  left:9%;
+  right:9%;
+  bottom:4px;
+  height:20px;
+  border-radius:7px 7px 3px 3px;
+  background:linear-gradient(#9a6032,#6e3e20 55%,#4b2815);
+  border:1px solid #3b1f11;
+  box-shadow:inset 0 2px 2px #d69a5a66, 0 -2px 8px #0005;
+  z-index:3;
+  pointer-events:none;
+}
+.board-wrap canvas{
+  background:transparent!important;
+  border-radius:2px;
+  position:relative;
+  z-index:1;
+}
+.board-wrap #boardHint{
+  color:#d9e8dc;
+  text-shadow:0 1px 2px #0008;
+}
+@media(max-width:650px){
+  .board-wrap{border-width:7px;padding-bottom:22px}
+  .board-wrap::after{height:17px;bottom:3px}
+}
+
+/* Controles claros do professor para a própria câmera e microfone. */
+.host-media-controls{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  position:absolute;
+  left:10px;
+  top:7px;
+  z-index:40;
+}
+.host-media-controls .call-btn{
+  min-height:34px;
+  padding:6px 10px;
+  font-weight:800;
+  background:#102b43e8;
+}
+@media(max-width:650px){
+  .host-media-controls{left:7px;top:5px;gap:4px}
+  .host-media-controls .call-btn{min-height:32px;padding:6px 8px;font-size:11px}
+}
