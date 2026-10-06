@@ -406,7 +406,7 @@ function setupTools(){
 // ===== QUADRO INTERATIVO V2 — sincronização, objetos, páginas e ferramentas =====
 let nbCanvas=null,nbCtx=null,nbTool="select",nbColor="#111827",nbSize=4,nbBg="white";
 let nbPages=[[]],nbPage=0,nbDrawing=false,nbPoints=[],nbStart=null,nbSelected=-1;
-let nbUndo=[],nbRedo=[],nbLiveTimer=null,nbRemoteLive={};
+let nbUndo=[],nbRedo=[],nbLiveTimer=null,nbLivePending=null,nbLiveLast=0,nbRemoteLive={};
 
 const NB_BG={
   white:"#ffffff",green:"#245b3a",black:"#111111",blue:"#174a70",grid:"#ffffff",lines:"#ffffff"
@@ -560,9 +560,15 @@ function nbResize(){
   nbRender();
 }
 function nbLiveStroke(object){
-  const payload={page:nbPage,object,updatedAt:Date.now(),kind:"stroke"};
-  if(nbLiveTimer)cancelAnimationFrame(nbLiveTimer);
-  nbLiveTimer=requestAnimationFrame(()=>set(ref(db,"whiteboards/"+room+"/v2live/"+meId),payload).catch(()=>{}));
+  nbLivePending={page:nbPage,object,updatedAt:Date.now(),kind:"stroke"};
+  const send=()=>{
+    nbLiveTimer=null;
+    if(!nbLivePending)return;
+    const payload=nbLivePending;nbLivePending=null;nbLiveLast=Date.now();
+    set(ref(db,"whiteboards/"+room+"/v2live/"+meId),payload).catch(()=>{});
+  };
+  const wait=Math.max(0,80-(Date.now()-nbLiveLast));
+  if(!nbLiveTimer)nbLiveTimer=setTimeout(send,wait);
 }
 function nbClearLive(){
   remove(ref(db,"whiteboards/"+room+"/v2live/"+meId)).catch(()=>{});
