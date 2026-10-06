@@ -88,9 +88,20 @@ async function startMedia(){
   }
   if(localStream){
     addVideoCard(meId,meName,localStream,true);
-    setButtonState("toggleMic",hasTrack("audio"),"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
-    setButtonState("toggleCamera",hasTrack("video"),"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
+    attachLocalTracksToPeers();
+    setButtonState("toggleMic",hasEnabledTrack("audio"),"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
+    setButtonState("toggleCamera",hasEnabledTrack("video"),"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
   }
+}
+
+function attachLocalTracksToPeers(){
+  if(!localStream)return;
+  Object.values(peers).forEach(pc=>{
+    const existing=pc.getSenders().map(s=>s.track).filter(Boolean);
+    localStream.getTracks().forEach(track=>{
+      if(!existing.some(t=>t.kind===track.kind))pc.addTrack(track,localStream);
+    });
+  });
 }
 
 function addVideoCard(id,name,stream,isLocal=false){
@@ -154,6 +165,8 @@ function watchParticipants(){
       if(id!==meId) updateVideoStatus(id,p);
       if(id!==meId && id!==undefined && meId<id && !peers[id]) createPeer(id,p.name,true);
     });
+    // If a peer was created before media permission completed, attach the local tracks now.
+    attachLocalTracksToPeers();
     Object.keys(peers).forEach(id=>{if(!data[id]||data[id].online===false)closePeer(id)});
     if(localStream) update(ref(db,"participants/"+room+"/"+meId),{camera:hasEnabledTrack("video"),mic:hasEnabledTrack("audio")});
   });
