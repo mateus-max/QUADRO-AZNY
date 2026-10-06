@@ -57,11 +57,12 @@ async function enterClass(name){
   setupTools();
   bindBoard();
   watchBoard();
-  watchParticipants();
   watchChat();
-  watchSignals();
   await startMedia();
-  await update(meRef,{camera:hasTrack("video"),mic:hasTrack("audio")});
+  await update(meRef,{camera:hasEnabledTrack("video"),mic:hasEnabledTrack("audio")});
+  watchParticipants();
+  watchSignals();
+  if(!hostMode)watchRemoteControls();
   watchClock();
   $("mediaMessage").textContent=mediaReady?"Câmera e microfone ativos.":"Pode participar sem câmera/microfone; use os botões abaixo para tentar novamente.";
   setupPeerRefresh();
@@ -119,10 +120,12 @@ async function startMedia(){
 
 function attachLocalTracksToPeers(){
   if(!localStream)return;
-  Object.values(peers).forEach(pc=>{
-    const existing=pc.getSenders().map(s=>s.track).filter(Boolean);
+  Object.values(peers).forEach(peer=>{
+    const pc=peer.pc;
     localStream.getTracks().forEach(track=>{
-      if(!existing.some(t=>t.kind===track.kind))pc.addTrack(track,localStream);
+      const sender=pc.getSenders().find(s=>s.track?.kind===track.kind);
+      if(sender)sender.replaceTrack(track).catch(()=>{});
+      else pc.addTrack(track,localStream);
     });
   });
 }
@@ -130,14 +133,18 @@ function attachLocalTracksToPeers(){
 function addVideoCard(id,name,stream,isLocal=false){
   let card=document.querySelector('[data-video-id="'+CSS.escape(id)+'"]');
   if(!card){
-    card=document.createElement("div");card.className="video-card"+(isLocal?" local":"");card.dataset.videoId=id;
+    card=document.createElement("div");
+    card.className="video-card"+(isLocal?" local":"");
+    card.dataset.videoId=id;
     card.innerHTML='<video autoplay playsinline></video><div class="video-name"></div><div class="video-badges"><span class="video-badge camera-badge">📹</span><span class="video-badge mic-badge">🎙</span></div>';
     $("videoGrid").appendChild(card);
   }
-  card.querySelector("video").srcObject=stream;
+  const video=card.querySelector("video");
+  if(video.srcObject!==stream)video.srcObject=stream;
   card.querySelector(".video-name").textContent=name;
-  card.querySelector("video").muted=isLocal;
-  card.querySelector("video").volume=isLocal?0:1;
+  video.muted=isLocal;
+  video.volume=isLocal?0:1;
+  video.play?.().catch(()=>{});
   applySpeaker();
   makeVideoDraggable(card);
 }
@@ -152,56 +159,137 @@ function makeVideoDraggable(card){
     dragging=true;card.setPointerCapture?.(e.pointerId);
     startX=e.clientX;startY=e.clientY;
     baseX=parseFloat(card.style.left)||0;baseY=parseFloat(card.style.top)||0;
-    card.style.zIndex="10";
+    card.style.zIndex="50";
     e.preventDefault();
   });
   card.addEventListener("pointermove",e=>{
     if(!dragging)return;
     const parent=$("videoGrid").getBoundingClientRect();
     const w=card.offsetWidth,h=card.offsetHeight;
-    const x=Math.max(0,Math.min(parent.width-w,baseX+e.clientX-startX));
-    const y=Math.max(0,Math.min(parent.height-h,baseY+e.clientY-startY));
+    const x=Math.max(0,Math.min(Math.max(0,parent.width-w),baseX+e.clientX-startX));
+    const y=Math.max(0,Math.min(Math.max(0,parent.height-h),baseY+e.clientY-startY));
     card.style.left=x+"px";card.style.top=y+"px";
   });
-  card.addEventListener("pointerup",()=>{dragging=false});
-  card.addEventListener("pointercancel",()=>{dragging=false});
+  const stop=()=>{dragging=false};
+  card.addEventListener("pointerup",stop);
+  card.addEventListener("pointercancel",stop);
 }
 
-function removeVideoCard(id){document.querySelector('[data-video-id="'+CSS.escape(id)+'"]')?.remove()}
+function removeVideoCard(id){
+  document.querySelector('[data-video-id="'+CSS.escape(id)+'"]')?.remove();
+}
 
 function updateVideoStatus(id,data){
-  const card=document.querySelector('[data-video-id="'+CSS.escape(id)+'"]'); if(!card)return;
+  const card=document.querySelector('[data-video-id="'+CSS.escape(id)+'"]');
+  if(!card)return;
   card.querySelector(".camera-badge").textContent=data.camera===false?"🚫":"📹";
   card.querySelector(".mic-badge").textContent=data.mic===false?"🔇":"🎙";
 }
 
-async function toggleTrack(kind){
-  if(!localStream){
-    await startMedia();
-    if(!localStream)return;
+async function startMedia(){
+  if(!navigator.mediaDevices?.getUserMedia){
+    $("mediaMessage").textContent="O navegador não disponibilizou câmera/microfone. Abra o site em HTTPS.";
+    return;
   }
-  let track=localStream.getTracks().find(t=>t.kind===kind);
-  if(!track){
-    try{
-      const extra=await navigator.mediaDevices.getUserMedia(kind==="video"?{video:true,audio:false}:{video:false,audio:true});
-      track=extra.getTracks()[0];localStream.addTrack(track);
-      Object.values(peers).forEach(pc=>pc.addTrack(track,localStream));
-    }catch(err){alert("Não foi possível ativar "+(kind==="video"?"a câmera.":" o microfone."));return}
-  }else track.enabled=!track.enabled;
-  const on=!!track.enabled;
-  await update(ref(db,"participants/"+room+"/"+meId),kind==="video"?{camera:on}:{mic:on});
-  if(kind==="video")setButtonState("toggleCamera",on,"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
-  else setButtonState("toggleMic",on,"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
+  const tracks=[];
+  try{
+    const videoStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    videoStream.getVideoTracks().forEach(t=>tracks.push(t));
+  }catch(err){console.warn("Câmera:",err)}
+  try{
+    const audioStream=await navigator.mediaDevices.getUserMedia({video:false,audio:true});
+    audioStream.getAudioTracks().forEach(t=>tracks.push(t));
+  }catch(err){console.warn("Microfone:",err)}
+  if(tracks.length){
+    localStream=new MediaStream(tracks);
+    mediaReady=true;
+    addVideoCard(meId,meName,localStream,true);
+    attachLocalTracksToPeers();
+    setButtonState("toggleMic",hasEnabledTrack("audio"),"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
+    setButtonState("toggleCamera",hasEnabledTrack("video"),"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
+  }else{
+    localStream=null;
+    mediaReady=false;
+  }
+  $("mediaMessage").textContent=hasEnabledTrack("video")||hasEnabledTrack("audio")
+    ?"Vídeo e áudio ativos. Pode mover cada câmera pela sala."
+    :"Pode participar sem câmera/microfone; use os botões abaixo para tentar novamente.";
+}
+
+async function ensureTrack(kind){
+  if(localStream?.getTracks().some(t=>t.kind===kind))return localStream.getTracks().find(t=>t.kind===kind);
+  try{
+    const extra=await navigator.mediaDevices.getUserMedia(kind==="video"?{video:true,audio:false}:{video:false,audio:true});
+    if(!localStream)localStream=new MediaStream();
+    extra.getTracks().forEach(t=>localStream.addTrack(t));
+    addVideoCard(meId,meName,localStream,true);
+    attachLocalTracksToPeers();
+    return extra.getTracks()[0]||null;
+  }catch(err){
+    console.warn("Permissão de "+kind,err);
+    return null;
+  }
+}
+
+async function setLocalTrack(kind,enabled,writeParticipant=true){
+  let track=localStream?.getTracks().find(t=>t.kind===kind);
+  if(!track&&enabled)track=await ensureTrack(kind);
+  if(!track)return false;
+  track.enabled=enabled;
+  if(kind==="video" && localStream)addVideoCard(meId,meName,localStream,true);
+  if(writeParticipant)await update(ref(db,"participants/"+room+"/"+meId),kind==="video"?{camera:enabled}:{mic:enabled});
+  if(kind==="video")setButtonState("toggleCamera",enabled,"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
+  else setButtonState("toggleMic",enabled,"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
+  return true;
+}
+
+async function toggleTrack(kind){
+  const current=localStream?.getTracks().find(t=>t.kind===kind);
+  const next=current?!current.enabled:true;
+  const ok=await setLocalTrack(kind,next,true);
+  if(!ok)alert("Não foi possível ativar "+(kind==="video"?"a câmera.":" o microfone.")+" neste dispositivo.");
 }
 
 function applySpeaker(){
-  document.querySelectorAll("#videoGrid video:not(.local video)").forEach(v=>v.muted=!speakerOn);
-  document.querySelectorAll("#videoGrid video").forEach(v=>{if(!v.closest(".local"))v.muted=!speakerOn});
+  document.querySelectorAll("#videoGrid video").forEach(v=>{
+    if(v.closest(".local")){v.muted=true;v.volume=0}
+    else{v.muted=!speakerOn;v.volume=speakerOn?1:0}
+  });
   setButtonState("toggleSpeaker",speakerOn,"🔊 <span>Som</span>","🔇 <span>Som</span>");
 }
 
-function setupPeerRefresh(){
-  // Existing participants are picked up by watchParticipants.
+function watchRemoteControls(){
+  onValue(ref(db,"controls/"+room+"/"+meId),async snap=>{
+    const c=snap.val();
+    if(!c)return;
+    if(typeof c.mic==="boolean")await setLocalTrack("audio",c.mic,false);
+    if(typeof c.camera==="boolean")await setLocalTrack("video",c.camera,false);
+    $("mediaMessage").textContent="O professor atualizou os seus controles de câmera/microfone.";
+    await remove(ref(db,"controls/"+room+"/"+meId));
+  });
+}
+
+async function setRemoteControl(id,kind,enabled){
+  if(!hostMode||!id||id===meId)return;
+  await update(ref(db,"controls/"+room+"/"+id),{[kind]:enabled,updatedAt:Date.now(),by:meId});
+}
+
+function renderParticipantList(arr){
+  $("participants").innerHTML=arr.map(([id,p])=>{
+    const isSelf=id===meId;
+    const controls=hostMode&&!isSelf&&p.role==="student"
+      ?'<div class="participant-controls">'+
+        '<button class="participant-control '+(p.mic===false?"off":"")+'" data-pid="'+esc(id)+'" data-kind="mic" data-enabled="'+(p.mic===false?"true":"false")+'" title="'+(p.mic===false?"Ligar microfone":"Desligar microfone")+'">'+(p.mic===false?"🎙":"🔇")+'</button>'+
+        '<button class="participant-control '+(p.camera===false?"off":"")+'" data-pid="'+esc(id)+'" data-kind="camera" data-enabled="'+(p.camera===false?"true":"false")+'" title="'+(p.camera===false?"Ligar câmera":"Desligar câmera")+'">'+(p.camera===false?"📹":"🚫")+'</button>'+
+      '</div>' : "";
+    return '<div class="participant" data-participant-id="'+esc(id)+'"><span class="avatar-sm">'+esc((p.name||"A").charAt(0).toUpperCase())+'</span><span class="participant-name">'+esc(p.name||"Participante")+'</span><span class="online"></span>'+controls+'</div>';
+  }).join("");
+  if(hostMode){
+    document.querySelectorAll(".participant-control").forEach(b=>b.onclick=async()=>{
+      const pid=b.dataset.pid,kind=b.dataset.kind,enabled=b.dataset.enabled==="true";
+      await setRemoteControl(pid,kind,enabled);
+    });
+  }
 }
 
 function watchParticipants(){
@@ -209,15 +297,14 @@ function watchParticipants(){
     const data=snap.val()||{}, arr=Object.entries(data).filter(([id,p])=>p.online!==false);
     $("participantCount").textContent=arr.length;
     $("participantBadge").textContent=arr.length+(arr.length===1?" participante":" participantes");
-    $("participants").innerHTML=arr.map(([id,p])=>'<div class="participant"><span class="avatar-sm">'+esc((p.name||"A").charAt(0).toUpperCase())+'</span><span>'+esc(p.name||"Participante")+'</span><span class="online"></span></div>').join("");
+    renderParticipantList(arr);
     arr.forEach(([id,p])=>{
-      if(id!==meId) updateVideoStatus(id,p);
-      if(id!==meId && id!==undefined && meId<id && !peers[id]) createPeer(id,p.name,true);
+      if(id!==meId)updateVideoStatus(id,p);
+      if(hostMode && id!==meId && p.role==="student" && !peers[id])createPeer(id,p.name);
     });
-    // If a peer was created before media permission completed, attach the local tracks now.
     attachLocalTracksToPeers();
     Object.keys(peers).forEach(id=>{if(!data[id]||data[id].online===false)closePeer(id)});
-    if(localStream) update(ref(db,"participants/"+room+"/"+meId),{camera:hasEnabledTrack("video"),mic:hasEnabledTrack("audio")});
+    if(localStream)update(ref(db,"participants/"+room+"/"+meId),{camera:hasEnabledTrack("video"),mic:hasEnabledTrack("audio")});
   });
 }
 
@@ -236,79 +323,106 @@ function watchSignals(){
   });
 }
 
-async function createPeer(remoteId,remoteName,initiator){
+async function createPeer(remoteId,remoteName){
   if(peers[remoteId])return peers[remoteId];
   const pc=new RTCPeerConnection(RTC_CONFIG);
-  peers[remoteId]=pc;pendingCandidates[remoteId]=[];
+  const peer={pc,remoteName:remoteName||"Participante",polite:meRole==="student",makingOffer:false,ignoreOffer:false,isSettingRemoteAnswerPending:false};
+  peers[remoteId]=peer;
+  pendingCandidates[remoteId]=[];
   if(localStream)localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
   pc.onicecandidate=e=>{if(e.candidate)sendSignal(remoteId,{type:"candidate",candidate:e.candidate.toJSON()})};
   pc.ontrack=e=>{
     const stream=e.streams?.[0]||new MediaStream([e.track]);
-    addVideoCard(remoteId,remoteName||"Participante",stream,false);
+    addVideoCard(remoteId,peer.remoteName,stream,false);
   };
   pc.onnegotiationneeded=async()=>{
-    if(meId>=remoteId||pc.signalingState!=="stable")return;
     try{
-      const offer=await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await sendSignal(remoteId,{type:"offer",description:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}});
-    }catch(err){console.warn("Renegociação WebRTC",err)}
+      peer.makingOffer=true;
+      await pc.setLocalDescription();
+      await sendSignal(remoteId,{type:"description",description:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}});
+    }catch(err){console.warn("Negociação WebRTC",err)}
+    finally{peer.makingOffer=false}
   };
   pc.onconnectionstatechange=()=>{
-    if(["failed","closed"].includes(pc.connectionState))closePeer(remoteId);
+    const state=pc.connectionState;
+    if(state==="connected")$("mediaMessage").textContent="Vídeo e áudio ligados em tempo real.";
+    if(["failed","closed"].includes(state))closePeer(remoteId);
   };
-  if(initiator){
-    try{
-      const offer=await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await sendSignal(remoteId,{type:"offer",description:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}});
-    }catch(err){console.error("Oferta WebRTC",err)}
-  }
-  return pc;
+  return peer;
 }
 
 async function handleSignal(from,msg){
   if(!from||from===meId)return;
   const participant=await once("participants/"+room+"/"+from);
-  const pc=await createPeer(from,participant?.name||"Participante",false);
-  if(msg.type==="offer"){
-    await pc.setRemoteDescription(new RTCSessionDescription(msg.description));
+  const peer=await createPeer(from,participant?.name||"Participante");
+  const pc=peer.pc;
+  if(msg.type==="description"){
+    const description=msg.description;
+    const readyForOffer=!peer.makingOffer&&(pc.signalingState==="stable"||peer.isSettingRemoteAnswerPending);
+    const offerCollision=description.type==="offer"&&!readyForOffer;
+    peer.ignoreOffer=!peer.polite&&offerCollision;
+    if(peer.ignoreOffer)return;
+    peer.isSettingRemoteAnswerPending=description.type==="answer";
+    await pc.setRemoteDescription(new RTCSessionDescription(description));
+    peer.isSettingRemoteAnswerPending=false;
     for(const c of pendingCandidates[from]||[])await pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{});
     pendingCandidates[from]=[];
-    const answer=await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    await sendSignal(from,{type:"answer",description:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}});
-  }else if(msg.type==="answer"){
-    await pc.setRemoteDescription(new RTCSessionDescription(msg.description));
-    for(const c of pendingCandidates[from]||[])await pc.addIceCandidate(new RTCIceCandidate(c)).catch(()=>{});
-    pendingCandidates[from]=[];
+    if(description.type==="offer"){
+      await pc.setLocalDescription();
+      await sendSignal(from,{type:"description",description:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}});
+    }
   }else if(msg.type==="candidate"){
-    if(pc.remoteDescription)await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(()=>{});
-    else pendingCandidates[from].push(msg.candidate);
+    try{
+      if(pc.remoteDescription)await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+      else pendingCandidates[from].push(msg.candidate);
+    }catch(err){
+      if(!peer.ignoreOffer)console.warn("ICE candidate",err);
+    }
   }
 }
 
 function closePeer(id){
-  try{peers[id]?.close()}catch{}
+  try{peers[id]?.pc?.close()}catch{}
   delete peers[id];delete pendingCandidates[id];removeVideoCard(id);
 }
-
 function watchClock(){
   setInterval(()=>{const s=Math.max(0,Math.floor((Date.now()-startTime)/1000));$("timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")},1000);
 }
 
+let boardObjects={},liveStrokes={};
+let liveWriteTimer=null;
+
 function setupBoard(){
   board=$("board");ctx=board.getContext("2d");
-  resizeBoard();window.addEventListener("resize",()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(resizeBoard,100)});
+  resizeBoard();
+  window.addEventListener("resize",()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(resizeBoard,100)});
 }
-function resizeBoard(){if(!board)return;const r=$("boardWrap").getBoundingClientRect();board.width=Math.max(300,Math.floor(r.width));board.height=Math.max(260,Math.floor(r.height));redraw()}
-function redraw(){
-  if(!ctx)return;ctx.clearRect(0,0,board.width,board.height);ctx.fillStyle="#fff";ctx.fillRect(0,0,board.width,board.height);
-  onValue(ref(db,"whiteboards/"+room+"/objects"),s=>{if(!ctx)return;ctx.clearRect(0,0,board.width,board.height);ctx.fillStyle="#fff";ctx.fillRect(0,0,board.width,board.height);Object.values(s.val()||{}).forEach(renderObject)},{onlyOnce:true});
+
+function resizeBoard(){
+  if(!board)return;
+  const r=$("boardWrap").getBoundingClientRect();
+  board.width=Math.max(300,Math.floor(r.width));
+  board.height=Math.max(260,Math.floor(r.height));
+  redrawAll();
 }
+
+function redrawAll(){
+  if(!ctx)return;
+  ctx.clearRect(0,0,board.width,board.height);
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,board.width,board.height);
+  Object.values(boardObjects||{}).forEach(renderObject);
+  Object.values(liveStrokes||{}).forEach(o=>renderStroke(o));
+}
+
+function renderStroke(o){
+  if(!o?.points?.length)return;
+  ctx.save();ctx.strokeStyle=o.color||"#111827";ctx.lineWidth=o.size||4;ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.beginPath();o.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.restore();
+}
+
 function renderObject(o){
   if(!o)return;ctx.save();
-  if(o.type==="stroke"){ctx.strokeStyle=o.color;ctx.lineWidth=o.size;ctx.lineCap="round";ctx.lineJoin="round";ctx.beginPath();(o.points||[]).forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke()}
+  if(o.type==="stroke")renderStroke(o);
   else if(o.type==="line"){ctx.strokeStyle=o.color;ctx.lineWidth=o.size;ctx.beginPath();ctx.moveTo(o.a.x,o.a.y);ctx.lineTo(o.b.x,o.b.y);ctx.stroke()}
   else if(o.type==="rect"){ctx.strokeStyle=o.color;ctx.lineWidth=o.size;ctx.strokeRect(o.a.x,o.a.y,o.b.x-o.a.x,o.b.y-o.a.y)}
   else if(o.type==="text"){ctx.fillStyle=o.color;ctx.font=o.font||"24px sans-serif";ctx.fillText(o.text,o.x,o.y)}
@@ -316,40 +430,72 @@ function renderObject(o){
   else if(o.type==="staff"){ctx.strokeStyle=o.color;ctx.lineWidth=2;for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(o.x,o.y+i*12);ctx.lineTo(o.x+o.w,o.y+i*12);ctx.stroke()}}
   ctx.restore();
 }
-function point(e){const r=board.getBoundingClientRect();return{x:(e.clientX-r.left)*board.width/r.width,y:(e.clientY-r.top)*board.height/r.height}}
+
+function point(e){
+  const r=board.getBoundingClientRect();
+  return{x:(e.clientX-r.left)*board.width/r.width,y:(e.clientY-r.top)*board.height/r.height};
+}
+
 function addObject(o){return set(push(ref(db,"whiteboards/"+room+"/objects")),o)}
+
+function queueLiveStroke(){
+  clearTimeout(liveWriteTimer);
+  liveWriteTimer=setTimeout(()=>{
+    if(!drawing)return;
+    set(ref(db,"whiteboards/"+room+"/live/"+meId),{
+      type:"stroke",points:points.map(p=>({x:p.x,y:p.y})),color:tool==="eraser"?"#fff":color,
+      size:tool==="eraser"?Math.max(size*3,12):size,updatedAt:Date.now()
+    });
+  },45);
+}
 
 function bindBoard(){
   board.onpointerdown=async e=>{
-    if(!hostMode || tool==="select")return;
+    if(!hostMode||tool==="select")return;
     const p=point(e);
     if(tool==="text"){const t=prompt("Texto:");if(t)addObject({type:"text",x:p.x,y:p.y,text:t,color,font:"24px sans-serif"});return}
     if(tool==="image"){$("imagePicker").click();return}
     if(tool==="staff"){addObject({type:"staff",x:p.x,y:p.y,w:420,color});return}
     if(tool==="piano"){$("pianoOverlay").classList.toggle("hidden");return}
     if(tool==="undo"){await undoLast();tool="pen";return}
-    if(tool==="redo"){return}
-    if(tool==="clear"){if(confirm("Limpar o quadro para todos?"))await set(ref(db,"whiteboards/"+room+"/objects"),null);return}
+    if(tool==="redo")return;
+    if(tool==="clear"){if(confirm("Limpar o quadro para todos?")){await set(ref(db,"whiteboards/"+room+"/objects"),null);await set(ref(db,"whiteboards/"+room+"/live"),null)}return}
     drawing=true;points=[p];board.setPointerCapture?.(e.pointerId);
+    liveStrokes[meId]={type:"stroke",points:[p],color:tool==="eraser"?"#fff":color,size:tool==="eraser"?Math.max(size*3,12):size};
+    redrawAll();queueLiveStroke();
   };
+
   board.onpointermove=e=>{
-    if(!drawing)return;const p=point(e);points.push(p);const prev=points[points.length-2];
-    ctx.save();ctx.strokeStyle=tool==="eraser"?"#fff":color;ctx.lineWidth=tool==="eraser"?Math.max(size*3,12):size;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(prev.x,prev.y);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();
+    if(!drawing)return;
+    points.push(point(e));
+    liveStrokes[meId]={type:"stroke",points:points.map(p=>({x:p.x,y:p.y})),color:tool==="eraser"?"#fff":color,size:tool==="eraser"?Math.max(size*3,12):size};
+    redrawAll();queueLiveStroke();
   };
+
   board.onpointerup=async e=>{
-    if(!drawing)return;drawing=false;const p=point(e);points.push(p);
-    if(tool==="pen"||tool==="eraser")await addObject({type:"stroke",points:points.map(x=>({x:x.x,y:x.y})),color:tool==="eraser"?"#fff":color,size:tool==="eraser"?Math.max(size*3,12):size});
-    else if(tool==="line")await addObject({type:"line",a:points[0],b:p,color,size});
-    else if(tool==="rect")await addObject({type:"rect",a:points[0],b:p,color,size});
+    if(!drawing)return;
+    drawing=false;points.push(point(e));
+    clearTimeout(liveWriteTimer);
+    const final={type:"stroke",points:points.map(p=>({x:p.x,y:p.y})),color:tool==="eraser"?"#fff":color,size:tool==="eraser"?Math.max(size*3,12):size};
+    await addObject(final);
+    delete liveStrokes[meId];redrawAll();
+    await remove(ref(db,"whiteboards/"+room+"/live/"+meId));
+    if(tool==="line")await addObject({type:"line",a:points[0],b:points[points.length-1],color,size});
+    if(tool==="rect")await addObject({type:"rect",a:points[0],b:points[points.length-1],color,size});
     points=[];
   };
-  board.onpointercancel=()=>{drawing=false;points=[]};
+  board.onpointercancel=async()=>{drawing=false;points=[];clearTimeout(liveWriteTimer);delete liveStrokes[meId];redrawAll();await remove(ref(db,"whiteboards/"+room+"/live/"+meId))};
 }
 
 async function undoLast(){
-  const s=await once("whiteboards/"+room+"/objects");const d=s||{};const keys=Object.keys(d);if(keys.length)await remove(ref(db,"whiteboards/"+room+"/objects/"+keys[keys.length-1]));
+  const s=await once("whiteboards/"+room+"/objects");const d=s||{};const keys=Object.keys(d);
+  if(keys.length)await remove(ref(db,"whiteboards/"+room+"/objects/"+keys[keys.length-1]));
 }
 
+function watchBoard(){
+  onValue(ref(db,"whiteboards/"+room+"/objects"),s=>{boardObjects=s.val()||{};redrawAll()});
+  onValue(ref(db,"whiteboards/"+room+"/live"),s=>{liveStrokes=s.val()||{};redrawAll()});
+}
 function setupTools(){
   document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=async()=>{
     const next=b.dataset.tool;
