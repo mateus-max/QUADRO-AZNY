@@ -460,10 +460,15 @@ function nbInit(){
   $("newImagePicker").onchange=e=>{const file=e.target.files?.[0];if(!file)return;const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const max=500,s=Math.min(1,max/im.width),o={type:"image",src:rd.result,x:60,y:60,w:im.width*s,h:im.height*s};nbPages[nbPage].push(o);nbRender();nbCommit()};im.src=rd.result};rd.readAsDataURL(file);e.target.value=""};
   $("newPdfPicker").onchange=e=>{const file=e.target.files?.[0];if(file){alert("PDF selecionado. A importação visual de páginas PDF será adicionada sem alterar a câmera/vídeo.");e.target.value=""}};
   nbCanvas.onpointerdown=e=>{if(!hostMode||nbTool==="select")return;const p=nbPoint(e);if(nbTool==="text"){const text=prompt("Texto:");if(text){nbPages[nbPage].push({type:"text",text,x:p.x,y:p.y,color:nbColor,font:Math.max(16,nbSize*6)+"px sans-serif"});nbRender();nbCommit()}return}nbDrawing=true;nbPoints=[p];nbCanvas.setPointerCapture?.(e.pointerId)};
-  nbCanvas.onpointermove=e=>{if(!nbDrawing)return;nbPoints.push(nbPoint(e));nbRender();if(["pen","highlighter","eraser"].includes(nbTool)){const o={type:"stroke",points:nbPoints,color:nbTool==="eraser"?(nbBg==="white"?"#fff":(nbBg==="green"?"#245b3a":"#111")):nbColor,size:nbTool==="highlighter"?Math.max(nbSize*3,12):nbSize,alpha:nbTool==="highlighter"?.28:1};nbDraw(o)}};
-  nbCanvas.onpointerup=e=>{if(!nbDrawing)return;nbDrawing=false;nbPoints.push(nbPoint(e));const a=nbPoints[0],b=nbPoints[nbPoints.length-1];if(["pen","highlighter","eraser"].includes(nbTool))nbPages[nbPage].push({type:"stroke",points:nbPoints,color:nbTool==="eraser"?(nbBg==="white"?"#fff":(nbBg==="green"?"#245b3a":"#111")):nbColor,size:nbTool==="highlighter"?Math.max(nbSize*3,12):nbSize,alpha:nbTool==="highlighter"?.28:1});else if(["line","arrow","rect","circle"].includes(nbTool))nbPages[nbPage].push({type:nbTool,a,b,color:nbColor,size:nbSize});nbPoints=[];nbRender();nbCommit()};
+  nbCanvas.onpointermove=e=>{if(!nbDrawing)return;nbPoints.push(nbPoint(e));nbRender();if(["pen","highlighter","eraser"].includes(nbTool)){const o={type:"stroke",points:nbPoints,color:nbTool==="eraser"?(nbBg==="white"?"#fff":(nbBg==="green"?"#245b3a":"#111")):nbColor,size:nbTool==="highlighter"?Math.max(nbSize*3,12):nbSize,alpha:nbTool==="highlighter"?.28:1};nbDraw(o);set(ref(db,"whiteboards/"+room+"/v2live/"+meId),{...o,page:nbPage,updatedAt:Date.now()})}};
+  nbCanvas.onpointerup=e=>{if(!nbDrawing)return;nbDrawing=false;nbPoints.push(nbPoint(e));const a=nbPoints[0],b=nbPoints[nbPoints.length-1];if(["pen","highlighter","eraser"].includes(nbTool))nbPages[nbPage].push({type:"stroke",points:nbPoints,color:nbTool==="eraser"?(nbBg==="white"?"#fff":(nbBg==="green"?"#245b3a":"#111")):nbColor,size:nbTool==="highlighter"?Math.max(nbSize*3,12):nbSize,alpha:nbTool==="highlighter"?.28:1});else if(["line","arrow","rect","circle"].includes(nbTool))nbPages[nbPage].push({type:nbTool,a,b,color:nbColor,size:nbSize});nbPoints=[];remove(ref(db,"whiteboards/"+room+"/v2live/"+meId));nbRender();nbCommit()};
   nbSync();
   onValue(ref(db,"whiteboards/"+room+"/v2"),s=>{const d=s.val();if(d?.pages){nbPages=d.pages;nbPage=d.page||0;nbBg=d.background||"white";nbRender();nbUpdatePage()}});
+  onValue(ref(db,"whiteboards/"+room+"/v2live"),s=>{
+    if(hostMode)return;
+    const live=s.val()||{};
+    Object.values(live).forEach(o=>{if(o.page===nbPage&&o.points)nbDraw(o)});
+  });
 }
 function watchChat(){
   onValue(ref(db,"messages/"+room),s=>{
