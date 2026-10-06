@@ -407,6 +407,9 @@ async function undoLast(){
 }
 
 function watchBoard(){
+  onValue(ref(db,"whiteboards/"+room+"/settings"),s=>{
+    const v=s.val()||{};boardSettings={background:v.background||"white",pattern:v.pattern||"plain"};updateBoardStyleUI();redrawAll();
+  });
   onValue(ref(db,"whiteboards/"+room+"/objects"),s=>{boardObjects=s.val()||{};redrawAll()});
   onValue(ref(db,"whiteboards/"+room+"/live"),s=>{liveStrokes=s.val()||{};redrawAll()});
 }
@@ -453,12 +456,6 @@ function playNote(freq){
   try{const ac=new (window.AudioContext||window.webkitAudioContext)(),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;o.type="sine";g.gain.value=.08;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.45);o.stop(ac.currentTime+.5)}catch{}
 }
 
-function watchBoard(){
-  onValue(ref(db,"whiteboards/"+room+"/objects"),s=>{
-    if(!ctx)return;ctx.clearRect(0,0,board.width,board.height);ctx.fillStyle="#fff";ctx.fillRect(0,0,board.width,board.height);
-    Object.values(s.val()||{}).forEach(renderObject);
-  });
-}
 function watchChat(){
   onValue(ref(db,"messages/"+room),s=>{
     const d=s.val()||{};$("chatMessages").innerHTML=Object.values(d).map(m=>'<div class="message"><div class="msg-name">'+esc(m.name)+'</div><div class="msg-text">'+esc(m.text)+'</div></div>').join("");
