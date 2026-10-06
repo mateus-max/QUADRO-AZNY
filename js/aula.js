@@ -204,8 +204,15 @@ async function setLocalTrack(kind,enabled,writeParticipant=true){
   track.enabled=enabled;
   if(kind==="video" && localStream)addVideoCard(meId,meName,localStream,true);
   if(writeParticipant)await update(ref(db,"participants/"+room+"/"+meId),kind==="video"?{camera:enabled}:{mic:enabled});
-  if(kind==="video")setButtonState("toggleCamera",enabled,"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
-  else setButtonState("toggleMic",enabled,"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
+  if(kind==="video"){
+    setButtonState("toggleCamera",enabled,hostMode?"📹 <span>Minha câmera</span>":"📹 <span>Câmera</span>",hostMode?"🚫 <span>Abrir câmera</span>":"🚫 <span>Câmera</span>");
+    const q=$("hostCameraQuick");
+    if(q)q.innerHTML=enabled?"📹 Câmera ligada":"🚫 Abrir câmera";
+  }else{
+    setButtonState("toggleMic",enabled,hostMode?"🎙 <span>Meu microfone</span>":"🎙 <span>Microfone</span>",hostMode?"🔇 <span>Ligar microfone</span>":"🔇 <span>Microfone</span>");
+    const q=$("hostMicQuick");
+    if(q)q.innerHTML=enabled?"🎙 Microfone ligado":"🔇 Ligar microfone";
+  }
   return true;
 }
 
