@@ -55,6 +55,7 @@ async function enterClass(name){
   startTime=c.startedAt||Date.now();
   setupBoard();
   setupTools();
+  nbInit();
   bindBoard();
   watchBoard();
   watchChat();
