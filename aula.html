@@ -1,1 +1,43 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Aula — QUADRO-AZNY</title>
+  <link rel="stylesheet" href="CSS/style.css"><link rel="stylesheet" href="CSS/aula.css">
+</head>
+<body class="class-body">
+  <div id="joinScreen" class="join-screen">
+    <div class="join-card">
+      <div class="brand centered"><span class="brand-mark">Q</span><div><strong id="joinTeacher">QUADRO-AZNY</strong><small id="joinCourse">Aula online</small></div></div>
+      <div class="live-dot">● AULA AO VIVO</div>
+      <h1 id="joinTitle">Entrar na aula</h1>
+      <p>Introduza apenas o seu nome para participar. Não é necessário criar conta.</p>
+      <form id="joinForm"><input id="studentName" required maxlength="60" placeholder="Seu nome completo"><button class="btn primary full">Entrar na Aula</button></form>
+      <p id="joinError" class="error"></p>
+    </div>
+  </div>
 
+  <div id="classApp" class="hidden">
+    <header class="class-topbar">
+      <div class="brand"><span class="brand-mark">Q</span><div><strong id="classTeacher">Professor</strong><small id="classCourse">Curso</small></div></div>
+      <div class="class-state"><span class="live-dot">●</span> Aula em andamento <b id="timer">00:00</b><span id="participantBadge">0 participantes</span></div>
+      <div class="class-controls"><button id="raiseHand" class="tool-button">✋ Levantar mão</button><button id="reaction" class="tool-button">😊 Reação</button><button id="fullscreen" class="tool-button">⛶</button></div>
+    </header>
+
+    <div class="class-layout">
+      <aside class="participants-panel"><div class="panel-title">Participantes <b id="participantCount">0</b></div><div id="participants"></div></aside>
+      <section class="board-area">
+        <div class="board-toolbar">
+          <button data-tool="select">↖</button><button class="active" data-tool="pen">✎</button><button data-tool="eraser">⌫</button><button data-tool="text">T</button><button data-tool="rect">□</button><button data-tool="line">╱</button><button data-tool="pencil">✧</button><button data-tool="clear">🗑</button>
+          <span class="divider"></span><button data-color="#111827" class="color-dot black"></button><button data-color="#ef4444" class="color-dot red"></button><button data-color="#eab308" class="color-dot yellow"></button><button data-color="#2563eb" class="color-dot blue"></button>
+          <label class="size-label">● <input id="brushSize" type="range" min="1" max="18" value="4"></label><button id="zoomOut">−</button><span id="zoomValue">100%</span><button id="zoomIn">+</button><button id="fitBoard">⛶</button>
+        </div>
+        <div class="board-wrap" id="boardWrap"><canvas id="board"></canvas><div id="boardHint">Quadro virtual em tempo real</div></div>
+        <div class="bottom-tools"><button>𝄞</button><button>𝄢</button><button>♪</button><button>♫</button><button>♩</button><button class="piano-label">🎹 Teclado de Piano</button><div class="mini-piano" id="piano"></div><button id="saveBoard">💾</button></div>
+      </section>
+      <aside class="chat-panel"><div class="panel-tabs"><button class="tab-active">Chat</button><button>Materiais</button><button>Notas</button></div><div id="chatMessages" class="chat-messages"></div><form id="chatForm" class="chat-form"><input id="chatInput" maxlength="500" placeholder="Escreva uma mensagem..."><button>➤</button></form></aside>
+    </div>
+  </div>
+  <script type="module" src="js/aula.js"></script>
+</body>
+</html>
