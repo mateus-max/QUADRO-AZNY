@@ -1,0 +1,1 @@
+const joinBtn=document.getElementById("joinBtn");joinBtn?.addEventListener("click",()=>{const code=prompt("Cole o link ou o código da aula:");if(!code)return;try{const url=new URL(code);window.location.href=url.href}catch{window.location.href="aula.html?room="+encodeURIComponent(code.trim())}});
