@@ -99,10 +99,7 @@ async function startMedia(){
   }
   try{
     // Uma única solicitação evita que o navegador bloqueie a câmera por múltiplas permissões seguidas.
-    const stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},
-      audio:true
-    });
+    const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
     localStream=stream;
     mediaReady=true;
     addVideoCard(meId,meName,localStream,true);
@@ -160,6 +157,7 @@ async function setLocalTrack(kind,enabled,writeParticipant=true){
 }
 
 async function toggleTrack(kind){
+  // Se a câmera ainda não existe, o clique solicita explicitamente a câmera ao navegador.
   const current=localStream?.getTracks().find(t=>t.kind===kind);
   const next=current?!current.enabled:true;
   const ok=await setLocalTrack(kind,next,true);
