@@ -15,7 +15,7 @@ const RTC_CONFIG={iceServers:[
   {urls:"stun:stun.cloudflare.com:3478"}
 ]};
 
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[c]));
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const once=path=>new Promise(resolve=>onValue(ref(db,path),s=>resolve(s.val()),{onlyOnce:true}));
 const showError=x=>{$("joinError").textContent=x};
 
