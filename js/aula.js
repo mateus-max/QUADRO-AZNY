@@ -390,7 +390,7 @@ function resizeBoard(){
 function redrawAll(){
   if(!ctx)return;
   ctx.clearRect(0,0,board.width,board.height);
-  ctx.fillStyle="#fff";ctx.fillRect(0,0,board.width,board.height);
+  drawBoardBackground();
   Object.values(boardObjects||{}).forEach(renderObject);
   Object.values(liveStrokes||{}).forEach(o=>renderObject(o));
 }
@@ -541,7 +541,17 @@ function setupTools(){
   $("raiseHand").onclick=()=>update(ref(db,"participants/"+room+"/"+meId),{hand:true,handAt:Date.now()});
   $("toggleMic").onclick=()=>toggleTrack("audio");
   $("toggleCamera").onclick=()=>toggleTrack("video");
+  if(hostMode){
+    $("hostCameraQuick").onclick=()=>toggleTrack("video");
+    $("hostMicQuick").onclick=()=>toggleTrack("audio");
+  }
   $("toggleSpeaker").onclick=()=>{speakerOn=!speakerOn;applySpeaker()};
+  if(hostMode){
+    $("toggleMic").title="Professor: ligar/desligar microfone";
+    $("toggleCamera").title="Professor: abrir/desligar a sua câmera";
+    setButtonState("toggleCamera",hasEnabledTrack("video"),"📹 <span>Minha câmera</span>","🚫 <span>Abrir câmera</span>");
+    setButtonState("toggleMic",hasEnabledTrack("audio"),"🎙 <span>Meu microfone</span>","🔇 <span>Ligar microfone</span>");
+  }
   $("leaveClass").onclick=leaveClass;
   $("imagePicker").onchange=e=>insertImage(e.target.files?.[0]);
   document.querySelectorAll("[data-music]").forEach(b=>b.onclick=()=>addMusicSymbol(b.dataset.music));
