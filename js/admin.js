@@ -1,0 +1,7 @@
+import { db } from "./firebase-config.js";
+import { ref,push,set,onValue } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[c]));
+function render(data){const box=$("teachersList");box.innerHTML="";const entries=Object.entries(data||{});if(!entries.length){box.innerHTML="<p class='muted'>Ainda não existem professores.</p>";return}entries.forEach(([id,t])=>{const d=document.createElement("div");d.className="teacher-item";d.innerHTML="<div class='teacher-avatar'>"+esc((t.name||"P").charAt(0).toUpperCase())+"</div><div class='meta'><strong>"+esc(t.name)+"</strong><small>"+esc(t.courseName)+"</small><code>professor.html?teacher="+id+"</code></div><button class='btn small'>Abrir</button>";d.querySelector("button").onclick=()=>location.href="professor.html?teacher="+id;box.appendChild(d)})}
+$("adminTeacherForm").addEventListener("submit",async e=>{e.preventDefault();const r=push(ref(db,"teachers"));await set(r,{name:$("aName").value.trim(),courseName:$("aCourse").value.trim(),whatsapp:$("aWhatsApp").value.trim(),photo:$("aPhoto").value.trim(),logo:$("aLogo").value.trim(),slug:$("aSlug").value.trim(),createdAt:Date.now(),active:true});e.target.reset();alert("Professor criado com sucesso.")});
+onValue(ref(db,"teachers"),s=>render(s.val()));
