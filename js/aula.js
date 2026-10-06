@@ -51,6 +51,7 @@ async function enterClass(name){
   $("classTeacher").textContent=teacher.name||"Professor";
   $("classCourse").textContent=teacher.courseName||c.title||"Aula online";
   $("joinButton").disabled=false;
+  configureRoleUI();
   startTime=c.startedAt||Date.now();
   setupBoard();
   setupTools();
@@ -67,6 +68,32 @@ async function enterClass(name){
 }
 
 function hasTrack(kind){return !!localStream?.getTracks().some(t=>t.kind===kind)}
+
+function configureRoleUI(){
+  document.querySelectorAll(".host-only").forEach(el=>el.classList.toggle("hidden",!hostMode));
+  // O aluno acompanha o quadro, mas não altera o conteúdo criado pelo professor.
+  if(!hostMode){
+    tool="select";
+    $("board")?.classList.add("readonly-board");
+    $("mediaMessage").textContent="A acompanhar a aula em tempo real.";
+  }
+  if(hostMode){
+    $("shareClass")?.addEventListener("click",shareClass);
+  }
+}
+
+async function shareClass(){
+  const link=new URL("aula.html?room="+encodeURIComponent(room),location.href).href;
+  const textMsg="Entre na minha aula ao vivo: "+link;
+  if(navigator.share){
+    try{await navigator.share({title:teacher?.courseName||"Aula online",text:"Entre na minha aula ao vivo.",url:link});return}catch{}
+  }
+  try{
+    await navigator.clipboard.writeText(link);
+    const b=$("shareClass"); if(b){b.textContent="✓ Link copiado";setTimeout(()=>b.textContent="🔗 Partilhar",1800)}
+  }catch{}
+  window.open("https://wa.me/?text="+encodeURIComponent(textMsg),"_blank");
+}
 
 async function startMedia(){
   if(!navigator.mediaDevices?.getUserMedia){
@@ -116,6 +143,32 @@ function addVideoCard(id,name,stream,isLocal=false){
   card.querySelector("video").muted=isLocal;
   card.querySelector("video").volume=isLocal?0:1;
   applySpeaker();
+  makeVideoDraggable(card);
+}
+
+function makeVideoDraggable(card){
+  if(card.dataset.draggable==="1")return;
+  card.dataset.draggable="1";
+  card.style.left=card.style.left||((20+document.querySelectorAll(".video-card").length*195))+"px";
+  card.style.top=card.style.top||"25px";
+  let dragging=false,startX=0,startY=0,baseX=0,baseY=0;
+  card.addEventListener("pointerdown",e=>{
+    dragging=true;card.setPointerCapture?.(e.pointerId);
+    startX=e.clientX;startY=e.clientY;
+    baseX=parseFloat(card.style.left)||0;baseY=parseFloat(card.style.top)||0;
+    card.style.zIndex="10";
+    e.preventDefault();
+  });
+  card.addEventListener("pointermove",e=>{
+    if(!dragging)return;
+    const parent=$("videoGrid").getBoundingClientRect();
+    const w=card.offsetWidth,h=card.offsetHeight;
+    const x=Math.max(0,Math.min(parent.width-w,baseX+e.clientX-startX));
+    const y=Math.max(0,Math.min(parent.height-h,baseY+e.clientY-startY));
+    card.style.left=x+"px";card.style.top=y+"px";
+  });
+  card.addEventListener("pointerup",()=>{dragging=false});
+  card.addEventListener("pointercancel",()=>{dragging=false});
 }
 
 function removeVideoCard(id){document.querySelector('[data-video-id="'+CSS.escape(id)+'"]')?.remove()}
@@ -272,7 +325,7 @@ function addObject(o){return set(push(ref(db,"whiteboards/"+room+"/objects")),o)
 
 function bindBoard(){
   board.onpointerdown=async e=>{
-    if(tool==="select")return;
+    if(!hostMode || tool==="select")return;
     const p=point(e);
     if(tool==="text"){const t=prompt("Texto:");if(t)addObject({type:"text",x:p.x,y:p.y,text:t,color,font:"24px sans-serif"});return}
     if(tool==="image"){$("imagePicker").click();return}
