@@ -44,3 +44,5 @@
 .media-stage{position:static!important}
 .video-grid{position:absolute!important;inset:0!important;z-index:30!important;pointer-events:none!important}
 .video-card{pointer-events:auto!important}
+
+.board-area{position:relative}.media-stage{position:static!important}.video-grid{position:absolute!important;inset:0!important;z-index:30!important;pointer-events:none!important}.video-card{pointer-events:auto!important}
