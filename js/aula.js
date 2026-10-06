@@ -313,9 +313,17 @@ async function createPeer(remoteId,remoteName){
   pc.oniceconnectionstatechange=()=>{
     const state=pc.iceConnectionState;
     if(state==="connected"||state==="completed")$("mediaMessage").textContent="Vídeo e áudio ligados em tempo real.";
-    else if(state==="failed")$("mediaMessage").textContent="A ligação de vídeo falhou. Verifique a rede.";
+    else if(state==="checking"||state==="new")$("mediaMessage").textContent="A ligar câmera e áudio…";
+    else if(state==="failed"){
+      $("mediaMessage").textContent="A ligação de vídeo falhou. A tentar restabelecer…";
+      if(!pc.__iceRestarted&&pc.restartIce){
+        pc.__iceRestarted=true;
+        try{pc.restartIce()}catch{}
+      }
+    }
   };
   pc.onicecandidateerror=e=>console.warn("ICE:",e.errorCode,e.url,e.errorText);
+  pc.__iceRestarted=false;
   pc.onconnectionstatechange=()=>{
     const state=pc.connectionState;
     if(state==="connected")$("mediaMessage").textContent="Vídeo e áudio ligados em tempo real.";
@@ -415,10 +423,12 @@ function queueLiveStroke(){
   clearTimeout(liveWriteTimer);
   liveWriteTimer=setTimeout(()=>{
     if(!drawing)return;
-    set(ref(db,"whiteboards/"+room+"/live/"+meId),{
-      type:"stroke",points:points.map(p=>({x:p.x,y:p.y})),color:tool==="eraser"?"#fff":color,
-      size:tool==="eraser"?Math.max(size*3,12):size,updatedAt:Date.now()
-    });
+    const last=points[points.length-1];
+    const first=points[0];
+    const live=(tool==="line"||tool==="rect")
+      ?{type:tool,a:first,b:last,color,size,updatedAt:Date.now()}
+      :{type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color,size:tool==="eraser"?Math.max(size*3,12):size,updatedAt:Date.now()};
+    set(ref(db,"whiteboards/"+room+"/live/"+meId),live);
   },45);
 }
 
