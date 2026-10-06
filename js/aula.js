@@ -377,215 +377,34 @@ function watchClock(){
   setInterval(()=>{const s=Math.max(0,Math.floor((Date.now()-startTime)/1000));$("timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")},1000);
 }
 
-let boardObjects={},liveStrokes={};\nlet boardSettings={background:"white",pattern:"plain"};
-let liveWriteTimer=null;
-
 function setupBoard(){
-  board=$("board");ctx=board.getContext("2d");
-  resizeBoard();
-  window.addEventListener("resize",()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(resizeBoard,100)});
-}
-
-function resizeBoard(){
+  board=$("board");
   if(!board)return;
-  const r=$("boardWrap").getBoundingClientRect();
-  board.width=Math.max(300,Math.floor(r.width));
-  board.height=Math.max(260,Math.floor(r.height));
-  redrawAll();
-}
-
-function redrawAll(){
-  if(!ctx)return;
-  ctx.clearRect(0,0,board.width,board.height);
-  drawBoardBackground();
-  Object.values(boardObjects||{}).forEach(renderObject);
-  Object.values(liveStrokes||{}).forEach(o=>renderObject(o));
-}
-
-function renderStroke(o){
-  if(!o?.points?.length)return;
-  ctx.save();ctx.globalCompositeOperation=o.tool==="eraser"?"destination-out":"source-over";ctx.strokeStyle=o.color||"#111827";ctx.lineWidth=o.size||4;ctx.lineCap="round";ctx.lineJoin="round";
-  ctx.beginPath();o.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();ctx.restore();
-}
-
-function renderObject(o){
-  if(!o)return;ctx.save();
-  if(o.type==="stroke")renderStroke(o);
-  else if(o.type==="line"){ctx.strokeStyle=o.color;ctx.lineWidth=o.size;ctx.beginPath();ctx.moveTo(o.a.x,o.a.y);ctx.lineTo(o.b.x,o.b.y);ctx.stroke()}
-  else if(o.type==="rect"){ctx.strokeStyle=o.color;ctx.lineWidth=o.size;ctx.strokeRect(o.a.x,o.a.y,o.b.x-o.a.x,o.b.y-o.a.y)}
-  else if(o.type==="text"){ctx.fillStyle=o.color;ctx.font=o.font||"24px sans-serif";ctx.fillText(o.text,o.x,o.y)}
-  else if(o.type==="image"){const img=new Image();img.onload=()=>{ctx.drawImage(img,o.x,o.y,o.w,o.h)};img.src=o.src}
-  else if(o.type==="staff"){ctx.strokeStyle=o.color;ctx.lineWidth=2;for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(o.x,o.y+i*12);ctx.lineTo(o.x+o.w,o.y+i*12);ctx.stroke()}}
-  ctx.restore();
-}
-
-function boardBgColor(){\n  return ({white:"#ffffff",green:"#245b3a",black:"#111111",blue:"#174a70",brown:"#5a3825",slate:"#26343f"})[boardSettings.background]||"#ffffff";\n}\n\nfunction drawBoardBackground(){\n  if(!ctx)return;\n  const bg=boardBgColor();\n  ctx.fillStyle=bg;ctx.fillRect(0,0,board.width,board.height);\n  const dark=["green","black","blue","brown","slate"].includes(boardSettings.background);\n  if(boardSettings.pattern==="grid"||boardSettings.pattern==="lines"){\n    ctx.save();ctx.lineWidth=1;ctx.strokeStyle=dark?"rgba(255,255,255,.13)":"rgba(0,0,0,.10)";\n    const step=36;\n    for(let x=0;x<=board.width;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,board.height);ctx.stroke()}\n    if(boardSettings.pattern==="grid"){for(let y=0;y<=board.height;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(board.width,y);ctx.stroke()}}\n    else{for(let y=18;y<=board.height;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(board.width,y);ctx.stroke()}}\n    ctx.restore();\n  }\n}\n\nfunction updateBoardStyleUI(){\n  document.querySelectorAll("[data-board-style]").forEach(b=>b.classList.toggle("active",b.dataset.boardStyle===boardSettings.background));\n  document.querySelectorAll("[data-board-pattern]").forEach(b=>b.classList.toggle("active",b.dataset.boardPattern===boardSettings.pattern));\n}\n\nasync function setBoardStyle(background){\n  if(!hostMode)return;\n  boardSettings.background=background;\n  updateBoardStyleUI();redrawAll();\n  await update(ref(db,"whiteboards/"+room+"/settings"),{background,pattern:boardSettings.pattern,updatedAt:Date.now()});\n}\n\nasync function setBoardPattern(pattern){\n  if(!hostMode)return;\n  boardSettings.pattern=pattern;\n  updateBoardStyleUI();redrawAll();\n  await update(ref(db,"whiteboards/"+room+"/settings"),{background:boardSettings.background,pattern,updatedAt:Date.now()});\n}\n\nfunction point(e){
-  const r=board.getBoundingClientRect();
-  return{x:(e.clientX-r.left)*board.width/r.width,y:(e.clientY-r.top)*board.height/r.height};
-}
-
-function addObject(o){redoStack=[];return set(push(ref(db,"whiteboards/"+room+"/objects")),o)}
-
-function queueLiveStroke(){
-  clearTimeout(liveWriteTimer);
-  liveWriteTimer=setTimeout(()=>{
-    if(!drawing)return;
-    const last=points[points.length-1];
-    const first=points[0];
-    const live=(tool==="line"||tool==="rect")
-      ?{type:tool,a:first,b:last,color,size,updatedAt:Date.now()}
-      :{type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color,size:tool==="eraser"?Math.max(size*3,12):size,updatedAt:Date.now()};
-    set(ref(db,"whiteboards/"+room+"/live/"+meId),live);
-  },45);
-}
-
-function bindBoard(){
-  board.onpointerdown=async e=>{
-    if(!hostMode||tool==="select")return;
-    const p=point(e);
-
-    if(tool==="text"){const t=prompt("Texto:");if(t)addObject({type:"text",x:p.x,y:p.y,text:t,color,font:"24px sans-serif"});return}
-    if(tool==="image"){$("imagePicker").click();return}
-    if(tool==="staff"){addObject({type:"staff",x:p.x,y:p.y,w:420,color});return}
-    if(tool==="piano"){$("pianoOverlay").classList.toggle("hidden");return}
-    if(tool==="undo"){await undoLast();tool="pen";return}
-    if(tool==="redo"){await redoLast();tool="pen";return}
-    if(tool==="clear"){
-      if(confirm("Limpar o quadro para todos?")){
-        await set(ref(db,"whiteboards/"+room+"/objects"),null);
-        await set(ref(db,"whiteboards/"+room+"/live"),null);
-      }
-      return;
-    }
-
-    drawing=true;
-    points=[p];
-    board.setPointerCapture?.(e.pointerId);
-
-    if(tool==="line"||tool==="rect"){
-      liveStrokes[meId]={type:tool,a:p,b:p,color,size};
-    }else{
-      liveStrokes[meId]={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:[p],color,size:tool==="eraser"?Math.max(size*3,12):size};
-    }
-    redrawAll();
-    queueLiveStroke();
+  const resize=()=>{
+    const r=$("boardWrap").getBoundingClientRect();
+    board.width=Math.max(300,Math.floor(r.width));
+    board.height=Math.max(260,Math.floor(r.height));
+    board.getContext("2d").clearRect(0,0,board.width,board.height);
   };
-
-  board.onpointermove=e=>{
-    if(!drawing)return;
-    const p=point(e);
-    points.push(p);
-
-    if(tool==="line"||tool==="rect"){
-      liveStrokes[meId]={type:tool,a:points[0],b:p,color,size};
-    }else{
-      liveStrokes[meId]={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color,size:tool==="eraser"?Math.max(size*3,12):size};
-    }
-    redrawAll();
-    queueLiveStroke();
-  };
-
-  board.onpointerup=async e=>{
-    if(!drawing)return;
-    drawing=false;
-    points.push(point(e));
-    clearTimeout(liveWriteTimer);
-
-    const a=points[0],b=points[points.length-1];
-    if(tool==="line"||tool==="rect"){
-      await addObject({type:tool,a,b,color,size});
-    }else{
-      await addObject({type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color,size:tool==="eraser"?Math.max(size*3,12):size});
-    }
-
-    delete liveStrokes[meId];
-    redrawAll();
-    await remove(ref(db,"whiteboards/"+room+"/live/"+meId));
-    points=[];
-  };
-
-  board.onpointercancel=async()=>{
-    drawing=false;points=[];clearTimeout(liveWriteTimer);
-    delete liveStrokes[meId];redrawAll();
-    await remove(ref(db,"whiteboards/"+room+"/live/"+meId));
-  };
+  resize();
+  window.addEventListener("resize",resize);
 }
-
-async function undoLast(){
-  const s=await once("whiteboards/"+room+"/objects");
-  const d=s||{};
-  const keys=Object.keys(d);
-  if(keys.length){
-    const key=keys[keys.length-1];
-    redoStack.push(d[key]);
-    await remove(ref(db,"whiteboards/"+room+"/objects/"+key));
-  }
-}
-async function redoLast(){
-  const item=redoStack.pop();
-  if(item)await set(push(ref(db,"whiteboards/"+room+"/objects")),item);
-}
-
-function watchBoard(){
-  onValue(ref(db,"whiteboards/"+room+"/settings"),s=>{
-    const v=s.val()||{};boardSettings={background:v.background||"white",pattern:v.pattern||"plain"};updateBoardStyleUI();redrawAll();
-  });
-  onValue(ref(db,"whiteboards/"+room+"/objects"),s=>{boardObjects=s.val()||{};redrawAll()});
-  onValue(ref(db,"whiteboards/"+room+"/live"),s=>{liveStrokes=s.val()||{};redrawAll()});
-}
+function bindBoard(){}
+function watchBoard(){}
 function setupTools(){
-  document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=async()=>{
-    const next=b.dataset.tool;
-    if(["undo","redo","clear"].includes(next)){tool=next;return}
-    tool=next;document.querySelectorAll("[data-tool]").forEach(x=>x.classList.toggle("active",x===b));
-    if(next==="piano")$("pianoOverlay").classList.toggle("hidden");
-  });
-  document.querySelectorAll("[data-color]").forEach(b=>b.onclick=()=>color=b.dataset.color);\n  $("boardBackgrounds").onclick=()=>{if(hostMode)$("boardStylePanel").classList.toggle("hidden")};\n  document.querySelectorAll("[data-board-style]").forEach(b=>b.onclick=()=>setBoardStyle(b.dataset.boardStyle));\n  document.querySelectorAll("[data-board-pattern]").forEach(b=>b.onclick=()=>setBoardPattern(b.dataset.boardPattern));\n  updateBoardStyleUI();
-  $("brushSize").oninput=e=>size=+e.target.value;
   $("fullscreen").onclick=()=>document.documentElement.requestFullscreen?.();
-  $("saveBoard").onclick=()=>{const a=document.createElement("a");a.download="quadro-"+room+".png";a.href=board.toDataURL("image/png");a.click()};
-  $("zoomIn").onclick=()=>setZoom(zoom+.1);$("zoomOut").onclick=()=>setZoom(zoom-.1);$("fitBoard").onclick=()=>setZoom(1);
   $("raiseHand").onclick=()=>update(ref(db,"participants/"+room+"/"+meId),{hand:true,handAt:Date.now()});
   $("toggleMic").onclick=()=>toggleTrack("audio");
   $("toggleCamera").onclick=()=>toggleTrack("video");
-  if(hostMode){
-    $("hostCameraQuick").onclick=()=>toggleTrack("video");
-    $("hostMicQuick").onclick=()=>toggleTrack("audio");
-  }
   $("toggleSpeaker").onclick=()=>{speakerOn=!speakerOn;applySpeaker()};
   if(hostMode){
     $("toggleMic").title="Professor: ligar/desligar microfone";
     $("toggleCamera").title="Professor: abrir/desligar a sua câmera";
-    setButtonState("toggleCamera",hasEnabledTrack("video"),"📹 <span>Minha câmera</span>","🚫 <span>Abrir câmera</span>");
-    setButtonState("toggleMic",hasEnabledTrack("audio"),"🎙 <span>Meu microfone</span>","🔇 <span>Ligar microfone</span>");
+    $("hostCameraQuick").onclick=()=>toggleTrack("video");
+    $("hostMicQuick").onclick=()=>toggleTrack("audio");
   }
   $("leaveClass").onclick=leaveClass;
-  $("imagePicker").onchange=e=>insertImage(e.target.files?.[0]);
-  document.querySelectorAll("[data-music]").forEach(b=>b.onclick=()=>addMusicSymbol(b.dataset.music));
-  buildPiano();
 }
-function setZoom(z){zoom=Math.max(.6,Math.min(1.8,z));$("zoomValue").textContent=Math.round(zoom*100)+"%";board.style.transform="scale("+zoom+")";board.style.transformOrigin="center top"}
-function addMusicSymbol(kind){
-  const symbols={treble:"𝄞",bass:"𝄢",quarter:"♩",eighth:"♪",eighths:"♫"};addObject({type:"text",x:90,y:90,text:symbols[kind]||"♪",color,font:"42px serif"});
-}
-async function insertImage(file){
-  if(!file)return;
-  if(file.size>4*1024*1024)return alert("A imagem deve ter no máximo 4 MB.");
-  const reader=new FileReader();
-  reader.onload=()=>{
-    const img=new Image();img.onload=()=>{const max=700,sc=Math.min(1,max/img.width),w=Math.round(img.width*sc),h=Math.round(img.height*sc);addObject({type:"image",src:reader.result,x:80,y:80,w,h})};img.src=reader.result;
-  };reader.readAsDataURL(file);
-  $("imagePicker").value="";
-}
-function buildPiano(){
-  const box=$("pianoOverlay");box.innerHTML="";
-  const notes=["C","D","E","F","G","A","B","C","D","E","F","G","A","B"];
-  notes.forEach((n,i)=>{const k=document.createElement("button");k.className="piano-key";k.textContent=n;k.onclick=()=>playNote(261.63*Math.pow(2,i/12));box.appendChild(k)});
-}
-function playNote(freq){
-  try{const ac=new (window.AudioContext||window.webkitAudioContext)(),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;o.type="sine";g.gain.value=.08;o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.45);o.stop(ac.currentTime+.5)}catch{}
-}
-
 function watchChat(){
   onValue(ref(db,"messages/"+room),s=>{
     const d=s.val()||{};$("chatMessages").innerHTML=Object.values(d).map(m=>'<div class="message"><div class="msg-name">'+esc(m.name)+'</div><div class="msg-text">'+esc(m.text)+'</div></div>').join("");
