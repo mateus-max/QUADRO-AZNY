@@ -92,7 +92,7 @@ async function shareClass(){
   window.open("https://wa.me/?text="+encodeURIComponent(textMsg),"_blank");
 }
 
-async async function startMedia(){
+async function startMedia(){
   if(!navigator.mediaDevices?.getUserMedia){
     $("mediaMessage").textContent="O navegador não disponibilizou câmera/microfone. Abra o site em HTTPS.";
     return;
