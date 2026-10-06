@@ -85,3 +85,7 @@
 .board-bg-panel{position:absolute;top:8px;right:8px;z-index:50;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:220px;padding:9px;background:#071a2c;border:1px solid #31506a;border-radius:9px;box-shadow:0 10px 25px #0008}
 .board-bg-panel.hidden{display:none}.board-bg-panel b{grid-column:1/-1;color:#fff;font-size:11px}.board-bg-panel button{border:1px solid #31506a;background:#102a42;color:#fff;border-radius:6px;padding:7px;cursor:pointer}
 @media(max-width:650px){.new-board-toolbar{overflow-x:auto;flex-wrap:nowrap}.board-pagebar{font-size:10px}.board-wrap{min-height:280px!important}}
+
+/* Estabilidade do quadro em ecrãs táteis. */
+#board{touch-action:none;user-select:none;-webkit-user-select:none}
+.board-wrap{touch-action:none}
