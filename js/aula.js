@@ -303,7 +303,7 @@ function watchClock(){
   setInterval(()=>{const s=Math.max(0,Math.floor((Date.now()-startTime)/1000));$("timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")},1000);
 }
 
-let boardObjects={},liveStrokes={};
+let boardObjects={},liveStrokes={};\nlet boardSettings={background:"white",pattern:"plain"};
 let liveWriteTimer=null;
 
 function setupBoard(){
@@ -345,7 +345,7 @@ function renderObject(o){
   ctx.restore();
 }
 
-function point(e){
+function boardBgColor(){\n  return ({white:"#ffffff",green:"#245b3a",black:"#111111",blue:"#174a70",brown:"#5a3825",slate:"#26343f"})[boardSettings.background]||"#ffffff";\n}\n\nfunction drawBoardBackground(){\n  if(!ctx)return;\n  const bg=boardBgColor();\n  ctx.fillStyle=bg;ctx.fillRect(0,0,board.width,board.height);\n  const dark=["green","black","blue","brown","slate"].includes(boardSettings.background);\n  if(boardSettings.pattern==="grid"||boardSettings.pattern==="lines"){\n    ctx.save();ctx.lineWidth=1;ctx.strokeStyle=dark?"rgba(255,255,255,.13)":"rgba(0,0,0,.10)";\n    const step=36;\n    for(let x=0;x<=board.width;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,board.height);ctx.stroke()}\n    if(boardSettings.pattern==="grid"){for(let y=0;y<=board.height;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(board.width,y);ctx.stroke()}}\n    else{for(let y=18;y<=board.height;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(board.width,y);ctx.stroke()}}\n    ctx.restore();\n  }\n}\n\nfunction updateBoardStyleUI(){\n  document.querySelectorAll("[data-board-style]").forEach(b=>b.classList.toggle("active",b.dataset.boardStyle===boardSettings.background));\n  document.querySelectorAll("[data-board-pattern]").forEach(b=>b.classList.toggle("active",b.dataset.boardPattern===boardSettings.pattern));\n}\n\nasync function setBoardStyle(background){\n  if(!hostMode)return;\n  boardSettings.background=background;\n  updateBoardStyleUI();redrawAll();\n  await update(ref(db,"whiteboards/"+room+"/settings"),{background,pattern:boardSettings.pattern,updatedAt:Date.now()});\n}\n\nasync function setBoardPattern(pattern){\n  if(!hostMode)return;\n  boardSettings.pattern=pattern;\n  updateBoardStyleUI();redrawAll();\n  await update(ref(db,"whiteboards/"+room+"/settings"),{background:boardSettings.background,pattern,updatedAt:Date.now()});\n}\n\nfunction point(e){
   const r=board.getBoundingClientRect();
   return{x:(e.clientX-r.left)*board.width/r.width,y:(e.clientY-r.top)*board.height/r.height};
 }
@@ -375,14 +375,14 @@ function bindBoard(){
     if(tool==="redo")return;
     if(tool==="clear"){if(confirm("Limpar o quadro para todos?")){await set(ref(db,"whiteboards/"+room+"/objects"),null);await set(ref(db,"whiteboards/"+room+"/live"),null)}return}
     drawing=true;points=[p];board.setPointerCapture?.(e.pointerId);
-    liveStrokes[meId]={type:"stroke",points:[p],color:tool==="eraser"?"#fff":color,size:tool==="eraser"?Math.max(size*3,12):size};
+    liveStrokes[meId]={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:[p],color:color,size:tool==="eraser"?Math.max(size*3,12):size};
     redrawAll();queueLiveStroke();
   };
 
   board.onpointermove=e=>{
     if(!drawing)return;
     points.push(point(e));
-    liveStrokes[meId]={type:"stroke",points:points.map(p=>({x:p.x,y:p.y})),color:tool==="eraser"?"#fff":color,size:tool==="eraser"?Math.max(size*3,12):size};
+    liveStrokes[meId]={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color:color,size:tool==="eraser"?Math.max(size*3,12):size};
     redrawAll();queueLiveStroke();
   };
 
@@ -390,7 +390,7 @@ function bindBoard(){
     if(!drawing)return;
     drawing=false;points.push(point(e));
     clearTimeout(liveWriteTimer);
-    const final={type:"stroke",points:points.map(p=>({x:p.x,y:p.y})),color:tool==="eraser"?"#fff":color,size:tool==="eraser"?Math.max(size*3,12):size};
+    const final={type:"stroke",tool:tool==="eraser"?"eraser":"pen",points:points.map(p=>({x:p.x,y:p.y})),color,size:tool==="eraser"?Math.max(size*3,12):size};
     await addObject(final);
     delete liveStrokes[meId];redrawAll();
     await remove(ref(db,"whiteboards/"+room+"/live/"+meId));
@@ -417,7 +417,7 @@ function setupTools(){
     tool=next;document.querySelectorAll("[data-tool]").forEach(x=>x.classList.toggle("active",x===b));
     if(next==="piano")$("pianoOverlay").classList.toggle("hidden");
   });
-  document.querySelectorAll("[data-color]").forEach(b=>b.onclick=()=>color=b.dataset.color);
+  document.querySelectorAll("[data-color]").forEach(b=>b.onclick=()=>color=b.dataset.color);\n  $("boardBackgrounds").onclick=()=>{if(hostMode)$("boardStylePanel").classList.toggle("hidden")};\n  document.querySelectorAll("[data-board-style]").forEach(b=>b.onclick=()=>setBoardStyle(b.dataset.boardStyle));\n  document.querySelectorAll("[data-board-pattern]").forEach(b=>b.onclick=()=>setBoardPattern(b.dataset.boardPattern));\n  updateBoardStyleUI();
   $("brushSize").oninput=e=>size=+e.target.value;
   $("fullscreen").onclick=()=>document.documentElement.requestFullscreen?.();
   $("saveBoard").onclick=()=>{const a=document.createElement("a");a.download="quadro-"+room+".png";a.href=board.toDataURL("image/png");a.click()};
