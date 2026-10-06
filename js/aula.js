@@ -151,22 +151,25 @@ async function startMedia(){
     $("mediaMessage").textContent="Câmera/microfone indisponíveis neste navegador. Use o site em HTTPS.";
     return;
   }
-  const tracks=[];
+  let stream=null;
   let cameraError=null,micError=null;
   try{
-    const videoStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},
-      audio:false
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:"user",width:{ideal:640,max:1280},height:{ideal:480,max:720},frameRate:{ideal:24,max:30}},
+      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
     });
-    videoStream.getVideoTracks().forEach(t=>tracks.push(t));
-  }catch(err){cameraError=err;console.warn("Câmera:",err?.name,err?.message)}
-  try{
-    const audioStream=await navigator.mediaDevices.getUserMedia({video:false,audio:true});
-    audioStream.getAudioTracks().forEach(t=>tracks.push(t));
-  }catch(err){micError=err;console.warn("Microfone:",err?.name,err?.message)}
-
-  if(tracks.length){
-    localStream=new MediaStream(tracks);
+  }catch(err){
+    cameraError=err;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:false,audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    }catch(err2){
+      micError=err2;
+      try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false})}
+      catch(err3){cameraError=err3}
+    }
+  }
+  if(stream?.getTracks().length){
+    localStream=stream;
     mediaReady=true;
     addVideoCard(meId,meName,localStream,true);
     attachLocalTracksToPeers();
@@ -174,11 +177,12 @@ async function startMedia(){
     await update(ref(db,"participants/"+room+"/"+meId),{camera:hasVideo,mic:hasAudio});
     setButtonState("toggleMic",hasAudio,"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
     setButtonState("toggleCamera",hasVideo,"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
-    $("mediaMessage").textContent=hasVideo&&hasAudio?"Câmera e microfone ativos.":hasVideo?"Câmera ativa. Microfone indisponível.":hasAudio?"Microfone ativo. Câmera indisponível.":"Mídia parcialmente disponível.";
+    $("mediaMessage").textContent=hasVideo&&hasAudio?"Câmera e microfone ativos.":hasVideo?"Câmera ativa. Microfone indisponível.":hasAudio?"Microfone ativo. Câmera indisponível.":"Mídia indisponível.";
   }else{
     localStream=null;mediaReady=false;
     await update(ref(db,"participants/"+room+"/"+meId),{camera:false,mic:false}).catch(()=>{});
-    $("mediaMessage").textContent="Não foi possível ativar câmera/microfone ("+(cameraError?.name||"indisponível")+" / "+(micError?.name||"indisponível")+"). Toque nos botões para tentar novamente.";
+    const errors=[cameraError?.name,micError?.name].filter(Boolean).join(" / ");
+    $("mediaMessage").textContent="Não foi possível ativar câmera/microfone"+(errors?" ("+errors+")":"")+". Use os botões abaixo para tentar novamente.";
     setButtonState("toggleCamera",false,"📹 <span>Câmera</span>","🚫 <span>Câmera</span>");
     setButtonState("toggleMic",false,"🎙 <span>Microfone</span>","🔇 <span>Microfone</span>");
   }
@@ -379,16 +383,8 @@ function watchClock(){
 }
 
 function setupBoard(){
-  board=$("board");
-  if(!board)return;
-  const resize=()=>{
-    const r=$("boardWrap").getBoundingClientRect();
-    board.width=Math.max(300,Math.floor(r.width));
-    board.height=Math.max(260,Math.floor(r.height));
-    board.getContext("2d").clearRect(0,0,board.width,board.height);
-  };
-  resize();
-  window.addEventListener("resize",resize);
+  // O motor do quadro V2 controla canvas, tamanho e redesenho.
+  // Mantemos esta função para compatibilidade com a entrada existente.
 }
 function bindBoard(){}
 function watchBoard(){}
