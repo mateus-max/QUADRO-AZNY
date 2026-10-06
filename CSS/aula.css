@@ -26,3 +26,15 @@
   .video-card{width:110px;height:70px;min-width:110px}
   .call-btn{min-height:36px;padding:7px 9px}
 }
+
+/* Ajustes solicitados: folha branca sem grelha e vídeos móveis. */
+.board-wrap{background:#fff!important}
+.board-wrap canvas{background:#fff!important;background-image:none!important}
+.video-grid{position:absolute;inset:0;height:auto!important;padding:0!important;display:block!important;overflow:hidden}
+.video-card{position:absolute;left:20px;top:25px;cursor:grab;touch-action:none}
+.video-card:active{cursor:grabbing}
+.host-only.hidden{display:none!important}
+.readonly-board{cursor:default!important}
+@media(max-width:650px){
+  .video-card{width:120px;height:76px;min-width:120px}
+}
