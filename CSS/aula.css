@@ -1,1 +1,28 @@
 .join-security{font-size:11px!important;color:#7189a0!important;margin-top:18px}.class-body{min-height:100vh}.join-card .brand{margin-bottom:18px}.join-card .brand-mark{margin:0}.class-state .live-dot{font-size:9px}.class-actions{display:flex;gap:6px}.tool-button:hover{background:#173753}.class-layout{min-height:calc(100vh - 68px)}.board-area{position:relative;min-width:0}.media-stage{height:180px;min-height:180px;background:#071422;border-bottom:1px solid #1d3851;padding:9px 10px;position:relative;overflow:hidden}.media-title{position:absolute;top:9px;left:12px;z-index:3;font-size:10px;color:#7f97ad;text-transform:uppercase;font-weight:800;letter-spacing:.08em}.video-grid{height:100%;display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:18px 0 4px;overflow-x:auto}.video-card{position:relative;width:190px;height:135px;min-width:150px;background:#0b2237;border:1px solid #294760;border-radius:10px;overflow:hidden;box-shadow:0 8px 25px #0005}.video-card video{width:100%;height:100%;display:block;object-fit:cover;background:#09131e}.video-card.local video{transform:scaleX(-1)}.video-name{position:absolute;left:7px;bottom:6px;background:#071522cc;color:#fff;border-radius:5px;padding:4px 7px;font-size:10px;max-width:calc(100% - 14px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.video-badges{position:absolute;right:6px;top:6px;display:flex;gap:4px}.video-badge{background:#071522d9;border-radius:5px;padding:3px 5px;font-size:10px}.media-message{position:absolute;inset:0;display:grid;place-items:center;padding:35px;color:#657f96;font-size:11px;text-align:center;pointer-events:none}.video-grid:not(:empty)+.media-message{display:none}.board-toolbar{flex-wrap:nowrap}.board-wrap{min-height:300px}.board-wrap canvas{background:#fff}.piano-overlay{position:absolute;left:50%;bottom:15px;transform:translateX(-50%);background:#dfe7ee;border:1px solid #8da1b2;border-radius:8px;padding:8px;display:flex;gap:1px;box-shadow:0 12px 30px #0004;z-index:4}.piano-overlay.hidden{display:none}.piano-key{width:28px;height:110px;background:#fff;border:1px solid #8999a7;border-radius:0 0 4px 4px;cursor:pointer;position:relative}.piano-key.black-key{width:18px;height:68px;background:#182331;color:#fff;margin:0 -9px;z-index:2}.piano-key:active{transform:translateY(2px)}.bottom-spacer{flex:1}.call-controls{height:58px;background:#071a2c;border-top:1px solid #203b54;display:flex;justify-content:center;align-items:center;gap:8px;padding:7px}.call-btn{border:1px solid #31506a;background:#102a42;color:#eaf3fb;border-radius:9px;padding:9px 13px;cursor:pointer;font-size:12px}.call-btn:hover{background:#183b59}.call-btn.active{background:#123b59;border-color:#2b79ae}.call-btn.off{background:#442027;border-color:#8a3945}.call-btn.danger{background:#8e2935;border-color:#ad3c49}.class-controls button{white-space:nowrap}.panel-tabs button{cursor:pointer}@media(max-width:1100px){.class-layout{grid-template-columns:180px minmax(350px,1fr) 260px}.video-card{width:155px;height:110px}}@media(max-width:850px){.media-stage{height:145px;min-height:145px}.video-card{width:135px;height:95px}.class-layout{grid-template-columns:150px 1fr}.chat-panel{display:none}.call-btn span{display:none}}@media(max-width:650px){.class-topbar{gap:8px;padding:0 8px}.class-topbar .brand strong{font-size:12px}.class-state{font-size:10px;padding:6px}.class-actions{display:none}.class-layout{grid-template-columns:1fr}.participants-panel{display:none}.media-stage{height:120px;min-height:120px}.video-card{width:120px;height:82px}.board-toolbar{overflow-x:auto}.bottom-tools{overflow-x:auto}.call-controls{gap:4px}.call-btn{padding:8px 10px}.board-wrap{min-height:280px}}
+/* Layout final da aula: o quadro é o elemento principal e os controles ficam sempre acessíveis. */
+.media-stage{height:150px;min-height:150px;padding-top:28px}
+.video-grid{padding:4px 180px 4px 150px;justify-content:flex-start}
+.video-card{width:180px;height:112px;min-width:180px}
+.media-title{top:9px}
+.call-controls{position:absolute;top:8px;right:10px;height:auto;background:transparent;border:0;padding:0;z-index:20;justify-content:flex-end}
+.call-btn{min-height:38px}
+.board-area{min-height:0}
+.board-wrap{flex:1;min-height:320px}
+.board-toolbar{flex-shrink:0}
+.bottom-tools{flex-shrink:0}
+@media(max-width:1100px){
+  .video-grid{padding-right:160px;padding-left:110px}
+  .video-card{width:150px;height:95px;min-width:150px}
+}
+@media(max-width:850px){
+  .media-stage{height:125px;min-height:125px}
+  .video-grid{padding:2px 5px 2px 105px}
+  .video-card{width:130px;height:82px;min-width:130px}
+  .call-controls{top:5px;right:6px}
+}
+@media(max-width:650px){
+  .media-stage{height:105px;min-height:105px}
+  .video-grid{padding-left:100px}
+  .video-card{width:110px;height:70px;min-width:110px}
+  .call-btn{min-height:36px;padding:7px 9px}
+}
