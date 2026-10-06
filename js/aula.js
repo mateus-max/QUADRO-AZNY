@@ -184,6 +184,14 @@ async function createPeer(remoteId,remoteName,initiator){
     const stream=e.streams?.[0]||new MediaStream([e.track]);
     addVideoCard(remoteId,remoteName||"Participante",stream,false);
   };
+  pc.onnegotiationneeded=async()=>{
+    if(meId>=remoteId||pc.signalingState!=="stable")return;
+    try{
+      const offer=await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await sendSignal(remoteId,{type:"offer",description:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}});
+    }catch(err){console.warn("Renegociação WebRTC",err)}
+  };
   pc.onconnectionstatechange=()=>{
     if(["failed","closed"].includes(pc.connectionState))closePeer(remoteId);
   };
