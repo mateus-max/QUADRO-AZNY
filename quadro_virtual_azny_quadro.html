@@ -224,7 +224,7 @@ let pageStates=Array(5).fill(null);
 let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0;
 let isStudent=new URLSearchParams(location.search).get("aluno")==="1";
-let roomId=new URLSearchParams(location.search).get("sala")||("AZNY-"+(document.getElementById("boardTitle").value.trim().replace(/[^a-zA-Z0-9_-]+/g,"-")||"aula"));
+const AZNY_URL_PARAMS=new URLSearchParams(location.search);let roomId=AZNY_URL_PARAMS.get("sala")||localStorage.getItem("azny_teacher_room_v1")||("AZNY-"+(document.getElementById("boardTitle").value.trim().replace(/[^a-zA-Z0-9_-]+/g,"-")||"aula")+"-"+Date.now().toString(36));if(!AZNY_URL_PARAMS.get("sala")){try{localStorage.setItem("azny_teacher_room_v1",roomId)}catch(_){}}
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null;
 const roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
 const AZNY_FIREBASE_CONFIG={apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:f5e62cd92d999b9c04d89c",measurementId:"G-RP2TV02LKY"};
@@ -688,7 +688,7 @@ function setupStudent(){document.body.classList.add("student-mode");document.get
 function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo professor");startStudentWebRTC()}else{document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended")toast("A aula foi encerrada pelo professor.")}}
 function getClassLink(){
  const base=location.href.split("#")[0].split("?")[0];
- const room="AZNY-"+(document.getElementById("boardTitle").value.trim().replace(/[^a-zA-Z0-9_-]+/g,"-")||"aula");
+ const room=roomId;
  return base+"?aluno=1&sala="+encodeURIComponent(room);
 }
 async function copyClassLink(){
