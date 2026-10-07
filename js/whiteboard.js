@@ -1,1 +1,0 @@
-export const WHITEBOARD_TOOLS=["select","pen","eraser","text","rect","line","image","staff","piano","undo","redo"];
