@@ -232,9 +232,9 @@ const AZNY_FIREBASE_CONFIG={apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",aut
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
 const aznyRoomKey=()=>String(roomId).replace(/[.#$\[\]\/]/g,"_");
 const aznyRoomRef=()=>AZNY_DB?AZNY_DB.ref("aznyRooms/"+aznyRoomKey()):null;
-async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();try{AZNY_DB.setPersistenceEnabled(true)}catch(_){}if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(e){console.warn("AZNY Firebase:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
+async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();try{AZNY_DB.setPersistenceEnabled(true)}catch(_){}if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Auth anónima indisponível; a tentar ligação direta ao Realtime Database.",authError)}if(AZNY_DB){return true}}catch(e){console.warn("AZNY Firebase:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
 let aznyRealtimeBound=false;
-async function ensureAZNYRealtime(){if(AZNY_DB&&aznyUid)return true;const ok=await initAZNYRealtime();if(ok&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}return ok}
+async function ensureAZNYRealtime(){if(AZNY_DB){if(!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}return true}const ok=await initAZNYRealtime();if(ok&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}return ok}
 function studentRequestRef(id){return aznyRoomRef()?.child("joinRequests").child(id)||null}
 function signalRef(id){return aznyRoomRef()?.child("peers").child(id)||null}
 
