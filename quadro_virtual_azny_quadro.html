@@ -676,7 +676,7 @@ function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{con
 function getClassLink(){
  const base=location.href.split("#")[0].split("?")[0];
  const room="AZNY-"+(document.getElementById("boardTitle").value.trim().replace(/[^a-zA-Z0-9_-]+/g,"-")||"aula");
- return base+"?sala="+encodeURIComponent(room);
+ return base+"?aluno=1&sala="+encodeURIComponent(room);
 }
 async function copyClassLink(){
  const link=getClassLink();
