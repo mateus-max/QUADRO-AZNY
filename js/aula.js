@@ -489,6 +489,53 @@ function nbStartTextEditor(p){
   editor.addEventListener("blur",()=>setTimeout(()=>{if(nbTextEditor===editor)nbCloseTextEditor(true)},0));
   editor.focus();
 }
+let nbTextEditor=null,nbTextData=null;
+function nbCloseTextEditor(commit=true){
+  if(!nbTextEditor)return;
+  const editor=nbTextEditor,data=nbTextData;
+  nbTextEditor=null;nbTextData=null;
+  const text=editor.value.trim();
+  editor.remove();
+  remove(ref(db,"whiteboards/"+room+"/v2live/"+meId)).catch(()=>{});
+  if(commit&&text)nbCommitText(data,text);
+}
+function nbCommitText(data,text){
+  nbPages[nbPage].push({type:"text",text,x:data.x,y:data.y,color:data.color,font:data.font});
+  nbRender();nbCommit();
+}
+function nbStartTextEditor(p){
+  nbCloseTextEditor(true);
+  const wrap=$("boardWrap");if(!wrap)return;
+  const r=nbCanvas.getBoundingClientRect(),wr=wrap.getBoundingClientRect();
+  const editor=document.createElement("textarea");
+  editor.className="board-text-editor";
+  editor.placeholder="Escreva aqui...";
+  editor.spellcheck=true;
+  Object.assign(editor.style,{
+    position:"absolute",
+    left:(r.left-wr.left+p.x*r.width/nbCanvas.width)+"px",
+    top:(r.top-wr.top+p.y*r.height/nbCanvas.height-24)+"px",
+    minWidth:"220px",minHeight:"48px",padding:"8px 10px",
+    border:"2px solid #2563eb",borderRadius:"8px",outline:"none",
+    background:"#fff",color:nbColor,
+    font:Math.max(16,nbSize*6)+"px sans-serif",
+    lineHeight:"1.25",zIndex:"9999",resize:"both",boxSizing:"border-box"
+  });
+  wrap.appendChild(editor);
+  nbTextEditor=editor;
+  nbTextData={x:p.x,y:p.y,color:nbColor,font:Math.max(16,nbSize*6)+"px sans-serif"};
+  editor.addEventListener("input",()=>{
+    if(editor.value)set(ref(db,"whiteboards/"+room+"/v2live/"+meId),{
+      type:"text",text:editor.value,x:p.x,y:p.y,color:nbColor,font:nbTextData.font,page:nbPage,updatedAt:Date.now()
+    }).catch(()=>{});
+  });
+  editor.addEventListener("keydown",e=>{
+    if(e.key==="Escape"){e.preventDefault();nbCloseTextEditor(false)}
+    else if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();nbCloseTextEditor(true)}
+  });
+  editor.addEventListener("blur",()=>setTimeout(()=>{if(nbTextEditor===editor)nbCloseTextEditor(true)},100));
+  editor.focus();
+}
 function nbInit(){
   nbCanvas=$("board");nbCtx=nbCanvas.getContext("2d");nbSetTool(hostMode?"pen":"select");nbResize();window.addEventListener("resize",nbResize);
   document.querySelectorAll("[data-board-tool]").forEach(b=>b.onclick=()=>{nbSetTool(b.dataset.boardTool);if(b.dataset.boardTool==="image")$("newImagePicker").click();if(b.dataset.boardTool==="pdf")$("newPdfPicker").click()});
@@ -508,7 +555,7 @@ function nbInit(){
   $("boardDocument").onclick=()=>$("newPdfPicker").click();
   $("newImagePicker").onchange=e=>{const file=e.target.files?.[0];if(!file)return;const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const max=500,s=Math.min(1,max/im.width),o={type:"image",src:rd.result,x:60,y:60,w:im.width*s,h:im.height*s};nbPages[nbPage].push(o);nbRender();nbCommit()};im.src=rd.result};rd.readAsDataURL(file);e.target.value=""};
   $("newPdfPicker").onchange=e=>{const file=e.target.files?.[0];if(file){alert("PDF selecionado. A importação visual de páginas PDF será adicionada sem alterar a câmera/vídeo.");e.target.value=""}};
-  nbCanvas.onpointerdown=e=>{if(!hostMode||nbTool==="select")return;const p=nbPoint(e);if(nbTool==="text"){const text=prompt("Texto:");if(text){nbPages[nbPage].push({type:"text",text,x:p.x,y:p.y,color:nbColor,font:Math.max(16,nbSize*6)+"px sans-serif"});nbRender();nbCommit()}return}nbDrawing=true;nbPoints=[p];nbCanvas.setPointerCapture?.(e.pointerId)};
+  nbCanvas.onpointerdown=e=>{if(!hostMode||nbTool==="select")return;const p=nbPoint(e);if(nbTool==="text"){nbStartTextEditor(p);return}nbDrawing=true;nbPoints=[p];nbCanvas.setPointerCapture?.(e.pointerId)};
   nbCanvas.onpointermove=e=>{if(!nbDrawing)return;nbPoints.push(nbPoint(e));nbRender();if(["pen","highlighter","eraser"].includes(nbTool)){const o={type:"stroke",points:nbPoints,color:nbTool==="eraser"?(nbBg==="white"?"#fff":(nbBg==="green"?"#245b3a":"#111")):nbColor,size:nbTool==="highlighter"?Math.max(nbSize*3,12):nbSize,alpha:nbTool==="highlighter"?.28:1};nbDraw(o);set(ref(db,"whiteboards/"+room+"/v2live/"+meId),{...o,page:nbPage,updatedAt:Date.now()})}};
   nbCanvas.onpointerup=e=>{if(!nbDrawing)return;nbDrawing=false;nbPoints.push(nbPoint(e));const a=nbPoints[0],b=nbPoints[nbPoints.length-1];if(["pen","highlighter","eraser"].includes(nbTool))nbPages[nbPage].push({type:"stroke",points:nbPoints,color:nbTool==="eraser"?(nbBg==="white"?"#fff":(nbBg==="green"?"#245b3a":"#111")):nbColor,size:nbTool==="highlighter"?Math.max(nbSize*3,12):nbSize,alpha:nbTool==="highlighter"?.28:1});else if(["line","arrow","rect","circle"].includes(nbTool))nbPages[nbPage].push({type:nbTool,a,b,color:nbColor,size:nbSize});nbPoints=[];remove(ref(db,"whiteboards/"+room+"/v2live/"+meId));nbRender();nbCommit()};
   nbSync();
