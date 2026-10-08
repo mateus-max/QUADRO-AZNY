@@ -404,7 +404,7 @@ function setupTools(){
 }
 
 // ===== NOVO QUADRO COMPLETO =====
-let nbCanvas=null,nbCtx=null,nbTool="select",nbColor="#111827",nbSize=4,nbBg="white",nbPages=[[]],nbPage=0,nbDrawing=false,nbPoints=[],nbUndo=[],nbRedo=[];
+let nbCanvas=null,nbCtx=null,nbTool="pen",nbColor="#111827",nbSize=4,nbBg="white",nbPages=[[]],nbPage=0,nbDrawing=false,nbPoints=[],nbUndo=[],nbRedo=[];
 function nbBackground(){
   const colors={white:"#fff",green:"#245b3a",black:"#111",blue:"#174a70",grid:"#fff",lines:"#fff"};
   nbCtx.fillStyle=colors[nbBg]||"#fff";nbCtx.fillRect(0,0,nbCanvas.width,nbCanvas.height);
@@ -438,7 +438,7 @@ async function nbSync(){
 function nbUpdatePage(){$("boardPageLabel").textContent="Página "+(nbPage+1)+" / "+nbPages.length}
 function nbSetTool(t){nbTool=t;document.querySelectorAll("[data-board-tool]").forEach(b=>b.classList.toggle("active",b.dataset.boardTool===t))}
 function nbInit(){
-  nbCanvas=$("board");nbCtx=nbCanvas.getContext("2d");nbResize();window.addEventListener("resize",nbResize);
+  nbCanvas=$("board");nbCtx=nbCanvas.getContext("2d");nbSetTool(hostMode?"pen":"select");nbResize();window.addEventListener("resize",nbResize);
   document.querySelectorAll("[data-board-tool]").forEach(b=>b.onclick=()=>{nbSetTool(b.dataset.boardTool);if(b.dataset.boardTool==="image")$("newImagePicker").click();if(b.dataset.boardTool==="pdf")$("newPdfPicker").click()});
   document.querySelectorAll("[data-board-color]").forEach(b=>b.onclick=()=>{nbColor=b.dataset.boardColor;document.querySelectorAll("[data-board-color]").forEach(x=>x.classList.toggle("active",x===b))});
   $("newBoardSize").oninput=e=>nbSize=+e.target.value;
