@@ -118,7 +118,7 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
   </div>
   <input id="imageInput" type="file" accept="image/*" hidden>
   <input id="docInput" type="file" accept=".txt,.md,.csv,.json,.html,.htm,.pdf,.doc,.docx" hidden>
-  <div class="bottom-status"><span>Local Storage</span><span id="storageState">● Ativo</span></div>
+  <div class="bottom-status"><span>Tempo real</span><span id="storageState">● Firebase</span></div>
 </aside>
 
 <main class="main">
@@ -228,15 +228,15 @@ let isStudent=new URLSearchParams(location.search).get("aluno")==="1";
 const AZNY_URL_PARAMS=new URLSearchParams(location.search);let aznySavedRoom="";try{aznySavedRoom=localStorage.getItem("azny_teacher_room_v1")||""}catch(_){};let roomId=AZNY_URL_PARAMS.get("sala")||aznySavedRoom||("AZNY-"+(document.getElementById("boardTitle").value.trim().replace(/[^a-zA-Z0-9_-]+/g,"-")||"aula")+"-"+Date.now().toString(36));if(!AZNY_URL_PARAMS.get("sala")){try{localStorage.setItem("azny_teacher_room_v1",roomId)}catch(_){}}
 let classSessionId=AZNY_URL_PARAMS.get("sess")||"";
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
-let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false;
+let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 const roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
-const AZNY_FIREBASE_CONFIG={apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:f5e62cd92d999b9c04d89c",measurementId:"G-RP2TV02LKY"};const AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";
+const AZNY_FIREBASE_CONFIG={apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c3",measurementId:"G-SVR4LGF8TH"};const AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";
 if(!isStudent&&!AZNY_ACCESS_TOKEN){location.replace("index.html?acesso=necessario");throw new Error("Acesso de professor não autorizado sem sessão.");}
 
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
 const aznyRoomKey=()=>String(roomId).replace(/[.#$\[\]\/]/g,"_");
 const aznyRoomRef=()=>AZNY_DB?AZNY_DB.ref("aznyRooms/"+aznyRoomKey()):null;
-async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();try{AZNY_DB.setPersistenceEnabled(true)}catch(_){}if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Auth anónima indisponível; a tentar ligação direta ao Realtime Database.",authError)}if(AZNY_DB){return true}}catch(e){console.warn("AZNY Firebase:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
+async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Auth anónima indisponível; a tentar ligação direta ao Realtime Database.",authError)}if(AZNY_DB){return true}}catch(e){console.warn("AZNY Firebase:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
 let aznyRealtimeBound=false;
 async function ensureAZNYRealtime(){if(AZNY_DB){if(!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}return true}const ok=await initAZNYRealtime();if(ok&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}return ok}
 function aznySessionRef(){return AZNY_DB&&classSessionId?aznyRoomRef().child("sessions").child(classSessionId):null}
@@ -263,8 +263,82 @@ function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(r
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishBoardState,420)}}
 function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage,pages:pageStates}));document.getElementById("storageState").textContent="● Guardado"}catch(e){toast("Limite do Local Storage atingido")}}
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
-function publishLiveBoardState(){if(isStudent||remoteBoardApplying||!AZNY_DB)return;clearTimeout(liveBoardTimer);liveBoardTimer=setTimeout(()=>{if(remoteBoardApplying||!AZNY_DB)return;pageStates[currentPage-1]=snapshot();const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates}).catch(e=>console.warn("AZNY live board:",e))},90)}
-function setupBoardRealtime(){if(!AZNY_DB)return;const ref=aznyRoomRef().child("board");ref.on("value",snap=>{const d=snap.val();if(!d||remoteBoardApplying)return;/* Nunca reconstruir o DOM enquanto o professor está a editar texto, desenhar ou mover um objeto. */const activeText=document.activeElement?.closest?.(".textobj");if(localBoardEditing||(activeText&&board.contains(activeText)))return;remoteBoardApplying=true;try{if(Array.isArray(d.pages)){pageStates=d.pages.concat(Array(5).fill(null)).slice(0,5);currentPage=Math.max(1,Math.min(5,+d.currentPage||1));restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:d.title||"Nova aula"});updatePageLabel();try{localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage,pages:pageStates}))}catch(_){}}else if(d.title){document.getElementById("boardTitle").value=d.title}}finally{remoteBoardApplying=false}});if(!isStudent){ref.child("currentPage").set(currentPage);ref.child("title").set(document.getElementById("boardTitle").value||"Nova aula");setTimeout(publishBoardState,100)}}
+function sendBoardSnapshotToChannel(ch){
+ if(!ch||ch.readyState!=="open")return false;
+ if(ch.bufferedAmount>800000)return false;
+ try{
+  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,pages:pageStates};
+  const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=24000,total=Math.ceil(raw.length/size);
+  for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
+  return true;
+ }catch(e){console.warn("AZNY board channel:",e);return false}
+}
+function sendBoardSnapshotToPeer(pc){
+ const ch=pc?pc._aznyBoardChannel:null;
+ if(ch?.readyState==="open")sendBoardSnapshotToChannel(ch);
+}
+function sendBoardSnapshotToAllPeers(){
+ Object.values(window.aznyTeacherPeers||{}).forEach(sendBoardSnapshotToPeer);
+}
+function applyRemoteBoardState(d){
+ if(!d||remoteBoardApplying)return;
+ remoteBoardApplying=true;
+ try{
+  if(Array.isArray(d.pages)){
+   pageStates=d.pages.concat(Array(5).fill(null)).slice(0,5);
+   currentPage=Math.max(1,Math.min(5,+d.currentPage||1));
+   restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:d.title||"Nova aula"});
+   updatePageLabel();
+  }else if(d.title){
+   document.getElementById("boardTitle").value=d.title;
+  }
+ }finally{remoteBoardApplying=false}
+}
+function handleBoardChannelMessage(raw){
+ try{
+  const m=JSON.parse(raw);
+  if(m.type==="board-state"){applyRemoteBoardState(m);return}
+  if(m.type==="board-chunk"){
+   let entry=studentBoardChunks.get(m.id);
+   if(!entry){entry={total:m.total,parts:[]};studentBoardChunks.set(m.id,entry)}
+   entry.parts[m.index]=m.data;
+   if(entry.parts.filter(Boolean).length===entry.total){
+    const full=entry.parts.join("");
+    studentBoardChunks.delete(m.id);
+    const payload=JSON.parse(full);
+    applyRemoteBoardState(payload);
+   }
+  }
+ }catch(e){console.warn("AZNY board packet:",e)}
+}
+function publishLiveBoardState(){
+ if(isStudent||remoteBoardApplying||!AZNY_DB)return;
+ clearTimeout(liveBoardTimer);
+ liveBoardTimer=setTimeout(()=>{
+  if(remoteBoardApplying||!AZNY_DB)return;
+  pageStates[currentPage-1]=snapshot();
+  sendBoardSnapshotToAllPeers();
+  const ref=aznyRoomRef().child("board");
+  ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP})
+    .catch(e=>console.warn("AZNY live board:",e));
+ },70)
+}
+function setupBoardRealtime(){
+ if(!AZNY_DB)return;
+ const ref=aznyRoomRef().child("board");
+ ref.on("value",snap=>{
+  const d=snap.val();
+  if(!d||remoteBoardApplying)return;
+  const activeText=document.activeElement?.closest?.(".textobj");
+  if(localBoardEditing||(activeText&&board.contains(activeText)))return;
+  applyRemoteBoardState(d);
+ });
+ if(!isStudent){
+  ref.child("currentPage").set(currentPage);
+  ref.child("title").set(document.getElementById("boardTitle").value||"Nova aula");
+  setTimeout(publishBoardState,100);
+ }
+}
 function restore(s){board.querySelectorAll(".object").forEach(e=>e.remove());selected=null;strokes=s?.strokes||[];let maxId=0;(s?.objects||[]).forEach(o=>{createFromData(o);const m=String(o.id||"").match(/^o(\d+)$/);if(m)maxId=Math.max(maxId,+m[1])});objectId=Math.max(objectId,maxId);document.getElementById("boardTitle").value=s?.title||"Nova aula";redraw();updateHint()}
 function switchPage(n){n=Math.max(1,Math.min(5,n));if(n===currentPage)return;pageStates[currentPage-1]=snapshot();currentPage=n;undoStack=[];redoStack=[];restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:document.getElementById("boardTitle").value});updatePageLabel();scheduleSave();toast("Página "+currentPage+" selecionada")}
 function updatePageLabel(){document.getElementById("pageLabel").textContent="Página "+currentPage+"/5";document.querySelectorAll("#pageChoices [data-page]").forEach(b=>b.classList.toggle("active",+b.dataset.page===currentPage))}
@@ -692,17 +766,161 @@ async function startRecording(){if(screenRecorder?.state==="recording")return;if
 function stopRecording(){if(screenRecorder?.state==="recording")screenRecorder.stop()}
 function saveRecording(){const stream=screenRecorder?.stream;if(stream){stream._aznyScreenStream?.getTracks().forEach(t=>t.stop());stream.getTracks().forEach(t=>t.stop());stream._aznyAudioContext?.close().catch(()=>{})}const blob=new Blob(recordedChunks,{type:"video/webm"});const url=URL.createObjectURL(blob);const box=document.getElementById("recordDownload");if(box){box.style.display="block";box.innerHTML='<a download="aula-quadro-azny-'+new Date().toISOString().slice(0,10)+'.webm" href="'+url+'">⬇ Baixar gravação da aula</a>'}const btn=document.getElementById("recordClassBtn");if(btn){btn.textContent="⏺ Gravar aula";btn.classList.remove("recording")}screenRecorder=null;recordedChunks=[];toast("Gravação guardada com a voz do professor. Pode fazer o download.")}
 function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]))}
-function addStudentVideoCard(id,name,stream,track){const wrap=document.getElementById("students");if(!wrap)return;document.getElementById("noStudents")?.remove();let card=document.getElementById("student-"+id);if(!card){card=document.createElement("div");card.className="student";card.id="student-"+id;card.innerHTML='<video autoplay playsinline></video><div class="label"></div>';card._aznyRemoteStream=new MediaStream();wrap.appendChild(card)}const video=card.querySelector("video");const inbound=card._aznyRemoteStream||(card._aznyRemoteStream=new MediaStream());if(stream&&stream!==inbound){stream.getTracks().forEach(t=>{if(!inbound.getTracks().some(x=>x.id===t.id))inbound.addTrack(t)})}if(track&&!inbound.getTracks().some(t=>t.id===track.id))inbound.addTrack(track);video.srcObject=inbound;video.autoplay=true;video.playsInline=true;video.muted=false;video.play?.().catch(()=>{});card.querySelector(".label").textContent=name||"Aluno"}
+function addStudentVideoCard(id,name,stream,track){
+ const wrap=document.getElementById("students");if(!wrap)return;
+ document.getElementById("noStudents")?.remove();
+ let card=document.getElementById("student-"+id);
+ if(!card){
+  card=document.createElement("div");card.className="student";card.id="student-"+id;
+  card.innerHTML='<video autoplay playsinline></video><div class="label"></div>';
+  card._aznyRemoteStream=new MediaStream();wrap.appendChild(card);
+ }
+ const video=card.querySelector("video"),inbound=card._aznyRemoteStream||(card._aznyRemoteStream=new MediaStream());
+ if(stream&&stream!==inbound)stream.getTracks().forEach(t=>{if(!inbound.getTracks().some(x=>x.id===t.id))inbound.addTrack(t)});
+ if(track&&!inbound.getTracks().some(t=>t.id===track.id))inbound.addTrack(track);
+ video.srcObject=inbound;video.autoplay=true;video.playsInline=true;video.muted=false;video.volume=1;
+ const play=()=>video.play?.().catch(()=>{});
+ track&&(track.onunmute=play);
+ play();
+ document.addEventListener("pointerdown",play,{once:true});
+ card.querySelector(".label").textContent=name||"Aluno";
+}
 function removeStudentVideoCard(id){document.getElementById("student-"+id)?.remove();if(!document.querySelector("#students .student"))document.getElementById("students").innerHTML='<div class="no-students" id="noStudents">Nenhum aluno entrou na aula.</div>'}
 function renderJoinRequest(name,requestId){const wrap=document.getElementById("cameraJoinRequests");if(!wrap)return;const id="jr-"+requestId;if(document.getElementById(id))return;const el=document.createElement("div");el.dataset.requestId=requestId;el.className="join-request";el.id=id;el.innerHTML='<div>Pedido para entrar</div><div class="jr-name">'+escapeHtml(name)+'</div><div class="jr-actions"><button data-accept>✓ Aceitar</button><button data-reject>✕ Rejeitar</button></div>';el.querySelector("[data-accept]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"approved",approvedAt:firebase.database.ServerValue.TIMESTAMP,teacherUid:aznyUid||""});roomChannel?.postMessage({type:"join-response",name,approved:true});el.remove();toast(name+" foi aceite")}catch(e){toast("Não foi possível aceitar o aluno.")}};el.querySelector("[data-reject]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"rejected",rejectedAt:firebase.database.ServerValue.TIMESTAMP,teacherUid:aznyUid||""});roomChannel?.postMessage({type:"join-response",name,approved:false});el.remove();toast(name+" foi rejeitado")}catch(e){toast("Não foi possível rejeitar o aluno.")}};wrap.appendChild(el)}
-async function startStudentWebRTC(){if(!studentApproved||!studentRequestId)return;try{if(!navigator.mediaDevices?.getUserMedia){toast("A câmera e o microfone exigem HTTPS ou localhost.");return}if(studentPeer)studentPeer.close();studentRemoteDescriptionReady=false;studentPendingTeacherCandidates=[];toast("A ligar câmera e microfone do aluno...");studentLocalStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});studentCameraOn=true;studentMicOn=true;const scb=document.getElementById("studentCameraBtn"),smb=document.getElementById("studentMicBtn");if(scb)scb.textContent="📷 Desligar câmera";if(smb)smb.textContent="🎙 Desligar microfone";studentPeer=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]});studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));studentPeer.ontrack=e=>{const v=document.getElementById("studentTeacherVideo");if(v){if(!v.srcObject)v.srcObject=new MediaStream();const incoming=v.srcObject;if(!incoming.getTracks().some(t=>t.id===e.track.id))incoming.addTrack(e.track);v.muted=false;v.autoplay=true;v.playsInline=true;e.track.onunmute=()=>v.play?.().catch(()=>{});v.play?.().catch(()=>{})}};const ref=signalRef(studentRequestId);studentPeer.onicecandidate=e=>{if(e.candidate)ref.child("studentCandidates").push(e.candidate.toJSON())};const offer=await studentPeer.createOffer();await studentPeer.setLocalDescription(offer);await ref.update({name:studentName,offer:{type:offer.type,sdp:offer.sdp},studentOnline:true,updatedAt:firebase.database.ServerValue.TIMESTAMP});ref.child("answer").on("value",async snap=>{const a=snap.val();if(!a||!studentPeer||studentPeer.signalingState==="closed")return;try{if(studentPeer.signalingState!=="stable"){await studentPeer.setRemoteDescription(new RTCSessionDescription(a));studentRemoteDescriptionReady=true;const queued=studentPendingTeacherCandidates.splice(0);for(const c of queued){try{await studentPeer.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}}}catch(e){console.warn("student answer:",e)}});ref.child("teacherCandidates").on("child_added",async snap=>{const c=snap.val();if(!c||!studentPeer)return;if(!studentRemoteDescriptionReady){studentPendingTeacherCandidates.push(c);return}try{await studentPeer.addIceCandidate(new RTCIceCandidate(c))}catch(_){}});toast("Aluno ligado em tempo real: câmera e áudio ativos.")}catch(e){console.error(e);toast("Não foi possível ligar câmera/microfone do aluno: "+(e.name||"erro"))}}
+async function startStudentWebRTC(){
+ if(!studentApproved||!studentRequestId)return;
+ try{
+  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera e o microfone exigem HTTPS ou localhost.");return}
+  if(studentPeer)studentPeer.close();
+  studentRemoteDescriptionReady=false;studentPendingTeacherCandidates=[];studentBoardChunks.clear();
+  toast("A ligar câmera e microfone do aluno...");
+  studentLocalStream=await navigator.mediaDevices.getUserMedia({
+   video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},
+   audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
+  });
+  studentCameraOn=true;studentMicOn=true;
+  const scb=document.getElementById("studentCameraBtn"),smb=document.getElementById("studentMicBtn");
+  if(scb)scb.textContent="📷 Desligar câmera";if(smb)smb.textContent="🎙 Desligar microfone";
+  studentPeer=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
+  studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));
+  studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
+  studentBoardChannel.bufferedAmountLowThreshold=262144;
+  studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}))}catch(_){}};
+  studentBoardChannel.onmessage=e=>handleBoardChannelMessage(e.data);
+  studentBoardChannel.onclose=()=>{studentBoardChannel=null};
+  studentPeer.ontrack=e=>{
+   const v=document.getElementById("studentTeacherVideo");
+   if(!v)return;
+   if(!v.srcObject)v.srcObject=new MediaStream();
+   const incoming=v.srcObject,stream=e.streams?.[0];
+   if(stream)stream.getTracks().forEach(t=>{if(!incoming.getTracks().some(x=>x.id===t.id))incoming.addTrack(t)});
+   if(!incoming.getTracks().some(t=>t.id===e.track.id))incoming.addTrack(e.track);
+   v.muted=false;v.autoplay=true;v.playsInline=true;v.volume=1;
+   const play=()=>v.play?.().catch(()=>{});
+   e.track.onunmute=play;play();document.addEventListener("pointerdown",play,{once:true});
+  };
+  studentPeer.onconnectionstatechange=()=>{
+   if(studentPeer.connectionState==="connected")toast("Conexão em tempo real: vídeo, áudio e quadro ligados.");
+   if(studentPeer.connectionState==="failed"){try{studentPeer.restartIce()}catch(_){}}
+  };
+  const ref=signalRef(studentRequestId);
+  studentPeer.onicecandidate=e=>{if(e.candidate)ref.child("studentCandidates").push(e.candidate.toJSON())};
+  const offer=await studentPeer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
+  await studentPeer.setLocalDescription(offer);
+  await ref.update({name:studentName,offer:{type:offer.type,sdp:offer.sdp},studentOnline:true,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  ref.child("answer").on("value",async snap=>{
+   const a=snap.val();if(!a||!studentPeer||studentPeer.signalingState==="closed")return;
+   try{
+    if(studentPeer.signalingState==="have-local-offer"){
+     await studentPeer.setRemoteDescription(new RTCSessionDescription(a));
+     studentRemoteDescriptionReady=true;
+     const queued=studentPendingTeacherCandidates.splice(0);
+     for(const c of queued){try{await studentPeer.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}
+    }
+   }catch(e){console.warn("student answer:",e)}
+  });
+  ref.child("teacherCandidates").on("child_added",async snap=>{
+   const c=snap.val();if(!c||!studentPeer)return;
+   if(!studentRemoteDescriptionReady){studentPendingTeacherCandidates.push(c);return}
+   try{await studentPeer.addIceCandidate(new RTCIceCandidate(c))}catch(_){}
+  });
+  toast("Aluno ligado: câmera e áudio preparados para transmissão.");
+ }catch(e){console.error(e);toast("Não foi possível ligar câmera/microfone do aluno: "+(e.name||"erro"))}
+}
 function toggleStudentMic(){const t=studentLocalStream?.getAudioTracks?.()[0];if(!t)return toast("O microfone ainda não está ligado.");t.enabled=!t.enabled;studentMicOn=t.enabled;const b=document.getElementById("studentMicBtn");if(b)b.textContent=t.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";toast(t.enabled?"Microfone ligado":"Microfone desligado")}
 function toggleStudentCamera(){const t=studentLocalStream?.getVideoTracks?.()[0];if(!t)return toast("A câmera ainda não está ligada.");t.enabled=!t.enabled;studentCameraOn=t.enabled;const b=document.getElementById("studentCameraBtn");if(b)b.textContent=t.enabled?"📷 Desligar câmera":"📷 Ligar câmera";toast(t.enabled?"Câmera ligada":"Câmera desligada")}
 function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
-function syncTeacherMediaToPeer(pc){if(!pc||pc.connectionState==="closed")return;const senders=pc.getSenders();const cam=teacherStream?.getVideoTracks?.()[0]||null;const mic=teacherAudioStream?.getAudioTracks?.()[0]||null;const vt=pc.getTransceivers().find(t=>t.receiver.track?.kind==="video");const at=pc.getTransceivers().find(t=>t.receiver.track?.kind==="audio");try{if(vt)vt.sender.replaceTrack(cam)}catch(_){}try{if(at)at.sender.replaceTrack(mic)}catch(_){} }
+function syncTeacherMediaToPeer(pc){
+ if(!pc||pc.connectionState==="closed")return;
+ const cam=teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
+ const vt=pc.getTransceivers().find(t=>t.receiver.track?.kind==="video"),at=pc.getTransceivers().find(t=>t.receiver.track?.kind==="audio");
+ const combined=new MediaStream();if(cam)combined.addTrack(cam);if(mic)combined.addTrack(mic);
+ const bind=(tr,track)=>{
+  if(!tr?.sender)return;
+  tr.sender.replaceTrack(track).catch(e=>console.warn("AZNY replaceTrack:",e));
+  if(track&&typeof tr.sender.setStreams==="function"){try{tr.sender.setStreams(combined)}catch(_){}}
+ };
+ bind(vt,cam);bind(at,mic);
+}
 function syncTeacherMediaToPeers(){Object.values(window.aznyTeacherPeers||{}).forEach(syncTeacherMediaToPeer)}
 function setupRealtimeRoom(){if(!AZNY_DB)return;setupBoardRealtime();if(classSessionId)bindClassSessionRealtime()}
-async function connectStudentPeer(id,d){if(window.aznyTeacherPeers?.[id])return;window.aznyTeacherPeers=window.aznyTeacherPeers||{};const ref=signalRef(id);const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]});let remoteDescriptionReady=false,pendingStudentCandidates=[];window.aznyTeacherPeers[id]=pc;pc.addTransceiver("video",{direction:"sendrecv"});pc.addTransceiver("audio",{direction:"sendrecv"});pc.ontrack=e=>{const stream=e.streams?.[0]||null;addStudentVideoCard(id,d.name,stream,e.track)};pc.onicecandidate=e=>{if(e.candidate)ref.child("teacherCandidates").push(e.candidate.toJSON())};pc.onconnectionstatechange=()=>{if(["failed","disconnected","closed"].includes(pc.connectionState)){removeStudentVideoCard(id);pc.close();delete window.aznyTeacherPeers[id]}};syncTeacherMediaToPeer(pc);ref.child("studentCandidates").on("child_added",async snap=>{const c=snap.val();if(!c)return;if(!remoteDescriptionReady){pendingStudentCandidates.push(c);return}try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}});try{await pc.setRemoteDescription(new RTCSessionDescription(d.offer));remoteDescriptionReady=true;const queued=pendingStudentCandidates.splice(0);for(const c of queued){try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}syncTeacherMediaToPeer(pc);const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await ref.update({answer:{type:answer.type,sdp:answer.sdp},teacherOnline:true,updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(e){console.error(e);pc.close();delete window.aznyTeacherPeers[id]}}
+async function connectStudentPeer(id,d){
+ if(window.aznyTeacherPeers?.[id])return;
+ window.aznyTeacherPeers=window.aznyTeacherPeers||{};
+ const ref=signalRef(id);
+ const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
+ let remoteDescriptionReady=false,pendingStudentCandidates=[];
+ window.aznyTeacherPeers[id]=pc;
+ pc.addTransceiver("video",{direction:"sendrecv"});
+ pc.addTransceiver("audio",{direction:"sendrecv"});
+ pc.ondatachannel=e=>{
+  const ch=e.channel;
+  if(ch.label!=="azny-board")return;
+  pc._aznyBoardChannel=ch;ch.bufferedAmountLowThreshold=262144;
+  ch.onopen=()=>sendBoardSnapshotToChannel(ch);
+  ch.onmessage=ev=>{
+   try{const m=JSON.parse(ev.data);if(m.type==="board-request")sendBoardSnapshotToChannel(ch)}catch(_){}
+  };
+  ch.onclose=()=>{if(pc._aznyBoardChannel===ch)pc._aznyBoardChannel=null};
+ };
+ pc.ontrack=e=>{
+  const stream=e.streams?.[0]||null;
+  addStudentVideoCard(id,d.name,stream,e.track);
+ };
+ pc.onicecandidate=e=>{if(e.candidate)ref.child("teacherCandidates").push(e.candidate.toJSON())};
+ pc.onconnectionstatechange=()=>{
+  if(pc.connectionState==="connected")sendBoardSnapshotToPeer(pc);
+  if(pc.connectionState==="failed"||pc.connectionState==="closed"){
+   removeStudentVideoCard(id);pc.close();delete window.aznyTeacherPeers[id];
+  }
+ };
+ ref.child("studentCandidates").on("child_added",async snap=>{
+  const c=snap.val();if(!c)return;
+  if(!remoteDescriptionReady){pendingStudentCandidates.push(c);return}
+  try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}
+ });
+ try{
+  await pc.setRemoteDescription(new RTCSessionDescription(d.offer));
+  remoteDescriptionReady=true;
+  const queued=pendingStudentCandidates.splice(0);
+  for(const c of queued){try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}
+  // Callee follows the WebRTC offer/answer order: apply the offer, attach
+  // the professor's real camera/microphone tracks, then create the answer.
+  const cam=teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
+  const combined=new MediaStream();if(cam)combined.addTrack(cam);if(mic)combined.addTrack(mic);
+  const addLocal=(track)=>{
+   if(!track)return;
+   try{pc.addTrack(track,combined)}catch(e){console.warn("AZNY add teacher track:",e)}
+  };
+  addLocal(cam);addLocal(mic);
+  const answer=await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  await ref.update({answer:{type:answer.type,sdp:answer.sdp},teacherOnline:true,teacherHasCamera:!!cam,teacherHasMic:!!mic,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+ }catch(e){
+  console.error("AZNY peer:",e);
+  pc.close();delete window.aznyTeacherPeers[id];
+ }
+}
 function setupStudent(){document.body.classList.add("student-mode");document.getElementById("studentNameModal").classList.add("show");if(!classSessionId){document.getElementById("studentWaiting").textContent="Esta ligação de aula já não está ativa. Peça ao professor o link da aula atual.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=true;return}document.getElementById("studentJoinBtn").onclick=async()=>{const n=document.getElementById("studentNameInput").value.trim();if(!n){toast("Digite o seu nome.");return}studentName=n;const btn=document.getElementById("studentJoinBtn");btn.disabled=true;document.getElementById("studentWaiting").textContent="A ligar ao serviço da aula…";document.getElementById("studentWaiting").style.display="block";try{const ready=await ensureAZNYRealtime();if(!ready||!AZNY_DB){btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível ligar ao serviço. Tente novamente.";return}const sref=aznySessionRef();const sessionSnap=await sref.once("value");const sessionData=sessionSnap.val()||{};if(sessionData.status!=="active"){btn.disabled=false;document.getElementById("studentWaiting").textContent="A aula ainda não foi iniciada ou já foi encerrada.";return}const ref=sref.child("joinRequests");studentRequestId=ref.push().key;await ref.child(studentRequestId).set({name:n,status:"pending",createdAt:firebase.database.ServerValue.TIMESTAMP,studentUid:aznyUid||""});watchStudentRequest();document.getElementById("studentWaiting").textContent="Pedido enviado. Aguarde a aprovação do professor.";toast("Pedido enviado ao professor em tempo real.")}catch(e){console.error(e);btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível enviar o pedido. Tente novamente.";toast("Falha ao enviar o pedido.")}};document.getElementById("studentPointerBtn").onclick=()=>document.getElementById("pointerTool").click();document.getElementById("studentTextBtn").onclick=()=>document.querySelector('[data-tool="text"]').click();document.getElementById("studentEraseBtn").onclick=()=>document.getElementById("deleteTool").click();document.getElementById("studentRecordBtn").onclick=()=>screenRecorder?.state==="recording"?stopRecording():startRecording();document.getElementById("studentMicBtn").onclick=()=>toggleStudentMic();document.getElementById("studentCameraBtn").onclick=()=>toggleStudentCamera()}
 function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo professor");startStudentWebRTC()}else{document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended")toast("A aula foi encerrada pelo professor.")}}
 function getClassLink(){
@@ -739,7 +957,7 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
 const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}}).catch(e=>console.error(e));
 window.addEventListener("beforeunload",()=>{if(classStarted)endClass();if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentLocalStream)studentLocalStream.getTracks().forEach(t=>t.stop());if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close()});
 window.addEventListener("resize",resizeCanvas);
-load();setTimeout(()=>{setZoom(1);resizeCanvas()},80);
+if(!isStudent)load();setTimeout(()=>{setZoom(1);resizeCanvas()},80);
 })();
 </script>
 </body>
