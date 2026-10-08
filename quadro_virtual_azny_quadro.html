@@ -260,7 +260,7 @@ function serializeObject(el){
 function pushHistory(){undoStack.push(snapshot());if(undoStack.length>60)undoStack.shift();redoStack=[]}
 function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restore(undoStack.pop())}
 function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(redoStack.pop())}
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishBoardState,420)}}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!isStudent&&!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,80)}}
 function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage,pages:pageStates}));document.getElementById("storageState").textContent="● Guardado"}catch(e){toast("Limite do Local Storage atingido")}}
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
 function sendBoardSnapshotToChannel(ch){
@@ -312,15 +312,17 @@ function handleBoardChannelMessage(raw){
  }catch(e){console.warn("AZNY board packet:",e)}
 }
 function publishLiveBoardState(){
- if(isStudent||remoteBoardApplying||!AZNY_DB)return;
+ if(isStudent||remoteBoardApplying)return;
  clearTimeout(liveBoardTimer);
  liveBoardTimer=setTimeout(()=>{
-  if(remoteBoardApplying||!AZNY_DB)return;
+  if(remoteBoardApplying)return;
   pageStates[currentPage-1]=snapshot();
   sendBoardSnapshotToAllPeers();
-  const ref=aznyRoomRef().child("board");
-  ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP})
+  if(AZNY_DB){
+   const ref=aznyRoomRef().child("board");
+   ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP})
     .catch(e=>console.warn("AZNY live board:",e));
+  }
  },70)
 }
 function setupBoardRealtime(){
