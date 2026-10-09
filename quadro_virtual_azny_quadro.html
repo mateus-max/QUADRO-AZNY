@@ -258,9 +258,9 @@ function serializeObject(el){
  return{kind:"doc",...b,name:el.dataset.name||"Documento",pdf:el.dataset.pdf||"",content:el.querySelector(".docbody")?.textContent||""};
 }
 function pushHistory(){undoStack.push(snapshot());if(undoStack.length>60)undoStack.shift();redoStack=[]}
-function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restore(undoStack.pop())}
-function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(redoStack.pop())}
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!isStudent&&!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,80)}}
+function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restore(undoStack.pop());scheduleSave()}
+function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(redoStack.pop());scheduleSave()}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!isStudent&&!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,35)}}
 function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage,pages:pageStates}));document.getElementById("storageState").textContent="● Guardado"}catch(e){toast("Limite do Local Storage atingido")}}
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
 function sendBoardSnapshotToChannel(ch){
@@ -474,9 +474,9 @@ function dragStart(e,el){
  addEventListener("mousemove",move);addEventListener("mouseup",up)
 }
 function resizeStart(e){
- e.preventDefault();e.stopPropagation();const el=e.currentTarget.parentElement;selectObject(el);pushHistory();const p=localPoint(e),sw=el.offsetWidth,sh=el.offsetHeight;
- function move(ev){const q=localPoint(ev);el.style.width=Math.max(40,sw+q.x-p.x)+"px";el.style.height=Math.max(28,sh+q.y-p.y)+"px";updateAnchoredTextsFor(el);redraw()}
- function up(){removeEventListener("mousemove",move);removeEventListener("mouseup",up);scheduleSave()}
+ e.preventDefault();e.stopPropagation();const el=e.currentTarget.parentElement;selectObject(el);localBoardEditing=true;pushHistory();const p=localPoint(e),sw=el.offsetWidth,sh=el.offsetHeight;
+ function move(ev){const q=localPoint(ev);el.style.width=Math.max(40,sw+q.x-p.x)+"px";el.style.height=Math.max(28,sh+q.y-p.y)+"px";updateAnchoredTextsFor(el);redraw();publishLiveBoardState()}
+ function up(){removeEventListener("mousemove",move);removeEventListener("mouseup",up);localBoardEditing=false;scheduleSave();publishLiveBoardState()}
  addEventListener("mousemove",move);addEventListener("mouseup",up)
 }
 function addImage(file){
