@@ -541,6 +541,67 @@ body.student-mode.azny-landscape-view #board{
  body.student-mode.azny-landscape-view .canvas-wrap{left:clamp(150px,14.4vw,190px)!important;right:clamp(150px,15vw,196px)!important}
  body.student-mode.azny-landscape-view .student-live{width:clamp(150px,15vw,196px)!important}
 }
+
+/* Teacher participant gallery: row-major two-column grid, cards adapt as learners join. */
+body:not(.student-mode) .rightbar{min-height:0!important}
+body:not(.student-mode) #students.students{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ grid-auto-rows:minmax(105px,auto)!important;align-content:start!important;align-items:stretch!important;
+ gap:8px!important;padding:8px!important;max-height:none!important;min-height:0!important;
+ flex:1 1 auto!important;overflow-y:auto!important;overflow-x:hidden!important;
+}
+body:not(.student-mode) #students .student{
+ width:100%!important;height:auto!important;min-height:130px!important;aspect-ratio:4/3!important;
+ max-height:240px!important;position:relative!important;display:block!important;
+}
+body:not(.student-mode) #students .student video{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ min-height:0!important;object-fit:cover!important;
+}
+body:not(.student-mode) #students .student>.label{
+ position:absolute!important;left:5px!important;right:42px!important;bottom:5px!important;top:auto!important;
+ z-index:6!important;width:auto!important;max-width:none!important;margin:0!important;padding:5px 7px!important;
+ background:#071b33e8!important;color:#fff!important;border-radius:6px!important;
+ font-size:11px!important;text-align:left!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+body:not(.student-mode) #students .student>.azny-student-device-controls{
+ right:4px!important;bottom:4px!important;left:auto!important;top:auto!important;z-index:8!important;
+ display:flex!important;flex-direction:row!important;gap:3px!important;padding:2px!important;
+}
+body:not(.student-mode) #students .student>.azny-student-device-controls button{
+ width:27px!important;height:27px!important;min-width:27px!important;max-width:27px!important;
+ flex:0 0 27px!important;padding:2px!important;font-size:14px!important;border-radius:50%!important;
+}
+body:not(.student-mode) #students .student .azny-raised-hand{
+ top:5px!important;right:5px!important;font-size:18px!important;padding:5px 7px!important;
+}
+body:not(.student-mode) #students #noStudents{grid-column:1/-1!important;aspect-ratio:auto!important}
+/* Teacher's own camera/microphone actions become compact icon buttons like the student controls. */
+body:not(.student-mode) .camera-panel>.cam-buttons{display:flex!important;flex-direction:row!important;gap:6px!important;padding:5px 8px!important}
+body:not(.student-mode) .camera-panel>.cam-buttons button{
+ flex:1 1 0!important;min-width:0!important;min-height:34px!important;padding:5px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;gap:0!important;
+ font-size:0!important;line-height:1!important;white-space:nowrap!important;
+}
+body:not(.student-mode) #cameraBtn::before{content:"📷";font-size:18px!important}
+body:not(.student-mode) #cameraStopBtn::before{content:"⏹";font-size:16px!important}
+body:not(.student-mode) #micBtn::before{content:"🎙";font-size:18px!important}
+body:not(.student-mode) #micStopBtn::before{content:"🔇";font-size:18px!important}
+body:not(.student-mode) .camera-panel>.cam-buttons button:disabled{opacity:.45!important}
+/* Student can see their own raised-hand state immediately, over their self-preview. */
+.student-video-card.azny-self-video-card{position:relative!important}
+.azny-self-raised-hand{
+ position:absolute!important;top:8px!important;right:8px!important;z-index:20!important;
+ padding:7px 9px!important;border-radius:10px!important;background:#071b33!important;
+ color:#fff!important;font-size:22px!important;line-height:1!important;
+ box-shadow:0 2px 8px #0007!important;border:2px solid #f4c542!important;
+}
+#studentRaiseHandBtn.is-raised{background:#f4c542!important;color:#14243a!important;border-color:#ffdf70!important}
+@media(max-width:650px){
+ body:not(.student-mode) #students.students{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;padding:5px!important}
+ body:not(.student-mode) #students .student{min-height:95px!important}
+ body:not(.student-mode) .camera-panel>.cam-buttons{gap:4px!important;padding:4px!important}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -651,7 +712,7 @@ body.student-mode.azny-landscape-view #board{
 <div class="student-controls" id="studentControls">
     <button id="studentPointerBtn">🔎 Lupa</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button><button id="studentRaiseHandBtn" type="button" aria-pressed="false">✋ Levantar mão</button>
 </div>
-<div class="student-live" id="studentLive"><div class="student-video-pair"><div class="student-video-card"><video id="studentTeacherVideo" autoplay playsinline></video><span>Professor</span></div><div class="student-video-card"><video id="studentSelfVideo" autoplay muted playsinline></video><span>Você</span></div></div></div>
+<div class="student-live" id="studentLive"><div class="student-video-pair"><div class="student-video-card"><video id="studentTeacherVideo" autoplay playsinline></video><span>Professor</span></div><div class="student-video-card azny-self-video-card"><video id="studentSelfVideo" autoplay muted playsinline></video><span>Você</span><b id="studentSelfRaisedHand" class="azny-self-raised-hand" aria-live="polite" hidden>✋</b></div></div></div>
 <div class="modal student-name-modal" id="studentNameModal"><div class="card">
 <h3>Entrar na aula</h3><p>Identifique-se com o seu nome. O professor terá de aprovar a sua entrada.</p>
 <input id="studentNameInput" placeholder="Digite o seu nome" autocomplete="name"><div class="waiting" id="studentWaiting" style="display:none">Pedido enviado. Aguarde a aprovação do professor.</div>
@@ -1551,7 +1612,7 @@ async function toggleStudentOrientation(){
 function setupStudent(){document.body.classList.add("student-mode","azny-landscape-view");document.body.classList.remove("student-approved");const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}document.getElementById("studentNameModal").classList.add("show");const bindStudentButton=(id,fn)=>{const b=document.getElementById(id);if(!b||b.dataset.aznyBound==="1")return;b.dataset.aznyBound="1";b.disabled=false;b.style.pointerEvents="auto";b.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();try{fn()}catch(err){console.error("AZNY student tool "+id,err);toast("Não foi possível ativar esta ferramenta.")}},{passive:false})};bindStudentButton("studentPointerBtn",()=>{const active=!pointerMode;if(active){setTool("select");setPointerMode(true);stage.style.cursor="none"}else{setPointerMode(false);stage.style.cursor="default"}});bindStudentButton("studentTextBtn",()=>setTool(tool==="text"?"select":"text"));bindStudentButton("studentEraseBtn",()=>setTool(tool==="eraser"?"select":"eraser"));bindStudentButton("studentRecordBtn",()=>screenRecorder?.state==="recording"?stopRecording():startRecording());bindStudentButton("studentMicBtn",()=>toggleStudentMic());bindStudentButton("studentCameraBtn",()=>toggleStudentCamera());bindStudentButton("studentRaiseHandBtn",()=>{const b=document.getElementById("studentRaiseHandBtn");setStudentRaisedHand(!(b?.classList.contains("is-raised")))});if(!classSessionId){document.getElementById("studentWaiting").textContent="Esta ligação de aula já não está ativa. Peça ao professor o link da aula atual.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=true;return}document.getElementById("studentJoinBtn").onclick=async()=>{const n=document.getElementById("studentNameInput").value.trim();if(!n){toast("Digite o seu nome.");return}studentName=n;/* Use the join tap to request fullscreen and lock landscape automatically. */try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen()}catch(_){}try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock("landscape")}catch(e){console.info("Landscape lock unavailable in this browser; keeping AZNY landscape layout:",e)}document.body.classList.add("azny-landscape-view");const btn=document.getElementById("studentJoinBtn");btn.disabled=true;document.getElementById("studentWaiting").textContent="A ligar ao serviço da aula…";document.getElementById("studentWaiting").style.display="block";try{const ready=await ensureAZNYRealtime();if(!ready||!AZNY_DB){btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível ligar ao serviço. Tente novamente.";return}const sref=aznySessionRef();const sessionSnap=await sref.once("value");const sessionData=sessionSnap.val()||{};if(sessionData.status!=="active"){btn.disabled=false;document.getElementById("studentWaiting").textContent="A aula ainda não foi iniciada ou já foi encerrada.";return}const ref=sref.child("joinRequests");if(aznyUid){const previous=await ref.orderByChild("studentUid").equalTo(aznyUid).once("value");let approved=null;previous.forEach(item=>{const d=item.val()||{};if(d.status==="approved")approved={id:item.key,data:d}});if(approved){studentRequestId=approved.id;studentApproved=true;studentName=approved.data.name||n;document.getElementById("studentNameInput").value=studentName;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";watchStudentRequest();document.getElementById("studentWaiting").style.display="none";toast("A voltar à aula ativa sem novo pedido");await startStudentWebRTC();return}}studentRequestId=ref.push().key;await ref.child(studentRequestId).set({name:n,status:"pending",createdAt:firebase.database.ServerValue.TIMESTAMP,studentUid:aznyUid||""});watchStudentRequest();document.getElementById("studentWaiting").textContent="Pedido enviado. Aguarde a aprovação do professor.";toast("Pedido enviado ao professor em tempo real.")}catch(e){console.error(e);btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível enviar o pedido. Tente novamente.";toast("Falha ao enviar o pedido.")}};document.getElementById("studentRotateBtn").onclick=toggleStudentOrientation;}
 function setStudentRaisedHand(raised){
  const value=!!raised,btn=document.getElementById("studentRaiseHandBtn");
- if(btn){btn.classList.toggle("is-raised",value);btn.setAttribute("aria-pressed",String(value));btn.textContent=value?"✋ Baixar mão":"✋ Levantar mão"}
+ if(btn){btn.classList.toggle("is-raised",value);btn.setAttribute("aria-pressed",String(value));btn.textContent=value?"✋ Baixar mão":"✋ Levantar mão"}const selfBadge=document.getElementById("studentSelfRaisedHand");if(selfBadge){selfBadge.hidden=!value;selfBadge.textContent=value?"✋":" ";selfBadge.title=value?"Tens a mão levantada":""}
  if(!isStudent||!studentRequestId||!AZNY_DB)return;
  const ref=studentRequestRef(studentRequestId);if(!ref)return;
  ref.child("raisedHand").set({raised:value,name:studentName,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.warn("AZNY raised hand:",e);toast("Não foi possível atualizar a mão levantada.")});
