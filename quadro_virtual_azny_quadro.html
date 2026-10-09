@@ -874,8 +874,9 @@ async function connectStudentPeer(id,d){
  const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
  let remoteDescriptionReady=false,pendingStudentCandidates=[];
  window.aznyTeacherPeers[id]=pc;
- pc.addTransceiver("video",{direction:"sendrecv"});
- pc.addTransceiver("audio",{direction:"sendrecv"});
+ // The student offer already contains audio/video transceivers because the
+ // student adds their camera and microphone before creating the offer.
+ // Reuse those negotiated transceivers instead of creating duplicate m-lines.
  pc.ondatachannel=e=>{
   const ch=e.channel;
   if(ch.label!=="azny-board")return;
@@ -907,15 +908,18 @@ async function connectStudentPeer(id,d){
   remoteDescriptionReady=true;
   const queued=pendingStudentCandidates.splice(0);
   for(const c of queued){try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}
-  // Callee follows the WebRTC offer/answer order: apply the offer, attach
-  // the professor's real camera/microphone tracks, then create the answer.
+  // Reuse the audio/video m-lines offered by the student. Adding new tracks
+  // here would create duplicate m-lines and can leave the professor invisible
+  // to the student even when the reverse media direction works.
   const cam=teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
+  const transceivers=pc.getTransceivers();
+  const vt=transceivers.find(t=>t.receiver.track?.kind==="video"||t.sender.track?.kind==="video");
+  const at=transceivers.find(t=>t.receiver.track?.kind==="audio"||t.sender.track?.kind==="audio");
+  if(vt){vt.direction="sendrecv";await vt.sender.replaceTrack(cam)}
+  if(at){at.direction="sendrecv";await at.sender.replaceTrack(mic)}
   const combined=new MediaStream();if(cam)combined.addTrack(cam);if(mic)combined.addTrack(mic);
-  const addLocal=(track)=>{
-   if(!track)return;
-   try{pc.addTrack(track,combined)}catch(e){console.warn("AZNY add teacher track:",e)}
-  };
-  addLocal(cam);addLocal(mic);
+  if(typeof vt?.sender?.setStreams==="function"&&cam){try{vt.sender.setStreams(combined)}catch(_){}}
+  if(typeof at?.sender?.setStreams==="function"&&mic){try{at.sender.setStreams(combined)}catch(_){}}
   const answer=await pc.createAnswer();
   await pc.setLocalDescription(answer);
   await ref.update({answer:{type:answer.type,sdp:answer.sdp},teacherOnline:true,teacherHasCamera:!!cam,teacherHasMic:!!mic,updatedAt:firebase.database.ServerValue.TIMESTAMP});
