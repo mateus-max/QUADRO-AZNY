@@ -334,6 +334,32 @@ body.student-mode.azny-landscape-view .student-video-card span{font-size:9px!imp
  body.student-mode.azny-landscape-view .student-controls{width:48px!important}
  body.student-mode.azny-landscape-view .student-live{width:96px!important}
 }
+
+/* FINAL LANDSCAPE OVERRIDES: intentionally last to override older responsive rules. */
+@media (orientation:landscape), (max-width:1000px) {
+ body.student-mode.azny-landscape-view,
+ body.student-mode.azny-landscape-view .app{width:100vw!important;height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+ body.student-mode.azny-landscape-view .topbar,
+ body.student-mode.azny-landscape-view .toolbar{display:none!important}
+ body.student-mode.azny-landscape-view .workspace{position:static!important;display:block!important;width:100vw!important;height:100dvh!important;overflow:hidden!important}
+ body.student-mode.azny-landscape-view .main{display:block!important;width:100%!important;height:100%!important;overflow:visible!important}
+ body.student-mode.azny-landscape-view #studentControls.student-controls{display:flex!important;visibility:visible!important;opacity:1!important;position:fixed!important;z-index:999!important;top:0!important;bottom:0!important;left:0!important;right:auto!important;width:118px!important;height:100dvh!important;max-height:100dvh!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:7px!important;padding:10px 8px!important;overflow-x:hidden!important;overflow-y:auto!important;background:#071b33!important;border-right:1px solid #34516f!important}
+ body.student-mode.azny-landscape-view #studentControls.student-controls button{display:flex!important;visibility:visible!important;opacity:1!important;position:relative!important;flex:0 0 auto!important;width:100%!important;min-width:0!important;min-height:46px!important;align-items:center!important;justify-content:center!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:12px!important;line-height:1.15!important;padding:6px 4px!important;border:1px solid #365779!important;border-radius:9px!important;background:#102b49!important;color:#fff!important}
+ body.student-mode.azny-landscape-view .canvas-wrap{position:fixed!important;z-index:41!important;top:0!important;bottom:0!important;left:126px!important;right:clamp(250px,20vw,315px)!important;width:auto!important;height:100dvh!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}
+ body.student-mode.azny-landscape-view #stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important}
+ body.student-mode.azny-landscape-view #board{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-height:none!important}
+ body.student-mode.azny-landscape-view #studentLive.student-live{display:block!important;visibility:visible!important;position:fixed!important;z-index:998!important;top:0!important;right:0!important;bottom:0!important;left:auto!important;width:clamp(240px,19vw,305px)!important;height:100dvh!important;max-height:100dvh!important;margin:0!important;padding:0!important;border-radius:0!important;overflow:hidden!important;background:#071b33!important}
+ body.student-mode.azny-landscape-view .student-video-pair{height:100%!important;min-height:0!important;display:flex!important;flex-direction:column!important;gap:8px!important;padding:8px!important}
+ body.student-mode.azny-landscape-view .student-video-card{display:flex!important;flex:1 1 0!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+ body.student-mode.azny-landscape-view .student-video-card video{display:block!important;flex:1 1 auto!important;width:100%!important;height:calc(100% - 30px)!important;max-height:none!important;min-height:0!important;aspect-ratio:auto!important;object-fit:contain!important}
+ body.student-mode.azny-landscape-view .student-video-card span{position:absolute!important;left:8px!important;bottom:6px!important;font-size:12px!important}
+}
+@media (max-width:700px) and (orientation:landscape){
+ body.student-mode.azny-landscape-view #studentControls.student-controls{width:90px!important;padding:6px 5px!important}
+ body.student-mode.azny-landscape-view #studentControls.student-controls button{min-height:40px!important;font-size:10px!important}
+ body.student-mode.azny-landscape-view .canvas-wrap{left:96px!important;right:155px!important}
+ body.student-mode.azny-landscape-view #studentLive.student-live{width:148px!important}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
