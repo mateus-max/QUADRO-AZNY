@@ -514,6 +514,17 @@ body.student-mode.azny-landscape-view .canvas-wrap{
  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
  overflow:visible!important;box-sizing:border-box!important;background:#8b5a2b!important;
 }
+/* Final edge-to-edge contact: align the brown frame outer edge with both side rails. */
+body.student-mode.azny-landscape-view .canvas-wrap{left:clamp(200px,14.4vw,224px)!important;right:clamp(200px,15vw,236px)!important}
+body.student-mode.azny-landscape-view #studentControls{width:clamp(200px,14.4vw,224px)!important;max-width:clamp(200px,14.4vw,224px)!important}
+body.student-mode.azny-landscape-view .student-live{width:clamp(200px,15vw,236px)!important}
+body.student-mode.azny-landscape-view #board{left:0!important;top:0!important;width:100%!important;height:100%!important;border:8px solid #8b5a2b!important;outline:0!important;box-sizing:border-box!important}
+/* On smaller screens use the same exact shared edges, never an intermediate gap. */
+@media(max-width:900px){
+ body.student-mode.azny-landscape-view .canvas-wrap{left:clamp(150px,14.4vw,190px)!important;right:clamp(150px,15vw,196px)!important}
+ body.student-mode.azny-landscape-view #studentControls{width:clamp(150px,14.4vw,190px)!important;max-width:clamp(150px,14.4vw,190px)!important}
+ body.student-mode.azny-landscape-view .student-live{width:clamp(150px,15vw,196px)!important}
+}
 body.student-mode.azny-landscape-view #stage{
  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
  min-width:0!important;min-height:0!important;overflow:visible!important;
