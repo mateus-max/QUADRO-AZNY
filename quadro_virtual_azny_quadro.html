@@ -433,7 +433,7 @@ body.student-mode #studentControls button{position:relative!important;z-index:10
 .student-mode .student-controls button{pointer-events:auto!important;touch-action:manipulation!important}
 
 /* Final landscape layout: the board frame touches both side rails without gaps. */
-body.student-mode.azny-landscape-view .canvas-wrap{left:var(--azny-left-rail,16.55vw)!important;right:var(--azny-right-rail,17.58vw)!important;margin:0!important;padding:0!important}
+body.student-mode.azny-landscape-view .canvas-wrap{left:var(--azny-left-rail,16.55vw)!important;right:var(--azny-right-rail,17.58vw)!important;margin:0!important;padding:0!important;box-sizing:border-box!important;border-left:3px solid #8b5a2b!important;border-right:3px solid #8b5a2b!important}
 @media(max-width:900px){body.student-mode.azny-landscape-view .canvas-wrap{left:76px!important;right:100px!important}}
 /* Teacher camera cards: place each student's name in a separate row below the video. */
 .student{height:auto!important;min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
@@ -795,7 +795,7 @@ function setPointerMode(on){
 }
 let lastPointerPacketAt=0;
 function updateLivePointer(e){
- if(!board.contains(e.target))return;
+ if(!board.contains(e.target)&&!pointerMode)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
  const p=document.getElementById("livePointer");
  if(pointerMode){p.style.transform=`translate(${x-5}px,${y-5}px)`;p.classList.add("active")}
@@ -823,6 +823,21 @@ function setTool(t){
 
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
 document.getElementById("pointerTool").onclick=()=>setPointerMode(!pointerMode);
+/* Touch-drag pointer for student: capture pointer until finger is released. */
+let aznyPointerDragId=null,lastStudentPointerSend=0;
+function moveStudentPointer(e){
+ if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
+ const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
+ const p=document.getElementById("livePointer");p.style.transform="translate("+(x-5)+"px,"+(y-5)+"px)";p.classList.add("active");
+ const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
+ const packet=JSON.stringify({type:"live-pointer",x:x-5,y:y-5,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
+ const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
+}
+stage.addEventListener("pointerdown",function(e){if(!isStudent||!pointerMode||!board.contains(e.target))return;aznyPointerDragId=e.pointerId;try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();moveStudentPointer(e)},{passive:false});
+stage.addEventListener("pointermove",moveStudentPointer,{passive:false});
+function endStudentPointerDrag(e){if(aznyPointerDragId===null||(e.pointerId!==undefined&&e.pointerId!==aznyPointerDragId))return;aznyPointerDragId=null;try{if(e.pointerId!==undefined&&stage.hasPointerCapture(e.pointerId))stage.releasePointerCapture(e.pointerId)}catch(_){}}
+stage.addEventListener("pointerup",endStudentPointerDrag);
+stage.addEventListener("pointercancel",endStudentPointerDrag);
 stage.addEventListener("pointermove",updateLivePointer,{passive:true});
 stage.addEventListener("pointerenter",e=>{if(pointerMode)document.getElementById("livePointer").classList.add("active")});
 stage.addEventListener("pointerleave",()=>document.getElementById("livePointer").classList.remove("active"));
