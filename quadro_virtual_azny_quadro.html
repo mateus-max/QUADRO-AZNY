@@ -1179,3 +1179,32 @@ if(!isStudent&&classSessionId){AZNY_READY.then(async ready=>{if(!ready||!AZNY_DB
 </script>
 </body>
 </html>
+
+/* AZNY: student footer toolbar responsiveness only */
+.student-mode .student-controls{
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-x:contain!important;
+  scroll-behavior:auto!important;
+  scroll-snap-type:x proximity!important;
+  touch-action:pan-x!important;
+  contain:layout paint!important;
+  scrollbar-width:thin;
+}
+.student-mode .student-controls button{
+  flex:0 0 auto!important;
+  scroll-snap-align:start;
+  touch-action:manipulation!important;
+  -webkit-tap-highlight-color:transparent!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  transition:none!important;
+}
+.student-mode .student-controls button:active{
+  transform:none!important;
+}
