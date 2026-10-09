@@ -112,6 +112,31 @@ body.student-mode{background:#071526;color:#e8f0fa;overflow:hidden}
  .student-mode .student-controls button{min-height:40px;padding:8px 10px;font-size:11px}
 }
 
+
+/* Student video header and board alignment; only student view is affected. */
+.student-mode .student-live{display:block;position:relative;inset:auto;width:auto;max-width:none;margin:8px 10px 0;flex-shrink:0;background:#0b2036;border:1px solid #29445f;border-radius:12px;overflow:hidden}
+.student-mode .student-video-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}
+.student-mode .student-video-card{position:relative;min-width:0;background:#091626;border:1px solid #36516c;border-radius:9px;overflow:hidden}
+.student-mode .student-video-card video{display:block;width:100%;height:clamp(95px,17vh,155px);object-fit:cover;background:#091626}
+.student-mode .student-video-card span{position:absolute;left:7px;bottom:7px;padding:4px 8px;background:#000b;color:white;border-radius:6px;font-size:11px}
+.student-mode .student-live .student-live-label{display:none}
+.student-mode .main{min-height:0}
+.student-mode #board{transform-origin:0 0!important}
+.student-mode .student-controls button{cursor:pointer;pointer-events:auto}
+@media(min-width:900px){
+ .student-mode .workspace{grid-template-columns:minmax(0,1fr) 320px}
+ .student-mode .student-live{grid-column:2;grid-row:1;margin:12px 0 0}
+ .student-mode .student-video-pair{grid-template-columns:1fr;gap:8px}
+ .student-mode .student-video-card video{height:clamp(125px,19vh,190px)}
+ .student-mode .student-controls{right:344px}
+}
+@media(max-width:600px){
+ .student-mode .student-live{margin:7px 8px 0}
+ .student-mode .student-video-pair{gap:6px;padding:6px}
+ .student-mode .student-video-card video{height:clamp(88px,14vh,120px)}
+ .student-mode .student-video-card span{font-size:10px;padding:3px 6px}
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -222,7 +247,7 @@ body.student-mode{background:#071526;color:#e8f0fa;overflow:hidden}
 <div class="student-controls" id="studentControls">
   <button id="studentPointerBtn">🔎 Lupa</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button>
 </div>
-<div class="student-live" id="studentLive"><video id="studentTeacherVideo" autoplay playsinline></video><div class="student-live-label">Professor — transmissão em tempo real</div></div>
+<div class="student-live" id="studentLive"><div class="student-video-pair"><div class="student-video-card"><video id="studentTeacherVideo" autoplay playsinline></video><span>Professor</span></div><div class="student-video-card"><video id="studentSelfVideo" autoplay muted playsinline></video><span>Você</span></div></div></div>
 <div class="modal student-name-modal" id="studentNameModal"><div class="card">
 <h3>Entrar na aula</h3><p>Identifique-se com o seu nome. O professor terá de aprovar a sua entrada.</p>
 <input id="studentNameInput" placeholder="Digite o seu nome" autocomplete="name"><div class="waiting" id="studentWaiting" style="display:none">Pedido enviado. Aguarde a aprovação do professor.</div>
@@ -839,6 +864,7 @@ async function startStudentWebRTC(){
    audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
   });
   studentCameraOn=true;studentMicOn=true;
+  const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo){selfVideo.srcObject=studentLocalStream;selfVideo.muted=true;selfVideo.playsInline=true;selfVideo.play?.().catch(()=>{})}
   const scb=document.getElementById("studentCameraBtn"),smb=document.getElementById("studentMicBtn");
   if(scb)scb.textContent="📷 Desligar câmera";if(smb)smb.textContent="🎙 Desligar microfone";
   studentPeer=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
@@ -888,8 +914,9 @@ async function startStudentWebRTC(){
   toast("Aluno ligado: câmera e áudio preparados para transmissão.");
  }catch(e){console.error(e);toast("Não foi possível ligar câmera/microfone do aluno: "+(e.name||"erro"))}
 }
-function toggleStudentMic(){const t=studentLocalStream?.getAudioTracks?.()[0];if(!t)return toast("O microfone ainda não está ligado.");t.enabled=!t.enabled;studentMicOn=t.enabled;const b=document.getElementById("studentMicBtn");if(b)b.textContent=t.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";toast(t.enabled?"Microfone ligado":"Microfone desligado")}
-function toggleStudentCamera(){const t=studentLocalStream?.getVideoTracks?.()[0];if(!t)return toast("A câmera ainda não está ligada.");t.enabled=!t.enabled;studentCameraOn=t.enabled;const b=document.getElementById("studentCameraBtn");if(b)b.textContent=t.enabled?"📷 Desligar câmera":"📷 Ligar câmera";toast(t.enabled?"Câmera ligada":"Câmera desligada")}
+async function ensureStudentMedia(){if(studentLocalStream?.getTracks?.().length)return true;try{if(!navigator.mediaDevices?.getUserMedia){toast("Câmera e microfone exigem HTTPS.");return false}studentLocalStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});studentCameraOn=true;studentMicOn=true;const v=document.getElementById("studentSelfVideo");if(v){v.srcObject=studentLocalStream;v.muted=true;v.playsInline=true;v.play?.().catch(()=>{})}studentLocalStream.getTracks().forEach(t=>{if(studentPeer&&studentPeer.connectionState!=="closed"){const sender=studentPeer.getSenders().find(s=>s.track?.kind===t.kind);if(sender)sender.replaceTrack(t).catch(()=>{});else studentPeer.addTrack(t,studentLocalStream)}});const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");if(cb)cb.textContent="📷 Desligar câmera";if(mb)mb.textContent="🎙 Desligar microfone";toast("Câmera e microfone ativados");return true}catch(e){console.warn("Permissão de mídia do aluno:",e);toast("Permita o acesso à câmera e ao microfone no navegador.");return false}}
+function toggleStudentMic(){if(!studentLocalStream)return void ensureStudentMedia();const t=studentLocalStream?.getAudioTracks?.()[0];if(!t)return void ensureStudentMedia();t.enabled=!t.enabled;studentMicOn=t.enabled;const b=document.getElementById("studentMicBtn");if(b)b.textContent=t.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";toast(t.enabled?"Microfone ligado":"Microfone desligado")}
+function toggleStudentCamera(){if(!studentLocalStream)return void ensureStudentMedia();const t=studentLocalStream?.getVideoTracks?.()[0];if(!t)return void ensureStudentMedia();t.enabled=!t.enabled;studentCameraOn=t.enabled;const b=document.getElementById("studentCameraBtn");if(b)b.textContent=t.enabled?"📷 Desligar câmera":"📷 Ligar câmera";toast(t.enabled?"Câmera ligada":"Câmera desligada")}
 function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
 function syncTeacherMediaToPeer(pc){
  if(!pc||pc.connectionState==="closed")return;
