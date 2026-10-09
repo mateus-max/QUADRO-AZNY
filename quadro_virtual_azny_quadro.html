@@ -441,7 +441,17 @@ body.student-mode.azny-landscape-view .canvas-wrap{left:var(--azny-left-rail,16.
 .student .label{position:static!important;display:block!important;order:2!important;flex:0 0 auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;margin:0!important;padding:7px 8px!important;background:#071b33!important;color:#fff!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;border-radius:0!important;font-size:11px!important}
 .student .azny-student-device-controls{z-index:3!important}
 body.student-mode.azny-landscape-view #stage{left:0!important;right:0!important;width:100%!important;height:100%!important;overflow:hidden!important}
-body.student-mode.azny-landscape-view #board{left:0!important;top:0!important;width:100%!important;height:100%!important;margin:0!important;border:8px solid #8b5a2b!important;box-sizing:border-box!important}
+body.student-mode.azny-landscape-view #board{left:0!important;top:0!important;width:100%!important;height:100%!important;margin:0!important;border:3px solid #8b5a2b!important;box-sizing:border-box!important}
+/* Keep all four slim brown frame edges visible while the board meets both rails. */
+body.student-mode.azny-landscape-view .canvas-wrap{overflow:visible!important}
+body.student-mode.azny-landscape-view #stage{overflow:hidden!important}
+body.student-mode.azny-landscape-view #board{outline:1px solid #8b5a2b!important;outline-offset:-1px!important}
+/* Teacher view: student name sits in the same bottom control strip as mic/camera. */
+body:not(.student-mode) .student{display:flex!important;flex-direction:column!important;position:relative!important;overflow:hidden!important}
+body:not(.student-mode) .student video{display:block!important;flex:1 1 auto!important;min-height:0!important;width:100%!important}
+body:not(.student-mode) .student>.label{position:static!important;order:2!important;flex:0 0 auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;margin:0!important;padding:6px 44px 6px 8px!important;min-height:30px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;background:#071b33!important;color:#fff!important;border-radius:0!important;font-size:12px!important;line-height:1.2!important;text-shadow:none!important}
+body:not(.student-mode) .student>.azny-student-device-controls{position:absolute!important;left:auto!important;right:5px!important;bottom:3px!important;top:auto!important;transform:none!important;z-index:8!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-end!important;gap:4px!important;pointer-events:none!important}
+body:not(.student-mode) .student>.azny-student-device-controls button{pointer-events:auto!important;max-width:34px!important;min-width:26px!important;padding:4px!important;font-size:10px!important}
 body.student-mode.azny-landscape-view .student-live{background:transparent!important;box-shadow:none!important}
 body.student-mode.azny-landscape-view .student-video-pair{background:transparent!important}
 body.student-mode.azny-landscape-view .student-video-card{position:relative!important;background:transparent!important;border:0!important;box-shadow:none!important}
