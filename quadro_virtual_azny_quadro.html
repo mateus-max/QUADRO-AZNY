@@ -268,6 +268,13 @@ body.student-mode{overflow:hidden!important}
 .azny-student-device-controls button{flex:1 1 95px;min-width:0;padding:7px 6px;border:1px solid #b8c8d8;border-radius:7px;background:#fff;color:#10243a;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation}
 .azny-student-device-controls button.is-off{background:#ffe7e7;border-color:#e89a9a;color:#9b1c1c}
 
+
+/* Compact WhatsApp-style per-student device controls; preserve the full video frame */
+.student:not(.no-students){position:relative!important;padding-bottom:0!important;overflow:hidden!important}
+.student .azny-student-device-controls{position:absolute!important;left:6px!important;right:6px!important;bottom:6px!important;z-index:5!important;display:flex!important;flex-wrap:nowrap!important;justify-content:flex-end!important;gap:5px!important;padding:0!important;background:transparent!important;pointer-events:none!important}
+.student .azny-student-device-controls button{pointer-events:auto!important;flex:0 1 auto!important;min-width:0!important;max-width:50%!important;padding:5px 8px!important;border:1px solid #ffffff55!important;border-radius:18px!important;background:#10243ad9!important;color:#fff!important;font-size:10px!important;line-height:1.2!important;font-weight:600!important;white-space:nowrap!important;box-shadow:0 2px 7px #0004!important;backdrop-filter:blur(6px)!important}
+.student .azny-student-device-controls button.is-off{background:#a91f2bdc!important;border-color:#ffb7bd!important;color:#fff!important}
+.student video{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain!important;background:#07111c!important}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -415,6 +422,7 @@ const board=document.getElementById("board"),stage=document.getElementById("stag
 const hint=document.getElementById("hint"),toastEl=document.getElementById("toast"),STORAGE="azny_virtual_board_v2";
 let tool="select",selected=null,zoom=1,strokes=[],undoStack=[],redoStack=[],objectId=0,drawing=false,currentStroke=null,saveTimer=null,remoteSaveTimer=null,teacherStream=null,teacherAudioStream=null,savedRange=null,remoteBoardApplying=false,liveBoardTimer=null,localBoardEditing=false;
 let currentPage=1;
+let aznyLiveStrokeId="",aznyRemoteLiveStrokes=new Map();
 let pageStates=Array(5).fill(null);
 let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0;
@@ -489,6 +497,7 @@ function normalizeRemoteBoardPages(pages,sourceSize){
 }
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
+ aznyRemoteLiveStrokes.clear();
  remoteBoardApplying=true;
  try{
   if(Array.isArray(d.pages)){
@@ -504,6 +513,7 @@ function applyRemoteBoardState(d){
 function handleBoardChannelMessage(raw){
  try{
   const m=JSON.parse(raw);
+  if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}return;}
   if(m.type==="live-pointer"){
    const p=document.getElementById("livePointer");
    if(p){const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);p.style.transform="translate("+(Number(m.x)*sx||0)+"px,"+(Number(m.y)*sy||0)+"px)";p.classList.toggle("active",!!m.visible)}
@@ -536,7 +546,7 @@ function publishLiveBoardState(){
   pageStates[currentPage-1]=snapshot();
   sendBoardSnapshotToAllPeers();
   if(AZNY_DB){clearTimeout(firebaseBoardWriteTimer);firebaseBoardWriteTimer=setTimeout(()=>{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e))},1200)}
- },60)
+ },16)
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
@@ -775,13 +785,16 @@ function strokePoints(s){
  }
  return s.points||[];
 }
-function redraw(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;ctx.clearRect(0,0,r.width,r.height);ctx.lineCap="round";ctx.lineJoin="round";for(const s of strokes){const pts=strokePoints(s);if(!pts.length)continue;ctx.strokeStyle=s.color;ctx.lineWidth=s.width;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke()}}
+function redraw(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;ctx.clearRect(0,0,r.width,r.height);ctx.lineCap="round";ctx.lineJoin="round";for(const s of strokes){const pts=strokePoints(s);if(!pts.length)continue;ctx.strokeStyle=s.color;ctx.lineWidth=s.width;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke()}if(isStudent)aznyRemoteLiveStrokes.forEach(s=>{const pts=s.points||[];if(!pts.length)return;ctx.strokeStyle=s.color||"#000";ctx.lineWidth=Number(s.width)||3;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke()})}
+
 function resizeCanvas(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));canvas.style.width=r.width+"px";canvas.style.height=r.height+"px";ctx.setTransform(d,0,0,d,0,0);redraw()}
 function objectAtPoint(p){const els=[...board.querySelectorAll('.object')].reverse();for(const el of els){const b=anchorBox(el);if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return el}return null}
 function eraseAt(p){const radius=18;strokes=strokes.filter(s=>!strokePoints(s).some(q=>Math.hypot(q.x-p.x,q.y-p.y)<radius))}
-function drawDown(e){if(tool!=="pen"&&tool!=="eraser")return;drawing=true;localBoardEditing=true;pushHistory();const p=localPoint(e);if(tool==="pen"){const anchor=objectAtPoint(p);currentStroke={color:document.getElementById("textColor").value,width:3,points:[],anchorId:anchor?.dataset.id||null};if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}else currentStroke.points.push(p);strokes.push(currentStroke)}else eraseAt(p);redraw();publishLiveBoardState()}
-function drawMove(e){if(!drawing)return;const p=localPoint(e);if(tool==="pen"){if(currentStroke.anchorId){const el=document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]');if(el){const b=anchorBox(el);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}}else currentStroke.points.push(p);redraw()}else{eraseAt(p);redraw()}publishLiveBoardState()}
-function drawUp(){if(!drawing)return;drawing=false;currentStroke=null;localBoardEditing=false;scheduleSave();publishLiveBoardState()}
+function broadcastLiveStroke(done=false){if(isStudent||!currentStroke||!aznyLiveStrokeId)return;const points=currentStroke.anchorId?strokePoints(currentStroke):currentStroke.points;const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,done});Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<262144){try{ch.send(packet)}catch(_){}}})}
+function drawDown(e){if(tool!=="pen"&&tool!=="eraser")return;drawing=true;localBoardEditing=true;pushHistory();const p=localPoint(e);if(tool==="pen"){const anchor=objectAtPoint(p);currentStroke={color:document.getElementById("textColor").value,width:3,points:[],anchorId:anchor?.dataset.id||null};aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}else currentStroke.points.push(p);strokes.push(currentStroke);broadcastLiveStroke()}else eraseAt(p);redraw();publishLiveBoardState()}
+function drawMove(e){if(!drawing)return;const p=localPoint(e);if(tool==="pen"){if(currentStroke.anchorId){const el=document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]');if(el){const b=anchorBox(el);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}}else currentStroke.points.push(p);redraw();broadcastLiveStroke()}else{eraseAt(p);redraw()}publishLiveBoardState()}
+function drawUp(){if(!drawing)return;if(currentStroke)broadcastLiveStroke(true);drawing=false;currentStroke=null;aznyLiveStrokeId="";localBoardEditing=false;scheduleSave();publishLiveBoardState()}
+
 
 let textPointerTarget=null,textPointerX=0,textPointerY=0,textPointerMoved=false;
 
