@@ -403,6 +403,21 @@ body.student-mode.azny-landscape-view #studentRotateBtn{display:none!important}
 .student .azny-student-device-controls button{display:flex!important;align-items:center!important;justify-content:center!important;width:28px!important;height:30px!important;min-width:28px!important;max-width:28px!important;flex:0 0 30px!important;padding:2px!important;font-size:15px!important;line-height:1!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;border:1px solid #ffffff45!important;border-radius:50%!important;background:#10243a!important;color:#fff!important;box-shadow:0 1px 4px #0005!important}
 .student .azny-student-device-controls button.is-off{background:#a32323!important;border-color:#ffb1b1!important;color:#fff!important}
 .student>.label{position:absolute!important;left:7px!important;right:46px!important;top:7px!important;bottom:auto!important;z-index:6!important;display:block!important;width:auto!important;max-width:none!important;overflow:visible!important;white-space:normal!important;text-overflow:clip!important;padding:4px 8px!important;background:#071b33d9!important;color:#fff!important;border-radius:10px!important;font-size:12px!important;line-height:1.2!important}
+
+/* Final refinements: camera image fills its card, device controls never cover the student image. */
+.student .azny-student-device-controls{right:5px!important;top:auto!important;bottom:5px!important;transform:none!important;width:auto!important;flex-direction:row!important;gap:4px!important;padding:3px!important;border-radius:12px!important;background:#071b33b8!important}
+.student .azny-student-device-controls button{width:28px!important;height:28px!important;min-width:28px!important;max-width:28px!important;flex:0 0 28px!important}
+.student>.label{left:6px!important;right:76px!important;top:6px!important;bottom:auto!important;width:max-content!important;max-width:calc(100% - 84px)!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.student-mode .student-video-pair{gap:0!important;padding:0!important}
+.student-mode .student-video-card{border-radius:0!important;border-left:0!important;border-right:0!important}
+.student-mode .student-video-card video{height:100%!important;min-height:0!important;object-fit:contain!important;background:transparent!important}
+body.student-mode.azny-landscape-view .student-live{position:fixed!important;left:auto!important;right:0!important;top:0!important;bottom:0!important;width:clamp(112px,18vw,176px)!important;height:100dvh!important;max-height:100dvh!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;display:flex!important;flex-direction:column!important;justify-content:stretch!important;overflow:hidden!important;gap:0!important}
+body.student-mode.azny-landscape-view .student-video-pair{display:flex!important;flex:1 1 50%!important;flex-direction:column!important;min-height:0!important;gap:0!important;padding:0!important;margin:0!important}
+body.student-mode.azny-landscape-view .student-video-card{flex:1 1 50%!important;min-height:0!important;width:100%!important;margin:0!important;border-radius:0!important;border:1px solid #29445f!important;overflow:hidden!important}
+body.student-mode.azny-landscape-view .student-video-card video{width:100%!important;height:100%!important;min-height:0!important;object-fit:contain!important;background:transparent!important}
+body.student-mode.azny-landscape-view .canvas-wrap{left:136px!important;right:clamp(112px,18vw,176px)!important}
+body.student-mode.azny-landscape-view .student-controls{width:132px!important;max-width:132px!important}
+body.student-mode.azny-landscape-view .student-controls button{white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;text-align:center!important;font-size:12px!important}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -690,7 +705,7 @@ function publishLiveBoardState(){
   if(isStudent){if(studentBoardChannel?.readyState==="open")sendBoardSnapshotToChannel(studentBoardChannel);return}
   sendBoardSnapshotToAllPeers();
   if(AZNY_DB){clearTimeout(firebaseBoardWriteTimer);firebaseBoardWriteTimer=setTimeout(()=>{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e))},1200)}
- },isStudent?70:16)
+ },isStudent?32:12)
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
