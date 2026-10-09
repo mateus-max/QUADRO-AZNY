@@ -640,7 +640,7 @@ function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(ST
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
 function sendBoardSnapshotToChannel(ch){
  if(!ch||ch.readyState!=="open")return false;
- if(ch.bufferedAmount>800000)return false;
+ if(ch.bufferedAmount>262144)return false;
  try{
   const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates};
   const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=24000,total=Math.ceil(raw.length/size);
@@ -729,13 +729,24 @@ function handleBoardChannelMessage(raw){
 function publishLiveBoardState(){
  if(remoteBoardApplying)return;
  clearTimeout(liveBoardTimer);
+ /* Coalesce rapid pointer events into a steady frame rate instead of flooding
+    WebRTC with a complete board snapshot for every pointer movement. */
  liveBoardTimer=setTimeout(()=>{
   if(remoteBoardApplying)return;
   pageStates[currentPage-1]=snapshot();
-  if(isStudent){if(studentBoardChannel?.readyState==="open")sendBoardSnapshotToChannel(studentBoardChannel);return}
+  if(isStudent){
+   if(studentBoardChannel?.readyState==="open"&&studentBoardChannel.bufferedAmount<262144)sendBoardSnapshotToChannel(studentBoardChannel);
+   return;
+  }
   sendBoardSnapshotToAllPeers();
-  if(AZNY_DB){clearTimeout(firebaseBoardWriteTimer);firebaseBoardWriteTimer=setTimeout(()=>{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e))},1200)}
- },isStudent?32:12)
+  if(AZNY_DB){
+   clearTimeout(firebaseBoardWriteTimer);
+   firebaseBoardWriteTimer=setTimeout(()=>{
+    const ref=aznyRoomRef().child("board");
+    ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e));
+   },700);
+  }
+ },30)
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
@@ -1258,7 +1269,7 @@ async function startStudentWebRTC(){
   studentPeer=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
   studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
-  studentBoardChannel.bufferedAmountLowThreshold=262144;
+  studentBoardChannel.bufferedAmountLowThreshold=65536;
   studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}))}catch(_){}};
   studentBoardChannel.onmessage=e=>handleBoardChannelMessage(e.data);
   studentBoardChannel.onclose=()=>{studentBoardChannel=null};
@@ -1369,7 +1380,7 @@ async function connectStudentPeer(id,d){
  pc.ondatachannel=e=>{
   const ch=e.channel;
   if(ch.label!=="azny-board")return;
-  pc._aznyBoardChannel=ch;ch.bufferedAmountLowThreshold=262144;
+  pc._aznyBoardChannel=ch;ch.bufferedAmountLowThreshold=65536;
   ch.onopen=()=>sendBoardSnapshotToChannel(ch);
   ch.onmessage=ev=>{
    try{const m=JSON.parse(ev.data);if(m.type==="board-request"){sendBoardSnapshotToChannel(ch);return}handleBoardChannelMessage(ev.data)}catch(err){console.warn("AZNY student board packet:",err)}
