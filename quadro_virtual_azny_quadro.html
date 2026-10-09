@@ -445,7 +445,11 @@ body.student-mode.azny-landscape-view #board{left:0!important;top:0!important;wi
 /* Keep all four slim brown frame edges visible while the board meets both rails. */
 body.student-mode.azny-landscape-view .canvas-wrap{overflow:visible!important}
 body.student-mode.azny-landscape-view #stage{overflow:hidden!important}
-body.student-mode.azny-landscape-view #board{outline:1px solid #8b5a2b!important;outline-offset:-1px!important}
+body.student-mode.azny-landscape-view #board{left:3px!important;top:3px!important;width:calc(100% - 6px)!important;height:calc(100% - 6px)!important;border:3px solid #8b5a2b!important;outline:1px solid #6f431f!important;outline-offset:-1px!important;box-sizing:border-box!important}
+/* Keep the whole brown frame visible on all four sides. */
+body.student-mode.azny-landscape-view .canvas-wrap{border-left:0!important;border-right:0!important}
+#livePointerTrail{position:absolute;inset:0;width:100%;height:100%;z-index:39;pointer-events:none;overflow:visible}
+#livePointerTrail polyline{fill:none;stroke:#ff2d24;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 10;opacity:.9;filter:drop-shadow(0 1px 1px #0005)}
 /* Teacher view: student name sits in the same bottom control strip as mic/camera. */
 body:not(.student-mode) .student{display:flex!important;flex-direction:column!important;position:relative!important;overflow:hidden!important}
 body:not(.student-mode) .student video{display:block!important;flex:1 1 auto!important;min-height:0!important;width:100%!important}
@@ -533,7 +537,7 @@ body.student-mode.azny-landscape-view .student-video-card:before,body.student-mo
     </div>
   </div>
   <div class="canvas-wrap" id="canvasWrap">
-    <div id="stage"><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
+    <div id="stage"><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><svg id="livePointerTrail" aria-hidden="true"><polyline id="livePointerTrailLine" points=""></polyline></svg><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
 <svg viewBox="0 0 34 42" aria-hidden="true">
   <path class="arrow" d="M3 2 L3 27 L10 20 L15 35 L20 33 L15 18 L25 18 Z"/>
   <circle class="glass" cx="24.5" cy="30.5" r="7"/>
@@ -714,13 +718,15 @@ function applyRemoteBoardState(d){
   }
  }finally{remoteBoardApplying=false}
 }
+let aznyTrailPoints=[],aznyTrailClearTimer=null;
+function updatePointerTrail(x,y){const line=document.getElementById("livePointerTrailLine");if(!line)return;aznyTrailPoints.push({x:Number(x)||0,y:Number(y)||0});if(aznyTrailPoints.length>18)aznyTrailPoints=aznyTrailPoints.slice(-18);line.setAttribute("points",aznyTrailPoints.map(p=>p.x+","+p.y).join(" "));line.style.opacity="1";clearTimeout(aznyTrailClearTimer);aznyTrailClearTimer=setTimeout(()=>{aznyTrailPoints=[];line.setAttribute("points","")},650)}
 function handleBoardChannelMessage(raw){
  try{
   const m=JSON.parse(raw);
   if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}return;}
   if(m.type==="live-pointer"){
    const p=document.getElementById("livePointer");
-   if(p){const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);p.style.transform="translate("+(Number(m.x)*sx||0)+"px,"+(Number(m.y)*sy||0)+"px)";p.classList.toggle("active",!!m.visible)}
+   if(p){const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);p.style.transform="translate("+(Number(m.x)*sx||0)+"px,"+(Number(m.y)*sy||0)+"px)";if(m.visible)updatePointerTrail(Number(m.x)*sx||0,Number(m.y)*sy||0);else{aznyTrailPoints=[];const line=document.getElementById("livePointerTrailLine");if(line)line.setAttribute("points","")}p.classList.toggle("active",!!m.visible)}
    return;
   }
   if(m.type==="text-live"){
@@ -798,7 +804,7 @@ function updateLivePointer(e){
  if(!board.contains(e.target)&&!pointerMode)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
  const p=document.getElementById("livePointer");
- if(pointerMode){p.style.transform=`translate(${x-5}px,${y-5}px)`;p.classList.add("active")}
+ if(pointerMode){p.style.transform=`translate(${x-5}px,${y-5}px)`;p.classList.add("active");updatePointerTrail(x-5,y-5)}
  {
   const now=performance.now();
   if(now-lastPointerPacketAt>=16){
@@ -828,7 +834,7 @@ let aznyPointerDragId=null,lastStudentPointerSend=0;
 function moveStudentPointer(e){
  if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
- const p=document.getElementById("livePointer");p.style.transform="translate("+(x-5)+"px,"+(y-5)+"px)";p.classList.add("active");
+ const p=document.getElementById("livePointer");p.style.transform="translate("+(x-5)+"px,"+(y-5)+"px)";p.classList.add("active");updatePointerTrail(x-5,y-5);
  const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
  const packet=JSON.stringify({type:"live-pointer",x:x-5,y:y-5,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
  const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
