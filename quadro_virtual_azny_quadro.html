@@ -296,6 +296,13 @@ body.student-mode.azny-landscape-view #stage{position:absolute!important;inset:0
 body.student-mode.azny-landscape-view #board{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-height:none!important;border-width:4px!important}
 body.student-mode.azny-landscape-view .student-controls{position:fixed!important;z-index:95!important;top:0!important;bottom:0!important;left:0!important;right:auto!important;width:54px!important;height:100dvh!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:center!important;gap:6px!important;padding:5px!important;overflow-y:auto!important;background:#0b1726!important}
 body.student-mode.azny-landscape-view .student-controls button{font-size:10px!important;line-height:1.1!important;padding:8px 2px!important;min-height:38px!important;white-space:normal!important}
+body.student-mode.azny-landscape-view .student-controls{justify-content:flex-start!important;align-content:flex-start!important;padding-top:8px!important;padding-bottom:8px!important}
+body.student-mode.azny-landscape-view .student-controls button{flex:0 0 auto!important;width:100%!important;min-width:0!important;min-height:42px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow-wrap:anywhere!important}
+body.student-mode.azny-landscape-view .student-live{display:flex!important;flex-direction:column!important;justify-content:flex-start!important}
+body.student-mode.azny-landscape-view .student-video-pair{flex:1!important;min-height:0!important;display:flex!important;flex-direction:column!important;gap:6px!important;padding:6px!important}
+body.student-mode.azny-landscape-view .student-video-card{flex:1 1 0!important;min-height:0!important;display:flex!important;flex-direction:column!important}
+body.student-mode.azny-landscape-view .student-video-card video{flex:1 1 auto!important;width:100%!important;height:100%!important;max-height:none!important;min-height:0!important;object-fit:contain!important}
+
 body.student-mode.azny-landscape-view .student-live{position:fixed!important;z-index:92!important;top:0!important;right:0!important;bottom:0!important;left:auto!important;width:clamp(106px,26vw,204px)!important;height:100dvh!important;margin:0!important;border-radius:0!important;overflow-y:auto!important;display:block!important}
 body.student-mode.azny-landscape-view .student-video-pair{display:flex!important;flex-direction:column!important;gap:5px!important;padding:5px!important}
 body.student-mode.azny-landscape-view .student-video-card video{height:auto!important;max-height:27dvh!important;aspect-ratio:4/3!important;object-fit:contain!important}
@@ -515,13 +522,29 @@ function sendBoardSnapshotToAllPeers(){
 function normalizeRemoteBoardPages(pages,sourceSize){
  const targetW=Math.max(1,board.clientWidth),targetH=Math.max(1,board.clientHeight);
  const sourceW=Number(sourceSize&&sourceSize.width)||targetW,sourceH=Number(sourceSize&&sourceSize.height)||targetH;
- const sx=targetW/sourceW,sy=targetH/sourceH;
- if(Math.abs(sx-1)<0.002&&Math.abs(sy-1)<0.002)return pages;
+ /* Use one scale for both axes: independent X/Y scaling was distorting the layout and pulling items away from their intended positions. */
+ const scale=Math.min(targetW/sourceW,targetH/sourceH);
+ const offsetX=(targetW-sourceW*scale)/2,offsetY=(targetH-sourceH*scale)/2;
+ if(Math.abs(scale-1)<0.002&&Math.abs(offsetX)<1&&Math.abs(offsetY)<1)return pages;
  return pages.map(page=>{
   if(!page)return page;
   const out=JSON.parse(JSON.stringify(page));
-  (out.strokes||[]).forEach(st=>{if(st&&Array.isArray(st.points)&&!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*sx,y:(+p.y||0)*sy}));if(st&&Number.isFinite(+st.width))st.width*=Math.min(sx,sy)});
-  (out.objects||[]).forEach(o=>{if(o.left!=null)o.left*=sx;if(o.top!=null)o.top*=sy;if(o.width!=null)o.width*=sx;if(o.height!=null)o.height*=sy;if(o.anchorX!=null)o.anchorX*=sx;if(o.anchorY!=null)o.anchorY*=sy;if(o.anchorW!=null)o.anchorW*=sx;if(o.anchorH!=null)o.anchorH*=sy;if(o.anchorFontSize!=null)o.anchorFontSize*=Math.min(sx,sy);if(o.style&&o.style.fontSize){const n=parseFloat(o.style.fontSize);if(Number.isFinite(n))o.style.fontSize=(n*Math.min(sx,sy))+"px"}});
+  (out.strokes||[]).forEach(st=>{
+   if(st&&Array.isArray(st.points)&&!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*scale+offsetX,y:(+p.y||0)*scale+offsetY}));
+   if(st&&Number.isFinite(+st.width))st.width*=scale;
+  });
+  (out.objects||[]).forEach(o=>{
+   if(o.left!=null)o.left=o.left*scale+offsetX;
+   if(o.top!=null)o.top=o.top*scale+offsetY;
+   if(o.width!=null)o.width*=scale;
+   if(o.height!=null)o.height*=scale;
+   if(o.anchorX!=null)o.anchorX=o.anchorX*scale+offsetX;
+   if(o.anchorY!=null)o.anchorY=o.anchorY*scale+offsetY;
+   if(o.anchorW!=null)o.anchorW*=scale;
+   if(o.anchorH!=null)o.anchorH*=scale;
+   if(o.anchorFontSize!=null)o.anchorFontSize*=scale;
+   if(o.style&&o.style.fontSize){const n=parseFloat(o.style.fontSize);if(Number.isFinite(n))o.style.fontSize=(n*scale)+"px"}
+  });
   return out;
  });
 }
