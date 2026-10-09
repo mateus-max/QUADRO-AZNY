@@ -235,6 +235,9 @@ body.student-mode{overflow:hidden!important}
 
 
 .object-actions{display:flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;box-shadow:0 3px 10px #0001;flex:0 0 auto}.object-actions .object-action-label{font-size:11px;font-weight:700;color:#475569;white-space:nowrap}.object-actions button{height:30px;padding:0 9px;border:1px solid #cbd5e1;background:#f8fafc;color:#172b42;border-radius:6px;cursor:pointer;white-space:nowrap;font-size:12px}.object-actions button:disabled{opacity:.4;cursor:not-allowed}.object-actions button:not(:disabled):hover{background:#e8f2ff;border-color:#8ab8ed}@media(max-width:700px){.object-actions{gap:3px;padding:3px 4px}.object-actions .object-action-label{display:none}.object-actions button{padding:0 6px;font-size:11px}}
+
+/* Reliable pointer/touch resizing for selected board objects */
+.object .resize{touch-action:none;pointer-events:auto;z-index:30}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -663,7 +666,7 @@ function addResource(type,lang){pushHistory();const el=createResourceObject(type
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function makeInteractive(el){
- if(!el.querySelector(".resize")){const h=document.createElement("div");h.className="resize";el.appendChild(h);h.addEventListener("mousedown",resizeStart)}
+ if(!el.querySelector(".resize")){const h=document.createElement("div");h.className="resize";el.appendChild(h);h.addEventListener("pointerdown",resizeStart)}
  el.addEventListener("mousedown",e=>{
   if(e.target.classList.contains("resize"))return;
   if(el.classList.contains("textobj")&&tool==="text")return;
@@ -679,10 +682,11 @@ function dragStart(e,el){
  addEventListener("mousemove",move);addEventListener("mouseup",up)
 }
 function resizeStart(e){
- e.preventDefault();e.stopPropagation();const el=e.currentTarget.parentElement;selectObject(el);localBoardEditing=true;pushHistory();const p=localPoint(e),sw=el.offsetWidth,sh=el.offsetHeight;
- function move(ev){const q=localPoint(ev);el.style.width=Math.max(40,sw+q.x-p.x)+"px";el.style.height=Math.max(28,sh+q.y-p.y)+"px";updateAnchoredTextsFor(el);redraw();publishLiveBoardState()}
- function up(){removeEventListener("mousemove",move);removeEventListener("mouseup",up);localBoardEditing=false;scheduleSave();publishLiveBoardState()}
- addEventListener("mousemove",move);addEventListener("mouseup",up)
+ e.preventDefault();e.stopPropagation();const el=e.currentTarget.parentElement;selectObject(el);localBoardEditing=true;pushHistory();const p=localPoint(e),sw=el.offsetWidth,sh=el.offsetHeight,pointerId=e.pointerId;
+ try{e.currentTarget.setPointerCapture(pointerId)}catch(_){}
+ function move(ev){if(ev.pointerId!==pointerId)return;const q=localPoint(ev);el.style.width=Math.max(40,sw+q.x-p.x)+"px";el.style.height=Math.max(28,sh+q.y-p.y)+"px";updateAnchoredTextsFor(el);redraw();publishLiveBoardState()}
+ function up(ev){if(ev.pointerId!==pointerId)return;removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);localBoardEditing=false;scheduleSave();publishLiveBoardState()}
+ addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up)
 }
 function addImage(file){
  const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object mediaobj";el.dataset.id="o"+(++objectId);const img=document.createElement("img");img.src=reader.result;el.appendChild(img);Object.assign(el.style,{left:"100px",top:"80px",width:"360px",height:"260px"});board.appendChild(el);makeInteractive(el);selectObject(el);updateHint();scheduleSave();toast("Imagem adicionada")};reader.readAsDataURL(file)
