@@ -1643,7 +1643,8 @@ function shareFacebook(){
  const link=getClassLink();if(!link)return;
  window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link),"_blank","noopener,noreferrer,width=700,height=600");
 }
-const dashboardBtn=document.getElementById("teacherDashboardBtn");if(dashboardBtn)dashboardBtn.onclick=()=>{if(!isStudent)location.href="dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN)};\ndocument.getElementById("copyClassLink").onclick=copyClassLink;
+const dashboardBtn=document.getElementById("teacherDashboardBtn");if(dashboardBtn)dashboardBtn.onclick=()=>{if(!isStudent)location.href="dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN)};
+document.getElementById("copyClassLink").onclick=copyClassLink;
 document.getElementById("shareWhatsApp").onclick=shareWhatsApp;
 document.getElementById("shareFacebook").onclick=shareFacebook;
 
