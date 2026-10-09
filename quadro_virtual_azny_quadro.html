@@ -233,6 +233,8 @@ body.student-mode{overflow:hidden!important}
 .student-mode .student-controls button{touch-action:manipulation!important;cursor:pointer!important;transition:none!important}
 .student-mode .student-controls button:active{transform:scale(.98)}
 
+
+.object-actions{display:flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;box-shadow:0 3px 10px #0001;flex:0 0 auto}.object-actions .object-action-label{font-size:11px;font-weight:700;color:#475569;white-space:nowrap}.object-actions button{height:30px;padding:0 9px;border:1px solid #cbd5e1;background:#f8fafc;color:#172b42;border-radius:6px;cursor:pointer;white-space:nowrap;font-size:12px}.object-actions button:disabled{opacity:.4;cursor:not-allowed}.object-actions button:not(:disabled):hover{background:#e8f2ff;border-color:#8ab8ed}@media(max-width:700px){.object-actions{gap:3px;padding:3px 4px}.object-actions .object-action-label{display:none}.object-actions button{padding:0 6px;font-size:11px}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -576,7 +578,7 @@ function createText(x,y,anchor){
  });
  updateHint();scheduleSave();
 }
-function selectObject(el){document.querySelectorAll(".object.selected").forEach(x=>x.classList.remove("selected"));selected=el;if(el)el.classList.add("selected")}
+function selectObject(el){document.querySelectorAll(".object.selected").forEach(x=>x.classList.remove("selected"));selected=el;if(el)el.classList.add("selected");updateObjectActions()}
 function anchorTextToObject(text,anchor,x,y){
  const b=anchorBox(anchor);text.dataset.anchorId=anchor.dataset.id;text.dataset.anchorX=(x-b.x)/b.w;text.dataset.anchorY=(y-b.y)/b.h;text.dataset.anchorW=b.w;text.dataset.anchorH=b.h;text.dataset.anchorFontSize=parseFloat(text.style.fontSize)||16;
 }
@@ -585,6 +587,19 @@ function updateAnchoredText(text,anchor){
  text.style.left=(b.x+ax*b.w)+"px";text.style.top=(b.y+ay*b.h)+"px";text.style.fontSize=(baseFont*scale)+"px";
 }
 function updateAnchoredTextsFor(anchor){const id=anchor.dataset.id;board.querySelectorAll('.textobj[data-anchor-id="'+id+'"]').forEach(t=>updateAnchoredText(t,anchor));}
+
+function setupObjectActions(){
+ const bar=document.querySelector(".toolbar");if(!bar||document.getElementById("objectActions"))return;
+ const panel=document.createElement("div");panel.className="object-actions";panel.id="objectActions";
+ panel.innerHTML='<span class="object-action-label">Objeto:</span><button type="button" id="minimizeObjectBtn" title="Minimizar/restaurar">↔ Minimizar</button><button type="button" id="duplicateObjectBtn" title="Duplicar objeto ou imagem">▣ Duplicar</button><button type="button" id="sendBackObjectBtn" title="Enviar para trás">↓ Para trás</button><button type="button" id="bringFrontObjectBtn" title="Trazer para a frente">↑ Para frente</button>';
+ bar.appendChild(panel);document.getElementById("minimizeObjectBtn").onclick=minimizeSelectedObject;document.getElementById("duplicateObjectBtn").onclick=duplicateSelectedObject;document.getElementById("sendBackObjectBtn").onclick=()=>changeSelectedLayer(-1);document.getElementById("bringFrontObjectBtn").onclick=()=>changeSelectedLayer(1);updateObjectActions();
+}
+function updateObjectActions(){const p=document.getElementById("objectActions");if(!p)return;const ok=!!selected&&selected.isConnected;p.querySelectorAll("button").forEach(b=>b.disabled=!ok);const b=document.getElementById("minimizeObjectBtn");if(b&&ok)b.textContent=selected.dataset.aznyMinimized==="1"?"↔ Restaurar":"↔ Minimizar"}
+function commitObjectAction(msg){redraw();updateHint();scheduleSave();publishLiveBoardState();updateObjectActions();if(msg)toast(msg)}
+function minimizeSelectedObject(){if(!selected)return;pushHistory();if(selected.dataset.aznyMinimized==="1"){selected.style.width=selected.dataset.aznyOldWidth||"360px";selected.style.height=selected.dataset.aznyOldHeight||"260px";delete selected.dataset.aznyMinimized;delete selected.dataset.aznyOldWidth;delete selected.dataset.aznyOldHeight}else{selected.dataset.aznyOldWidth=selected.style.width||selected.offsetWidth+"px";selected.dataset.aznyOldHeight=selected.style.height||selected.offsetHeight+"px";selected.style.width="140px";selected.style.height="90px";selected.dataset.aznyMinimized="1"}updateAnchoredTextsFor(selected);commitObjectAction(selected.dataset.aznyMinimized==="1"?"Objeto minimizado":"Tamanho original restaurado")}
+function duplicateSelectedObject(){if(!selected)return;const d=serializeObject(selected);pushHistory();d.id="o"+(++objectId);d.left=(Number(d.left)||0)+24;d.top=(Number(d.top)||0)+24;if(d.anchorId){d.anchorId=null;d.anchorX=null;d.anchorY=null;d.anchorW=null;d.anchorH=null}const el=createFromData(d);if(!el)return;if(!el.isConnected)board.appendChild(el);if(!el.classList.contains("object"))el.classList.add("object");makeInteractive(el);selectObject(el);commitObjectAction("Objeto duplicado")}
+function changeSelectedLayer(dir){if(!selected)return;pushHistory();const objects=[...board.children].filter(el=>el.classList.contains("object"));const i=objects.indexOf(selected);if(dir<0){if(i>0)board.insertBefore(selected,objects[i-1])}else{if(i>=0&&i<objects.length-1)board.insertBefore(objects[i+1],selected);else if(i===objects.length-1)board.appendChild(selected)}commitObjectAction(dir<0?"Objeto enviado para trás":"Objeto trazido para a frente")}
+
 function deleteSelected(){if(!selected)return;pushHistory();const id=selected.dataset.id;board.querySelectorAll('.textobj[data-anchor-id="'+id+'"]').forEach(t=>t.remove());selected.remove();strokes=strokes.filter(s=>s.anchorId!==id);selected=null;redraw();updateHint();scheduleSave();toast("Objeto eliminado") }
 function createFromData(o){
  let el;
@@ -1148,7 +1163,7 @@ document.getElementById("closeMusic").onclick=()=>document.getElementById("music
 document.querySelectorAll("[data-music]").forEach(b=>b.onclick=()=>addMusic(b.dataset.music));
 // Bíblia e Gramática — abrir e fechar os respetivos menus e inserir o recurso no quadro.
 document.getElementById("startClassBtn").onclick=startClass;document.getElementById("endClassBtn").onclick=endClass;document.getElementById("recordClassBtn").onclick=()=>screenRecorder?.state==="recording"?stopRecording():startRecording();
-const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}}).catch(e=>console.error(e));
+setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}}).catch(e=>console.error(e));
 window.addEventListener("beforeunload",()=>{if(classStarted)endClass();if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentLocalStream)studentLocalStream.getTracks().forEach(t=>t.stop());if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close()});
 window.addEventListener("resize",resizeCanvas);
 if(!isStudent)load();setTimeout(()=>{setZoom(1);resizeCanvas()},80);
