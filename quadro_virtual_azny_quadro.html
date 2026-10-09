@@ -261,6 +261,13 @@ body.student-mode{overflow:hidden!important}
 .student-mode .student-live{bottom:76px!important}
 .student-mode .canvas-wrap{padding-bottom:68px!important;box-sizing:border-box!important}
 
+
+/* Per-student camera and microphone controls in the teacher's student list */
+.student:not(.no-students){position:relative;padding-bottom:48px!important}
+.azny-student-device-controls{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;padding:6px;background:#10243a;border-radius:0 0 8px 8px}
+.azny-student-device-controls button{flex:1 1 95px;min-width:0;padding:7px 6px;border:1px solid #b8c8d8;border-radius:7px;background:#fff;color:#10243a;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation}
+.azny-student-device-controls button.is-off{background:#ffe7e7;border-color:#e89a9a;color:#9b1c1c}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -1003,8 +1010,16 @@ function addStudentVideoCard(id,name,stream,track){
  let card=document.getElementById("student-"+id);
  if(!card){
   card=document.createElement("div");card.className="student";card.id="student-"+id;
-  card.innerHTML='<video autoplay playsinline></video><div class="label"></div>';
+  card.innerHTML='<video autoplay playsinline></video><div class="label"></div><div class="azny-student-device-controls"><button type="button" data-student-mic>🎙 Desligar micro</button><button type="button" data-student-camera>📷 Desligar câmera</button></div>';
   card._aznyRemoteStream=new MediaStream();wrap.appendChild(card);
+  const signal=signalRef(id);
+  const micBtn=card.querySelector("[data-student-mic]"),camBtn=card.querySelector("[data-student-camera]");
+  card._aznyTeacherControls={mic:true,camera:true};
+  const paintControls=()=>{micBtn.textContent=card._aznyTeacherControls.mic?"🎙 Desligar micro":"🎙 Ligar micro";camBtn.textContent=card._aznyTeacherControls.camera?"📷 Desligar câmera":"📷 Ligar câmera";micBtn.classList.toggle("is-off",!card._aznyTeacherControls.mic);camBtn.classList.toggle("is-off",!card._aznyTeacherControls.camera)};
+  micBtn.onclick=async()=>{const next=!card._aznyTeacherControls.mic;try{await signal.child("teacherControls/micEnabled").set(next);card._aznyTeacherControls.mic=next;paintControls();toast((name||"Aluno")+": microfone "+(next?"autorizado":"desligado"))}catch(e){toast("Não foi possível alterar o microfone deste aluno.")}};
+  camBtn.onclick=async()=>{const next=!card._aznyTeacherControls.camera;try{await signal.child("teacherControls/cameraEnabled").set(next);card._aznyTeacherControls.camera=next;paintControls();toast((name||"Aluno")+": câmera "+(next?"autorizada":"desligada"))}catch(e){toast("Não foi possível alterar a câmera deste aluno.")}};
+  signal.child("teacherControls").on("value",snap=>{const controls=snap.val()||{};card._aznyTeacherControls.mic=controls.micEnabled!==false;card._aznyTeacherControls.camera=controls.cameraEnabled!==false;paintControls()});
+  paintControls();
  }
  const video=card.querySelector("video"),inbound=card._aznyRemoteStream||(card._aznyRemoteStream=new MediaStream());
  if(stream&&stream!==inbound)stream.getTracks().forEach(t=>{if(!inbound.getTracks().some(x=>x.id===t.id))inbound.addTrack(t)});
@@ -1062,6 +1077,18 @@ async function startStudentWebRTC(){
   studentPeer.oniceconnectionstatechange=()=>{if(studentPeer.iceConnectionState==="failed"){try{studentPeer.restartIce()}catch(_){}}};
   const ref=signalRef(studentRequestId);
   notifyTeacherStudentPresence(ref);
+  ref.child("teacherControls").on("value",snap=>{
+   const controls=snap.val()||{};
+   if(!studentLocalStream)return;
+   const micEnabled=controls.micEnabled!==false,cameraEnabled=controls.cameraEnabled!==false;
+   studentLocalStream.getAudioTracks().forEach(t=>t.enabled=micEnabled);
+   studentLocalStream.getVideoTracks().forEach(t=>t.enabled=cameraEnabled);
+   studentMicOn=micEnabled;studentCameraOn=cameraEnabled;
+   const micButton=document.getElementById("studentMicBtn"),cameraButton=document.getElementById("studentCameraBtn");
+   if(micButton){micButton.textContent=micEnabled?"🎙 Desligar microfone":"🔇 Ligar microfone";micButton.disabled=!micEnabled;micButton.title="O professor controla este microfone"}
+   if(cameraButton){cameraButton.textContent=cameraEnabled?"📷 Desligar câmera":"📷 Ligar câmera";cameraButton.disabled=!cameraEnabled;cameraButton.title="O professor controla esta câmera"}
+   toast("O professor "+(micEnabled?"autorizou":"desligou")+" o microfone e "+(cameraEnabled?"autorizou":"desligou")+" a câmera.");
+  });
   studentPeer.onicecandidate=e=>{if(e.candidate)ref.child("studentCandidates").push(e.candidate.toJSON())};
   const offer=await studentPeer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
   await studentPeer.setLocalDescription(offer);
