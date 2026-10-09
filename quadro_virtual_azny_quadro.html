@@ -390,7 +390,7 @@ let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0;
 let isStudent=new URLSearchParams(location.search).get("aluno")==="1";
 const AZNY_URL_PARAMS=new URLSearchParams(location.search);let aznySavedRoom="";try{aznySavedRoom=localStorage.getItem("azny_teacher_room_v1")||""}catch(_){};let roomId=AZNY_URL_PARAMS.get("sala")||aznySavedRoom||("AZNY-"+(document.getElementById("boardTitle").value.trim().replace(/[^a-zA-Z0-9_-]+/g,"-")||"aula")+"-"+Date.now().toString(36));if(!AZNY_URL_PARAMS.get("sala")){try{localStorage.setItem("azny_teacher_room_v1",roomId)}catch(_){}}
-let classSessionId=AZNY_URL_PARAMS.get("sess")||(!isStudent?localStorage.getItem("azny-active-session-"+String(roomId)):"")||"";
+let classSessionId=AZNY_URL_PARAMS.get("sess")||"";
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 const roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
@@ -1174,7 +1174,7 @@ setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStude
 window.addEventListener("beforeunload",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close()});
 window.addEventListener("resize",resizeCanvas);
 if(!isStudent)load();setTimeout(()=>{setZoom(1);resizeCanvas()},80);
-if(!isStudent&&classSessionId){AZNY_READY.then(async ready=>{if(!ready||!AZNY_DB)return;const snap=await aznySessionRef().once("value");const data=snap.val()||{};if(data.status==="active"){classStarted=true;classStartTime=Date.now()-Math.max(0,Date.now()-(data.startedAt||Date.now()));document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();bindClassSessionRealtime();toast("Aula ativa recuperada após atualizar a página")}else{localStorage.removeItem("azny-active-session-"+String(roomId));classSessionId=""}}).catch(e=>console.warn("AZNY restore session:",e))}
+
 })();
 </script>
 </body>
