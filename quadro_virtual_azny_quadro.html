@@ -223,6 +223,16 @@ body.student-mode{overflow:hidden!important}
  .student-mode .student-controls button{min-height:34px!important;padding:5px 7px!important;font-size:11px!important}
 }
 
+
+/* Student readability and immediate touch feedback */
+.student-mode .object [contenteditable="true"],
+.student-mode .object .text-content,
+.student-mode .object .text-box,
+.student-mode .object textarea,
+.student-mode .object input{font-size:1.15em!important;line-height:1.3!important}
+.student-mode .student-controls button{touch-action:manipulation!important;cursor:pointer!important;transition:none!important}
+.student-mode .student-controls button:active{transform:scale(.98)}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -409,7 +419,7 @@ function serializeObject(el){
 function pushHistory(){undoStack.push(snapshot());if(undoStack.length>60)undoStack.shift();redoStack=[]}
 function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restore(undoStack.pop());scheduleSave()}
 function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(redoStack.pop());scheduleSave()}
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!isStudent&&!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,35)}}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!isStudent&&!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,8)}}
 function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage,pages:pageStates}));document.getElementById("storageState").textContent="● Guardado"}catch(e){toast("Limite do Local Storage atingido")}}
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
 function sendBoardSnapshotToChannel(ch){
@@ -459,6 +469,11 @@ function applyRemoteBoardState(d){
 function handleBoardChannelMessage(raw){
  try{
   const m=JSON.parse(raw);
+  if(m.type==="live-pointer"){
+   const p=document.getElementById("livePointer");
+   if(p){p.style.transform="translate("+(Number(m.x)||0)+"px,"+(Number(m.y)||0)+"px)";p.classList.toggle("active",!!m.visible)}
+   return;
+  }
   if(m.type==="board-state"){applyRemoteBoardState(m);return}
   if(m.type==="board-chunk"){
    let entry=studentBoardChunks.get(m.id);
@@ -512,15 +527,23 @@ function setPointerMode(on){
  pointerMode=!!on;
  const p=document.getElementById("livePointer"),b=document.getElementById("pointerTool");
  p.classList.toggle("active",pointerMode);b.classList.toggle("pointer-tool-on",pointerMode);
- // When the red pointer is active, hide the native mouse arrow completely.
  stage.style.cursor=pointerMode?"none":(tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default"));
+ if(!isStudent){const packet=JSON.stringify({type:"live-pointer",x:0,y:0,visible:pointerMode});Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(packet)}catch(_){}}})}
 }
+let lastPointerPacketAt=0;
 function updateLivePointer(e){
- if(!pointerMode || !board.contains(e.target))return;
+ if(!board.contains(e.target))return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
  const p=document.getElementById("livePointer");
- p.style.transform=`translate(${x-5}px,${y-5}px)`;
- p.classList.add("active");
+ if(pointerMode){p.style.transform=`translate(${x-5}px,${y-5}px)`;p.classList.add("active")}
+ if(!isStudent){
+  const now=performance.now();
+  if(now-lastPointerPacketAt>=16){
+   lastPointerPacketAt=now;
+   const packet=JSON.stringify({type:"live-pointer",x:x-5,y:y-5,visible:!!pointerMode});
+   Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});
+  }
+ }
 }
 function setTool(t){
  tool=t;
