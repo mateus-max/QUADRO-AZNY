@@ -389,6 +389,14 @@ body.student-mode.azny-landscape-view.student-approved #studentRotateBtn{display
 body.student-mode.azny-landscape-view #studentRotateBtn{display:none!important;visibility:hidden!important}
 body.student-mode.azny-landscape-view .canvas-wrap{left:96px!important;right:126px!important}
 body.student-mode.azny-landscape-view #studentLive.student-live{width:120px!important}
+
+/* Final phone layout: compact tool rail, full board frame visible, camera rail on the right. */
+body.student-mode.azny-landscape-view .student-controls{left:0!important;right:auto!important;width:54px!important;max-width:54px!important;padding:5px!important;gap:6px!important}
+body.student-mode.azny-landscape-view .student-controls button{width:100%!important;min-width:0!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:10px!important;padding:6px 2px!important}
+body.student-mode.azny-landscape-view .canvas-wrap{left:58px!important;right:clamp(112px,27vw,210px)!important}
+body.student-mode.azny-landscape-view #stage{inset:0!important;overflow:hidden!important}
+body.student-mode.azny-landscape-view #board{left:0!important;top:0!important;width:100%!important;height:100%!important;border:6px solid #8b5a2b!important;box-sizing:border-box!important;overflow:hidden!important}
+body.student-mode.azny-landscape-view #studentRotateBtn{display:none!important}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -497,7 +505,7 @@ body.student-mode.azny-landscape-view #studentLive.student-live{width:120px!impo
 </div>
 
 <div class="student-controls" id="studentControls">
-  <button id="studentRotateBtn" title="Rodar o ecrã">↻ Rodar ecrã</button>  <button id="studentPointerBtn">🔎 Lupa</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button>
+    <button id="studentPointerBtn">🔎 Lupa</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button>
 </div>
 <div class="student-live" id="studentLive"><div class="student-video-pair"><div class="student-video-card"><video id="studentTeacherVideo" autoplay playsinline></video><span>Professor</span></div><div class="student-video-card"><video id="studentSelfVideo" autoplay muted playsinline></video><span>Você</span></div></div></div>
 <div class="modal student-name-modal" id="studentNameModal"><div class="card">
