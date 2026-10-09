@@ -431,6 +431,17 @@ body.student-mode #studentControls button{position:relative!important;z-index:10
 .student-mode #board{left:0!important;top:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;border:8px solid #8b5a2b!important;box-sizing:border-box!important}
 .student-mode .student-controls{z-index:9999!important;pointer-events:auto!important}
 .student-mode .student-controls button{pointer-events:auto!important;touch-action:manipulation!important}
+
+/* Final landscape layout: the board frame touches both side rails without gaps. */
+body.student-mode.azny-landscape-view .canvas-wrap{left:132px!important;right:clamp(112px,18vw,176px)!important;margin:0!important;padding:0!important}
+body.student-mode.azny-landscape-view #stage{left:0!important;right:0!important;width:100%!important;height:100%!important;overflow:hidden!important}
+body.student-mode.azny-landscape-view #board{left:0!important;top:0!important;width:100%!important;height:100%!important;margin:0!important;border:8px solid #8b5a2b!important;box-sizing:border-box!important}
+body.student-mode.azny-landscape-view .student-live{background:transparent!important;box-shadow:none!important}
+body.student-mode.azny-landscape-view .student-video-pair{background:transparent!important}
+body.student-mode.azny-landscape-view .student-video-card{position:relative!important;background:transparent!important;border:0!important;box-shadow:none!important}
+body.student-mode.azny-landscape-view .student-video-card video{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;background:transparent!important}
+body.student-mode.azny-landscape-view .student-video-card span{left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;max-width:none!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;background:#071b33!important;border-radius:0!important;padding:7px 5px!important;font-size:12px!important}
+body.student-mode.azny-landscape-view .student-video-card:before,body.student-mode.azny-landscape-view .student-video-card:after{display:none!important}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
