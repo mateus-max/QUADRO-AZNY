@@ -276,28 +276,34 @@ body.student-mode{overflow:hidden!important}
 .student .azny-student-device-controls button.is-off{background:#a91f2bdc!important;border-color:#ffb7bd!important;color:#fff!important}
 .student video{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain!important;background:#07111c!important}
 
-/* Mobile: preserve the author's text size and slightly improve readability. */
+/* Mobile: retain authored text formatting and enlarge it only slightly. */
 @media(max-width:700px){
- .student-mode .textobj{font-size:max(15px,1.06em)!important;line-height:1.22!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;max-width:none!important}
+ .student-mode .textobj{zoom:1.06!important;line-height:1.2!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;max-width:none!important}
  .student-mode .resource-body,.student-mode .resource-result,.student-mode .resource-topic{font-size:15px!important;line-height:1.35!important}
  .student-mode .resourceobj,.student-mode .chartobj,.student-mode .musicobj,.student-mode .mediaobj{max-width:100%;box-sizing:border-box}
  .student-mode .student-controls{gap:5px!important}
  .student-mode #studentRotateBtn{font-size:12px!important;font-weight:700!important}
 }
-/* Landscape study layout: board fills the centre from top to bottom, tools on one side and both cameras on the other. */
-.student-mode.azny-landscape-view{overflow:hidden!important}
-.student-mode.azny-landscape-view .canvas-wrap{position:fixed!important;z-index:40;top:0!important;bottom:0!important;left:58px!important;right:clamp(112px,27vw,210px)!important;width:auto!important;height:100dvh!important;min-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important}
-.student-mode.azny-landscape-view #stage,.student-mode.azny-landscape-view #board{height:100%!important;max-height:none!important}
-.student-mode.azny-landscape-view .student-controls{position:fixed!important;z-index:95;top:0!important;bottom:0!important;left:0!important;right:auto!important;width:54px!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:center!important;gap:6px!important;padding:5px!important;overflow-y:auto!important;background:#0b1726!important}
-.student-mode.azny-landscape-view .student-controls button{font-size:10px!important;line-height:1.1!important;padding:8px 2px!important;min-height:38px!important;white-space:normal!important}
-.student-mode.azny-landscape-view .student-live{position:fixed!important;z-index:92;top:0!important;right:0!important;bottom:0!important;left:auto!important;width:clamp(106px,26vw,204px)!important;height:100dvh!important;margin:0!important;border-radius:0!important;overflow-y:auto!important;display:block!important}
-.student-mode.azny-landscape-view .student-video-pair{display:flex!important;flex-direction:column!important;gap:5px!important;padding:5px!important}
-.student-mode.azny-landscape-view .student-video-card video{height:auto!important;max-height:27dvh!important;aspect-ratio:4/3!important;object-fit:contain!important}
-.student-mode.azny-landscape-view .student-video-card span{font-size:9px!important;left:3px!important;bottom:3px!important;padding:2px 4px!important}
+/* Landscape layout: hide the header and place the full-height board between tool and camera columns. */
+body.student-mode.azny-landscape-view{overflow:hidden!important;height:100dvh!important;width:100vw!important}
+body.student-mode.azny-landscape-view .app{height:100dvh!important;min-height:0!important;overflow:hidden!important}
+body.student-mode.azny-landscape-view .topbar,
+body.student-mode.azny-landscape-view .toolbar{display:none!important}
+body.student-mode.azny-landscape-view .workspace{position:static!important;display:block!important;width:100vw!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+body.student-mode.azny-landscape-view .main{display:block!important;width:100%!important;height:100%!important;min-height:0!important;overflow:visible!important}
+body.student-mode.azny-landscape-view .canvas-wrap{position:fixed!important;z-index:41!important;top:0!important;bottom:0!important;left:58px!important;right:clamp(112px,27vw,210px)!important;width:auto!important;height:100dvh!important;min-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important}
+body.student-mode.azny-landscape-view #stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important}
+body.student-mode.azny-landscape-view #board{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-height:none!important;border-width:4px!important}
+body.student-mode.azny-landscape-view .student-controls{position:fixed!important;z-index:95!important;top:0!important;bottom:0!important;left:0!important;right:auto!important;width:54px!important;height:100dvh!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:center!important;gap:6px!important;padding:5px!important;overflow-y:auto!important;background:#0b1726!important}
+body.student-mode.azny-landscape-view .student-controls button{font-size:10px!important;line-height:1.1!important;padding:8px 2px!important;min-height:38px!important;white-space:normal!important}
+body.student-mode.azny-landscape-view .student-live{position:fixed!important;z-index:92!important;top:0!important;right:0!important;bottom:0!important;left:auto!important;width:clamp(106px,26vw,204px)!important;height:100dvh!important;margin:0!important;border-radius:0!important;overflow-y:auto!important;display:block!important}
+body.student-mode.azny-landscape-view .student-video-pair{display:flex!important;flex-direction:column!important;gap:5px!important;padding:5px!important}
+body.student-mode.azny-landscape-view .student-video-card video{height:auto!important;max-height:27dvh!important;aspect-ratio:4/3!important;object-fit:contain!important}
+body.student-mode.azny-landscape-view .student-video-card span{font-size:9px!important;left:3px!important;bottom:3px!important;padding:2px 4px!important}
 @media(max-width:420px){
- .student-mode.azny-landscape-view .canvas-wrap{left:52px!important;right:100px!important}
- .student-mode.azny-landscape-view .student-controls{width:48px!important}
- .student-mode.azny-landscape-view .student-live{width:96px!important}
+ body.student-mode.azny-landscape-view .canvas-wrap{left:52px!important;right:100px!important}
+ body.student-mode.azny-landscape-view .student-controls{width:48px!important}
+ body.student-mode.azny-landscape-view .student-live{width:96px!important}
 }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
@@ -1244,13 +1250,13 @@ async function connectStudentPeer(id,d){
 }
 async function toggleStudentOrientation(){
  const btn=document.getElementById("studentRotateBtn");
- try{
-  if(screen.orientation?.lock&&document.fullscreenElement){await screen.orientation.lock(screen.orientation.type.startsWith("landscape")?"portrait":"landscape");toast("Orientação do ecrã alterada.");return}
-  if(!document.fullscreenElement&&document.documentElement.requestFullscreen){await document.documentElement.requestFullscreen();if(screen.orientation?.lock){await screen.orientation.lock("landscape");toast("Ecrã horizontal ativado.");return}}
-  document.body.classList.toggle("azny-landscape-view");
-  if(btn)btn.textContent=document.body.classList.contains("azny-landscape-view")?"↻ Vista normal":"↻ Rodar ecrã";
-  setTimeout(resizeCanvas,120);toast("Vista ajustada. Para rodar fisicamente, ative a rotação automática do telefone.");
- }catch(e){document.body.classList.toggle("azny-landscape-view");if(btn)btn.textContent=document.body.classList.contains("azny-landscape-view")?"↻ Vista normal":"↻ Rodar ecrã";setTimeout(resizeCanvas,120);toast("Se o telefone não rodar, ative a rotação automática nas definições do dispositivo.")}
+ const active=document.body.classList.toggle("azny-landscape-view");
+ if(btn)btn.textContent=active?"↻ Vista normal":"↻ Rodar ecrã";
+ /* Apply the layout regardless of orientation-lock support. Locking orientation alone does not reposition the cameras or tools. */
+ if(active&&!document.fullscreenElement&&document.documentElement.requestFullscreen){try{await document.documentElement.requestFullscreen()}catch(_){}}
+ if(active&&screen.orientation?.lock){try{await screen.orientation.lock("landscape")}catch(_){}}
+ setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},180);
+ toast(active?"Vista do quadro ativada, com ferramentas e câmeras nas laterais.":"Vista normal restaurada.");
 }
 function setupStudent(){document.body.classList.add("student-mode");document.getElementById("studentNameModal").classList.add("show");if(!classSessionId){document.getElementById("studentWaiting").textContent="Esta ligação de aula já não está ativa. Peça ao professor o link da aula atual.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=true;return}document.getElementById("studentJoinBtn").onclick=async()=>{const n=document.getElementById("studentNameInput").value.trim();if(!n){toast("Digite o seu nome.");return}studentName=n;const btn=document.getElementById("studentJoinBtn");btn.disabled=true;document.getElementById("studentWaiting").textContent="A ligar ao serviço da aula…";document.getElementById("studentWaiting").style.display="block";try{const ready=await ensureAZNYRealtime();if(!ready||!AZNY_DB){btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível ligar ao serviço. Tente novamente.";return}const sref=aznySessionRef();const sessionSnap=await sref.once("value");const sessionData=sessionSnap.val()||{};if(sessionData.status!=="active"){btn.disabled=false;document.getElementById("studentWaiting").textContent="A aula ainda não foi iniciada ou já foi encerrada.";return}const ref=sref.child("joinRequests");if(aznyUid){const previous=await ref.orderByChild("studentUid").equalTo(aznyUid).once("value");let approved=null;previous.forEach(item=>{const d=item.val()||{};if(d.status==="approved")approved={id:item.key,data:d}});if(approved){studentRequestId=approved.id;studentApproved=true;studentName=approved.data.name||n;document.getElementById("studentNameInput").value=studentName;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";watchStudentRequest();document.getElementById("studentWaiting").style.display="none";toast("A voltar à aula ativa sem novo pedido");await startStudentWebRTC();return}}studentRequestId=ref.push().key;await ref.child(studentRequestId).set({name:n,status:"pending",createdAt:firebase.database.ServerValue.TIMESTAMP,studentUid:aznyUid||""});watchStudentRequest();document.getElementById("studentWaiting").textContent="Pedido enviado. Aguarde a aprovação do professor.";toast("Pedido enviado ao professor em tempo real.")}catch(e){console.error(e);btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível enviar o pedido. Tente novamente.";toast("Falha ao enviar o pedido.")}};document.getElementById("studentRotateBtn").onclick=toggleStudentOrientation;document.getElementById("studentPointerBtn").onclick=()=>document.getElementById("pointerTool").click();document.getElementById("studentTextBtn").onclick=()=>document.querySelector('[data-tool="text"]').click();document.getElementById("studentEraseBtn").onclick=()=>document.getElementById("deleteTool").click();document.getElementById("studentRecordBtn").onclick=()=>screenRecorder?.state==="recording"?stopRecording():startRecording();document.getElementById("studentMicBtn").onclick=()=>toggleStudentMic();document.getElementById("studentCameraBtn").onclick=()=>toggleStudentCamera()}
 function showClassEnded(){if(!isStudent)return;studentApproved=false;try{studentPeer?.close()}catch(_){}studentPeer=null;try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}studentLocalStream=null;document.getElementById("studentControls").style.display="none";document.getElementById("studentNameModal").classList.add("show");document.getElementById("studentJoinBtn").disabled=true;document.getElementById("studentWaiting").textContent="A aula foi encerrada pelo professor.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentTeacherVideo")?.pause?.();toast("A aula foi encerrada pelo professor.")}
