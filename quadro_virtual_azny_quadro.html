@@ -306,6 +306,28 @@ body.student-mode.azny-landscape-view .student-video-card video{flex:1 1 auto!im
 body.student-mode.azny-landscape-view .student-live{position:fixed!important;z-index:92!important;top:0!important;right:0!important;bottom:0!important;left:auto!important;width:clamp(106px,26vw,204px)!important;height:100dvh!important;margin:0!important;border-radius:0!important;overflow-y:auto!important;display:block!important}
 body.student-mode.azny-landscape-view .student-video-pair{display:flex!important;flex-direction:column!important;gap:5px!important;padding:5px!important}
 body.student-mode.azny-landscape-view .student-video-card video{height:auto!important;max-height:27dvh!important;aspect-ratio:4/3!important;object-fit:contain!important}
+/* Reference layout refinement: complete tools column, broad board, compact stacked camera cards. */
+body.student-mode.azny-landscape-view .student-controls{width:112px!important;padding:10px!important;justify-content:flex-start!important;gap:7px!important;overflow-x:hidden!important}
+body.student-mode.azny-landscape-view .student-controls button{width:100%!important;min-height:48px!important;flex:0 0 auto!important;font-size:12px!important;padding:7px 4px!important;white-space:normal!important;overflow-wrap:anywhere!important}
+body.student-mode.azny-landscape-view .canvas-wrap{left:120px!important;right:clamp(250px,20vw,330px)!important}
+body.student-mode.azny-landscape-view .student-live{width:clamp(240px,19vw,320px)!important;padding:0!important;gap:0!important}
+body.student-mode.azny-landscape-view .student-video-pair{height:100%!important;min-height:0!important;display:flex!important;flex-direction:column!important;gap:10px!important;padding:8px!important}
+body.student-mode.azny-landscape-view .student-video-card{flex:1 1 0!important;min-height:0!important;display:flex!important;flex-direction:column!important}
+body.student-mode.azny-landscape-view .student-video-card video{width:100%!important;height:calc(100% - 30px)!important;max-height:none!important;min-height:0!important;flex:1 1 auto!important;aspect-ratio:auto!important;object-fit:contain!important}
+body.student-mode.azny-landscape-view .student-video-card span{font-size:12px!important;left:8px!important;bottom:6px!important}
+@media(max-width:900px){
+ body.student-mode.azny-landscape-view .student-controls{width:82px!important;padding:6px!important}
+ body.student-mode.azny-landscape-view .student-controls button{font-size:10px!important;min-height:42px!important}
+ body.student-mode.azny-landscape-view .canvas-wrap{left:88px!important;right:clamp(150px,23vw,220px)!important}
+ body.student-mode.azny-landscape-view .student-live{width:clamp(145px,22vw,212px)!important}
+}
+@media(max-width:420px){
+ body.student-mode.azny-landscape-view .student-controls{width:70px!important;padding:4px!important}
+ body.student-mode.azny-landscape-view .canvas-wrap{left:76px!important;right:132px!important}
+ body.student-mode.azny-landscape-view .student-live{width:124px!important}
+ body.student-mode.azny-landscape-view .student-controls button{font-size:9px!important;padding:5px 2px!important}
+}
+
 body.student-mode.azny-landscape-view .student-video-card span{font-size:9px!important;left:3px!important;bottom:3px!important;padding:2px 4px!important}
 @media(max-width:420px){
  body.student-mode.azny-landscape-view .canvas-wrap{left:52px!important;right:100px!important}
@@ -522,28 +544,27 @@ function sendBoardSnapshotToAllPeers(){
 function normalizeRemoteBoardPages(pages,sourceSize){
  const targetW=Math.max(1,board.clientWidth),targetH=Math.max(1,board.clientHeight);
  const sourceW=Number(sourceSize&&sourceSize.width)||targetW,sourceH=Number(sourceSize&&sourceSize.height)||targetH;
- /* Use one scale for both axes: independent X/Y scaling was distorting the layout and pulling items away from their intended positions. */
- const scale=Math.min(targetW/sourceW,targetH/sourceH);
- const offsetX=(targetW-sourceW*scale)/2,offsetY=(targetH-sourceH*scale)/2;
- if(Math.abs(scale-1)<0.002&&Math.abs(offsetX)<1&&Math.abs(offsetY)<1)return pages;
+ const sx=targetW/sourceW,sy=targetH/sourceH,ss=Math.min(sx,sy);
+ if(Math.abs(sx-1)<0.002&&Math.abs(sy-1)<0.002)return pages;
  return pages.map(page=>{
   if(!page)return page;
   const out=JSON.parse(JSON.stringify(page));
+  /* Preserve the author's proportional position on each axis. This keeps corner items (such as the date) in their original corners on a board with a different aspect ratio. */
   (out.strokes||[]).forEach(st=>{
-   if(st&&Array.isArray(st.points)&&!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*scale+offsetX,y:(+p.y||0)*scale+offsetY}));
-   if(st&&Number.isFinite(+st.width))st.width*=scale;
+   if(st&&Array.isArray(st.points)&&!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*sx,y:(+p.y||0)*sy}));
+   if(st&&Number.isFinite(+st.width))st.width*=ss;
   });
   (out.objects||[]).forEach(o=>{
-   if(o.left!=null)o.left=o.left*scale+offsetX;
-   if(o.top!=null)o.top=o.top*scale+offsetY;
-   if(o.width!=null)o.width*=scale;
-   if(o.height!=null)o.height*=scale;
-   if(o.anchorX!=null)o.anchorX=o.anchorX*scale+offsetX;
-   if(o.anchorY!=null)o.anchorY=o.anchorY*scale+offsetY;
-   if(o.anchorW!=null)o.anchorW*=scale;
-   if(o.anchorH!=null)o.anchorH*=scale;
-   if(o.anchorFontSize!=null)o.anchorFontSize*=scale;
-   if(o.style&&o.style.fontSize){const n=parseFloat(o.style.fontSize);if(Number.isFinite(n))o.style.fontSize=(n*scale)+"px"}
+   if(o.left!=null)o.left*=sx;
+   if(o.top!=null)o.top*=sy;
+   if(o.width!=null)o.width*=sx;
+   if(o.height!=null)o.height*=sy;
+   if(o.anchorX!=null)o.anchorX*=sx;
+   if(o.anchorY!=null)o.anchorY*=sy;
+   if(o.anchorW!=null)o.anchorW*=sx;
+   if(o.anchorH!=null)o.anchorH*=sy;
+   if(o.anchorFontSize!=null)o.anchorFontSize*=ss;
+   if(o.style&&o.style.fontSize){const n=parseFloat(o.style.fontSize);if(Number.isFinite(n))o.style.fontSize=(n*ss)+"px"}
   });
   return out;
  });
