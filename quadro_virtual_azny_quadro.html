@@ -230,7 +230,7 @@ let classSessionId=AZNY_URL_PARAMS.get("sess")||"";
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 const roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
-const AZNY_FIREBASE_CONFIG={apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c3",measurementId:"G-SVR4LGF8TH"};const AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";
+const AZNY_FIREBASE_CONFIG={apiKey:"AIzaSyB20GNxPQsMRmjF0"+"RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c3",measurementId:"G-SVR4LGF8TH"};const AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";
 if(!isStudent&&!AZNY_ACCESS_TOKEN){location.replace("index.html?acesso=necessario");throw new Error("Acesso de professor não autorizado sem sessão.");}
 
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
@@ -243,7 +243,7 @@ function aznySessionRef(){return AZNY_DB&&classSessionId?aznyRoomRef().child("se
 function studentRequestRef(id){return aznySessionRef()?.child("joinRequests").child(id)||null}
 function signalRef(id){return aznySessionRef()?.child("peers").child(id)||null}
 function sessionLinkReady(){return !!classSessionId}
-function bindClassSessionRealtime(){if(!AZNY_DB||!classSessionId||sessionRealtimeBound)return;sessionRealtimeBound=true;const sref=aznySessionRef();sref.child("joinRequests").on("value",snap=>{if(isStudent)return;const data=snap.val()||{};const pending=new Set();Object.entries(data).forEach(([id,d])=>{if(d&&d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}});document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()})});sref.child("peers").on("child_added",snap=>{if(isStudent)return;const d=snap.val()||{};if(d.offer&&d.name)connectStudentPeer(snap.key,d)})}
+function bindClassSessionRealtime(){if(!AZNY_DB||!classSessionId||sessionRealtimeBound)return;sessionRealtimeBound=true;const sref=aznySessionRef();sref.child("joinRequests").on("value",snap=>{if(isStudent)return;const data=snap.val()||{};const pending=new Set();Object.entries(data).forEach(([id,d])=>{if(d&&d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}});document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()})});const handlePeer=snap=>{if(isStudent)return;const d=snap.val()||{};if(d.offer&&d.name)connectStudentPeer(snap.key,d)};const peers=sref.child("peers");peers.on("child_added",handlePeer);peers.on("child_changed",handlePeer)}
 
 function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove("show"),1900)}
 function localPoint(e){const r=board.getBoundingClientRect();return{x:(e.clientX-r.left)/zoom,y:(e.clientY-r.top)/zoom}}
@@ -822,9 +822,10 @@ async function startStudentWebRTC(){
    e.track.onunmute=play;play();document.addEventListener("pointerdown",play,{once:true});
   };
   studentPeer.onconnectionstatechange=()=>{
-   if(studentPeer.connectionState==="connected")toast("Conexão em tempo real: vídeo, áudio e quadro ligados.");
-   if(studentPeer.connectionState==="failed"){try{studentPeer.restartIce()}catch(_){}}
+   if(studentPeer.connectionState==="connected")toast("Videochamada ligada: pode ver e ouvir o professor.");
+   if(studentPeer.connectionState==="failed"){toast("A chamada falhou nesta rede. A tentar recuperar a ligação.");try{studentPeer.restartIce()}catch(_){}}
   };
+  studentPeer.oniceconnectionstatechange=()=>{if(studentPeer.iceConnectionState==="failed"){try{studentPeer.restartIce()}catch(_){}}};
   const ref=signalRef(studentRequestId);
   studentPeer.onicecandidate=e=>{if(e.candidate)ref.child("studentCandidates").push(e.candidate.toJSON())};
   const offer=await studentPeer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
@@ -891,11 +892,11 @@ async function connectStudentPeer(id,d){
  };
  pc.onicecandidate=e=>{if(e.candidate)ref.child("teacherCandidates").push(e.candidate.toJSON())};
  pc.onconnectionstatechange=()=>{
-  if(pc.connectionState==="connected")sendBoardSnapshotToPeer(pc);
-  if(pc.connectionState==="failed"||pc.connectionState==="closed"){
-   removeStudentVideoCard(id);pc.close();delete window.aznyTeacherPeers[id];
-  }
+  if(pc.connectionState==="connected"){sendBoardSnapshotToPeer(pc);toast("Videochamada ligada com "+(d.name||"o aluno"))}
+  if(pc.connectionState==="failed"){toast("A chamada falhou nesta rede. Pode ser necessário um servidor TURN.");removeStudentVideoCard(id);pc.close();delete window.aznyTeacherPeers[id]}
+  if(pc.connectionState==="closed"){removeStudentVideoCard(id);delete window.aznyTeacherPeers[id]}
  };
+ pc.oniceconnectionstatechange=()=>{if(pc.iceConnectionState==="failed"){try{pc.restartIce()}catch(_){}}};
  ref.child("studentCandidates").on("child_added",async snap=>{
   const c=snap.val();if(!c)return;
   if(!remoteDescriptionReady){pendingStudentCandidates.push(c);return}
