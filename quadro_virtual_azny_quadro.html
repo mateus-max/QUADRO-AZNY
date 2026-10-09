@@ -1099,7 +1099,7 @@ function stopCamera(){
 async function startMic(){
  if(!navigator.mediaDevices?.getUserMedia){toast("O microfone exige HTTPS ou localhost.");return}
  try{
-  teacherAudioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}},video:false});
+  teacherAudioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}},video:false});
   const track=teacherAudioStream.getAudioTracks()[0];track.enabled=true;
   document.getElementById("micBtn").disabled=true;document.getElementById("micStopBtn").disabled=false;
   syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Microfone do professor ligado e disponível em tempo real")
@@ -1119,7 +1119,7 @@ async function startClass(){if(classStarted)return;if(!await ensureAZNYRealtime(
 
 async function endClass(){if(!classStarted)return;classStarted=false;clearInterval(classTimerHandle);classTimerHandle=null;updateClassTimer();document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;if(AZNY_DB&&classSessionId)await aznySessionRef().update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP});localStorage.removeItem("azny-active-session-"+String(roomId));document.querySelectorAll("#cameraJoinRequests .join-request").forEach(e=>e.remove());Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc.close()}catch(_){}removeStudentVideoCard(id)});window.aznyTeacherPeers={};roomChannel?.postMessage({type:"class-ended",session:classSessionId});if(isStudent)showClassEnded();toast("Aula encerrada")}
 
-async function startRecording(){if(screenRecorder?.state==="recording")return;if(!navigator.mediaDevices?.getDisplayMedia){toast("A gravação de ecrã não é suportada neste navegador.");return}try{if(!teacherAudioStream){if(!navigator.mediaDevices?.getUserMedia){toast("O Chrome não permite usar o microfone neste modo.");return}teacherAudioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}},video:false});updateTeacherMediaStatus()}const screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:false});const audioContext=new (window.AudioContext||window.webkitAudioContext)();const source=audioContext.createMediaStreamSource(teacherAudioStream);const destination=audioContext.createMediaStreamDestination();source.connect(destination);const combinedStream=new MediaStream([...screenStream.getVideoTracks(),...destination.stream.getAudioTracks()]);combinedStream._aznyAudioContext=audioContext;combinedStream._aznyScreenStream=screenStream;recordedChunks=[];screenRecorder=new MediaRecorder(combinedStream,{mimeType:"video/webm"});recordingStartedAt=Date.now();screenRecorder.ondataavailable=e=>{if(e.data.size)recordedChunks.push(e.data)};screenRecorder.onstop=saveRecording;screenStream.getVideoTracks()[0].addEventListener("ended",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop()});screenRecorder.start(1000);document.getElementById("recordClassBtn").textContent="⏹ Parar gravação";document.getElementById("recordClassBtn").classList.add("recording");toast("Gravação iniciada com a voz do professor")}catch(e){toast(e.name==="NotAllowedError"?"Gravação cancelada.":"Não foi possível iniciar a gravação com o microfone do professor.")}}
+async function startRecording(){if(screenRecorder?.state==="recording")return;if(!navigator.mediaDevices?.getDisplayMedia){toast("A gravação de ecrã não é suportada neste navegador.");return}try{if(!teacherAudioStream){if(!navigator.mediaDevices?.getUserMedia){toast("O Chrome não permite usar o microfone neste modo.");return}teacherAudioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}},video:false});updateTeacherMediaStatus()}const screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:false});const audioContext=new (window.AudioContext||window.webkitAudioContext)();const source=audioContext.createMediaStreamSource(teacherAudioStream);const destination=audioContext.createMediaStreamDestination();source.connect(destination);const combinedStream=new MediaStream([...screenStream.getVideoTracks(),...destination.stream.getAudioTracks()]);combinedStream._aznyAudioContext=audioContext;combinedStream._aznyScreenStream=screenStream;recordedChunks=[];screenRecorder=new MediaRecorder(combinedStream,{mimeType:"video/webm"});recordingStartedAt=Date.now();screenRecorder.ondataavailable=e=>{if(e.data.size)recordedChunks.push(e.data)};screenRecorder.onstop=saveRecording;screenStream.getVideoTracks()[0].addEventListener("ended",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop()});screenRecorder.start(1000);document.getElementById("recordClassBtn").textContent="⏹ Parar gravação";document.getElementById("recordClassBtn").classList.add("recording");toast("Gravação iniciada com a voz do professor")}catch(e){toast(e.name==="NotAllowedError"?"Gravação cancelada.":"Não foi possível iniciar a gravação com o microfone do professor.")}}
 function stopRecording(){if(screenRecorder?.state==="recording")screenRecorder.stop()}
 function saveRecording(){const stream=screenRecorder?.stream;if(stream){stream._aznyScreenStream?.getTracks().forEach(t=>t.stop());stream.getTracks().forEach(t=>t.stop());stream._aznyAudioContext?.close().catch(()=>{})}const blob=new Blob(recordedChunks,{type:"video/webm"});const url=URL.createObjectURL(blob);const box=document.getElementById("recordDownload");if(box){box.style.display="block";box.innerHTML='<a download="aula-quadro-azny-'+new Date().toISOString().slice(0,10)+'.webm" href="'+url+'">⬇ Baixar gravação da aula</a>'}const btn=document.getElementById("recordClassBtn");if(btn){btn.textContent="⏺ Gravar aula";btn.classList.remove("recording")}screenRecorder=null;recordedChunks=[];toast("Gravação guardada com a voz do professor. Pode fazer o download.")}
 function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]))}
@@ -1165,7 +1165,7 @@ async function startStudentWebRTC(){
   toast("A ligar câmera e microfone do aluno...");
   studentLocalStream=await navigator.mediaDevices.getUserMedia({
    video:{facingMode:"user",width:{ideal:480,max:640},height:{ideal:360,max:480},frameRate:{ideal:15,max:20}},
-   audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}
+   audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}
   });
   studentCameraOn=true;studentMicOn=true;
   const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo){selfVideo.srcObject=studentLocalStream;selfVideo.muted=true;selfVideo.playsInline=true;selfVideo.play?.().catch(()=>{})}
@@ -1178,16 +1178,25 @@ async function startStudentWebRTC(){
   studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}))}catch(_){}};
   studentBoardChannel.onmessage=e=>handleBoardChannelMessage(e.data);
   studentBoardChannel.onclose=()=>{studentBoardChannel=null};
+  /* Keep the teacher's microphone on an audio-only element. Video visibility/state must never control playback of the microphone. */
+  let teacherAudioOut=document.getElementById("studentTeacherAudioOut");
+  if(!teacherAudioOut){teacherAudioOut=document.createElement("audio");teacherAudioOut.id="studentTeacherAudioOut";teacherAudioOut.autoplay=true;teacherAudioOut.playsInline=true;teacherAudioOut.muted=false;teacherAudioOut.volume=1;teacherAudioOut.style.cssText="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-10px;bottom:0";document.body.appendChild(teacherAudioOut)}
+  const teacherAudioIn=new MediaStream(),teacherVideoIn=new MediaStream();
+  const playTeacherAudio=()=>teacherAudioOut.play?.().catch(()=>{});
   studentPeer.ontrack=e=>{
-   const v=document.getElementById("studentTeacherVideo");
-   if(!v)return;
-   if(!v.srcObject)v.srcObject=new MediaStream();
-   const incoming=v.srcObject,stream=e.streams?.[0];
-   if(stream)stream.getTracks().forEach(t=>{if(!incoming.getTracks().some(x=>x.id===t.id))incoming.addTrack(t)});
-   if(!incoming.getTracks().some(t=>t.id===e.track.id))incoming.addTrack(e.track);
-   v.muted=false;v.autoplay=true;v.playsInline=true;v.volume=1;
-   const play=()=>v.play?.().catch(()=>{});
-   e.track.onunmute=play;play();document.addEventListener("pointerdown",play,{once:true});
+   const track=e.track;
+   if(track.kind==="audio"){
+    if(!teacherAudioIn.getTracks().some(t=>t.id===track.id))teacherAudioIn.addTrack(track);
+    teacherAudioOut.srcObject=teacherAudioIn;teacherAudioOut.muted=false;teacherAudioOut.volume=1;
+    track.onunmute=playTeacherAudio;playTeacherAudio();
+    document.addEventListener("pointerdown",playTeacherAudio,{once:true});
+    return;
+   }
+   if(track.kind==="video"){
+    if(!teacherVideoIn.getTracks().some(t=>t.id===track.id))teacherVideoIn.addTrack(track);
+    const v=document.getElementById("studentTeacherVideo");
+    if(v){v.srcObject=teacherVideoIn;v.muted=true;v.autoplay=true;v.playsInline=true;v.play?.().catch(()=>{})}
+   }
   };
   studentPeer.onconnectionstatechange=()=>{
    if(studentPeer.connectionState==="connected")toast("Videochamada ligada: pode ver e ouvir o professor.");
@@ -1231,7 +1240,7 @@ async function startStudentWebRTC(){
   toast("Aluno ligado: câmera e áudio preparados para transmissão.");
  }catch(e){console.error(e);toast("Não foi possível ligar câmera/microfone do aluno: "+(e.name||"erro"))}
 }
-async function ensureStudentMedia(){if(studentLocalStream?.getTracks?.().length)return true;try{if(!navigator.mediaDevices?.getUserMedia){toast("Câmera e microfone exigem HTTPS.");return false}studentLocalStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}});studentCameraOn=true;studentMicOn=true;const v=document.getElementById("studentSelfVideo");if(v){v.srcObject=studentLocalStream;v.muted=true;v.playsInline=true;v.play?.().catch(()=>{})}studentLocalStream.getTracks().forEach(t=>{if(studentPeer&&studentPeer.connectionState!=="closed"){const sender=studentPeer.getSenders().find(s=>s.track?.kind===t.kind);if(sender)sender.replaceTrack(t).catch(()=>{});else studentPeer.addTrack(t,studentLocalStream)}});const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");if(cb)cb.textContent="📷 Desligar câmera";if(mb)mb.textContent="🎙 Desligar microfone";toast("Câmera e microfone ativados");return true}catch(e){console.warn("Permissão de mídia do aluno:",e);toast("Permita o acesso à câmera e ao microfone no navegador.");return false}}
+async function ensureStudentMedia(){if(studentLocalStream?.getTracks?.().length)return true;try{if(!navigator.mediaDevices?.getUserMedia){toast("Câmera e microfone exigem HTTPS.");return false}studentLocalStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:false,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}});studentCameraOn=true;studentMicOn=true;const v=document.getElementById("studentSelfVideo");if(v){v.srcObject=studentLocalStream;v.muted=true;v.playsInline=true;v.play?.().catch(()=>{})}studentLocalStream.getTracks().forEach(t=>{if(studentPeer&&studentPeer.connectionState!=="closed"){const sender=studentPeer.getSenders().find(s=>s.track?.kind===t.kind);if(sender)sender.replaceTrack(t).catch(()=>{});else studentPeer.addTrack(t,studentLocalStream)}});const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");if(cb)cb.textContent="📷 Desligar câmera";if(mb)mb.textContent="🎙 Desligar microfone";toast("Câmera e microfone ativados");return true}catch(e){console.warn("Permissão de mídia do aluno:",e);toast("Permita o acesso à câmera e ao microfone no navegador.");return false}}
 function toggleStudentMic(){if(!studentLocalStream)return void ensureStudentMedia();const t=studentLocalStream?.getAudioTracks?.()[0];if(!t)return void ensureStudentMedia();t.enabled=!t.enabled;studentMicOn=t.enabled;const b=document.getElementById("studentMicBtn");if(b)b.textContent=t.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";toast(t.enabled?"Microfone ligado":"Microfone desligado")}
 function toggleStudentCamera(){if(!studentLocalStream)return void ensureStudentMedia();const t=studentLocalStream?.getVideoTracks?.()[0];if(!t)return void ensureStudentMedia();t.enabled=!t.enabled;studentCameraOn=t.enabled;const b=document.getElementById("studentCameraBtn");if(b)b.textContent=t.enabled?"📷 Desligar câmera":"📷 Ligar câmera";toast(t.enabled?"Câmera ligada":"Câmera desligada")}
 function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
