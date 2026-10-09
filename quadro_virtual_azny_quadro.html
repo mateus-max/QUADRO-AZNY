@@ -433,7 +433,13 @@ body.student-mode #studentControls button{position:relative!important;z-index:10
 .student-mode .student-controls button{pointer-events:auto!important;touch-action:manipulation!important}
 
 /* Final landscape layout: the board frame touches both side rails without gaps. */
-body.student-mode.azny-landscape-view .canvas-wrap{left:132px!important;right:clamp(112px,18vw,176px)!important;margin:0!important;padding:0!important}
+body.student-mode.azny-landscape-view .canvas-wrap{left:var(--azny-left-rail,16.55vw)!important;right:var(--azny-right-rail,17.58vw)!important;margin:0!important;padding:0!important}
+@media(max-width:900px){body.student-mode.azny-landscape-view .canvas-wrap{left:76px!important;right:100px!important}}
+/* Teacher camera cards: place each student's name in a separate row below the video. */
+.student{height:auto!important;min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+.student video{display:block!important;flex:0 0 auto!important;width:100%!important;height:105px!important;min-height:105px!important;object-fit:cover!important}
+.student .label{position:static!important;display:block!important;order:2!important;flex:0 0 auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;margin:0!important;padding:7px 8px!important;background:#071b33!important;color:#fff!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;border-radius:0!important;font-size:11px!important}
+.student .azny-student-device-controls{z-index:3!important}
 body.student-mode.azny-landscape-view #stage{left:0!important;right:0!important;width:100%!important;height:100%!important;overflow:hidden!important}
 body.student-mode.azny-landscape-view #board{left:0!important;top:0!important;width:100%!important;height:100%!important;margin:0!important;border:8px solid #8b5a2b!important;box-sizing:border-box!important}
 body.student-mode.azny-landscape-view .student-live{background:transparent!important;box-shadow:none!important}
