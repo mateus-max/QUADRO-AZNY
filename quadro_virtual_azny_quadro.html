@@ -471,6 +471,65 @@ body.student-mode.azny-landscape-view .student-video-card{position:relative!impo
 body.student-mode.azny-landscape-view .student-video-card video{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;background:transparent!important}
 body.student-mode.azny-landscape-view .student-video-card span{left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;max-width:none!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;background:#071b33!important;border-radius:0!important;padding:7px 5px!important;font-size:12px!important}
 body.student-mode.azny-landscape-view .student-video-card:before,body.student-mode.azny-landscape-view .student-video-card:after{display:none!important}
+
+/* AZNY REFERENCE LAYOUT — final authoritative overrides for student landscape view.
+   Board sits between the fixed tool rail and camera rail, with all four frame edges visible. */
+body.student-mode.azny-landscape-view #studentControls{
+ position:fixed!important;left:0!important;right:auto!important;top:0!important;bottom:0!important;
+ width:clamp(200px,14.4vw,224px)!important;max-width:clamp(200px,14.4vw,224px)!important;
+ height:100dvh!important;box-sizing:border-box!important;padding:12px!important;
+ display:flex!important;flex-direction:column!important;justify-content:space-evenly!important;
+ overflow-x:hidden!important;overflow-y:auto!important;z-index:10000!important;
+ background:#071b33!important;border:1px solid #29445f!important;border-radius:0 12px 12px 0!important;
+}
+body.student-mode.azny-landscape-view #studentControls button{
+ flex:0 0 auto!important;width:100%!important;max-width:100%!important;min-width:0!important;
+ min-height:clamp(44px,10vh,74px)!important;white-space:normal!important;text-align:center!important;
+ font-size:clamp(12px,1.35vw,20px)!important;line-height:1.18!important;
+}
+body.student-mode.azny-landscape-view .student-live{
+ position:fixed!important;left:auto!important;right:0!important;top:0!important;bottom:0!important;
+ width:clamp(200px,15vw,236px)!important;max-width:236px!important;height:100dvh!important;max-height:100dvh!important;
+ margin:0!important;padding:0!important;border:0!important;border-radius:12px 0 0 12px!important;
+ display:flex!important;flex-direction:column!important;justify-content:stretch!important;gap:0!important;
+ overflow:hidden!important;z-index:9000!important;background:#071b33!important;
+}
+body.student-mode.azny-landscape-view .student-live .student-video-pair{
+ display:flex!important;flex:1 1 50%!important;flex-direction:column!important;min-height:0!important;
+ gap:0!important;padding:0!important;margin:0!important;
+}
+body.student-mode.azny-landscape-view .student-live .student-video-card{
+ position:relative!important;display:flex!important;flex:1 1 50%!important;flex-direction:column!important;
+ min-height:0!important;width:100%!important;margin:0!important;padding:0!important;
+ border:1px solid #29445f!important;border-radius:0!important;overflow:hidden!important;background:#071b33!important;
+}
+body.student-mode.azny-landscape-view .student-live .student-video-card video{
+ display:block!important;flex:1 1 auto!important;width:100%!important;height:0!important;min-height:0!important;
+ object-fit:cover!important;background:#071b33!important;
+}
+body.student-mode.azny-landscape-view .canvas-wrap{
+ position:fixed!important;z-index:41!important;top:0!important;bottom:0!important;
+ left:clamp(200px,14.4vw,224px)!important;right:clamp(200px,15vw,236px)!important;
+ width:auto!important;height:100dvh!important;min-width:0!important;min-height:0!important;
+ margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
+ overflow:visible!important;box-sizing:border-box!important;background:#8b5a2b!important;
+}
+body.student-mode.azny-landscape-view #stage{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ min-width:0!important;min-height:0!important;overflow:visible!important;
+}
+body.student-mode.azny-landscape-view #board{
+ position:absolute!important;left:0!important;top:0!important;
+ width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+ max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;
+ border:8px solid #8b5a2b!important;outline:1px solid #633b1b!important;outline-offset:-1px!important;
+ border-radius:0!important;box-sizing:border-box!important;overflow:hidden!important;
+}
+@media(max-width:900px){
+ body.student-mode.azny-landscape-view #studentControls{width:clamp(150px,14.4vw,190px)!important;max-width:clamp(150px,14.4vw,190px)!important;padding:7px!important}
+ body.student-mode.azny-landscape-view .canvas-wrap{left:clamp(150px,14.4vw,190px)!important;right:clamp(150px,15vw,196px)!important}
+ body.student-mode.azny-landscape-view .student-live{width:clamp(150px,15vw,196px)!important}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
