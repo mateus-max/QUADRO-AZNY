@@ -330,7 +330,7 @@ function sendBoardSnapshotToChannel(ch){
  if(!ch||ch.readyState!=="open")return false;
  if(ch.bufferedAmount>800000)return false;
  try{
-  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,pages:pageStates};
+  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates};
   const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=24000,total=Math.ceil(raw.length/size);
   for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
   return true;
@@ -343,12 +343,25 @@ function sendBoardSnapshotToPeer(pc){
 function sendBoardSnapshotToAllPeers(){
  Object.values(window.aznyTeacherPeers||{}).forEach(sendBoardSnapshotToPeer);
 }
+function normalizeRemoteBoardPages(pages,sourceSize){
+ const targetW=Math.max(1,board.clientWidth),targetH=Math.max(1,board.clientHeight);
+ const sourceW=Number(sourceSize&&sourceSize.width)||targetW,sourceH=Number(sourceSize&&sourceSize.height)||targetH;
+ const sx=targetW/sourceW,sy=targetH/sourceH;
+ if(Math.abs(sx-1)<0.002&&Math.abs(sy-1)<0.002)return pages;
+ return pages.map(page=>{
+  if(!page)return page;
+  const out=JSON.parse(JSON.stringify(page));
+  (out.strokes||[]).forEach(st=>{if(st&&Array.isArray(st.points)&&!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*sx,y:(+p.y||0)*sy}));if(st&&Number.isFinite(+st.width))st.width*=Math.min(sx,sy)});
+  (out.objects||[]).forEach(o=>{if(o.left!=null)o.left*=sx;if(o.top!=null)o.top*=sy;if(o.width!=null)o.width*=sx;if(o.height!=null)o.height*=sy;if(o.anchorX!=null)o.anchorX*=sx;if(o.anchorY!=null)o.anchorY*=sy;if(o.anchorW!=null)o.anchorW*=sx;if(o.anchorH!=null)o.anchorH*=sy;if(o.anchorFontSize!=null)o.anchorFontSize*=Math.min(sx,sy);if(o.style&&o.style.fontSize){const n=parseFloat(o.style.fontSize);if(Number.isFinite(n))o.style.fontSize=(n*Math.min(sx,sy))+"px"}});
+  return out;
+ });
+}
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
  remoteBoardApplying=true;
  try{
   if(Array.isArray(d.pages)){
-   pageStates=d.pages.concat(Array(5).fill(null)).slice(0,5);
+   pageStates=normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize);
    currentPage=Math.max(1,Math.min(5,+d.currentPage||1));
    restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:d.title||"Nova aula"});
    updatePageLabel();
@@ -383,7 +396,7 @@ function publishLiveBoardState(){
   sendBoardSnapshotToAllPeers();
   if(AZNY_DB){
    const ref=aznyRoomRef().child("board");
-   ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP})
+   ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP})
     .catch(e=>console.warn("AZNY live board:",e));
   }
  },70)
