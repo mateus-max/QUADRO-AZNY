@@ -137,6 +137,40 @@ body.student-mode{background:#071526;color:#e8f0fa;overflow:hidden}
  .student-mode .student-video-card span{font-size:10px;padding:3px 6px}
 }
 
+
+/* Final student layout override: compact two-camera header, full board, fixed tool footer. */
+body.student-mode{overflow:hidden!important;height:100dvh}
+.student-mode .app{height:100dvh!important;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.student-mode .topbar{display:flex!important;flex:0 0 40px!important;height:40px!important;min-height:40px!important;padding:0 10px!important;box-shadow:none}
+.student-mode .topbar .title,.student-mode .top-actions{display:none!important}
+.student-mode .workspace{display:flex!important;flex:1 1 auto!important;min-height:0!important;height:auto!important;flex-direction:column!important;padding:0!important;margin:0!important;gap:0!important;overflow:hidden}
+.student-mode .leftbar,.student-mode .rightbar,.student-mode .toolbar{display:none!important}
+.student-mode .student-live{display:block!important;position:relative!important;inset:auto!important;order:-1!important;flex:0 0 auto!important;width:100%!important;max-width:none!important;margin:0!important;border:0!important;border-bottom:1px solid #29445f!important;border-radius:0!important;box-shadow:none!important;background:#081b30!important}
+.student-mode .student-video-pair{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;padding:6px 8px!important}
+.student-mode .student-video-card{height:92px!important;min-height:0!important;border-radius:8px!important}
+.student-mode .student-video-card video{width:100%!important;height:100%!important;min-height:0!important;object-fit:cover!important}
+.student-mode .student-video-card span{left:6px!important;bottom:5px!important;font-size:10px!important;padding:3px 6px!important}
+.student-mode .main{display:flex!important;order:0!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;height:auto!important;padding:6px 7px 70px!important;overflow:hidden!important;background:#071526!important}
+.student-mode .canvas-wrap{display:block!important;position:relative!important;flex:1 1 auto!important;width:100%!important;height:100%!important;min-height:0!important;overflow:hidden!important;border:1px solid #29435d!important;border-radius:9px!important}
+.student-mode #stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:auto!important}
+.student-mode #board{transform-origin:0 0!important}
+.student-mode .student-controls{display:flex!important;position:fixed!important;left:7px!important;right:7px!important;top:auto!important;bottom:7px!important;z-index:120!important;gap:5px!important;justify-content:flex-start!important;overflow-x:auto!important;padding:6px!important;background:#0b2036!important;border:1px solid #29445f!important;border-radius:12px!important;box-shadow:0 8px 24px #0005!important;pointer-events:auto!important}
+.student-mode .student-controls button{display:block!important;flex:0 0 auto!important;min-height:39px!important;padding:7px 10px!important;background:#122e4b!important;color:#f0f6ff!important;border:1px solid #36536f!important;border-radius:8px!important;pointer-events:auto!important;touch-action:manipulation!important}
+@media(min-width:900px){
+ .student-mode .student-video-pair{grid-template-columns:1fr 1fr!important;max-width:680px!important;margin:0 auto!important}
+ .student-mode .student-video-card{height:96px!important}
+ .student-mode .main{padding-bottom:70px!important}
+ .student-mode .student-controls{left:12px!important;right:12px!important;bottom:10px!important}
+}
+@media(max-width:600px){
+ .student-mode .topbar{flex-basis:36px!important;height:36px!important;min-height:36px!important}
+ .student-mode .student-video-pair{gap:5px!important;padding:5px 6px!important}
+ .student-mode .student-video-card{height:78px!important}
+ .student-mode .main{padding:5px 6px 62px!important}
+ .student-mode .student-controls{left:5px!important;right:5px!important;bottom:5px!important;padding:5px!important;gap:4px!important}
+ .student-mode .student-controls button{min-height:36px!important;padding:6px 8px!important;font-size:11px!important}
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -399,7 +433,7 @@ function publishLiveBoardState(){
    ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP})
     .catch(e=>console.warn("AZNY live board:",e));
   }
- },70)
+ },20)
 }
 function setupBoardRealtime(){
  if(!AZNY_DB)return;
