@@ -2199,35 +2199,95 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
 </script>
 
 <style>
-/* Mobile teacher layout: keep the board usable and compact the tool panels. */
+/* Mobile portrait teacher layout: left tools, central board, right camera/participants.
+   Scoped to the teacher view; desktop and student layouts remain unchanged. */
 @media (max-width: 700px) {
-  body:not(.student-mode) { overflow:auto; }
-  body:not(.student-mode) .app { height:auto; min-height:100dvh; }
-  body:not(.student-mode) .topbar { min-height:48px; height:auto; padding:7px 9px; gap:7px; flex-wrap:wrap; }
-  body:not(.student-mode) .logo { font-size:14px; }
-  body:not(.student-mode) .title { min-width:90px; }
-  body:not(.student-mode) .title input { font-size:13px; }
-  body:not(.student-mode) .top-actions { margin-left:auto; gap:4px; }
-  body:not(.student-mode) .iconbtn { width:32px; height:32px; }
-  body:not(.student-mode) .class-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  body:not(.student-mode) .class-timer { grid-column:1/-1; padding:6px; }
-  body:not(.student-mode) .workspace { display:flex; flex-direction:column; min-height:0; overflow:visible; }
-  body:not(.student-mode) .main { order:0; min-height:0; }
-  body:not(.student-mode) .toolbar { height:44px; min-height:44px; padding:5px; gap:5px; }
-  body:not(.student-mode) .group { gap:3px; padding-right:5px; }
-  body:not(.student-mode) .mini, body:not(.student-mode) .select { height:31px; min-width:30px; }
-  body:not(.student-mode) .canvas-wrap { flex:none; height:48vh; min-height:280px; }
-  body:not(.student-mode) #board { border-width:5px; }
-  body:not(.student-mode) .leftbar, body:not(.student-mode) .rightbar { width:100%; min-width:0; border:0; border-top:1px solid var(--line); }
-  body:not(.student-mode) .sidehead { height:38px; min-height:38px; }
-  body:not(.student-mode) .tools { grid-template-columns:repeat(2,minmax(0,1fr)); padding:8px; gap:6px; overflow:visible; }
-  body:not(.student-mode) .tool { min-height:39px; padding:7px 5px; font-size:12px; }
-  body:not(.student-mode) .tool.wide { grid-column:span 1; }
-  body:not(.student-mode) .bottom-status { margin-top:0; }
-  body:not(.student-mode) .camera-panel { padding:8px; }
-  body:not(.student-mode) .camera { height:190px; }
-  body:not(.student-mode) .students { max-height:none; overflow:visible; }
-  body:not(.student-mode) .student { height:180px; }
+  body:not(.student-mode) { overflow:hidden; }
+  body:not(.student-mode) .app { height:100dvh; min-height:0; overflow:hidden; }
+  body:not(.student-mode) .topbar {
+    flex:0 0 auto; min-height:42px; height:auto; padding:5px 6px; gap:5px;
+    flex-wrap:wrap; align-items:center;
+  }
+  body:not(.student-mode) .logo { font-size:11px; }
+  body:not(.student-mode) .title { min-width:50px; flex:1 1 60px; }
+  body:not(.student-mode) .title input { font-size:11px; }
+  body:not(.student-mode) .top-actions { gap:3px; }
+  body:not(.student-mode) .iconbtn { width:25px; height:28px; font-size:11px; }
+  body:not(.student-mode) .class-controls {
+    flex:1 0 100%; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px;
+    margin:0; padding-top:4px;
+  }
+  body:not(.student-mode) .class-timer { grid-column:span 1; padding:6px 2px; font-size:10px; }
+  body:not(.student-mode) .class-controls button { min-height:30px; padding:3px 2px; font-size:9px; }
+  body:not(.student-mode) .record-download { grid-column:1/-1; }
+  body:not(.student-mode) .workspace {
+    display:grid; grid-template-columns:68px minmax(0,1fr) 104px;
+    grid-template-rows:minmax(0,1fr); flex:1 1 auto; min-height:0; overflow:hidden;
+  }
+  body:not(.student-mode) .leftbar {
+    grid-column:1; grid-row:1; display:flex; width:68px; min-width:0;
+    min-height:0; overflow:hidden; border-right:1px solid var(--line); border-top:0;
+  }
+  body:not(.student-mode) .main {
+    grid-column:2; grid-row:1; display:flex; min-width:0; min-height:0;
+    width:auto; overflow:hidden;
+  }
+  body:not(.student-mode) .rightbar {
+    grid-column:3; grid-row:1; display:flex; width:104px; min-width:0;
+    min-height:0; overflow:auto; border-left:1px solid var(--line); border-top:0;
+  }
+  body:not(.student-mode) .sidehead {
+    min-height:34px; height:auto; padding:4px 3px; justify-content:center;
+    text-align:center; font-size:8px; letter-spacing:0; line-height:1.15;
+  }
+  body:not(.student-mode) .tools {
+    display:flex; flex-direction:column; gap:4px; padding:4px 3px;
+    overflow-y:auto; overflow-x:hidden; min-height:0;
+  }
+  body:not(.student-mode) .tool,
+  body:not(.student-mode) .tool.wide {
+    display:flex; flex:0 0 auto; grid-column:auto; width:100%; min-height:38px;
+    padding:4px 2px; align-items:center; justify-content:center; text-align:center;
+    white-space:normal; overflow-wrap:anywhere; font-size:9px; line-height:1.15;
+  }
+  body:not(.student-mode) .bottom-status {
+    display:flex; flex-direction:column; gap:3px; margin-top:auto; padding:4px 2px;
+    font-size:8px; overflow-wrap:anywhere;
+  }
+  body:not(.student-mode) .toolbar {
+    flex:0 0 38px; height:38px; min-height:38px; padding:3px;
+    gap:3px; overflow-x:auto; overflow-y:hidden;
+  }
+  body:not(.student-mode) .group { flex:0 0 auto; gap:2px; padding-right:3px; }
+  body:not(.student-mode) .mini,
+  body:not(.student-mode) .select { height:28px; min-width:25px; padding:0 3px; font-size:10px; }
+  body:not(.student-mode) .color { width:25px; height:28px; }
+  body:not(.student-mode) .zoomlabel { font-size:9px; min-width:30px; }
+  body:not(.student-mode) .canvas-wrap {
+    position:relative; flex:1 1 auto; width:100%; height:auto; min-height:0;
+    overflow:hidden; border:0; border-radius:0;
+  }
+  body:not(.student-mode) #stage { width:100%; height:100%; }
+  body:not(.student-mode) #board { border-width:4px; }
+  body:not(.student-mode) .camera-panel { padding:4px; }
+  body:not(.student-mode) .camera { height:82px; border-radius:6px; }
+  body:not(.student-mode) .camera .cam-off { gap:3px; padding:3px; font-size:8px; }
+  body:not(.student-mode) .camera .cam-off .big { font-size:18px; }
+  body:not(.student-mode) .camera .camera-label,
+  body:not(.student-mode) .camera .cam-status { font-size:8px; padding:2px 3px; }
+  body:not(.student-mode) .cam-buttons { flex-direction:column; gap:3px; margin-top:4px; }
+  body:not(.student-mode) .cam-buttons button { min-height:30px; height:auto; padding:4px 2px; font-size:9px; }
+  body:not(.student-mode) .teacher-media-status { font-size:8px; padding:4px 2px; overflow-wrap:anywhere; }
+  body:not(.student-mode) .camera-join-requests { gap:4px; }
+  body:not(.student-mode) .camera-join-requests .join-request { padding:4px; font-size:9px; }
+  body:not(.student-mode) .join-request .jr-actions { flex-direction:column; gap:3px; }
+  body:not(.student-mode) .join-request button { padding:4px 2px; font-size:9px; }
+  body:not(.student-mode) .students {
+    padding:0 3px 5px; gap:4px; max-height:none; overflow:visible;
+  }
+  body:not(.student-mode) .student { height:72px; min-height:72px; border-radius:5px; }
+  body:not(.student-mode) .student .label { left:3px; bottom:3px; font-size:8px; padding:2px 3px; }
+  body:not(.student-mode) .no-students { padding:6px 3px; font-size:8px; overflow-wrap:anywhere; }
 }
 </style>
 
