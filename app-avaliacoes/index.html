@@ -12,10 +12,10 @@
 <body>
 <header class="top"><div class="brand">AZNY <span>EXAM</span></div><p>Avaliações e exames supervisionados</p></header>
 <main class="wrap"><section class="card">
-<h1>Entrar numa avaliação</h1><p class="muted">Abra o link enviado pelo professor ou cole aqui o link da avaliação. Antes de começar, o sistema poderá solicitar autorização para utilizar a câmara e o microfone.</p>
+<h1>Entrar numa avaliação</h1><p class="muted">Abra o link enviado pelo professor ou cole aqui o link da avaliação. Antes de começar, o sistema solicitará autorização para utilizar a câmara e o microfone.</p>
 <label class="label" for="examLink">Link ou código da avaliação</label><input id="examLink" type="text" autocomplete="off" placeholder="Cole aqui o link enviado pelo professor">
 <button id="openExam">Abrir avaliação</button><button id="install" class="secondary hidden">Instalar AZNY Exam</button>
-<div id="notice" class="notice">A instalação da aplicação não substitui as permissões do navegador. A partilha do ecrã depende do suporte do dispositivo e do navegador.</div>
+<div id="notice" class="notice">A instalação da aplicação não substitui as permissões do navegador. A avaliação utiliza a câmara e o microfone; não solicita partilha do ecrã.</div>
 </section></main><footer>AZNY Exam · Plataforma de avaliações</footer><iframe id="examFrame" title="Avaliação AZNY" allow="camera; microphone; display-capture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 <script>
 const $=id=>document.getElementById(id),base=new URL("../",location.href);
