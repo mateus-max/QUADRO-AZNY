@@ -850,6 +850,46 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
  }
 }
 
+
+/* AZNY mobile landscape: compact navy header and toolbar to maximize board height. */
+@media (max-width: 950px) and (orientation: landscape), (max-height: 520px) and (pointer: coarse) {
+  body:not(.student-mode) .app {
+    height:100dvh!important; min-height:0!important; overflow:hidden!important;
+  }
+  body:not(.student-mode) .topbar {
+    flex:0 0 36px!important; height:36px!important; min-height:36px!important;
+    max-height:36px!important; padding:2px 7px!important; gap:6px!important;
+    flex-wrap:nowrap!important; align-items:center!important; overflow:hidden!important;
+  }
+  body:not(.student-mode) .logo {font-size:11px!important; line-height:1!important}
+  body:not(.student-mode) .title {flex:0 1 110px!important; min-width:45px!important; margin:0!important}
+  body:not(.student-mode) #boardTitle {font-size:11px!important; height:25px!important; padding:2px 4px!important}
+  body:not(.student-mode) .class-controls {
+    display:flex!important; flex:0 1 auto!important; flex-wrap:nowrap!important;
+    gap:3px!important; min-width:0!important; margin:0!important; padding:0!important;
+  }
+  body:not(.student-mode) .class-timer {font-size:10px!important; padding:2px!important}
+  body:not(.student-mode) .class-controls button {min-height:25px!important; height:25px!important; padding:2px 5px!important; font-size:9px!important}
+  body:not(.student-mode) .top-actions {flex:0 0 auto!important; gap:2px!important}
+  body:not(.student-mode) .top-actions .iconbtn {min-width:25px!important; width:25px!important; height:25px!important; padding:2px!important}
+  body:not(.student-mode) .workspace {flex:1 1 0!important; min-height:0!important; overflow:hidden!important}
+  body:not(.student-mode) .main {min-height:0!important; overflow:hidden!important}
+  body:not(.student-mode) .toolbar {
+    flex:0 0 30px!important; height:30px!important; min-height:30px!important;
+    max-height:30px!important; padding:2px!important; gap:2px!important;
+    overflow-x:auto!important; overflow-y:hidden!important;
+  }
+  body:not(.student-mode) .toolbar .group {gap:2px!important; padding:0 2px!important}
+  body:not(.student-mode) .toolbar button,
+  body:not(.student-mode) .toolbar select,
+  body:not(.student-mode) .toolbar .mini,
+  body:not(.student-mode) .toolbar .select {height:25px!important; min-height:25px!important; padding:1px 4px!important; font-size:10px!important}
+  body:not(.student-mode) .toolbar .color {width:23px!important; height:25px!important}
+  body:not(.student-mode) .canvas-wrap {flex:1 1 0!important; min-height:0!important; height:auto!important}
+  body:not(.student-mode) .leftbar .bottom-status {min-height:0!important; padding:2px!important; gap:1px!important; font-size:7px!important; line-height:1.05!important}
+  body:not(.student-mode) .bottom-status .azny-realtime-label {font-size:7px!important; letter-spacing:0!important}
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
