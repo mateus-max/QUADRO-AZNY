@@ -770,7 +770,21 @@ body:not(.student-mode) .camera-panel>.cam-buttons button:disabled{opacity:.45!i
   body:not(.student-mode) .canvas-wrap { height:55vh!important; min-height:300px!important; flex:none!important; }
 }
 
-\n#aznyContextMenu{position:fixed;z-index:99999;display:none;min-width:210px;max-width:min(300px,90vw);max-height:75vh;overflow:auto;background:#fff;border:1px solid #b9c8d8;border-radius:10px;box-shadow:0 12px 35px #0004;padding:6px;color:#172536}#aznyContextMenu.open{display:block}#aznyContextMenu .ctx-title{font-size:11px;font-weight:800;color:#64748b;padding:7px 9px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}#aznyContextMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;cursor:pointer}#aznyContextMenu button:hover{background:#edf5ff}#aznyContextMenu button:disabled{opacity:.4}\n#refreshBoardBtn{font-size:22px;font-weight:800}#refreshBoardBtn:active{transform:rotate(25deg)}\n#studentRefreshBoardBtn{font-weight:800;background:#e8f2ff;border:1px solid #93b8e8;border-radius:8px;padding:7px 10px;color:#12345a;cursor:pointer}#studentRefreshBoardBtn:disabled{opacity:.6}\n.bottom-status{display:flex;justify-content:center;align-items:center;gap:12px;text-align:center;width:100%;font-weight:800}.bottom-status .azny-realtime-label{font-size:12px;font-weight:900;letter-spacing:.08em;text-align:center}.bottom-status #storageState{font-weight:800}</style>
+\n#aznyContextMenu{position:fixed;z-index:99999;display:none;min-width:210px;max-width:min(300px,90vw);max-height:75vh;overflow:auto;background:#fff;border:1px solid #b9c8d8;border-radius:10px;box-shadow:0 12px 35px #0004;padding:6px;color:#172536}#aznyContextMenu.open{display:block}#aznyContextMenu .ctx-title{font-size:11px;font-weight:800;color:#64748b;padding:7px 9px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}#aznyContextMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;cursor:pointer}#aznyContextMenu button:hover{background:#edf5ff}#aznyContextMenu button:disabled{opacity:.4}\n#refreshBoardBtn{font-size:22px;font-weight:800}#refreshBoardBtn:active{transform:rotate(25deg)}\n#studentRefreshBoardBtn{font-weight:800;background:#e8f2ff;border:1px solid #93b8e8;border-radius:8px;padding:7px 10px;color:#12345a;cursor:pointer}#studentRefreshBoardBtn:disabled{opacity:.6}\n.bottom-status{display:flex;justify-content:center;align-items:center;gap:12px;text-align:center;width:100%;font-weight:800}.bottom-status .azny-realtime-label{font-size:12px;font-weight:900;letter-spacing:.08em;text-align:center}.bottom-status #storageState{font-weight:800}
+/* Mobile text entry: keep the Android keyboard native and unified; give it room by adapting the student board. */
+body.student-mode.text-entry-active{height:100dvh!important}
+body.student-mode.text-entry-active .student-live{display:none!important}
+body.student-mode.text-entry-active .workspace{top:38px!important;bottom:0!important;height:auto!important}
+body.student-mode.text-entry-active .main{padding:3px 4px!important}
+body.student-mode.text-entry-active .canvas-wrap{height:100%!important;min-height:0!important}
+body.student-mode.text-entry-active .student-controls{display:none!important}
+body.student-mode.text-entry-active #stage{overscroll-behavior:contain}
+body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;-webkit-user-select:text;user-select:text;touch-action:manipulation}
+@media (max-height:500px){
+ body.student-mode.text-entry-active .topbar{height:30px!important;min-height:30px!important}
+ body.student-mode.text-entry-active .workspace{top:30px!important}
+}
+</style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
 <div class="app">
@@ -1847,6 +1861,67 @@ setupAznyContextMenu();
 document.getElementById("refreshBoardBtn")?.addEventListener("click",async()=>{const btn=document.getElementById("refreshBoardBtn");if(classStarted){try{localStorage.setItem("azny-active-session-"+String(roomId),classSessionId);const u=new URL(location.href);u.searchParams.set("sala",roomId);u.searchParams.set("sess",classSessionId);history.replaceState(null,"",u.href);if(AZNY_DB)await aznySessionRef().update({status:"active",refreshRequestedAt:Date.now()})}catch(e){toast("Aula mantida; não foi possível guardar todos os dados da sessão.")}}try{if(typeof scheduleSave==="function")scheduleSave()}catch(_){}if(btn){btn.disabled=true;btn.textContent="…"}setTimeout(()=>location.reload(),350)});
 document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",async()=>{const btn=document.getElementById("studentRefreshBoardBtn");if(!confirm("Atualizar e reconectar ao quadro? A ligação poderá interromper-se brevemente."))return;if(btn){btn.disabled=true;btn.textContent="A atualizar…"}try{if(classSessionId){const u=new URL(location.href);u.searchParams.set("aluno","1");u.searchParams.set("sala",roomId);u.searchParams.set("sess",classSessionId);history.replaceState(null,"",u.href)} }catch(_){}setTimeout(()=>location.reload(),150)});
 
+</script>
+
+<script>
+/* AZNY mobile text-entry layout: use the normal Android keyboard (never create/split a custom keyboard). */
+(function(){
+ "use strict";
+ const body=document.body;
+ let blurTimer=null;
+ function activeText(){
+  const el=document.activeElement;
+  return !!(el && el.matches && el.matches(".student-mode .textobj[contenteditable='true']"));
+ }
+ function viewportHeight(){
+  return window.visualViewport ? window.visualViewport.height : window.innerHeight;
+ }
+ function syncTextEntryLayout(){
+  if(!body.classList.contains("student-mode")) {
+   body.classList.remove("text-entry-active");
+   return;
+  }
+  const vv=window.visualViewport;
+  const keyboardLikely=!!vv && (window.innerHeight-vv.height)>120;
+  const shouldStay=activeText() || (body.classList.contains("text-entry-active") && keyboardLikely);
+  body.classList.toggle("text-entry-active",shouldStay);
+  if(shouldStay){
+   const h=Math.max(180,Math.round(viewportHeight()));
+   body.style.setProperty("--azny-visible-height",h+"px");
+  }else{
+   body.style.removeProperty("--azny-visible-height");
+  }
+ }
+ document.addEventListener("focusin",function(e){
+  if(!body.classList.contains("student-mode"))return;
+  const target=e.target;
+  if(target && target.matches && target.matches(".textobj[contenteditable='true']")){
+   clearTimeout(blurTimer);
+   body.classList.add("text-entry-active");
+   requestAnimationFrame(syncTextEntryLayout);
+  }
+ },true);
+ document.addEventListener("focusout",function(e){
+  if(!body.classList.contains("student-mode"))return;
+  if(e.target && e.target.matches && e.target.matches(".textobj[contenteditable='true']")){
+   clearTimeout(blurTimer);
+   blurTimer=setTimeout(function(){
+    if(!activeText()) {
+     body.classList.remove("text-entry-active");
+     body.style.removeProperty("--azny-visible-height");
+    }
+   },250);
+  }
+ },true);
+ if(window.visualViewport){
+  window.visualViewport.addEventListener("resize",syncTextEntryLayout,{passive:true});
+  window.visualViewport.addEventListener("scroll",syncTextEntryLayout,{passive:true});
+ }
+ window.addEventListener("resize",syncTextEntryLayout,{passive:true});
+ document.addEventListener("selectionchange",function(){
+  if(body.classList.contains("student-mode") && activeText()) syncTextEntryLayout();
+ });
+})();
 </script>
 </body>
 </html>
