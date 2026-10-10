@@ -1667,15 +1667,30 @@ function updateTeacherMediaStatus(){
  document.getElementById("teacherMediaStatus").textContent="Câmera: "+cam+" · Microfone: "+mic;
 }
 async function startCamera(){
- if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
+ const btn=document.getElementById("cameraBtn");
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast("Este navegador não disponibiliza a câmara. Abre o quadro pelo Chrome atualizado em HTTPS.");return}
+ if(teacherStream&&teacherStream.getVideoTracks().some(t=>t.readyState==="live")){const v=document.getElementById("teacherVideo");v.srcObject=teacherStream;v.hidden=false;v.play?.().catch(()=>{});return}
+ if(btn){btn.disabled=true;btn.textContent="A abrir câmara…"}
  try{
-  teacherStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},audio:false});
-  const v=document.getElementById("teacherVideo");v.srcObject=teacherStream;v.hidden=false;
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"user"},width:{ideal:640},height:{ideal:480}},audio:false})}
+  catch(firstError){console.warn("Câmara: tentativa com parâmetros flexíveis falhou",firstError);stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false})}
+  teacherStream=stream;
+  const v=document.getElementById("teacherVideo");v.muted=true;v.autoplay=true;v.playsInline=true;v.srcObject=stream;v.hidden=false;
   document.querySelector("#teacherCamera .cam-off").style.display="none";
   document.getElementById("camStatus").textContent="Ligada";
-  document.getElementById("cameraBtn").disabled=true;document.getElementById("cameraStopBtn").disabled=false;
-  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
- }catch(e){toast(e.name==="NotAllowedError"?"Permissão da câmera recusada.":("Não foi possível ligar a câmera: "+e.name))}
+  if(btn){btn.disabled=true;btn.textContent="🎥 Ligar câmera"}document.getElementById("cameraStopBtn").disabled=false;
+  try{await v.play()}catch(playError){console.warn("Vídeo local aguarda reprodução",playError)}
+  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmara do professor ligada")
+ }catch(e){
+  if(btn){btn.disabled=false;btn.textContent="🎥 Ligar câmera"}
+  let message="Não foi possível ligar a câmara ("+(e.name||"erro")+")";
+  if(e.name==="NotAllowedError"||e.name==="PermissionDeniedError")message="Acesso à câmara bloqueado. Permite a câmara nas definições do navegador e tenta novamente.";
+  else if(e.name==="NotFoundError"||e.name==="DevicesNotFoundError")message="Não foi encontrada uma câmara disponível neste dispositivo.";
+  else if(e.name==="NotReadableError"||e.name==="TrackStartError")message="A câmara pode estar ocupada por outra aplicação. Fecha outras aplicações que a utilizem e tenta novamente.";
+  else if(e.name==="OverconstrainedError")message="A câmara não suporta a resolução solicitada. Tenta novamente.";
+  toast(message);console.error("AZNY teacher camera error",e)
+ }
 }
 function stopCamera(){
  if(teacherStream){teacherStream.getTracks().forEach(t=>t.stop());teacherStream=null}
