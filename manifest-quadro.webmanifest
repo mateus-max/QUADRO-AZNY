@@ -12,10 +12,10 @@
   "theme_color": "#071b33",
   "icons": [
     {
-      "src": "icons/azny-board.svg",
+      "src": "icons/azny-board.svg?v=2",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
   "categories": [
