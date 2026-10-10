@@ -1671,14 +1671,39 @@ function updateTeacherMediaStatus(){
 }
 async function startCamera(){
  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
+ const btn=document.getElementById("cameraBtn");
+ if(btn)btn.disabled=true;
  try{
-  teacherStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},audio:false});
-  const v=document.getElementById("teacherVideo");v.srcObject=teacherStream;v.hidden=false;
+  // Não reutilizar uma stream antiga que possa estar parada ou bloqueada.
+  if(teacherStream){teacherStream.getTracks().forEach(t=>{try{t.stop()}catch(_){}});teacherStream=null}
+  const v=document.getElementById("teacherVideo");
+  if(v){v.pause?.();v.srcObject=null;v.hidden=true}
+  let lastError=null;
+  // Começar com requisitos simples; alguns controladores falham com resoluções altas.
+  for(const constraints of [
+   {video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false},
+   {video:{width:{ideal:640},height:{ideal:480}},audio:false},
+   {video:true,audio:false}
+  ]){
+   try{teacherStream=await navigator.mediaDevices.getUserMedia(constraints);break}
+   catch(e){lastError=e;if(e.name==="NotAllowedError"||e.name==="SecurityError")throw e;await new Promise(resolve=>setTimeout(resolve,300))}
+  }
+  if(!teacherStream)throw lastError||new Error("A câmara não devolveu uma transmissão.");
+  if(v){v.srcObject=teacherStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.hidden=false;try{await v.play()}catch(playError){console.warn("A câmara abriu, mas o vídeo ainda não iniciou:",playError)}}
   document.querySelector("#teacherCamera .cam-off").style.display="none";
   document.getElementById("camStatus").textContent="Ligada";
-  document.getElementById("cameraBtn").disabled=true;document.getElementById("cameraStopBtn").disabled=false;
+  if(btn)btn.disabled=true;
+  document.getElementById("cameraStopBtn").disabled=false;
   syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
- }catch(e){toast(e.name==="NotAllowedError"?"Permissão da câmera recusada.":("Não foi possível ligar a câmera: "+e.name))}
+ }catch(e){
+  if(teacherStream){teacherStream.getTracks().forEach(t=>{try{t.stop()}catch(_){}});teacherStream=null}
+  const v=document.getElementById("teacherVideo");if(v){v.srcObject=null;v.hidden=true}
+  if(btn)btn.disabled=false;
+  document.getElementById("cameraStopBtn").disabled=true;
+  updateTeacherMediaStatus();
+  const msg=e.name==="NotAllowedError"?"Permissão da câmera recusada. Autorize a câmera nas configurações do navegador.":e.name==="NotReadableError"||e.name==="AbortError"?"A câmera está ocupada ou o controlador não respondeu. Feche outros programas que usam a câmera e tente novamente.":"Não foi possível ligar a câmera: "+(e.name||e.message);
+  toast(msg)
+ }
 }
 function stopCamera(){
  if(teacherStream){teacherStream.getTracks().forEach(t=>t.stop());teacherStream=null}
