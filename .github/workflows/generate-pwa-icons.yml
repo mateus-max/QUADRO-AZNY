@@ -1,0 +1,39 @@
+name: Generate AZNY PWA PNG icons
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "icons/azny-board.svg"
+      - ".github/workflows/generate-pwa-icons.yml"
+permissions:
+  contents: write
+jobs:
+  icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cairosvg pillow
+      - name: Render square PNG icons
+        run: |
+          python - <<'PY'
+          import cairosvg
+          from PIL import Image
+          from io import BytesIO
+          source = open("icons/azny-board.svg", "rb").read()
+          for size in (192, 512):
+              png = cairosvg.svg2png(bytestring=source, output_width=size, output_height=size)
+              image = Image.open(BytesIO(png)).convert("RGBA")
+              image.save(f"icons/azny-board-{size}.png", format="PNG", optimize=True)
+          PY
+      - name: Commit generated icons
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add icons/azny-board-192.png icons/azny-board-512.png
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate AZNY PWA PNG icons"
+            git push
+          fi
