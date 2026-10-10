@@ -1667,15 +1667,26 @@ function updateTeacherMediaStatus(){
  document.getElementById("teacherMediaStatus").textContent="Câmera: "+cam+" · Microfone: "+mic;
 }
 async function startCamera(){
- if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
+ const btn=document.getElementById("cameraBtn");
+ if(teacherStream?.getVideoTracks?.().some(t=>t.readyState==="live")){updateTeacherMediaStatus();return}
+ if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS e um navegador compatível.");return}
+ if(btn)btn.disabled=true;
  try{
-  teacherStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},audio:false});
-  const v=document.getElementById("teacherVideo");v.srcObject=teacherStream;v.hidden=false;
-  document.querySelector("#teacherCamera .cam-off").style.display="none";
+  const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},audio:false});
+  teacherStream=stream;
+  const v=document.getElementById("teacherVideo");
+  v.srcObject=stream;v.muted=true;v.autoplay=true;v.playsInline=true;v.hidden=false;
+  const playResult=v.play?.();if(playResult&&typeof playResult.catch==="function")playResult.catch(()=>{});
+  const off=document.querySelector("#teacherCamera .cam-off");if(off)off.style.display="none";
   document.getElementById("camStatus").textContent="Ligada";
-  document.getElementById("cameraBtn").disabled=true;document.getElementById("cameraStopBtn").disabled=false;
-  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
- }catch(e){toast(e.name==="NotAllowedError"?"Permissão da câmera recusada.":("Não foi possível ligar a câmera: "+e.name))}
+  if(btn)btn.disabled=true;document.getElementById("cameraStopBtn").disabled=false;
+  stream.getVideoTracks().forEach(t=>t.onended=()=>{if(teacherStream===stream)stopCamera()});
+  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada.")
+ }catch(e){
+  if(btn)btn.disabled=false;
+  const msg=e.name==="NotAllowedError"||e.name==="PermissionDeniedError"?"Permissão da câmera recusada. Autoriza a câmera nas permissões do navegador.":e.name==="NotFoundError"?"Não foi encontrada uma câmera disponível.":e.name==="NotReadableError"?"A câmera está a ser usada por outra aplicação. Fecha essa aplicação e tenta novamente.":e.name==="OverconstrainedError"?"A câmera não aceita estas definições. Tenta novamente.":("Não foi possível ligar a câmera: "+(e.name||"erro"));
+  console.error("AZNY startCamera:",e);toast(msg)
+ }
 }
 function stopCamera(){
  if(teacherStream){teacherStream.getTracks().forEach(t=>t.stop());teacherStream=null}
@@ -2248,30 +2259,6 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
 }
 </style>
 
-<script id="azny-auto-landscape-phone">
-/* On phones, request landscape fullscreen at the first user interaction. Browsers may reject orientation locking unless fullscreen is allowed. */
-(function(){
- if(document.body.classList.contains("student-mode"))return;
- const phone=()=>window.matchMedia("(max-width: 700px)").matches;
- let tried=false;
- async function requestLandscape(){
-  if(tried||!phone())return;
-  tried=true;
-  try{
-   if(!document.fullscreenElement&&document.documentElement.requestFullscreen){
-    await document.documentElement.requestFullscreen();
-   }
-  }catch(e){/* Continue: layout still adapts to actual orientation. */}
-  try{
-   if(screen.orientation&&typeof screen.orientation.lock==="function"){
-    await screen.orientation.lock("landscape");
-   }
-  }catch(e){/* Some mobile browsers only allow manual rotation. */}
-  setTimeout(()=>{window.dispatchEvent(new Event("resize"));if(typeof resizeCanvas==="function")resizeCanvas()},220);
- }
- document.addEventListener("pointerdown",requestLandscape,{capture:true,passive:true,once:true});
- window.addEventListener("orientationchange",()=>setTimeout(()=>{window.dispatchEvent(new Event("resize"));if(typeof resizeCanvas==="function")resizeCanvas()},250),{passive:true});
-})();
-</script>
+
 </body>
 </html>
