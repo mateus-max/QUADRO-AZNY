@@ -11,6 +11,10 @@
         android:label="AZNY Avaliações"
         android:usesCleartextTraffic="false"
         android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
+        <service
+            android:name=".ScreenShareService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
