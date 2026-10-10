@@ -1923,6 +1923,12 @@ async function startStudentWebRTC(){
   };
   studentPeer.oniceconnectionstatechange=()=>{if(studentPeer.iceConnectionState==="failed"){try{studentPeer.restartIce()}catch(_){}}};
   const ref=signalRef(studentRequestId);
+  if(!ref)throw new Error("Sinalização da aula indisponível.");
+  // Uma sessão aprovada pode voltar a usar o mesmo ID. Remover SDP e ICE
+  // antigos antes de criar uma nova oferta evita aplicar uma resposta velha.
+  ref.child("answer").off();
+  ref.child("teacherCandidates").off();
+  await ref.update({offer:null,answer:null,studentCandidates:null,teacherCandidates:null,studentOnline:false});
   notifyTeacherStudentPresence(ref);
   ref.child("teacherControls").on("value",snap=>{
    const controls=snap.val()||{};
@@ -2001,8 +2007,16 @@ async function syncTeacherMediaToPeer(pc){
 function syncTeacherMediaToPeers(){Object.values(window.aznyTeacherPeers||{}).forEach(syncTeacherMediaToPeer)}
 function setupRealtimeRoom(){if(!AZNY_DB)return;setupBoardRealtime();if(classSessionId)bindClassSessionRealtime()}
 async function connectStudentPeer(id,d){
- if(window.aznyTeacherPeers?.[id])return;
  window.aznyTeacherPeers=window.aznyTeacherPeers||{};
+ const existing=window.aznyTeacherPeers[id];
+ // O mesmo pedido pode ser reutilizado quando o aluno regressa. Se a oferta
+ // mudou, descartar a ligação antiga em vez de ignorar a nova oferta.
+ if(existing){
+  if(existing._aznyOfferSdp===d.offer?.sdp)return;
+  try{existing.close()}catch(_){}
+  delete window.aznyTeacherPeers[id];
+  removeStudentVideoCard(id);
+ }
  const ref=signalRef(id);
  let presenceInitialized=false,lastStudentOnline=null;
  ref.child("studentOnline").on("value",snap=>{
@@ -2033,6 +2047,7 @@ async function connectStudentPeer(id,d){
  const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
  bindStudentNetworkQuality(pc,id);
  let remoteDescriptionReady=false,pendingStudentCandidates=[];
+ pc._aznyOfferSdp=d.offer?.sdp||"";
  window.aznyTeacherPeers[id]=pc;
  // The student offer already contains audio/video transceivers because the
  // student adds their camera and microphone before creating the offer.
@@ -2134,6 +2149,10 @@ async function leaveStudentClass(){
     // Publicar a saída antes de fechar a ligação para o professor remover
     // imediatamente o cartão da câmera.
     await ref.update({studentOnline:false,network:"offline",leftAt:firebase.database.ServerValue.TIMESTAMP});
+    // Apagar SDP/ICE desta ligação para que a próxima entrada não reutilize
+    // candidatos ou uma resposta WebRTC antigos.
+    const peerRef=signalRef(oldRequestId);
+    if(peerRef)await peerRef.remove();
    }
   }
  }catch(e){console.warn("AZNY leave class presence:",e)}
