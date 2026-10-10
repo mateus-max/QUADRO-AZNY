@@ -2247,5 +2247,53 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
  body:not(.student-mode) .workspace>.rightbar .no-students{padding:10px 5px!important;font-size:clamp(10px,1.1vw,14px)!important;line-height:1.25!important;overflow-wrap:anywhere!important}
 }
 </style>
+<style id="azny-phone-portrait-three-column">
+/* Portrait phone: preserve the reference's left tools / central board / right camera layout. */
+@media screen and (orientation:portrait) and (max-width:700px) {
+ body:not(.student-mode){height:100dvh!important;min-height:0!important;overflow:hidden!important;background:#06172a!important}
+ body:not(.student-mode) .app{display:flex!important;flex-direction:column!important;width:100%!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+ body:not(.student-mode) .topbar{display:flex!important;flex:0 0 auto!important;flex-wrap:wrap!important;align-content:center!important;align-items:center!important;gap:5px!important;min-height:94px!important;max-height:112px!important;height:auto!important;padding:6px 8px!important;overflow:hidden!important;background:#06172a!important}
+ body:not(.student-mode) .logo{flex:1 1 100%!important;width:100%!important;font-size:clamp(12px,3.5vw,17px)!important;line-height:1.15!important;white-space:nowrap!important}
+ body:not(.student-mode) .title{display:none!important}
+ body:not(.student-mode) .top-actions{display:flex!important;flex:0 0 auto!important;gap:3px!important;margin-left:auto!important}
+ body:not(.student-mode) .iconbtn{width:clamp(25px,7vw,34px)!important;height:clamp(25px,7vw,34px)!important;min-width:25px!important;padding:0!important;font-size:11px!important}
+ body:not(.student-mode) .class-controls{display:flex!important;flex:1 1 100%!important;width:100%!important;flex-wrap:nowrap!important;align-items:center!important;gap:4px!important;margin:0!important;padding:0!important;overflow-x:auto!important}
+ body:not(.student-mode) .class-timer{flex:0 0 auto!important;font-size:clamp(9px,2.6vw,12px)!important;padding:4px 2px!important;white-space:nowrap!important}
+ body:not(.student-mode) .class-controls button{flex:0 0 auto!important;min-width:0!important;min-height:30px!important;height:30px!important;padding:4px 6px!important;font-size:clamp(9px,2.6vw,12px)!important;line-height:1.05!important;white-space:nowrap!important}
+ body:not(.student-mode) .workspace{display:grid!important;grid-template-columns:clamp(66px,19vw,90px) minmax(0,1fr) clamp(94px,27vw,122px)!important;grid-template-rows:minmax(0,1fr)!important;gap:0!important;flex:1 1 auto!important;width:100%!important;height:auto!important;min-height:0!important;overflow:hidden!important;background:#06172a!important}
+ body:not(.student-mode) .workspace>.leftbar{display:flex!important;grid-column:1!important;grid-row:1!important;flex-direction:column!important;width:100%!important;min-width:0!important;max-width:none!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:hidden!important;padding:3px!important;gap:3px!important;background:#071a2e!important;border:0!important;border-right:1px solid #203b58!important}
+ body:not(.student-mode) .workspace>.leftbar>.sidehead{display:none!important}
+ body:not(.student-mode) .workspace>.leftbar>.tools{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;min-height:0!important;width:100%!important;overflow-x:hidden!important;overflow-y:auto!important;padding:2px!important;gap:3px!important}
+ body:not(.student-mode) .workspace>.leftbar .tool,body:not(.student-mode) .workspace>.leftbar .tool.wide{display:flex!important;flex:0 0 auto!important;width:100%!important;min-width:0!important;max-width:none!important;min-height:clamp(35px,5.4vh,50px)!important;height:auto!important;padding:4px 2px!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;font-size:clamp(9px,2.35vw,12px)!important;line-height:1.1!important;color:#f5f8fc!important;background:#102b49!important;border:1px solid #294763!important;border-radius:8px!important}
+ body:not(.student-mode) .workspace>.leftbar .tool.active{background:#1c4772!important;border-color:#6ea3d2!important}
+ body:not(.student-mode) .workspace>.leftbar>.bottom-status{display:flex!important;flex:0 0 auto!important;flex-direction:column!important;gap:2px!important;padding:2px!important;font-size:7px!important;color:#cbd5e1!important;overflow-wrap:anywhere!important}
+ body:not(.student-mode) .workspace>.main{display:flex!important;grid-column:2!important;grid-row:1!important;flex-direction:column!important;width:100%!important;min-width:0!important;min-height:0!important;height:100%!important;overflow:hidden!important;padding:0 2px!important;gap:3px!important;background:#071a2e!important}
+ body:not(.student-mode) .workspace>.main>.toolbar{display:flex!important;order:0!important;flex:0 0 39px!important;width:100%!important;height:39px!important;min-height:39px!important;padding:2px!important;gap:2px!important;overflow-x:auto!important;overflow-y:hidden!important;background:#f8fafc!important;border-radius:6px!important}
+ body:not(.student-mode) .workspace>.main>.toolbar .group{display:flex!important;flex:0 0 auto!important;gap:2px!important;padding-right:2px!important}
+ body:not(.student-mode) .workspace>.main>.toolbar .mini,body:not(.student-mode) .workspace>.main>.toolbar .select{height:31px!important;min-width:25px!important;padding:0 4px!important;font-size:10px!important}
+ body:not(.student-mode) .workspace>.main .canvas-wrap{display:block!important;order:1!important;position:relative!important;flex:1 1 auto!important;width:100%!important;height:auto!important;min-height:0!important;overflow:hidden!important;border:0!important;border-radius:0!important;background:#071a2e!important}
+ body:not(.student-mode) .workspace>.main #stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
+ body:not(.student-mode) .workspace>.main #board{border:4px solid #86542d!important;box-shadow:inset 0 0 0 1px #a87545!important}
+ body:not(.student-mode) .workspace>.rightbar{display:flex!important;grid-column:3!important;grid-row:1!important;flex-direction:column!important;width:100%!important;min-width:0!important;max-width:none!important;height:100%!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;padding:3px!important;gap:4px!important;background:#071a2e!important;border:0!important;border-left:1px solid #203b58!important}
+ body:not(.student-mode) .workspace>.rightbar>.sidehead{display:flex!important;flex:0 0 auto!important;height:auto!important;min-height:27px!important;padding:3px 1px!important;align-items:center!important;justify-content:center!important;text-align:center!important;font-size:clamp(8px,2.2vw,11px)!important;line-height:1.1!important;color:#e6edf6!important;background:transparent!important;border:0!important}
+ body:not(.student-mode) .workspace>.rightbar .camera-panel{display:flex!important;flex-direction:column!important;flex:0 0 auto!important;width:100%!important;padding:0!important;gap:3px!important}
+ body:not(.student-mode) .workspace>.rightbar .camera{width:100%!important;height:clamp(82px,19vh,145px)!important;min-height:0!important;border:1px solid #263d55!important;border-radius:8px!important;overflow:hidden!important;background:#071525!important}
+ body:not(.student-mode) .workspace>.rightbar .camera video{width:100%!important;height:100%!important;object-fit:cover!important}
+ body:not(.student-mode) .workspace>.rightbar .camera .cam-off{font-size:clamp(8px,2vw,10px)!important;line-height:1.15!important;padding:3px!important;gap:2px!important}
+ body:not(.student-mode) .workspace>.rightbar .camera .cam-off .big{font-size:17px!important}
+ body:not(.student-mode) .workspace>.rightbar .camera .camera-label,body:not(.student-mode) .workspace>.rightbar .camera .cam-status{font-size:7px!important;padding:2px!important;left:2px!important;right:2px!important}
+ body:not(.student-mode) .workspace>.rightbar .cam-buttons{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:3px!important;margin-top:2px!important}
+ body:not(.student-mode) .workspace>.rightbar .cam-buttons button{flex:1 1 42%!important;width:auto!important;min-width:0!important;min-height:31px!important;height:auto!important;padding:3px 1px!important;font-size:clamp(8px,1.9vw,10px)!important;line-height:1.1!important;overflow-wrap:anywhere!important}
+ body:not(.student-mode) .workspace>.rightbar .teacher-media-status{font-size:clamp(8px,1.8vw,10px)!important;line-height:1.15!important;padding:4px 2px!important;overflow-wrap:anywhere!important}
+ body:not(.student-mode) .workspace>.rightbar .camera-join-requests{display:flex!important;flex-direction:column!important;gap:3px!important;margin-top:2px!important}
+ body:not(.student-mode) .workspace>.rightbar .camera-join-requests .join-request{padding:3px!important;font-size:8px!important}
+ body:not(.student-mode) .workspace>.rightbar .join-request .jr-actions{display:flex!important;flex-direction:column!important;gap:3px!important}
+ body:not(.student-mode) .workspace>.rightbar .join-request button{min-width:0!important;padding:3px 1px!important;font-size:8px!important}
+ body:not(.student-mode) .workspace>.rightbar .students{display:flex!important;flex:0 0 auto!important;flex-direction:column!important;max-height:none!important;overflow:visible!important;padding:2px!important;gap:3px!important}
+ body:not(.student-mode) .workspace>.rightbar .student{height:clamp(50px,10vh,75px)!important;min-height:50px!important;width:100%!important}
+ body:not(.student-mode) .workspace>.rightbar .student .label{font-size:7px!important}
+ body:not(.student-mode) .workspace>.rightbar .no-students{padding:6px 2px!important;font-size:clamp(8px,1.9vw,10px)!important;line-height:1.15!important;overflow-wrap:anywhere!important}
+}
+</style>
 </body>
 </html>
