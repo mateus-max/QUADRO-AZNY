@@ -1,0 +1,21 @@
+{
+  "id": "/QUADRO-AZNY/exames.html",
+  "name": "AZNY Exam",
+  "short_name": "AZNY Exam",
+  "description": "Aplicação para consultar e entrar em avaliações e exames AZNY.",
+  "lang": "pt-AO",
+  "start_url": "/QUADRO-AZNY/exames.html",
+  "scope": "/QUADRO-AZNY/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#eef3f8",
+  "theme_color": "#071b33",
+  "icons": [
+    {
+      "src": "icons/azny-exam.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
