@@ -116,6 +116,7 @@ async function startExam(){
   const screenTrack=localScreen.getVideoTracks()[0];if(!screenTrack)throw new Error("Não foi possível obter a imagem do separador partilhado.");
   const displaySurface=screenTrack.getSettings&&screenTrack.getSettings().displaySurface;if(displaySurface&&displaySurface!=="browser"){localScreen.getTracks().forEach(t=>t.stop());localScreen=null;throw new Error("Selecione o separador do navegador onde está aberta a avaliação, e não o ecrã inteiro ou outra janela.");}
   localCamera=await withTimeout(navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true}}),20000,"A autorização da câmara e do microfone");
+  }
   $("studentLocalCamera").srcObject=localCamera;
   await $("studentLocalCamera").play().catch(()=>{});
   $("studentVideoArea").classList.remove("hidden");
@@ -130,11 +131,10 @@ async function startExam(){
   document.querySelectorAll("#examQuestions input,#examQuestions textarea,#examQuestions select").forEach(e=>{e.addEventListener("change",saveAnswers);e.addEventListener("input",saveAnswers)});
   document.querySelectorAll("[data-record]").forEach(b=>b.onclick=()=>recordOralAnswer(b.dataset.record));
   document.querySelectorAll("[data-file-answer]").forEach(e=>e.addEventListener("change",()=>saveFileAnswer(e.dataset.fileAnswer,e.files&&e.files[0])));
-  localCamera.getVideoTracks().forEach(t=>{t.addEventListener("ended",()=>mediaInterrupted("camera"));t.addEventListener("mute",()=>mediaInterrupted("camera"))});
-  localCamera.getAudioTracks().forEach(t=>t.addEventListener("ended",()=>mediaInterrupted("microphone")));
-  localScreen.getVideoTracks().forEach(t=>t.addEventListener("ended",()=>mediaInterrupted("screen-share")));
+  localCamera?.getVideoTracks().forEach(t=>{t.addEventListener("ended",()=>mediaInterrupted("camera"));t.addEventListener("mute",()=>mediaInterrupted("camera"))});
+  localCamera?.getAudioTracks().forEach(t=>t.addEventListener("ended",()=>mediaInterrupted("microphone")));
+  localScreen?.getVideoTracks().forEach(t=>t.addEventListener("ended",()=>mediaInterrupted("screen-share")));
   document.addEventListener("visibilitychange",visibilityLog);window.addEventListener("blur",blurLog);
-  }
   // A ligação ao Firebase e à supervisão é iniciada em segundo plano para não bloquear a entrada no teste.
   withTimeout(attemptRef.update(attemptData),10000,"O registo da avaliação no servidor").then(()=>{
    attemptRef.child("teacherCommands").on("value",snap=>{const cmd=snap.val()||{};if(cmd.camera==="off")localCamera?.getVideoTracks().forEach(t=>t.enabled=false);if(cmd.camera==="on")localCamera?.getVideoTracks().forEach(t=>t.enabled=true);if(cmd.microphone==="off")localCamera?.getAudioTracks().forEach(t=>t.enabled=false);if(cmd.microphone==="on")localCamera?.getAudioTracks().forEach(t=>t.enabled=true)});
