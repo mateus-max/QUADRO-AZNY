@@ -818,6 +818,38 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
  .student-mode .student-controls{overflow-x:auto!important;overflow-y:hidden!important}
 }
 
+
+/* AZNY phone landscape: give the board most of the width; compact both side rails. */
+@media (orientation:landscape) and (max-height:650px) and (pointer:coarse) {
+ body:not(.student-mode) .workspace {
+  grid-template-columns:clamp(108px,12vw,150px) minmax(0,1fr) clamp(124px,14vw,174px)!important;
+ }
+ body:not(.student-mode) .leftbar {
+  width:auto!important;min-width:0!important;max-width:none!important;
+ }
+ body:not(.student-mode) .rightbar {
+  width:auto!important;min-width:0!important;max-width:none!important;
+ }
+ body:not(.student-mode) .leftbar .tools {
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:4px!important;padding:5px!important;
+ }
+ body:not(.student-mode) .leftbar .tool,
+ body:not(.student-mode) .leftbar .tool.wide {
+  min-width:0!important;min-height:31px!important;padding:3px 2px!important;
+  font-size:9px!important;line-height:1.1!important;overflow-wrap:anywhere!important;
+ }
+ body:not(.student-mode) .camera-panel {padding:3px!important}
+ body:not(.student-mode) .camera {height:clamp(58px,15vh,88px)!important;min-height:0!important}
+ body:not(.student-mode) .cam-buttons button {font-size:9px!important;padding:3px 2px!important}
+ body:not(.student-mode) #students.students {
+  grid-template-columns:1fr!important;gap:3px!important;padding:3px!important;
+ }
+ body:not(.student-mode) #students .student {
+  min-height:50px!important;max-height:95px!important;
+ }
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
