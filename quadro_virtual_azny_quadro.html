@@ -2469,6 +2469,46 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
   body:not(.student-mode) .workspace{min-height:0!important;flex:1 1 auto!important}
   body:not(.student-mode) .canvas-wrap{min-height:0!important;flex:1 1 auto!important}
 }
+
+/* Correção definitiva do scroll vertical das ferramentas do aluno em ecrãs táteis. */
+html:has(body.student-mode.azny-landscape-view),
+body.student-mode.azny-landscape-view{overscroll-behavior:none}
+body.student-mode.azny-landscape-view #studentControls.student-controls{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  align-content:stretch!important;
+  align-items:stretch!important;
+  overflow-x:hidden!important;
+  overflow-y:scroll!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-y:contain!important;
+  touch-action:pan-y!important;
+  scrollbar-width:thin!important;
+  flex-wrap:nowrap!important;
+  gap:8px!important;
+  padding-top:10px!important;
+  padding-bottom:18px!important;
+}
+body.student-mode.azny-landscape-view #studentControls.student-controls button{
+  flex:0 0 auto!important;
+  min-height:44px!important;
+  height:auto!important;
+  max-height:none!important;
+  touch-action:manipulation!important;
+}
+@media(max-height:520px){
+  body.student-mode.azny-landscape-view #studentControls.student-controls{
+    justify-content:flex-start!important;
+    gap:6px!important;
+    padding-top:6px!important;
+    padding-bottom:16px!important;
+  }
+  body.student-mode.azny-landscape-view #studentControls.student-controls button{
+    min-height:38px!important;
+  }
+}
+
 </style>
 
 </body>
