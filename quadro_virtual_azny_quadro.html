@@ -1113,15 +1113,35 @@ function normalizeRemoteBoardPages(pages,sourceSize){
   return out;
  });
 }
+function aznyStableValue(value){
+ if(Array.isArray(value))return value.map(aznyStableValue);
+ if(value&&typeof value==="object"){
+  const out={};Object.keys(value).sort().forEach(k=>{if(value[k]!==undefined)out[k]=aznyStableValue(value[k])});return out;
+ }
+ return value;
+}
+function aznySameBoardPage(a,b){
+ try{return JSON.stringify(aznyStableValue(a))===JSON.stringify(aznyStableValue(b))}catch(_){return false}
+}
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
- aznyRemoteLiveStrokes.clear();
- remoteBoardApplying=true;
  try{
   if(Array.isArray(d.pages)){
-   pageStates=normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize);
-   currentPage=Math.max(1,Math.min(5,+d.currentPage||1));
+   const incomingPages=normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize);
+   const incomingPage=Math.max(1,Math.min(5,+d.currentPage||1));
+   const localPage=snapshot();
+   /* Never tear down and recreate objects just because a Firebase/WebRTC echo
+      arrived. That was removing the blue selection outline immediately. */
+   if(incomingPage===currentPage&&aznySameBoardPage(localPage,incomingPages[incomingPage-1]))return;
+   const selectedId=selected?.dataset?.id||"";
+   pageStates=incomingPages;
+   remoteBoardApplying=true;
+   currentPage=incomingPage;
    restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:d.title||"Nova aula"});
+   if(selectedId){
+    const same=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===selectedId);
+    if(same)selectObject(same);
+   }
    updatePageLabel();
   }else if(d.title){
    document.getElementById("boardTitle").value=d.title;
@@ -1189,15 +1209,33 @@ function setupBoardRealtime(){
   if(!d||remoteBoardApplying)return;
   const activeText=document.activeElement?.closest?.(".textobj");
   if(localBoardEditing||(activeText&&board.contains(activeText)))return;
+  /* Ignore a Firebase echo when the visible page is already identical.
+     Rebuilding the DOM for an unchanged snapshot was dropping object selection. */
+  try{
+   const local=snapshot();
+   const remotePages=Array.isArray(d.pages)?normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize):null;
+   const remotePage=remotePages?remotePages[Math.max(0,Math.min(4,(+d.currentPage||1)-1))]:null;
+   if(remotePage&&Math.max(1,Math.min(5,+d.currentPage||1))===currentPage&&aznySameBoardPage(local,remotePage))return;
+  }catch(_){}
   applyRemoteBoardState(d);
  });
- if(!isStudent){
-  ref.child("currentPage").set(currentPage);
-  ref.child("title").set(document.getElementById("boardTitle").value||"Nova aula");
-  setTimeout(publishBoardState,100);
- }
+ if(!isStudent)setTimeout(publishBoardState,150);
 }
-function restore(s){const selectedId=selected?.dataset?.id||"";board.querySelectorAll(".object").forEach(e=>e.remove());selected=null;strokes=s?.strokes||[];let maxId=0;(s?.objects||[]).forEach((o,i)=>{createFromData(o);const el=board.querySelector('.object[data-id="'+String(o.id||"").replace(/"/g,"\\\\\\\"")+'"]');if(el)el.style.zIndex=String(5+i);const m=String(o.id||"").match(/^o(\\d+)$/);if(m)maxId=Math.max(maxId,+m[1])});objectId=Math.max(objectId,maxId);document.getElementById("boardTitle").value=s?.title||"Nova aula";if(selectedId){const keep=board.querySelector('.object[data-id="'+selectedId.replace(/"/g,"\\\\\\\"")+'"]');if(keep)selectObject(keep)}redraw();updateHint();updateObjectActions()}
+function restore(s){
+ const selectedId=selected?.dataset?.id||"";
+ board.querySelectorAll(".object").forEach(e=>e.remove());
+ selected=null;strokes=s?.strokes||[];let maxId=0;
+ (s?.objects||[]).forEach((o,i)=>{
+  createFromData(o);
+  const el=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===String(o.id||""));
+  if(el)el.style.zIndex=String(5+i);
+  const m=String(o.id||"").match(/^o(\\d+)$/);if(m)maxId=Math.max(maxId,+m[1]);
+ });
+ objectId=Math.max(objectId,maxId);
+ document.getElementById("boardTitle").value=s?.title||"Nova aula";
+ if(selectedId){const keep=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===selectedId);if(keep)selectObject(keep)}
+ redraw();updateHint();updateObjectActions();
+}
 function switchPage(n){n=Math.max(1,Math.min(5,n));if(n===currentPage)return;pageStates[currentPage-1]=snapshot();currentPage=n;undoStack=[];redoStack=[];restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:document.getElementById("boardTitle").value});updatePageLabel();scheduleSave();toast("Página "+currentPage+" selecionada")}
 function updatePageLabel(){document.getElementById("pageLabel").textContent="Página "+currentPage+"/5";document.querySelectorAll("#pageChoices [data-page]").forEach(b=>b.classList.toggle("active",+b.dataset.page===currentPage))}
 function load(){try{const raw=localStorage.getItem(STORAGE);if(!raw)return;const s=JSON.parse(raw);if(Array.isArray(s.pages)){pageStates=s.pages.concat(Array(5).fill(null)).slice(0,5);currentPage=Math.max(1,Math.min(5,s.currentPage||1));restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:"Nova aula"});updatePageLabel()}else{restore(s)}}catch(e){console.warn(e)}}
@@ -1352,6 +1390,12 @@ function addResource(type,lang){pushHistory();const el=createResourceObject(type
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function makeInteractive(el){
  if(!el.querySelector(".resize")){const h=document.createElement("div");h.className="resize";el.appendChild(h);h.addEventListener("pointerdown",resizeStart)}
+ /* Select on the first native pointer event too, especially on touch screens.
+    The legacy mouse handler below remains responsible for dragging. */
+ el.addEventListener("pointerdown",e=>{
+  if(e.target.closest?.(".resize"))return;
+  if(tool==="select"&&!e.target.closest?.("button,input,select,textarea,.docpdf"))selectObject(el);
+ },{passive:true});
  el.addEventListener("mousedown",e=>{
   if(e.target.classList.contains("resize"))return;
   if(el.classList.contains("textobj")&&tool==="text")return;
@@ -1470,6 +1514,9 @@ stage.addEventListener("pointerdown",e=>{
    return;
   }
  }
+ /* Do not clear selection when the actual target is a child inside an
+    object (image, resize handle, chart, resource, etc.). */
+ if(e.target.closest?.(".object"))return;
  if(e.target!==stage&&e.target!==board&&e.target!==canvas)return;
  selectObject(null)
 });
@@ -2006,8 +2053,38 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 }
 function setupAznyContextMenu(){if(document.getElementById("aznyContextMenu"))return;const menu=document.createElement("div");menu.id="aznyContextMenu";menu.innerHTML='<div class="ctx-title">Ferramentas do quadro</div><div class="ctx-items"></div>';document.body.appendChild(menu);const close=()=>menu.classList.remove("open");document.addEventListener("click",e=>{if(!menu.contains(e.target))close()});document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});document.addEventListener("contextmenu",e=>{const obj=e.target.closest?.(".object");const onBoard=e.target.closest?.("#board");if(!onBoard&&!obj)return;e.preventDefault();if(obj)selectObject(obj);const items=menu.querySelector(".ctx-items");items.innerHTML="";const buttons=[...document.querySelectorAll(".toolbar button")].filter(b=>!b.disabled&&b.id!=="teacherDashboardBtn");buttons.forEach(original=>{const item=document.createElement("button");item.type="button";item.textContent=(original.title||original.getAttribute("aria-label")||original.innerText||original.textContent||original.id||"Ferramenta").trim();if(!item.textContent)item.textContent=original.id||"Ferramenta";item.onclick=()=>{close();if(obj&&obj.isConnected)selectObject(obj);original.click()};items.appendChild(item)});if(selected&&selected.isConnected){const sep=document.createElement("div");sep.className="ctx-title";sep.textContent="Objeto selecionado";items.appendChild(sep);[["Minimizar / restaurar",minimizeSelectedObject],["Duplicar",duplicateSelectedObject],["Trazer para a frente",()=>changeSelectedLayer(1)],["Enviar para trás",()=>changeSelectedLayer(-1)],["Eliminar",deleteSelected]].forEach(([label,fn])=>{const b=document.createElement("button");b.textContent=label;b.onclick=()=>{close();fn()};items.appendChild(b)})}menu.style.left=Math.min(e.clientX,innerWidth-310)+"px";menu.style.top=Math.min(e.clientY,innerHeight-menu.scrollHeight-12)+"px";menu.classList.add("open")})}
 setupAznyContextMenu();
-document.getElementById("refreshBoardBtn")?.addEventListener("click",async()=>{const btn=document.getElementById("refreshBoardBtn");if(classStarted){try{localStorage.setItem("azny-active-session-"+String(roomId),classSessionId);const u=new URL(location.href);u.searchParams.set("sala",roomId);u.searchParams.set("sess",classSessionId);history.replaceState(null,"",u.href);if(AZNY_DB)await aznySessionRef().update({status:"active",refreshRequestedAt:Date.now()})}catch(e){toast("Aula mantida; não foi possível guardar todos os dados da sessão.")}}try{if(typeof scheduleSave==="function")scheduleSave()}catch(_){}if(btn){btn.disabled=true;btn.textContent="…"}setTimeout(()=>location.reload(),350)});
-document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",async()=>{const btn=document.getElementById("studentRefreshBoardBtn");if(!confirm("Atualizar e reconectar ao quadro? A ligação poderá interromper-se brevemente."))return;if(btn){btn.disabled=true;btn.textContent="A atualizar…"}try{if(classSessionId){const u=new URL(location.href);u.searchParams.set("aluno","1");u.searchParams.set("sala",roomId);u.searchParams.set("sess",classSessionId);history.replaceState(null,"",u.href)} }catch(_){}setTimeout(()=>location.reload(),150)});
+async function forceRefreshBoard(forStudent){
+ const btn=document.getElementById(forStudent?"studentRefreshBoardBtn":"refreshBoardBtn");
+ const originalText=btn?.textContent||"↻";
+ if(btn){btn.disabled=true;btn.textContent="A sincronizar…"}
+ try{
+  if(classSessionId){
+   const u=new URL(location.href);u.searchParams.set("sala",roomId);u.searchParams.set("sess",classSessionId);
+   if(forStudent)u.searchParams.set("aluno","1");
+   history.replaceState(null,"",u.href);
+  }
+  resizeCanvas();
+  if(forStudent){
+   if(!AZNY_DB)throw new Error("Sem ligação ao serviço");
+   const snap=await aznyRoomRef().child("board").once("value"),data=snap.val();
+   if(data)applyRemoteBoardState(data);
+   else toast("Ainda não existe um quadro sincronizado para atualizar.");
+   toast("Quadro atualizado com os dados mais recentes.");
+  }else{
+   pageStates[currentPage-1]=snapshot();
+   if(AZNY_DB)await aznyRoomRef().child("board").update({
+    currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates,
+    boardSize:{width:board.clientWidth,height:board.clientHeight},
+    updatedAt:firebase.database.ServerValue.TIMESTAMP,forceRefreshAt:Date.now()
+   });
+   publishLiveBoardState();sendBoardSnapshotToAllPeers();redraw();updateHint();
+   toast("Quadro sincronizado e atualizado.");
+  }
+ }catch(e){console.warn("AZNY force refresh:",e);toast("Não foi possível sincronizar agora. Verifique a ligação e tente novamente.")}
+ finally{if(btn){btn.disabled=false;btn.textContent=originalText}}
+}
+document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(false)});
+document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(true)});
 
 </script>
 
@@ -2072,6 +2149,7 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",asyn
 })();
 </script>
 
+<script>
 /* AZNY: barra de ferramentas do aluno arrastável para cima/baixo em ecrãs táteis. */
 (function(){
  const bar=document.getElementById("studentControls");
@@ -2118,6 +2196,100 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",asyn
   if(r.top<8||r.bottom>innerHeight-8||r.left<8||r.right>innerWidth-8)bar.style.transform="translate3d(0,0,0)";
  },{passive:true});
 })();
+</script>
+
+<style>
+/* Mobile portrait teacher layout: left tools, central board, right camera/participants.
+   Scoped to the teacher view; desktop and student layouts remain unchanged. */
+@media (max-width: 700px) {
+  body:not(.student-mode) { overflow:hidden; }
+  body:not(.student-mode) .app { height:100dvh; min-height:0; overflow:hidden; }
+  body:not(.student-mode) .topbar {
+    flex:0 0 auto; min-height:42px; height:auto; padding:5px 6px; gap:5px;
+    flex-wrap:wrap; align-items:center;
+  }
+  body:not(.student-mode) .logo { font-size:11px; }
+  body:not(.student-mode) .title { min-width:50px; flex:1 1 60px; }
+  body:not(.student-mode) .title input { font-size:11px; }
+  body:not(.student-mode) .top-actions { gap:3px; }
+  body:not(.student-mode) .iconbtn { width:25px; height:28px; font-size:11px; }
+  body:not(.student-mode) .class-controls {
+    flex:1 0 100%; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px;
+    margin:0; padding-top:4px;
+  }
+  body:not(.student-mode) .class-timer { grid-column:span 1; padding:6px 2px; font-size:10px; }
+  body:not(.student-mode) .class-controls button { min-height:30px; padding:3px 2px; font-size:9px; }
+  body:not(.student-mode) .record-download { grid-column:1/-1; }
+  body:not(.student-mode) .workspace {
+    display:grid; grid-template-columns:68px minmax(0,1fr) 104px;
+    grid-template-rows:minmax(0,1fr); flex:1 1 auto; min-height:0; overflow:hidden;
+  }
+  body:not(.student-mode) .leftbar {
+    grid-column:1; grid-row:1; display:flex; width:68px; min-width:0;
+    min-height:0; overflow:hidden; border-right:1px solid var(--line); border-top:0;
+  }
+  body:not(.student-mode) .main {
+    grid-column:2; grid-row:1; display:flex; min-width:0; min-height:0;
+    width:auto; overflow:hidden;
+  }
+  body:not(.student-mode) .rightbar {
+    grid-column:3; grid-row:1; display:flex; width:104px; min-width:0;
+    min-height:0; overflow:auto; border-left:1px solid var(--line); border-top:0;
+  }
+  body:not(.student-mode) .sidehead {
+    min-height:34px; height:auto; padding:4px 3px; justify-content:center;
+    text-align:center; font-size:8px; letter-spacing:0; line-height:1.15;
+  }
+  body:not(.student-mode) .tools {
+    display:flex; flex-direction:column; gap:4px; padding:4px 3px;
+    overflow-y:auto; overflow-x:hidden; min-height:0;
+  }
+  body:not(.student-mode) .tool,
+  body:not(.student-mode) .tool.wide {
+    display:flex; flex:0 0 auto; grid-column:auto; width:100%; min-height:38px;
+    padding:4px 2px; align-items:center; justify-content:center; text-align:center;
+    white-space:normal; overflow-wrap:anywhere; font-size:9px; line-height:1.15;
+  }
+  body:not(.student-mode) .bottom-status {
+    display:flex; flex-direction:column; gap:3px; margin-top:auto; padding:4px 2px;
+    font-size:8px; overflow-wrap:anywhere;
+  }
+  body:not(.student-mode) .toolbar {
+    flex:0 0 38px; height:38px; min-height:38px; padding:3px;
+    gap:3px; overflow-x:auto; overflow-y:hidden;
+  }
+  body:not(.student-mode) .group { flex:0 0 auto; gap:2px; padding-right:3px; }
+  body:not(.student-mode) .mini,
+  body:not(.student-mode) .select { height:28px; min-width:25px; padding:0 3px; font-size:10px; }
+  body:not(.student-mode) .color { width:25px; height:28px; }
+  body:not(.student-mode) .zoomlabel { font-size:9px; min-width:30px; }
+  body:not(.student-mode) .canvas-wrap {
+    position:relative; flex:1 1 auto; width:100%; height:auto; min-height:0;
+    overflow:hidden; border:0; border-radius:0;
+  }
+  body:not(.student-mode) #stage { width:100%; height:100%; }
+  body:not(.student-mode) #board { border-width:4px; }
+  body:not(.student-mode) .camera-panel { padding:4px; }
+  body:not(.student-mode) .camera { height:82px; border-radius:6px; }
+  body:not(.student-mode) .camera .cam-off { gap:3px; padding:3px; font-size:8px; }
+  body:not(.student-mode) .camera .cam-off .big { font-size:18px; }
+  body:not(.student-mode) .camera .camera-label,
+  body:not(.student-mode) .camera .cam-status { font-size:8px; padding:2px 3px; }
+  body:not(.student-mode) .cam-buttons { flex-direction:column; gap:3px; margin-top:4px; }
+  body:not(.student-mode) .cam-buttons button { min-height:30px; height:auto; padding:4px 2px; font-size:9px; }
+  body:not(.student-mode) .teacher-media-status { font-size:8px; padding:4px 2px; overflow-wrap:anywhere; }
+  body:not(.student-mode) .camera-join-requests { gap:4px; }
+  body:not(.student-mode) .camera-join-requests .join-request { padding:4px; font-size:9px; }
+  body:not(.student-mode) .join-request .jr-actions { flex-direction:column; gap:3px; }
+  body:not(.student-mode) .join-request button { padding:4px 2px; font-size:9px; }
+  body:not(.student-mode) .students {
+    padding:0 3px 5px; gap:4px; max-height:none; overflow:visible;
+  }
+  body:not(.student-mode) .student { height:72px; min-height:72px; border-radius:5px; }
+  body:not(.student-mode) .student .label { left:3px; bottom:3px; font-size:8px; padding:2px 3px; }
+  body:not(.student-mode) .no-students { padding:6px 3px; font-size:8px; overflow-wrap:anywhere; }
+}
+</style>
 
 </body>
 </html>
