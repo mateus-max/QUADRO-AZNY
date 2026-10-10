@@ -1113,15 +1113,35 @@ function normalizeRemoteBoardPages(pages,sourceSize){
   return out;
  });
 }
+function aznyStableValue(value){
+ if(Array.isArray(value))return value.map(aznyStableValue);
+ if(value&&typeof value==="object"){
+  const out={};Object.keys(value).sort().forEach(k=>{if(value[k]!==undefined)out[k]=aznyStableValue(value[k])});return out;
+ }
+ return value;
+}
+function aznySameBoardPage(a,b){
+ try{return JSON.stringify(aznyStableValue(a))===JSON.stringify(aznyStableValue(b))}catch(_){return false}
+}
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
- aznyRemoteLiveStrokes.clear();
- remoteBoardApplying=true;
  try{
   if(Array.isArray(d.pages)){
-   pageStates=normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize);
-   currentPage=Math.max(1,Math.min(5,+d.currentPage||1));
+   const incomingPages=normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize);
+   const incomingPage=Math.max(1,Math.min(5,+d.currentPage||1));
+   const localPage=snapshot();
+   /* Never tear down and recreate objects just because a Firebase/WebRTC echo
+      arrived. That was removing the blue selection outline immediately. */
+   if(incomingPage===currentPage&&aznySameBoardPage(localPage,incomingPages[incomingPage-1]))return;
+   const selectedId=selected?.dataset?.id||"";
+   pageStates=incomingPages;
+   remoteBoardApplying=true;
+   currentPage=incomingPage;
    restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:d.title||"Nova aula"});
+   if(selectedId){
+    const same=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===selectedId);
+    if(same)selectObject(same);
+   }
    updatePageLabel();
   }else if(d.title){
    document.getElementById("boardTitle").value=d.title;
@@ -1193,8 +1213,9 @@ function setupBoardRealtime(){
      Rebuilding the DOM for an unchanged snapshot was dropping object selection. */
   try{
    const local=snapshot();
-   const remotePage=Array.isArray(d.pages)?d.pages[Math.max(0,Math.min(4,(+d.currentPage||1)-1))]:null;
-   if(remotePage&&JSON.stringify(local)===JSON.stringify(remotePage))return;
+   const remotePages=Array.isArray(d.pages)?normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize):null;
+   const remotePage=remotePages?remotePages[Math.max(0,Math.min(4,(+d.currentPage||1)-1))]:null;
+   if(remotePage&&Math.max(1,Math.min(5,+d.currentPage||1))===currentPage&&aznySameBoardPage(local,remotePage))return;
   }catch(_){}
   applyRemoteBoardState(d);
  });
@@ -1493,6 +1514,9 @@ stage.addEventListener("pointerdown",e=>{
    return;
   }
  }
+ /* Do not clear selection when the actual target is a child inside an
+    object (image, resize handle, chart, resource, etc.). */
+ if(e.target.closest?.(".object"))return;
  if(e.target!==stage&&e.target!==board&&e.target!==canvas)return;
  selectObject(null)
 });
