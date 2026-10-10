@@ -1689,6 +1689,7 @@ async function startCamera(){
   else if(e.name==="NotFoundError"||e.name==="DevicesNotFoundError")message="Não foi encontrada uma câmara disponível neste dispositivo.";
   else if(e.name==="NotReadableError"||e.name==="TrackStartError")message="A câmara pode estar ocupada por outra aplicação. Fecha outras aplicações que a utilizem e tenta novamente.";
   else if(e.name==="OverconstrainedError")message="A câmara não suporta a resolução solicitada. Tenta novamente.";
+  else if(e.name==="AbortError")message="O Chrome interrompeu a câmara (AbortError). Fecha a outra aba do Quadro Virtual e aplicações como Câmara, Zoom ou Meet; verifica se o Windows permite o acesso à câmara e tenta novamente. Se persistir, reinicia o Chrome.";
   toast(message);console.error("AZNY teacher camera error",e)
  }
 }
