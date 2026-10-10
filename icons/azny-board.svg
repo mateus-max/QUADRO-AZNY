@@ -1,1 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#071b33"/><rect x="68" y="75" width="376" height="270" rx="24" fill="#fff" stroke="#58a7ff" stroke-width="14"/><path d="M128 155h256M128 205h185M128 255h220" stroke="#1677ff" stroke-width="16" stroke-linecap="round"/><path d="M185 366v38m142-38v38M145 404h222" stroke="#58a7ff" stroke-width="18" stroke-linecap="round"/><text x="256" y="465" font-family="Arial,sans-serif" font-size="49" font-weight="800" text-anchor="middle" fill="#fff">AZNY</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+ <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".22" stop-color="#8d9aaa"/><stop offset=".48" stop-color="#fff"/><stop offset=".72" stop-color="#7b8798"/><stop offset="1" stop-color="#f8fbff"/></linearGradient>
+ <radialGradient id="blue"><stop stop-color="#126bd9"/><stop offset=".68" stop-color="#073b91"/><stop offset="1" stop-color="#041a49"/></radialGradient>
+ <linearGradient id="book" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#c8e7ff"/></linearGradient>
+</defs>
+<circle cx="256" cy="256" r="249" fill="#020812" stroke="url(#rim)" stroke-width="12"/>
+<circle cx="256" cy="256" r="231" fill="url(#blue)" stroke="#20aaff" stroke-width="4"/>
+<path d="M95 177 Q256 42 417 177" fill="none" stroke="#19baff" stroke-width="5"/>
+<path d="M194 76 L256 42 318 76 300 91 212 91Z" fill="#fff"/>
+<path d="M215 90 H297 L289 113 Q256 130 223 113Z" fill="#eaf5ff"/>
+<rect x="105" y="139" width="302" height="249" rx="20" fill="#061b3b" stroke="#168fff" stroke-width="7"/>
+<rect x="119" y="153" width="274" height="220" rx="9" fill="#fff"/>
+<text x="256" y="218" font-family="Arial,sans-serif" font-size="57" font-weight="900" text-anchor="middle" fill="#08275d">AZNY</text>
+<path d="M154 232 Q247 249 345 222" fill="none" stroke="#ef2537" stroke-width="6" stroke-linecap="round"/>
+<circle cx="322" cy="270" r="39" fill="#eaf6ff" stroke="#1677d9" stroke-width="4"/>
+<path d="M286 267 Q305 247 322 231 Q343 248 358 267 Q341 291 322 307 Q300 292 286 267Z" fill="#7bc4ff" stroke="#1677d9" stroke-width="2"/>
+<path d="M284 271 Q322 286 360 267" fill="none" stroke="#1677d9" stroke-width="2"/>
+<text x="247" y="285" font-family="Arial,sans-serif" font-size="27" font-style="italic" text-anchor="middle" fill="#0a2b65">Quadro</text>
+<text x="247" y="318" font-family="Arial,sans-serif" font-size="29" font-style="italic" text-anchor="middle" fill="#0a2b65">Virtual</text>
+<path d="M150 343 H362" stroke="#dbe9f7" stroke-width="3"/>
+<g fill="#1677ff"><rect x="150" y="351" width="22" height="13" rx="3"/><rect x="181" y="351" width="22" height="13" rx="3"/><rect x="212" y="351" width="22" height="13" rx="3"/><rect x="243" y="351" width="22" height="13" rx="3"/><rect x="274" y="351" width="22" height="13" rx="3"/><rect x="305" y="351" width="22" height="13" rx="3"/></g>
+<path d="M74 405 Q165 375 256 431 Q347 375 438 405 L420 440 Q339 414 256 463 Q173 414 92 440Z" fill="url(#book)" stroke="#4eb8ff" stroke-width="4"/>
+<path d="M256 431 V459" stroke="#1677ff" stroke-width="4"/>
+<path d="M87 445 Q170 423 256 470 Q342 423 425 445" fill="none" stroke="#ffd33d" stroke-width="8" stroke-linecap="round"/>
+</svg>
