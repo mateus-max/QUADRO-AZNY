@@ -1,8 +1,8 @@
 {
   "id": "/QUADRO-AZNY/exames.html",
-  "name": "AZNY Exam",
-  "short_name": "AZNY Exam",
-  "description": "Aplicação para consultar e entrar em avaliações e exames AZNY.",
+  "name": "AZNY — Avaliações e Exames",
+  "short_name": "AZNY",
+  "description": "Aplicação AZNY para consultar e realizar testes e exames publicados pelos professores.",
   "lang": "pt-AO",
   "start_url": "/QUADRO-AZNY/exames.html",
   "scope": "/QUADRO-AZNY/",
@@ -28,6 +28,28 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "categories": [
+    "education",
+    "productivity",
+    "business"
+  ],
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "screenshots/azny-exams-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "AZNY Avaliações no telemóvel"
+    },
+    {
+      "src": "screenshots/azny-dashboard-desktop.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "AZNY Quadro virtual e avaliações"
     }
   ]
 }
