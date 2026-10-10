@@ -1,4 +1,4 @@
-const CACHE_NAME="azny-pwa-shell-v4";
+const CACHE_NAME="azny-pwa-shell-v5";
 const BASE="/QUADRO-AZNY/";
 const SHELL=[BASE+"exames.html",BASE+"manifest.webmanifest",BASE+"icons/azny-exam.svg",BASE+"icons/azny-exam-192.png",BASE+"icons/azny-exam-512.png",BASE+"screenshots/azny-exams-mobile.png",BASE+"screenshots/azny-dashboard-desktop.png",BASE+"quadro_virtual_azny_quadro.html",BASE+"manifest-quadro.webmanifest",BASE+"icons/azny-board.svg"];
 self.addEventListener("install",event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE_NAME);await Promise.all(SHELL.map(async path=>{try{const response=await fetch(path,{cache:"reload"});if(response.ok)await cache.put(path,response)}catch(e){console.warn("AZNY asset not cached:",path,e)}}));await self.skipWaiting()})()));
