@@ -818,7 +818,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
  .student-mode .student-controls{overflow-x:auto!important;overflow-y:hidden!important}
 }
 
-</style>
+\n.bottom-status{display:flex;justify-content:center;align-items:center;text-align:center;gap:12px;width:100%;font-weight:800}.bottom-status .azny-realtime-label{display:block;text-align:center;font-weight:900;font-size:14px;letter-spacing:.08em}.bottom-status #storageState{font-weight:800;text-align:center}</style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
 <div class="app">
@@ -982,7 +982,7 @@ if(!isStudent&&!AZNY_ACCESS_TOKEN){location.replace("index.html?acesso=necessari
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
 const aznyRoomKey=()=>String(roomId).replace(/[.#$\[\]\/]/g,"_");
 const aznyRoomRef=()=>AZNY_DB?AZNY_DB.ref("aznyRooms/"+aznyRoomKey()):null;
-async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Auth anónima indisponível; a tentar ligação direta ao Realtime Database.",authError)}if(AZNY_DB){return true}}catch(e){console.warn("AZNY Firebase:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
+async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Auth anónima indisponível; a tentar ligação direta ao Realtime Database.",authError)}if(AZNY_DB){return true}}catch(e){console.warn("AZNY :",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
 let aznyRealtimeBound=false;
 async function ensureAZNYRealtime(){if(AZNY_DB){if(!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}return true}const ok=await initAZNYRealtime();if(ok&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}return ok}
 function aznySessionRef(){return AZNY_DB&&classSessionId?aznyRoomRef().child("sessions").child(classSessionId):null}
@@ -1130,7 +1130,7 @@ function applyRemoteBoardState(d){
    const incomingPages=normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize);
    const incomingPage=Math.max(1,Math.min(5,+d.currentPage||1));
    const localPage=snapshot();
-   /* Never tear down and recreate objects just because a Firebase/WebRTC echo
+   /* Never tear down and recreate objects just because a /WebRTC echo
       arrived. That was removing the blue selection outline immediately. */
    if(incomingPage===currentPage&&aznySameBoardPage(localPage,incomingPages[incomingPage-1]))return;
    const selectedId=selected?.dataset?.id||"";
@@ -1209,7 +1209,7 @@ function setupBoardRealtime(){
   if(!d||remoteBoardApplying)return;
   const activeText=document.activeElement?.closest?.(".textobj");
   if(localBoardEditing||(activeText&&board.contains(activeText)))return;
-  /* Ignore a Firebase echo when the visible page is already identical.
+  /* Ignore a  echo when the visible page is already identical.
      Rebuilding the DOM for an unchanged snapshot was dropping object selection. */
   try{
    const local=snapshot();
