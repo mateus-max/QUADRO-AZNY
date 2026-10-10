@@ -2115,7 +2115,7 @@ async function leaveStudentClass(){
 function showClassEnded(){if(!isStudent)return;studentApproved=false;try{studentPeer?.close()}catch(_){}studentPeer=null;try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}studentLocalStream=null;document.getElementById("studentControls").style.display="none";document.getElementById("studentNameModal").classList.add("show");document.getElementById("studentJoinBtn").disabled=true;document.getElementById("studentWaiting").textContent="A aula foi encerrada pelo professor.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentTeacherVideo")?.pause?.();toast("A aula foi encerrada pelo professor.")}
 function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo professor");startStudentWebRTC()}else{document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended"&&m.session===classSessionId)showClassEnded()}}
 function getClassLink(){
- const base=location.href.split("#")[0].split("?")[0];
+ const base=new URL("aulas/",location.origin+"/").href;
  if(!classSessionId){toast("Inicie a aula primeiro para gerar o link desta sessão.");return ""}
  return base+"?aluno=1&sala="+encodeURIComponent(roomId)+"&sess="+encodeURIComponent(classSessionId);
 }
