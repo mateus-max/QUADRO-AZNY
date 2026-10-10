@@ -115,7 +115,7 @@ async function downloadAttemptReport(aid,a){
   const html='<!doctype html><html lang="pt"><head><meta charset="utf-8"><title>'+esc(assessment?.title||"Avaliação")+'</title><style>body{font:14px Arial,sans-serif;max-width:800px;margin:25px auto;color:#172536}section{break-inside:avoid;border-bottom:1px solid #ddd;padding:10px 0}button{padding:10px}@media print{button{display:none}}</style></head><body><h1>'+esc(assessment?.title||"Avaliação")+'</h1><p>Aluno: '+esc(a.name||"—")+'</p>'+sections.slice(1).map(s=>'<section><h3>'+esc(s.title)+'</h3>'+s.lines.map(l=>'<p>'+esc(l)+'</p>').join("")+'</section>').join("")+'<button onclick="window.print()">Imprimir / Guardar como PDF</button><p>O gerador PDF não ficou disponível. Escolha “Guardar como PDF” na janela de impressão.</p>
 <script>
 if("serviceWorker" in navigator && location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js",{scope:"/QUADRO-AZNY/"}).catch(err=>console.warn("AZNY PWA:",err)));}
-</script>
+<\/script>
 </body></html>';
   const win=window.open("","_blank");if(!win){alert("Permita janelas pop-up para gerar o PDF.");return}win.document.write(html);win.document.close();setTimeout(()=>win.print(),400);
  }
