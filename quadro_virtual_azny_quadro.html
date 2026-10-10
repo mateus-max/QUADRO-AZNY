@@ -784,6 +784,40 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
  body.student-mode.text-entry-active .topbar{height:30px!important;min-height:30px!important}
  body.student-mode.text-entry-active .workspace{top:30px!important}
 }
+
+/* Ajustes finais da barra do aluno: pode ser deslocada verticalmente e continua a permitir scroll horizontal nos botões. */
+.student-mode .student-controls{
+  touch-action:pan-x;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  max-width:calc(100vw - 14px);
+  max-height:calc(100dvh - 56px);
+  will-change:transform;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.student-mode .student-controls .azny-tools-drag-handle{
+  flex:0 0 24px;
+  width:24px;
+  min-width:24px;
+  min-height:40px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #54718e;
+  border-radius:8px;
+  background:#07182a;
+  color:#cfe4fa;
+  font-size:17px;
+  cursor:grab;
+  touch-action:none;
+}
+.student-mode .student-controls .azny-tools-drag-handle:active{cursor:grabbing}
+@media(min-width:900px){
+ .student-mode .student-controls{overflow-x:auto!important;overflow-y:hidden!important}
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
@@ -1691,7 +1725,25 @@ async function startStudentWebRTC(){
 }
 async function ensureStudentMedia(){if(studentLocalStream?.getTracks?.().length)return true;try{if(!navigator.mediaDevices?.getUserMedia){toast("Câmera e microfone exigem HTTPS.");return false}studentLocalStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}});studentCameraOn=true;studentMicOn=true;const v=document.getElementById("studentSelfVideo");if(v){v.srcObject=studentLocalStream;v.muted=true;v.playsInline=true;v.play?.().catch(()=>{})}studentLocalStream.getTracks().forEach(t=>{if(studentPeer&&studentPeer.connectionState!=="closed"){const sender=studentPeer.getSenders().find(s=>s.track?.kind===t.kind);if(sender)sender.replaceTrack(t).catch(()=>{});else studentPeer.addTrack(t,studentLocalStream)}});const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");if(cb)cb.textContent="📷 Desligar câmera";if(mb)mb.textContent="🎙 Desligar microfone";toast("Câmera e microfone ativados");return true}catch(e){console.warn("Permissão de mídia do aluno:",e);toast("Permita o acesso à câmera e ao microfone no navegador.");return false}}
 function toggleStudentMic(){if(!studentLocalStream)return void ensureStudentMedia();const t=studentLocalStream?.getAudioTracks?.()[0];if(!t)return void ensureStudentMedia();t.enabled=!t.enabled;studentMicOn=t.enabled;const b=document.getElementById("studentMicBtn");if(b)b.textContent=t.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";toast(t.enabled?"Microfone ligado":"Microfone desligado")}
-function toggleStudentCamera(){if(!studentLocalStream)return void ensureStudentMedia();const t=studentLocalStream?.getVideoTracks?.()[0];if(!t)return void ensureStudentMedia();t.enabled=!t.enabled;studentCameraOn=t.enabled;const b=document.getElementById("studentCameraBtn");if(b)b.textContent=t.enabled?"📷 Desligar câmera":"📷 Ligar câmera";toast(t.enabled?"Câmera ligada":"Câmera desligada")}
+function toggleStudentCamera(){
+ if(!studentLocalStream)return void ensureStudentMedia();
+ const videoTrack=studentLocalStream.getVideoTracks?.()[0];
+ if(!videoTrack)return void ensureStudentMedia();
+ videoTrack.enabled=!videoTrack.enabled;
+ studentCameraOn=videoTrack.enabled;
+ /* Ao desligar a câmera, silenciar também o microfone para evitar transmissão de áudio inesperada.
+    Voltar a ligar a câmera não reativa o microfone automaticamente; o aluno pode ativá-lo no botão próprio. */
+ if(!studentCameraOn){
+  studentLocalStream.getAudioTracks?.().forEach(t=>{t.enabled=false});
+  studentMicOn=false;
+ }
+ const cameraBtn=document.getElementById("studentCameraBtn");
+ const micBtn=document.getElementById("studentMicBtn");
+ if(cameraBtn)cameraBtn.textContent=studentCameraOn?"📷 Desligar câmera":"📷 Ligar câmera";
+ const micTrack=studentLocalStream.getAudioTracks?.()[0];
+ if(micBtn)micBtn.textContent=micTrack?.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";
+ toast(studentCameraOn?"Câmera ligada; confirme o microfone se quiser transmitir áudio.":"Câmera e microfone desligados");
+}
 function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);toast("Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
 function syncTeacherMediaToPeer(pc){
  if(!pc||pc.connectionState==="closed")return;
@@ -1956,5 +2008,53 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",asyn
  });
 })();
 </script>
+
+/* AZNY: barra de ferramentas do aluno arrastável para cima/baixo em ecrãs táteis. */
+(function(){
+ const bar=document.getElementById("studentControls");
+ if(!bar||bar.dataset.aznyDraggable==="1")return;
+ bar.dataset.aznyDraggable="1";
+ const handle=document.createElement("button");
+ handle.type="button";
+ handle.className="azny-tools-drag-handle";
+ handle.title="Arrastar barra de ferramentas";
+ handle.setAttribute("aria-label","Arrastar barra de ferramentas");
+ handle.textContent="↕";
+ bar.insertBefore(handle,bar.firstChild);
+ let startY=0,startX=0,baseY=0,baseX=0,dragging=false;
+ function currentOffset(){
+  const m=(bar.style.transform||"").match(/translate3d\((-?[\d.]+)px,\s*(-?[\d.]+)px/);
+  return m?{x:Number(m[1]),y:Number(m[2])}:{x:0,y:0};
+ }
+ handle.addEventListener("pointerdown",e=>{
+  if(e.pointerType==="mouse"&&e.button!==0)return;
+  dragging=true;startY=e.clientY;startX=e.clientX;
+  const p=currentOffset();baseY=p.y;baseX=p.x;
+  handle.setPointerCapture?.(e.pointerId);
+  e.preventDefault();
+ });
+ handle.addEventListener("pointermove",e=>{
+  if(!dragging)return;
+  const maxY=Math.max(0,window.innerHeight-bar.getBoundingClientRect().height-8);
+  const rect=bar.getBoundingClientRect();
+  const minDeltaY=8-rect.top;
+  const maxDeltaY=window.innerHeight-8-rect.bottom;
+  const dy=Math.max(minDeltaY,Math.min(maxDeltaY,e.clientY-startY));
+  const maxDeltaX=window.innerWidth-8-rect.right;
+  const minDeltaX=8-rect.left;
+  const dx=Math.max(minDeltaX,Math.min(maxDeltaX,e.clientX-startX));
+  bar.style.transform="translate3d("+(baseX+dx)+"px, "+(baseY+dy)+"px, 0)";
+  e.preventDefault();
+ });
+ const stop=()=>{dragging=false};
+ handle.addEventListener("pointerup",stop);
+ handle.addEventListener("pointercancel",stop);
+ handle.addEventListener("lostpointercapture",stop);
+ window.addEventListener("resize",()=>{
+  const r=bar.getBoundingClientRect();
+  if(r.top<8||r.bottom>innerHeight-8||r.left<8||r.right>innerWidth-8)bar.style.transform="translate3d(0,0,0)";
+ },{passive:true});
+})();
+
 </body>
 </html>
