@@ -1667,15 +1667,50 @@ function updateTeacherMediaStatus(){
  document.getElementById("teacherMediaStatus").textContent="Câmera: "+cam+" · Microfone: "+mic;
 }
 async function startCamera(){
- if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
- try{
-  teacherStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},audio:false});
-  const v=document.getElementById("teacherVideo");v.srcObject=teacherStream;v.hidden=false;
-  document.querySelector("#teacherCamera .cam-off").style.display="none";
-  document.getElementById("camStatus").textContent="Ligada";
-  document.getElementById("cameraBtn").disabled=true;document.getElementById("cameraStopBtn").disabled=false;
-  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
- }catch(e){toast(e.name==="NotAllowedError"?"Permissão da câmera recusada.":("Não foi possível ligar a câmera: "+e.name))}
+ const btn=document.getElementById("cameraBtn");
+ const stopBtn=document.getElementById("cameraStopBtn");
+ if(!navigator.mediaDevices||typeof navigator.mediaDevices.getUserMedia!=="function"){
+  toast("Câmara indisponível: abre esta página em HTTPS e permite o acesso à câmara no navegador.");return;
+ }
+ if(teacherStream?.getVideoTracks?.().some(t=>t.readyState==="live")){
+  const existing=document.getElementById("teacherVideo");if(existing){existing.srcObject=teacherStream;existing.hidden=false;existing.play?.().catch(()=>{});}
+  updateTeacherMediaStatus();return;
+ }
+ if(btn)btn.disabled=true;
+ let stream=null,lastError=null;
+ const attempts=[
+  {video:{facingMode:{ideal:"user"}},audio:false},
+  {video:{width:{ideal:640},height:{ideal:480}},audio:false},
+  {video:true,audio:false}
+ ];
+ for(const constraints of attempts){
+  try{stream=await navigator.mediaDevices.getUserMedia(constraints);break;}
+  catch(e){lastError=e;console.warn("AZNY camera attempt failed",e?.name,e?.message,constraints);
+   if(!["AbortError","OverconstrainedError","NotFoundError","NotReadableError"].includes(e?.name))break;
+  }
+ }
+ if(!stream){
+  if(btn)btn.disabled=false;
+  const name=lastError?.name||"Erro";
+  const messages={
+   NotAllowedError:"Permissão da câmara recusada. No navegador, permite a câmara para este site e tenta novamente.",
+   PermissionDeniedError:"Permissão da câmara recusada. Verifica as permissões do site no navegador.",
+   NotFoundError:"O navegador não encontrou nenhuma câmara disponível.",
+   NotReadableError:"A câmara está ocupada ou o sistema não conseguiu iniciá-la. Fecha outras aplicações que usam a câmara e tenta novamente.",
+   AbortError:"O navegador interrompeu a abertura da câmara. Fecha outras aplicações que usam a câmara e tenta novamente.",
+   SecurityError:"O navegador bloqueou o acesso à câmara por motivos de segurança."
+  };
+  toast(messages[name]||("Não foi possível ligar a câmara: "+name));
+  updateTeacherMediaStatus();return;
+ }
+ teacherStream=stream;
+ const v=document.getElementById("teacherVideo");
+ if(v){v.srcObject=stream;v.muted=true;v.autoplay=true;v.playsInline=true;v.hidden=false;try{await v.play()}catch(e){console.warn("AZNY video playback:",e?.name,e?.message)}}
+ const off=document.querySelector("#teacherCamera .cam-off");if(off)off.style.display="none";
+ const status=document.getElementById("camStatus");if(status)status.textContent="Ligada";
+ if(btn)btn.disabled=true;if(stopBtn)stopBtn.disabled=false;
+ stream.getVideoTracks().forEach(t=>{t.onended=()=>{if(teacherStream===stream)stopCamera()}});
+ syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmara do professor ligada.");
 }
 function stopCamera(){
  if(teacherStream){teacherStream.getTracks().forEach(t=>t.stop());teacherStream=null}
@@ -1686,13 +1721,31 @@ function stopCamera(){
  syncTeacherMediaToPeers();updateTeacherMediaStatus()
 }
 async function startMic(){
- if(!navigator.mediaDevices?.getUserMedia){toast("O microfone exige HTTPS ou localhost.");return}
- try{
-  teacherAudioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}},video:false});
-  const track=teacherAudioStream.getAudioTracks()[0];track.enabled=true;
-  document.getElementById("micBtn").disabled=true;document.getElementById("micStopBtn").disabled=false;
-  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Microfone do professor ligado e disponível em tempo real")
- }catch(e){toast(e.name==="NotAllowedError"?"Permissão do microfone recusada.":("Não foi possível ligar o microfone: "+e.name))}
+ const btn=document.getElementById("micBtn"),stopBtn=document.getElementById("micStopBtn");
+ if(!navigator.mediaDevices||typeof navigator.mediaDevices.getUserMedia!=="function"){toast("Microfone indisponível: abre esta página em HTTPS e permite o acesso ao microfone.");return}
+ if(teacherAudioStream?.getAudioTracks?.().some(t=>t.readyState==="live")){updateTeacherMediaStatus();return}
+ if(btn)btn.disabled=true;
+ let stream=null,lastError=null;
+ const attempts=[
+  {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false},
+  {audio:true,video:false}
+ ];
+ for(const constraints of attempts){
+  try{stream=await navigator.mediaDevices.getUserMedia(constraints);break}
+  catch(e){lastError=e;console.warn("AZNY microphone attempt failed",e?.name,e?.message);
+   if(!["AbortError","OverconstrainedError","NotFoundError","NotReadableError"].includes(e?.name))break;
+  }
+ }
+ if(!stream){
+  if(btn)btn.disabled=false;
+  const name=lastError?.name||"Erro";
+  const messages={NotAllowedError:"Permissão do microfone recusada. Permite o microfone nas permissões deste site.",NotFoundError:"O navegador não encontrou um microfone disponível.",NotReadableError:"O microfone está ocupado por outra aplicação.",AbortError:"O navegador interrompeu a abertura do microfone. Fecha outras aplicações que o possam estar a usar."};
+  toast(messages[name]||("Não foi possível ligar o microfone: "+name));updateTeacherMediaStatus();return;
+ }
+ teacherAudioStream=stream;const track=stream.getAudioTracks()[0];if(track)track.enabled=true;
+ if(btn)btn.disabled=true;if(stopBtn)stopBtn.disabled=false;
+ track?.addEventListener("ended",()=>{if(teacherAudioStream===stream)stopMic()});
+ syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Microfone do professor ligado.");
 }
 function stopMic(){
  if(teacherAudioStream){teacherAudioStream.getTracks().forEach(t=>t.stop());teacherAudioStream=null}
