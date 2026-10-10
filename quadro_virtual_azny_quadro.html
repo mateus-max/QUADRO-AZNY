@@ -602,6 +602,74 @@ body:not(.student-mode) .camera-panel>.cam-buttons button:disabled{opacity:.45!i
  body:not(.student-mode) #students .student{min-height:95px!important}
  body:not(.student-mode) .camera-panel>.cam-buttons{gap:4px!important;padding:4px!important}
 }
+
+/* AZNY teacher mobile layout: mirror the student's landscape board while retaining every teacher control. */
+@media (max-width: 950px) and (orientation: landscape), (max-height: 520px) and (pointer: coarse){
+ body:not(.student-mode){height:100dvh!important;overflow:hidden!important}
+ body:not(.student-mode) .app{height:100dvh!important;min-height:0!important;overflow:hidden!important}
+ body:not(.student-mode) .topbar{height:38px!important;min-height:38px!important;flex:0 0 38px!important;padding:0 7px!important;gap:6px!important;overflow:hidden!important}
+ body:not(.student-mode) .logo{font-size:12px!important;max-width:105px!important;overflow:hidden!important}
+ body:not(.student-mode) .topbar>.title{flex:1 1 70px!important;min-width:40px!important;max-width:140px!important}
+ body:not(.student-mode) .title input{font-size:11px!important}
+ body:not(.student-mode) #classControlsTop{gap:3px!important}
+ body:not(.student-mode) #classControlsTop .class-timer{min-width:48px!important;padding:4px!important;font-size:10px!important}
+ body:not(.student-mode) #classControlsTop button{min-height:27px!important;padding:3px 5px!important;font-size:10px!important}
+ body:not(.student-mode) .top-actions{gap:3px!important}
+ body:not(.student-mode) .iconbtn{width:28px!important;height:28px!important;min-width:28px!important;border-radius:6px!important;font-size:12px!important}
+ body:not(.student-mode) .workspace{display:grid!important;grid-template-columns:clamp(125px,17vw,165px) minmax(0,1fr) clamp(150px,21vw,195px)!important;grid-template-rows:minmax(0,1fr)!important;gap:0!important;min-height:0!important;height:auto!important;overflow:hidden!important}
+ body:not(.student-mode) .leftbar{grid-column:1!important;grid-row:1!important;width:auto!important;min-width:0!important;max-width:none!important;min-height:0!important;overflow:hidden!important;border-right:1px solid var(--line)!important}
+ body:not(.student-mode) .leftbar .sidehead{height:28px!important;min-height:28px!important;padding:0 7px!important;font-size:9px!important}
+ body:not(.student-mode) .leftbar .tools{grid-template-columns:1fr 1fr!important;gap:4px!important;padding:5px!important;overflow-y:auto!important;overflow-x:hidden!important;align-content:start!important}
+ body:not(.student-mode) .leftbar .tool{min-width:0!important;min-height:32px!important;height:auto!important;padding:4px 3px!important;font-size:9px!important;line-height:1.15!important;overflow-wrap:anywhere!important}
+ body:not(.student-mode) .leftbar .tool.wide{grid-column:1/-1!important}
+ body:not(.student-mode) .leftbar .bottom-status{min-height:20px!important;padding:3px 5px!important;font-size:8px!important}
+ body:not(.student-mode) .main{grid-column:2!important;grid-row:1!important;display:flex!important;flex-direction:column!important;min-width:0!important;min-height:0!important;padding:0!important;overflow:hidden!important}
+ body:not(.student-mode) .toolbar{display:flex!important;flex:0 0 auto!important;gap:3px!important;min-height:30px!important;padding:3px!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important;scrollbar-width:thin!important}
+ body:not(.student-mode) .toolbar .group{display:flex!important;flex:0 0 auto!important;gap:2px!important;padding:0 3px!important}
+ body:not(.student-mode) .toolbar .mini{min-width:25px!important;height:25px!important;padding:2px 4px!important;font-size:10px!important}
+ body:not(.student-mode) .toolbar .select{max-width:65px!important;height:25px!important;padding:2px!important;font-size:9px!important}
+ body:not(.student-mode) .toolbar .color{width:25px!important;height:25px!important}
+ body:not(.student-mode) .canvas-wrap{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;flex:1 1 auto!important;width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important}
+ body:not(.student-mode) #stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;overflow:auto!important}
+ body:not(.student-mode) #board{transform-origin:0 0!important}
+ body:not(.student-mode) .rightbar{grid-column:3!important;grid-row:1!important;display:flex!important;width:auto!important;min-width:0!important;max-width:none!important;min-height:0!important;overflow:hidden!important;border-left:1px solid var(--line)!important}
+ body:not(.student-mode) .rightbar .sidehead{height:26px!important;min-height:26px!important;padding:0 6px!important;font-size:9px!important}
+ body:not(.student-mode) .camera-panel{flex:0 0 auto!important;min-height:0!important;padding:4px!important;overflow:hidden!important}
+ body:not(.student-mode) .camera{height:clamp(65px,18vh,105px)!important;min-height:0!important;position:relative!important}
+ body:not(.student-mode) #teacherVideo{width:100%!important;height:100%!important;object-fit:cover!important}
+ body:not(.student-mode) .camera .cam-off{font-size:9px!important;gap:2px!important;padding:3px!important}
+ body:not(.student-mode) .camera .cam-off .big{font-size:18px!important}
+ body:not(.student-mode) .camera-label,body:not(.student-mode) .cam-status{font-size:8px!important;padding:2px 4px!important}
+ body:not(.student-mode) .camera-panel>.cam-buttons{gap:3px!important;padding:3px 0!important}
+ body:not(.student-mode) .camera-panel>.cam-buttons button{min-height:27px!important;height:27px!important}
+ body:not(.student-mode) .teacher-media-status{font-size:8px!important;padding:2px!important}
+ body:not(.student-mode) .camera-join-requests{max-height:75px!important;overflow:auto!important;font-size:9px!important}
+ body:not(.student-mode) #students.students{flex:1 1 auto!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(52px,auto)!important;gap:4px!important;padding:4px!important;overflow-y:auto!important;min-height:0!important}
+ body:not(.student-mode) #students .student{min-height:52px!important;max-height:105px!important;aspect-ratio:4/3!important}
+ body:not(.student-mode) #students .student>.label{font-size:8px!important;padding:2px 4px!important;left:3px!important;right:26px!important;bottom:3px!important}
+ body:not(.student-mode) #students .student>.azny-student-device-controls button{width:20px!important;height:20px!important;min-width:20px!important;max-width:20px!important;font-size:10px!important}
+ body:not(.student-mode) #students #noStudents{font-size:9px!important;padding:5px!important}
+}
+/* Portrait phones keep the same teacher features in a compact, scrollable layout. */
+@media (max-width: 650px) and (orientation: portrait){
+ body:not(.student-mode){overflow:auto!important;height:auto!important;min-height:100dvh!important}
+ body:not(.student-mode) .app{height:auto!important;min-height:100dvh!important;overflow:visible!important}
+ body:not(.student-mode) .topbar{height:auto!important;min-height:42px!important;flex-wrap:wrap!important;padding:6px!important;gap:5px!important}
+ body:not(.student-mode) .logo{font-size:13px!important}
+ body:not(.student-mode) .topbar>.title{flex:1 1 90px!important;max-width:none!important}
+ body:not(.student-mode) .class-controls#classControlsTop{flex:1 1 100%!important;flex-wrap:wrap!important;justify-content:flex-start!important}
+ body:not(.student-mode) #classControlsTop button{font-size:10px!important;padding:5px!important}
+ body:not(.student-mode) .workspace{display:flex!important;flex-direction:column!important;overflow:visible!important;min-height:0!important}
+ body:not(.student-mode) .leftbar{order:2!important;width:100%!important;min-width:0!important;max-height:190px!important;border-right:0!important;border-top:1px solid var(--line)!important}
+ body:not(.student-mode) .leftbar .tools{grid-template-columns:repeat(3,minmax(0,1fr))!important;max-height:150px!important}
+ body:not(.student-mode) .leftbar .tool{min-height:38px!important;font-size:10px!important}
+ body:not(.student-mode) .main{order:1!important;display:flex!important;flex-direction:column!important;min-height:48vh!important;width:100%!important;padding:0!important}
+ body:not(.student-mode) .toolbar{display:flex!important;overflow-x:auto!important;flex-wrap:nowrap!important;min-height:36px!important}
+ body:not(.student-mode) .canvas-wrap{position:relative!important;inset:auto!important;width:100%!important;height:48vh!important;min-height:260px!important;flex:0 0 auto!important}
+ body:not(.student-mode) .rightbar{order:3!important;width:100%!important;min-width:0!important;max-height:50vh!important;border-left:0!important;border-top:1px solid var(--line)!important}
+ body:not(.student-mode) .camera{height:180px!important}
+ body:not(.student-mode) #students.students{grid-template-columns:repeat(2,minmax(0,1fr))!important;max-height:220px!important}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
