@@ -2277,5 +2277,33 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
  body:not(.student-mode) .workspace > .main { grid-row:1!important; min-height:0!important; }
 }
 </style>
+<style id="azny-mobile-board-height-at-mark">
+@media (max-width:700px), (max-device-width:700px), (orientation:portrait) and (pointer:coarse) {
+  /* Reduce only the board row so the board ends at the marked line;
+     bottom-left area is reserved for the horizontal tool tray. */
+  body:not(.student-mode) .workspace {
+    grid-template-rows: minmax(0, 1fr) 112px !important;
+  }
+  body:not(.student-mode) .workspace > .main {
+    grid-row: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  body:not(.student-mode) .workspace > .main .canvas-wrap {
+    min-height: 0 !important;
+    height: auto !important;
+    flex: 1 1 auto !important;
+  }
+  body:not(.student-mode) .workspace > .leftbar {
+    grid-row: 2 !important;
+    height: 112px !important;
+    min-height: 112px !important;
+    max-height: 112px !important;
+  }
+  body:not(.student-mode) .workspace > .rightbar {
+    grid-row: 1 / span 2 !important;
+  }
+}
+</style>
 </body>
 </html>
