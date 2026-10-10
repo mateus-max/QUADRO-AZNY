@@ -1133,6 +1133,9 @@ function applyRemoteBoardState(d){
    /* Never tear down and recreate objects just because a Firebase/WebRTC echo
       arrived. That was removing the blue selection outline immediately. */
    if(incomingPage===currentPage&&aznySameBoardPage(localPage,incomingPages[incomingPage-1]))return;
+   /* Keep the selected local object mounted while the teacher is selecting,
+      dragging or resizing it; realtime echoes must not replace its DOM node. */
+   if(incomingPage===currentPage&&selected?.isConnected)return;
    const selectedId=selected?.dataset?.id||"";
    pageStates=incomingPages;
    remoteBoardApplying=true;
@@ -1667,15 +1670,39 @@ function updateTeacherMediaStatus(){
  document.getElementById("teacherMediaStatus").textContent="Câmera: "+cam+" · Microfone: "+mic;
 }
 async function startCamera(){
- if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
+ const btn=document.getElementById("cameraBtn"),video=document.getElementById("teacherVideo");
+ if(!navigator.mediaDevices?.getUserMedia){toast("O navegador não disponibiliza a câmara. Abre o quadro em HTTPS no Chrome.");return}
+ if(teacherStream?.getVideoTracks?.().some(t=>t.readyState==="live")){
+  video.muted=true;video.autoplay=true;video.playsInline=true;video.srcObject=teacherStream;video.hidden=false;
+  try{await video.play()}catch(e){console.warn("Reprodução local da câmara:",e)}
+  return;
+ }
+ if(btn){btn.disabled=true;btn.textContent="A abrir câmara…"}
  try{
-  teacherStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},audio:false});
-  const v=document.getElementById("teacherVideo");v.srcObject=teacherStream;v.hidden=false;
-  document.querySelector("#teacherCamera .cam-off").style.display="none";
+  let stream;
+  try{
+   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"user"},width:{ideal:640},height:{ideal:480}},audio:false});
+  }catch(firstError){
+   console.warn("Primeira tentativa de câmara falhou; a tentar sem restrições:",firstError);
+   stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+  }
+  teacherStream=stream;
+  video.muted=true;video.autoplay=true;video.playsInline=true;video.srcObject=stream;video.hidden=false;
+  const off=document.querySelector("#teacherCamera .cam-off");if(off)off.style.display="none";
   document.getElementById("camStatus").textContent="Ligada";
-  document.getElementById("cameraBtn").disabled=true;document.getElementById("cameraStopBtn").disabled=false;
-  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
- }catch(e){toast(e.name==="NotAllowedError"?"Permissão da câmera recusada.":("Não foi possível ligar a câmera: "+e.name))}
+  if(btn){btn.disabled=true;btn.textContent="🎥 Ligar câmera"}
+  document.getElementById("cameraStopBtn").disabled=false;
+  stream.getVideoTracks().forEach(t=>t.onended=()=>{if(teacherStream===stream)stopCamera()});
+  try{await video.play()}catch(playError){console.warn("Vídeo local aguarda reprodução:",playError)}
+  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmara do professor ligada");
+ }catch(e){
+  if(btn){btn.disabled=false;btn.textContent="🎥 Ligar câmera"}
+  let message="Não foi possível ligar a câmara ("+(e.name||"erro")+")";
+  if(e.name==="NotAllowedError"||e.name==="PermissionDeniedError")message="Acesso à câmara bloqueado. Clica no cadeado ao lado do endereço e permite a câmara.";
+  else if(e.name==="NotFoundError"||e.name==="DevicesNotFoundError")message="Não foi encontrada uma câmara neste dispositivo.";
+  else if(e.name==="NotReadableError"||e.name==="AbortError"||e.name==="TrackStartError")message="O Chrome não conseguiu iniciar a câmara. Fecha outras abas do quadro e aplicações que usem a câmara (Câmara, Meet, Zoom) e tenta novamente.";
+  console.error("AZNY teacher camera error",e);toast(message);
+ }
 }
 function stopCamera(){
  if(teacherStream){teacherStream.getTracks().forEach(t=>t.stop());teacherStream=null}
