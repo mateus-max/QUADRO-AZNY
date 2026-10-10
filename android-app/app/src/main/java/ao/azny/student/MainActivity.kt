@@ -68,6 +68,8 @@ class MainActivity : AppCompatActivity() {
             return@registerForActivityResult
         }
         try {
+            projectionIntent = result.data
+            ContextCompat.startForegroundService(this, Intent(this, ScreenShareService::class.java))
             startNativeSupervision(result.resultCode, result.data!!)
         } catch (e: Exception) {
             setStatus("Não foi possível iniciar a supervisão: ${e.message ?: "erro desconhecido"}")
@@ -175,9 +177,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startNativeSupervision(resultCode: Int, data: Intent) {
-        val manager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        projection = manager.getMediaProjection(resultCode, data)
-            ?: throw IllegalStateException("O Android não disponibilizou a captura de ecrã")
+        projectionIntent = data
         initializeWebRtc()
         createNativePeer()
         val attempt = mapOf(
