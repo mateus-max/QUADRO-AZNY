@@ -16,7 +16,7 @@
 <label class="label" for="examLink">Link ou código da avaliação</label><input id="examLink" type="text" autocomplete="off" placeholder="Cole aqui o link enviado pelo professor">
 <button id="openExam">Abrir avaliação</button><button id="install" class="secondary hidden">Instalar AZNY Exam</button>
 <div id="notice" class="notice">A instalação da aplicação não substitui as permissões do navegador. A partilha do ecrã depende do suporte do dispositivo e do navegador.</div>
-</section></main><footer>AZNY Exam · Plataforma de avaliações</footer>
+</section></main><footer>AZNY Exam · Plataforma de avaliações</footer><iframe id="examFrame" title="Avaliação AZNY" allow="camera; microphone; display-capture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 <script>
 const $=id=>document.getElementById(id),base=new URL("../",location.href);
 function getId(value){let s=String(value||"").trim();if(!s)return "";try{const u=new URL(s,location.href);return u.searchParams.get("id")||u.searchParams.get("avaliacao")||""}catch(_){return s.replace(/[^a-zA-Z0-9_-]/g,"")}}
