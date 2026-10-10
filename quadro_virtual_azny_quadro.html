@@ -1896,19 +1896,24 @@ async function startStudentWebRTC(){
   let teacherAudioOut=document.getElementById("studentTeacherAudioOut");
   if(!teacherAudioOut){teacherAudioOut=document.createElement("audio");teacherAudioOut.id="studentTeacherAudioOut";teacherAudioOut.autoplay=true;teacherAudioOut.playsInline=true;teacherAudioOut.muted=false;teacherAudioOut.volume=1;teacherAudioOut.style.cssText="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-10px;bottom:0";document.body.appendChild(teacherAudioOut)}
   const teacherAudioIn=new MediaStream(),teacherVideoIn=new MediaStream();
-  const playTeacherAudio=()=>{if(!teacherAudioIn.getAudioTracks().length)return;teacherAudioOut.srcObject=teacherAudioIn;teacherAudioOut.muted=false;teacherAudioOut.volume=1;teacherAudioOut.play?.().catch(err=>console.warn("AZNY áudio do professor bloqueado:",err))};
-  const playTeacherVideo=()=>{const v=document.getElementById("studentTeacherVideo");if(v){v.srcObject=teacherVideoIn;v.muted=true;v.autoplay=true;v.playsInline=true;v.play?.().catch(err=>console.warn("AZNY vídeo do professor:",err))}};
+  const addRemoteTrack=(target,track)=>{if(track&&!target.getTracks().some(t=>t.id===track.id))target.addTrack(track)};
+  const playTeacherAudio=()=>{if(!teacherAudioIn.getAudioTracks().length)return;if(teacherAudioOut.srcObject!==teacherAudioIn)teacherAudioOut.srcObject=teacherAudioIn;teacherAudioOut.muted=false;teacherAudioOut.volume=1;teacherAudioOut.play?.().catch(err=>console.warn("AZNY áudio do professor bloqueado:",err))};
+  const playTeacherVideo=()=>{const v=document.getElementById("studentTeacherVideo");if(v&&teacherVideoIn.getVideoTracks().length){if(v.srcObject!==teacherVideoIn)v.srcObject=teacherVideoIn;v.muted=true;v.autoplay=true;v.playsInline=true;v.style.display="block";v.play?.().catch(err=>console.warn("AZNY vídeo do professor:",err))}};
   studentPeer.ontrack=e=>{
    const track=e.track;
+   // Preferir os tracks recebidos no evento; não depender de e.streams[0],
+   // que pode vir vazio em alguns navegadores/dispositivos móveis.
    if(track.kind==="audio"){
-    if(!teacherAudioIn.getTracks().some(t=>t.id===track.id))teacherAudioIn.addTrack(track);
+    addRemoteTrack(teacherAudioIn,track);
     playTeacherAudio();track.onunmute=playTeacherAudio;
+    track.onended=()=>{try{teacherAudioIn.removeTrack(track)}catch(_){}};
     document.addEventListener("pointerdown",playTeacherAudio,{once:true});
     document.addEventListener("touchstart",playTeacherAudio,{once:true,passive:true});
    }
    if(track.kind==="video"){
-    if(!teacherVideoIn.getTracks().some(t=>t.id===track.id))teacherVideoIn.addTrack(track);
+    addRemoteTrack(teacherVideoIn,track);
     playTeacherVideo();track.onunmute=playTeacherVideo;
+    track.onended=()=>{try{teacherVideoIn.removeTrack(track)}catch(_){}};
    }
   };
   bindStudentNetworkQuality(studentPeer,studentRequestId);
@@ -2002,8 +2007,14 @@ async function connectStudentPeer(id,d){
  let presenceInitialized=false,lastStudentOnline=null;
  ref.child("studentOnline").on("value",snap=>{
   const online=snap.val()===true;
-  if(!presenceInitialized){presenceInitialized=true;lastStudentOnline=online;return}
-  if(online===lastStudentOnline)return;
+  if(!presenceInitialized){
+   presenceInitialized=true;lastStudentOnline=online;
+   // Se o aluno já saiu antes de o professor abrir/recuperar o painel, limpar
+   // qualquer cartão antigo que tenha ficado no DOM.
+   if(!online){removeStudentVideoCard(id);return}
+   return;
+  }
+  if(online===lastStudentOnline){if(!online)removeStudentVideoCard(id);return}
   lastStudentOnline=online;
   const studentLabel=d.name||"O aluno";
   if(online){toast(studentLabel+" voltou à aula.");showNetworkNotice(studentLabel+" voltou à aula.","good")}
@@ -2037,8 +2048,13 @@ async function connectStudentPeer(id,d){
   ch.onclose=()=>{if(pc._aznyBoardChannel===ch)pc._aznyBoardChannel=null};
  };
  pc.ontrack=e=>{
+  // Alguns navegadores não enviam e.streams; addStudentVideoCard mantém um
+  // MediaStream estável e acrescenta cada track recebido individualmente.
   const stream=e.streams?.[0]||null;
   addStudentVideoCard(id,d.name,stream,e.track);
+  if(e.track){
+   e.track.onunmute=()=>{const card=document.getElementById("student-"+id);const video=card?.querySelector("video");const audio=card?.querySelector("audio.azny-student-audio");video?.play?.().catch(()=>{});audio?.play?.().catch(()=>{})};
+  }
  };
  pc.onicecandidate=e=>{if(e.candidate)ref.child("teacherCandidates").push(e.candidate.toJSON())};
  pc.onconnectionstatechange=()=>{
@@ -2114,7 +2130,11 @@ async function leaveStudentClass(){
  try{
   if(oldRequestId&&AZNY_DB){
    const ref=studentRequestRef(oldRequestId);
-   if(ref)await ref.update({studentOnline:false,leftAt:firebase.database.ServerValue.TIMESTAMP});
+   if(ref){
+    // Publicar a saída antes de fechar a ligação para o professor remover
+    // imediatamente o cartão da câmera.
+    await ref.update({studentOnline:false,network:"offline",leftAt:firebase.database.ServerValue.TIMESTAMP});
+   }
   }
  }catch(e){console.warn("AZNY leave class presence:",e)}
  try{studentPeer?.close()}catch(_){}
