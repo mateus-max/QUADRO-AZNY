@@ -1851,7 +1851,7 @@ function addStudentVideoCard(id,name,stream,track){
  let audio=card.querySelector("audio.azny-student-audio");
  if(!audio){audio=document.createElement("audio");audio.className="azny-student-audio";audio.autoplay=true;audio.playsInline=true;audio.muted=false;audio.volume=1;audio.setAttribute("aria-label","Áudio do aluno");audio.style.cssText="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";card.appendChild(audio)}
  const playVideo=()=>video.play?.().catch(()=>{});
- const playAudio=()=>{const audioTracks=inbound.getAudioTracks();if(!audioTracks.length)return;const audioStream=new MediaStream(audioTracks);if(audio.srcObject!==audioStream){audio.srcObject=audioStream}audio.muted=false;audio.volume=1;audio.play?.().catch(err=>console.warn("AZNY áudio do aluno bloqueado:",err))};
+ const playAudio=()=>{if(!inbound.getAudioTracks().length)return;if(audio.srcObject!==inbound)audio.srcObject=inbound;audio.muted=false;audio.volume=1;audio.play?.().catch(err=>console.warn("AZNY áudio do aluno bloqueado:",err))};
  inbound.getTracks().forEach(t=>{t.onunmute=()=>{playVideo();playAudio()};t.onended=()=>{playAudio()}});
  playVideo();playAudio();
  document.addEventListener("pointerdown",()=>{playVideo();playAudio()},{once:true});
