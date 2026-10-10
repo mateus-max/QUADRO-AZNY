@@ -1667,50 +1667,15 @@ function updateTeacherMediaStatus(){
  document.getElementById("teacherMediaStatus").textContent="Câmera: "+cam+" · Microfone: "+mic;
 }
 async function startCamera(){
- const btn=document.getElementById("cameraBtn");
- const stopBtn=document.getElementById("cameraStopBtn");
- if(!navigator.mediaDevices||typeof navigator.mediaDevices.getUserMedia!=="function"){
-  toast("Câmara indisponível: abre esta página em HTTPS e permite o acesso à câmara no navegador.");return;
- }
- if(teacherStream?.getVideoTracks?.().some(t=>t.readyState==="live")){
-  const existing=document.getElementById("teacherVideo");if(existing){existing.srcObject=teacherStream;existing.hidden=false;existing.play?.().catch(()=>{});}
-  updateTeacherMediaStatus();return;
- }
- if(btn)btn.disabled=true;
- let stream=null,lastError=null;
- const attempts=[
-  {video:{facingMode:{ideal:"user"}},audio:false},
-  {video:{width:{ideal:640},height:{ideal:480}},audio:false},
-  {video:true,audio:false}
- ];
- for(const constraints of attempts){
-  try{stream=await navigator.mediaDevices.getUserMedia(constraints);break;}
-  catch(e){lastError=e;console.warn("AZNY camera attempt failed",e?.name,e?.message,constraints);
-   if(!["AbortError","OverconstrainedError","NotFoundError","NotReadableError"].includes(e?.name))break;
-  }
- }
- if(!stream){
-  if(btn)btn.disabled=false;
-  const name=lastError?.name||"Erro";
-  const messages={
-   NotAllowedError:"Permissão da câmara recusada. No navegador, permite a câmara para este site e tenta novamente.",
-   PermissionDeniedError:"Permissão da câmara recusada. Verifica as permissões do site no navegador.",
-   NotFoundError:"O navegador não encontrou nenhuma câmara disponível.",
-   NotReadableError:"A câmara está ocupada ou o sistema não conseguiu iniciá-la. Fecha outras aplicações que usam a câmara e tenta novamente.",
-   AbortError:"O navegador interrompeu a abertura da câmara. Fecha outras aplicações que usam a câmara e tenta novamente.",
-   SecurityError:"O navegador bloqueou o acesso à câmara por motivos de segurança."
-  };
-  toast(messages[name]||("Não foi possível ligar a câmara: "+name));
-  updateTeacherMediaStatus();return;
- }
- teacherStream=stream;
- const v=document.getElementById("teacherVideo");
- if(v){v.srcObject=stream;v.muted=true;v.autoplay=true;v.playsInline=true;v.hidden=false;try{await v.play()}catch(e){console.warn("AZNY video playback:",e?.name,e?.message)}}
- const off=document.querySelector("#teacherCamera .cam-off");if(off)off.style.display="none";
- const status=document.getElementById("camStatus");if(status)status.textContent="Ligada";
- if(btn)btn.disabled=true;if(stopBtn)stopBtn.disabled=false;
- stream.getVideoTracks().forEach(t=>{t.onended=()=>{if(teacherStream===stream)stopCamera()}});
- syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmara do professor ligada.");
+ if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
+ try{
+  teacherStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},audio:false});
+  const v=document.getElementById("teacherVideo");v.srcObject=teacherStream;v.hidden=false;
+  document.querySelector("#teacherCamera .cam-off").style.display="none";
+  document.getElementById("camStatus").textContent="Ligada";
+  document.getElementById("cameraBtn").disabled=true;document.getElementById("cameraStopBtn").disabled=false;
+  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
+ }catch(e){toast(e.name==="NotAllowedError"?"Permissão da câmera recusada.":("Não foi possível ligar a câmera: "+e.name))}
 }
 function stopCamera(){
  if(teacherStream){teacherStream.getTracks().forEach(t=>t.stop());teacherStream=null}
@@ -1721,31 +1686,13 @@ function stopCamera(){
  syncTeacherMediaToPeers();updateTeacherMediaStatus()
 }
 async function startMic(){
- const btn=document.getElementById("micBtn"),stopBtn=document.getElementById("micStopBtn");
- if(!navigator.mediaDevices||typeof navigator.mediaDevices.getUserMedia!=="function"){toast("Microfone indisponível: abre esta página em HTTPS e permite o acesso ao microfone.");return}
- if(teacherAudioStream?.getAudioTracks?.().some(t=>t.readyState==="live")){updateTeacherMediaStatus();return}
- if(btn)btn.disabled=true;
- let stream=null,lastError=null;
- const attempts=[
-  {audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false},
-  {audio:true,video:false}
- ];
- for(const constraints of attempts){
-  try{stream=await navigator.mediaDevices.getUserMedia(constraints);break}
-  catch(e){lastError=e;console.warn("AZNY microphone attempt failed",e?.name,e?.message);
-   if(!["AbortError","OverconstrainedError","NotFoundError","NotReadableError"].includes(e?.name))break;
-  }
- }
- if(!stream){
-  if(btn)btn.disabled=false;
-  const name=lastError?.name||"Erro";
-  const messages={NotAllowedError:"Permissão do microfone recusada. Permite o microfone nas permissões deste site.",NotFoundError:"O navegador não encontrou um microfone disponível.",NotReadableError:"O microfone está ocupado por outra aplicação.",AbortError:"O navegador interrompeu a abertura do microfone. Fecha outras aplicações que o possam estar a usar."};
-  toast(messages[name]||("Não foi possível ligar o microfone: "+name));updateTeacherMediaStatus();return;
- }
- teacherAudioStream=stream;const track=stream.getAudioTracks()[0];if(track)track.enabled=true;
- if(btn)btn.disabled=true;if(stopBtn)stopBtn.disabled=false;
- track?.addEventListener("ended",()=>{if(teacherAudioStream===stream)stopMic()});
- syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Microfone do professor ligado.");
+ if(!navigator.mediaDevices?.getUserMedia){toast("O microfone exige HTTPS ou localhost.");return}
+ try{
+  teacherAudioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}},video:false});
+  const track=teacherAudioStream.getAudioTracks()[0];track.enabled=true;
+  document.getElementById("micBtn").disabled=true;document.getElementById("micStopBtn").disabled=false;
+  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Microfone do professor ligado e disponível em tempo real")
+ }catch(e){toast(e.name==="NotAllowedError"?"Permissão do microfone recusada.":("Não foi possível ligar o microfone: "+e.name))}
 }
 function stopMic(){
  if(teacherAudioStream){teacherAudioStream.getTracks().forEach(t=>t.stop());teacherAudioStream=null}
@@ -2251,61 +2198,68 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
 })();
 </script>
 
-<style>
-/* AZNY mobile teacher layout: maximize board width; move tools into a horizontal bottom tray.
-   Desktop and student mode remain unchanged. */
-@media (max-width:700px), (max-device-width:700px), (orientation:portrait) and (pointer:coarse) {
- body:not(.student-mode){overflow:hidden!important;height:100dvh!important;background:#eef2f7}
- body:not(.student-mode) .app{height:100dvh!important;min-height:0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
- body:not(.student-mode) .topbar{flex:0 0 auto!important;height:auto!important;min-height:68px!important;max-height:108px;padding:6px 7px!important;gap:5px!important;display:flex!important;flex-wrap:wrap!important;align-content:center!important;align-items:center!important;background:#071b33!important}
- body:not(.student-mode) .logo{font-size:12px!important;line-height:1.2}
- body:not(.student-mode) .title{flex:1 1 62px!important;min-width:55px!important}
- body:not(.student-mode) .title input{font-size:11px!important}
- body:not(.student-mode) .top-actions{display:flex!important;gap:3px!important;margin-left:auto}
- body:not(.student-mode) .iconbtn{width:25px!important;height:27px!important;min-width:25px!important;padding:0!important;font-size:10px!important}
- body:not(.student-mode) .class-controls{order:5!important;display:grid!important;flex:1 0 100%!important;width:100%!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important;margin:0!important;padding:2px 0 0!important;border:0!important}
- body:not(.student-mode) .class-timer{grid-column:span 1!important;padding:5px 1px!important;font-size:10px!important;white-space:nowrap}
- body:not(.student-mode) .class-controls button{min-width:0!important;min-height:29px!important;height:auto!important;padding:4px 2px!important;font-size:9px!important;line-height:1.1}
- body:not(.student-mode) .record-download{grid-column:1/-1!important}
- /* Two columns only: wide canvas on the left, camera and students on the right. */
- body:not(.student-mode) .workspace{display:grid!important;grid-template-columns:minmax(0,1fr) 112px!important;grid-template-rows:minmax(0,1fr) auto!important;gap:0!important;flex:1 1 auto!important;width:100%!important;height:auto!important;min-height:0!important;overflow:hidden!important}
- body:not(.student-mode) .leftbar{display:flex!important;grid-column:1!important;grid-row:2!important;flex-direction:column!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:104px!important;overflow:hidden!important;border:0!important;border-top:1px solid #d7e0e9!important;background:#f8fafc!important;z-index:4!important}
- body:not(.student-mode) .main{display:flex!important;grid-column:1!important;grid-row:1!important;flex-direction:column!important;width:100%!important;min-width:0!important;min-height:0!important;height:100%!important;overflow:hidden!important;background:#fff!important}
- body:not(.student-mode) .rightbar{display:flex!important;grid-column:2!important;grid-row:1 / span 2!important;flex-direction:column!important;width:112px!important;min-width:0!important;height:100%!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;border:0!important;border-left:1px solid #d7e0e9!important;background:#f8fafc!important;z-index:2!important}
- /* Hide the left sidebar heading/status to give the actual tools a full-width horizontal tray. */
- body:not(.student-mode) .leftbar>.sidehead,body:not(.student-mode) .leftbar>.bottom-status{display:none!important}
- body:not(.student-mode) .tools{display:flex!important;flex:1 1 auto!important;flex-direction:row!important;align-items:stretch!important;min-height:0!important;width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:5px!important;gap:5px!important;scrollbar-width:thin!important}
- body:not(.student-mode) .tool,body:not(.student-mode) .tool.wide{display:flex!important;flex:0 0 70px!important;width:70px!important;min-width:70px!important;max-width:70px!important;min-height:64px!important;height:auto!important;grid-column:auto!important;padding:5px 3px!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;font-size:10px!important;line-height:1.15!important;border-radius:8px!important}
- body:not(.student-mode) .toolbar{order:2!important;display:flex!important;flex:0 0 38px!important;width:100%!important;height:38px!important;min-height:38px!important;padding:3px!important;gap:3px!important;overflow-x:auto!important;overflow-y:hidden!important;background:#fff!important;border-top:1px solid #d7e0e9!important;border-bottom:0!important;scrollbar-width:thin!important}
- body:not(.student-mode) .group{display:flex!important;flex:0 0 auto!important;gap:2px!important;padding-right:3px!important}
- body:not(.student-mode) .mini,body:not(.student-mode) .select{flex:0 0 auto!important;height:29px!important;min-width:26px!important;padding:0 4px!important;font-size:10px!important;border-radius:6px!important}
- body:not(.student-mode) .color{flex:0 0 auto!important;width:25px!important;height:28px!important}
- body:not(.student-mode) .zoomlabel{font-size:9px!important;min-width:30px!important}
- body:not(.student-mode) .canvas-wrap{order:1!important;display:block!important;position:relative!important;flex:1 1 auto!important;width:100%!important;height:auto!important;min-height:0!important;overflow:hidden!important;border:0!important;border-radius:0!important;background:#fff!important}
- body:not(.student-mode) #stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;overflow:auto!important}
- body:not(.student-mode) #board{border-width:4px!important;box-shadow:inset 0 0 0 1px #6f431f!important}
- body:not(.student-mode) .sidehead{flex:0 0 auto!important;width:100%!important;height:auto!important;min-height:31px!important;padding:5px 2px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;font-size:8px!important;line-height:1.15!important;letter-spacing:0!important;overflow-wrap:anywhere!important;color:#475569!important}
- body:not(.student-mode) .camera-panel{display:block!important;flex:0 0 auto!important;width:100%!important;padding:4px!important}
- body:not(.student-mode) .camera{width:100%!important;height:86px!important;min-height:86px!important;border-radius:7px!important}
- body:not(.student-mode) .camera video{width:100%!important;height:100%!important;object-fit:cover!important}
- body:not(.student-mode) .camera .cam-off{gap:3px!important;padding:3px!important;font-size:8px!important;line-height:1.15!important}
- body:not(.student-mode) .camera .cam-off .big{font-size:17px!important}
- body:not(.student-mode) .camera .camera-label,body:not(.student-mode) .camera .cam-status{font-size:7px!important;padding:2px 3px!important;left:3px!important;right:3px!important}
- body:not(.student-mode) .camera .camera-label{right:auto!important}
- body:not(.student-mode) .cam-buttons{display:flex!important;flex-direction:column!important;gap:3px!important;margin-top:4px!important}
- body:not(.student-mode) .cam-buttons button{flex:1 1 auto!important;width:100%!important;min-width:0!important;min-height:29px!important;height:auto!important;padding:4px 2px!important;font-size:8px!important;line-height:1.1!important;overflow-wrap:anywhere!important}
- body:not(.student-mode) .teacher-media-status{margin-top:4px!important;padding:4px 2px!important;font-size:7px!important;line-height:1.2!important;overflow-wrap:anywhere!important}
- body:not(.student-mode) .camera-join-requests{display:flex!important;flex-direction:column!important;gap:4px!important;margin-top:4px!important}
- body:not(.student-mode) .camera-join-requests .join-request{padding:4px!important;font-size:8px!important;gap:4px!important}
- body:not(.student-mode) .join-request .jr-name{font-size:9px!important}
- body:not(.student-mode) .join-request .jr-actions{display:flex!important;flex-direction:column!important;gap:3px!important}
- body:not(.student-mode) .join-request button{min-width:0!important;padding:4px 2px!important;font-size:8px!important}
- body:not(.student-mode) .students{display:flex!important;flex:0 0 auto!important;width:100%!important;max-height:none!important;overflow:visible!important;padding:0 3px 5px!important;gap:4px!important}
- body:not(.student-mode) .student{height:74px!important;min-height:74px!important;width:100%!important;border-radius:6px!important}
- body:not(.student-mode) .student .label{left:3px!important;bottom:3px!important;padding:2px 3px!important;font-size:7px!important}
- body:not(.student-mode) .no-students{padding:7px 3px!important;font-size:8px!important;line-height:1.2!important;overflow-wrap:anywhere!important}
+<style id="azny-horizontal-pro-reference">
+/* Single authoritative mobile landscape layout. Desktop and student mode are excluded. */
+@media screen and (orientation:landscape) and (max-width:700px) and (pointer:coarse) {
+ body:not(.student-mode){height:100dvh!important;min-height:0!important;overflow:hidden!important;background:#06172a!important}
+ body:not(.student-mode) .app{display:flex!important;flex-direction:column!important;width:100%!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+ body:not(.student-mode) .topbar{display:flex!important;flex:0 0 56px!important;flex-wrap:nowrap!important;align-items:center!important;gap:8px!important;height:56px!important;min-height:56px!important;max-height:56px!important;padding:5px 10px!important;overflow:hidden!important;background:#06172a!important}
+ body:not(.student-mode) .logo{font-size:clamp(12px,1.7vw,22px)!important;white-space:nowrap!important}
+ body:not(.student-mode) .title{flex:1 1 auto!important;min-width:55px!important}
+ body:not(.student-mode) .title input{font-size:12px!important}
+ body:not(.student-mode) .top-actions{display:flex!important;flex:0 0 auto!important;gap:5px!important;margin-left:auto!important}
+ body:not(.student-mode) .iconbtn{width:clamp(28px,3.8vw,44px)!important;height:clamp(28px,3.8vw,44px)!important;min-width:28px!important;padding:0 3px!important}
+ body:not(.student-mode) .class-controls{display:flex!important;flex:0 0 auto!important;flex-wrap:nowrap!important;align-items:center!important;gap:5px!important;margin:0!important;padding:0!important;overflow-x:auto!important}
+ body:not(.student-mode) .class-timer{font-size:clamp(10px,1.2vw,15px)!important;padding:4px!important;white-space:nowrap!important}
+ body:not(.student-mode) .class-controls button{min-width:0!important;min-height:clamp(30px,4.5vw,44px)!important;height:clamp(30px,4.5vw,44px)!important;padding:4px clamp(5px,.8vw,12px)!important;font-size:clamp(10px,1.2vw,15px)!important;white-space:nowrap!important}
+ body:not(.student-mode) .workspace{display:grid!important;grid-template-columns:clamp(112px,13.2vw,205px) minmax(0,1fr) clamp(180px,21vw,325px)!important;grid-template-rows:minmax(0,1fr)!important;gap:0!important;flex:1 1 auto!important;width:100%!important;height:auto!important;min-height:0!important;overflow:hidden!important;background:#06172a!important}
+ body:not(.student-mode) .workspace>.leftbar{display:flex!important;grid-column:1!important;grid-row:1!important;flex-direction:column!important;width:100%!important;min-width:0!important;max-width:none!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:hidden!important;padding:5px!important;gap:5px!important;background:#071a2e!important;border:0!important;border-right:1px solid #203b58!important}
+ body:not(.student-mode) .workspace>.leftbar>.sidehead{display:none!important}
+ body:not(.student-mode) .workspace>.leftbar>.tools{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;min-height:0!important;width:100%!important;overflow-x:hidden!important;overflow-y:auto!important;padding:3px!important;gap:5px!important}
+ body:not(.student-mode) .workspace>.leftbar .tool,body:not(.student-mode) .workspace>.leftbar .tool.wide{display:flex!important;flex:0 0 auto!important;width:100%!important;min-width:0!important;max-width:none!important;min-height:clamp(34px,7.5vh,57px)!important;height:auto!important;padding:5px 4px!important;align-items:center!important;justify-content:center!important;text-align:center!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:clamp(10px,1.2vw,15px)!important;line-height:1.15!important;color:#f5f8fc!important;background:#102b49!important;border:1px solid #294763!important;border-radius:11px!important}
+ body:not(.student-mode) .workspace>.leftbar .tool.active{background:#1c4772!important;border-color:#6ea3d2!important}
+ body:not(.student-mode) .workspace>.leftbar>.bottom-status{display:flex!important;flex:0 0 auto!important;flex-direction:column!important;gap:2px!important;padding:3px!important;font-size:8px!important;color:#cbd5e1!important}
+ body:not(.student-mode) .workspace>.main{display:flex!important;grid-column:2!important;grid-row:1!important;flex-direction:column!important;width:100%!important;min-width:0!important;min-height:0!important;height:100%!important;overflow:hidden!important;padding:0 4px!important;gap:3px!important;background:#071a2e!important}
+ body:not(.student-mode) .workspace>.main>.toolbar{display:flex!important;order:0!important;flex:0 0 clamp(34px,7.5vh,54px)!important;width:100%!important;height:clamp(34px,7.5vh,54px)!important;min-height:clamp(34px,7.5vh,54px)!important;padding:3px!important;gap:3px!important;overflow-x:auto!important;overflow-y:hidden!important;background:#f8fafc!important;border-radius:8px!important}
+ body:not(.student-mode) .workspace>.main>.toolbar .group{display:flex!important;flex:0 0 auto!important;gap:2px!important;padding-right:3px!important}
+ body:not(.student-mode) .workspace>.main>.toolbar .mini,body:not(.student-mode) .workspace>.main>.toolbar .select{height:clamp(27px,5.5vh,40px)!important;min-width:25px!important;padding:0 5px!important;font-size:clamp(10px,1.1vw,14px)!important}
+ body:not(.student-mode) .workspace>.main .canvas-wrap{display:block!important;order:1!important;position:relative!important;flex:1 1 auto!important;width:100%!important;height:auto!important;min-height:0!important;overflow:hidden!important;border:0!important;border-radius:0!important;background:#071a2e!important}
+ body:not(.student-mode) .workspace>.main #stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
+ body:not(.student-mode) .workspace>.main #board{border:clamp(4px,.65vw,8px) solid #86542d!important;box-shadow:inset 0 0 0 2px #a87545!important}
+ body:not(.student-mode) .workspace>.rightbar{display:flex!important;grid-column:3!important;grid-row:1!important;flex-direction:column!important;width:100%!important;min-width:0!important;max-width:none!important;height:100%!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;padding:7px!important;gap:6px!important;background:#071a2e!important;border:0!important;border-left:1px solid #203b58!important}
+ body:not(.student-mode) .workspace>.rightbar>.sidehead{display:flex!important;flex:0 0 auto!important;height:auto!important;min-height:26px!important;padding:4px!important;align-items:center!important;justify-content:flex-start!important;font-size:clamp(10px,1.1vw,14px)!important;color:#e6edf6!important;background:transparent!important;border:0!important}
+ body:not(.student-mode) .workspace>.rightbar .camera-panel{display:flex!important;flex-direction:column!important;flex:0 0 auto!important;width:100%!important;padding:0!important;gap:5px!important}
+ body:not(.student-mode) .workspace>.rightbar .camera{width:100%!important;height:clamp(90px,43vh,300px)!important;min-height:0!important;border:1px solid #263d55!important;border-radius:12px!important;overflow:hidden!important;background:#071525!important}
+ body:not(.student-mode) .workspace>.rightbar .camera video{width:100%!important;height:100%!important;object-fit:cover!important}
+ body:not(.student-mode) .workspace>.rightbar .camera .cam-off{font-size:clamp(9px,1.1vw,14px)!important;line-height:1.2!important;padding:6px!important;gap:4px!important}
+ body:not(.student-mode) .workspace>.rightbar .camera .cam-off .big{font-size:20px!important}
+ body:not(.student-mode) .workspace>.rightbar .camera .camera-label,body:not(.student-mode) .workspace>.rightbar .camera .cam-status{font-size:clamp(9px,1vw,13px)!important;padding:3px 5px!important}
+ body:not(.student-mode) .workspace>.rightbar .cam-buttons{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:4px!important;margin-top:0!important}
+ body:not(.student-mode) .workspace>.rightbar .cam-buttons button{flex:1 1 40%!important;width:auto!important;min-width:0!important;min-height:clamp(30px,5.5vh,48px)!important;height:auto!important;padding:4px!important;font-size:clamp(9px,1vw,13px)!important;line-height:1.1!important;overflow-wrap:anywhere!important}
+ body:not(.student-mode) .workspace>.rightbar .teacher-media-status{font-size:clamp(9px,1vw,13px)!important;line-height:1.2!important;padding:4px!important;overflow-wrap:anywhere!important}
+ body:not(.student-mode) .workspace>.rightbar .camera-join-requests{display:flex!important;flex-direction:column!important;gap:4px!important;margin-top:0!important}
+ body:not(.student-mode) .workspace>.rightbar .camera-join-requests .join-request{padding:5px!important;font-size:10px!important}
+ body:not(.student-mode) .workspace>.rightbar .join-request .jr-actions{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:4px!important}
+ body:not(.student-mode) .workspace>.rightbar .join-request button{min-width:0!important;padding:4px!important;font-size:9px!important}
+ body:not(.student-mode) .workspace>.rightbar .students{display:flex!important;flex:0 0 auto!important;flex-direction:column!important;max-height:none!important;overflow:visible!important;padding:3px!important;gap:5px!important}
+ body:not(.student-mode) .workspace>.rightbar .student{height:clamp(58px,15vh,105px)!important;min-height:58px!important;width:100%!important}
+ body:not(.student-mode) .workspace>.rightbar .student .label{font-size:9px!important}
+ body:not(.student-mode) .workspace>.rightbar .no-students{padding:10px 5px!important;font-size:clamp(10px,1.1vw,14px)!important;line-height:1.25!important;overflow-wrap:anywhere!important}
 }
+
+/* Repair teacher media controls: keep them visible/clickable and ensure video renders. */
+body:not(.student-mode) #teacherCamera{position:relative!important;isolation:isolate!important}
+body:not(.student-mode) #teacherVideo{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:1!important}
+body:not(.student-mode) #teacherVideo[hidden]{display:none!important}
+body:not(.student-mode) #teacherCamera .cam-off{position:absolute!important;inset:0!important;z-index:2!important}
+body:not(.student-mode) #teacherCamera .camera-label,
+body:not(.student-mode) #teacherCamera .cam-status{z-index:3!important}
+body:not(.student-mode) .camera-panel>.cam-buttons button{font-size:clamp(9px,1.05vw,13px)!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere!important;pointer-events:auto!important;touch-action:manipulation!important;opacity:1}
+body:not(.student-mode) .camera-panel>.cam-buttons button:disabled{opacity:.48!important}
+body:not(.student-mode) #cameraBtn,body:not(.student-mode) #cameraStopBtn,
+body:not(.student-mode) #micBtn,body:not(.student-mode) #micStopBtn{position:relative!important;z-index:5!important;pointer-events:auto!important;cursor:pointer!important}
 </style>
+
 
 </body>
 </html>
