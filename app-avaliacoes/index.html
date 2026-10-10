@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071b33"><meta name="description" content="Aplicação AZNY para abrir testes, textos e exames supervisionados.">
+<link rel="manifest" href="./manifest.json"><link rel="icon" href="./azny-exam-icon.svg" type="image/svg+xml">
+<title>AZNY Exam</title>
+<style>
+:root{color-scheme:light;--navy:#071b33;--blue:#1677ff;--line:#dbe4ed}*{box-sizing:border-box}body{margin:0;background:#eaf0f7;color:#172536;font:16px system-ui,-apple-system,Segoe UI,Arial,sans-serif}.top{background:var(--navy);color:#fff;padding:20px 18px}.brand{font-size:23px;font-weight:900;letter-spacing:.3px}.brand span{color:#58a7ff}.top p{margin:6px 0 0;color:#dbe7f5}.wrap{max-width:560px;margin:26px auto;padding:0 14px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 8px 28px #071b3310}.card h1{font-size:25px;margin:0 0 8px}.muted{color:#617187;line-height:1.55}.label{display:block;font-weight:700;margin:18px 0 7px}input{width:100%;padding:14px;border:1px solid #cbd7e4;border-radius:10px;font:inherit}button{width:100%;margin-top:12px;padding:14px;border:0;border-radius:10px;background:var(--blue);color:white;font:inherit;font-weight:800;cursor:pointer}button.secondary{background:#f4f7fb;color:#172536;border:1px solid var(--line)}.notice{margin-top:14px;padding:12px;border-radius:10px;background:#eef5ff;color:#214e7a;line-height:1.5;font-size:14px}.notice.bad{background:#fff0f0;color:#a61c1c}footer{text-align:center;color:#718096;font-size:12px;padding:20px}.hidden{display:none!important}#install{margin-top:8px}
+</style>
+</head>
+<body>
+<header class="top"><div class="brand">AZNY <span>EXAM</span></div><p>Avaliações e exames supervisionados</p></header>
+<main class="wrap"><section class="card">
+<h1>Entrar numa avaliação</h1><p class="muted">Abra o link enviado pelo professor ou cole aqui o link da avaliação. Antes de começar, o sistema poderá solicitar autorização para utilizar a câmara e o microfone.</p>
+<label class="label" for="examLink">Link ou código da avaliação</label><input id="examLink" type="text" autocomplete="off" placeholder="Cole aqui o link enviado pelo professor">
+<button id="openExam">Abrir avaliação</button><button id="install" class="secondary hidden">Instalar AZNY Exam</button>
+<div id="notice" class="notice">A instalação da aplicação não substitui as permissões do navegador. A partilha do ecrã depende do suporte do dispositivo e do navegador.</div>
+</section></main><footer>AZNY Exam · Plataforma de avaliações</footer>
+<script>
+const $=id=>document.getElementById(id),base=new URL("../",location.href);
+function getId(value){let s=String(value||"").trim();if(!s)return "";try{const u=new URL(s,location.href);return u.searchParams.get("id")||u.searchParams.get("avaliacao")||""}catch(_){return s.replace(/[^a-zA-Z0-9_-]/g,"")}}
+function openExam(value){const id=getId(value);if(!id){$("notice").className="notice bad";$("notice").textContent="Cole um link válido enviado pelo professor ou introduza o código da avaliação.";return}location.href=new URL("../fazer-avaliacao.html?id="+encodeURIComponent(id),location.href).href}
+$("openExam").addEventListener("click",()=>openExam($("examLink").value));
+$("examLink").addEventListener("keydown",e=>{if(e.key==="Enter")openExam($("examLink").value)});
+const incoming=new URLSearchParams(location.search),incomingId=incoming.get("id");if(incomingId){location.replace(new URL("../fazer-avaliacao.html?id="+encodeURIComponent(incomingId),location.href).href)}
+let deferredPrompt;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("install").classList.remove("hidden")});$("install").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("install").classList.add("hidden")});
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
+</script></body></html>
