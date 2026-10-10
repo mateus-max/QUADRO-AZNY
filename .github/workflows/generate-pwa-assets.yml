@@ -6,6 +6,8 @@ on:
       - "icons/azny-exam.svg"
       - "screenshots/*.svg"
       - "manifest.webmanifest"
+      - "screenshots/azny-exams-mobile.svg"
+      - "screenshots/azny-dashboard-desktop.svg"
       - ".github/workflows/generate-pwa-assets.yml"
 permissions:
   contents: write
