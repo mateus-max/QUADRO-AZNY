@@ -691,6 +691,80 @@ body:not(.student-mode) .camera-panel>.cam-buttons button:disabled{opacity:.45!i
  body:not(.student-mode) #students.students{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(75px,auto)!important;overflow-y:auto!important;min-height:0!important}
  body:not(.student-mode) #students .student{min-height:70px!important;max-height:150px!important}
 }
+
+/* AZNY: layout móvel do professor, com a mesma disposição da versão PC */
+@media (max-width: 950px) and (orientation: landscape), (max-height: 520px) and (pointer: coarse) {
+  html, body { width:100%; height:100%; min-height:100%; overflow:hidden!important; }
+  body:not(.student-mode) .app { width:100vw!important; height:100dvh!important; min-height:0!important; display:flex!important; flex-direction:column!important; overflow:hidden!important; }
+  body:not(.student-mode) .topbar {
+    flex:0 0 auto!important; min-height:48px!important; height:48px!important;
+    padding:4px 8px!important; gap:8px!important; display:flex!important;
+    align-items:center!important; flex-wrap:nowrap!important; overflow:hidden!important;
+  }
+  body:not(.student-mode) .logo { flex:0 0 auto!important; font-size:12px!important; white-space:nowrap!important; }
+  body:not(.student-mode) .title { flex:1 1 100px!important; min-width:50px!important; }
+  body:not(.student-mode) #boardTitle { min-width:0!important; width:100%!important; font-size:13px!important; }
+  body:not(.student-mode) .class-controls { display:flex!important; flex:0 1 auto!important; gap:4px!important; align-items:center!important; min-width:0!important; }
+  body:not(.student-mode) .class-controls button { padding:6px 8px!important; font-size:10px!important; white-space:nowrap!important; }
+  body:not(.student-mode) .class-timer { font-size:12px!important; white-space:nowrap!important; }
+  body:not(.student-mode) .top-actions { display:flex!important; gap:3px!important; }
+  body:not(.student-mode) .top-actions .iconbtn { min-width:28px!important; padding:5px!important; }
+  body:not(.student-mode) .workspace {
+    flex:1 1 0!important; min-height:0!important; height:auto!important; width:100%!important;
+    display:grid!important; grid-template-columns:205px minmax(0,1fr) 220px!important;
+    grid-template-rows:minmax(0,1fr)!important; gap:0!important; overflow:hidden!important;
+  }
+  body:not(.student-mode) .leftbar {
+    grid-column:1!important; grid-row:1!important; width:205px!important; min-width:205px!important; max-width:205px!important;
+    min-height:0!important; height:100%!important; overflow-y:auto!important; overflow-x:hidden!important;
+  }
+  body:not(.student-mode) .leftbar .sidehead, body:not(.student-mode) .rightbar .sidehead {
+    min-height:32px!important; padding:7px!important; font-size:11px!important;
+  }
+  body:not(.student-mode) .leftbar .tools { display:grid!important; grid-template-columns:1fr 1fr!important; gap:6px!important; padding:8px!important; }
+  body:not(.student-mode) .leftbar .tool { min-height:35px!important; padding:4px 3px!important; font-size:10px!important; line-height:1.15!important; }
+  body:not(.student-mode) .leftbar .tool.wide { grid-column:1/-1!important; }
+  body:not(.student-mode) .bottom-status { font-size:10px!important; padding:6px!important; }
+  body:not(.student-mode) .main {
+    grid-column:2!important; grid-row:1!important; min-width:0!important; min-height:0!important; height:100%!important;
+    display:flex!important; flex-direction:column!important; padding:0!important; overflow:hidden!important;
+  }
+  body:not(.student-mode) .toolbar {
+    display:flex!important; flex:0 0 auto!important; flex-wrap:nowrap!important; gap:4px!important;
+    min-height:38px!important; padding:4px!important; overflow-x:auto!important; overflow-y:hidden!important;
+  }
+  body:not(.student-mode) .toolbar .group { flex:0 0 auto!important; gap:3px!important; }
+  body:not(.student-mode) .toolbar button, body:not(.student-mode) .toolbar select { min-height:27px!important; font-size:11px!important; }
+  body:not(.student-mode) .canvas-wrap {
+    position:relative!important; inset:auto!important; flex:1 1 0!important; width:100%!important; height:auto!important;
+    min-width:0!important; min-height:0!important; margin:0!important; padding:0!important; overflow:auto!important;
+  }
+  body:not(.student-mode) #stage { transform-origin:top left!important; }
+  body:not(.student-mode) .rightbar {
+    grid-column:3!important; grid-row:1!important; display:flex!important; flex-direction:column!important;
+    width:220px!important; min-width:220px!important; max-width:220px!important; height:100%!important; min-height:0!important;
+    overflow-y:auto!important; overflow-x:hidden!important;
+  }
+  body:not(.student-mode) .camera-panel { flex:0 0 auto!important; padding:6px!important; overflow:visible!important; }
+  body:not(.student-mode) .camera { height:105px!important; min-height:90px!important; }
+  body:not(.student-mode) .cam-buttons { display:flex!important; gap:4px!important; }
+  body:not(.student-mode) .cam-buttons button { flex:1 1 0!important; min-width:0!important; padding:5px 3px!important; font-size:10px!important; }
+  body:not(.student-mode) .teacher-media-status { font-size:10px!important; }
+  body:not(.student-mode) #students.students { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; grid-auto-rows:minmax(75px,auto)!important; gap:5px!important; padding:6px!important; overflow:visible!important; min-height:0!important; }
+  body:not(.student-mode) #students .student { min-width:0!important; min-height:70px!important; max-height:150px!important; }
+  body:not(.student-mode) #students .student video { width:100%!important; height:100%!important; object-fit:cover!important; }
+}
+/* Em retrato, mantém todos os elementos acessíveis por deslocamento vertical. */
+@media (max-width: 700px) and (orientation: portrait) {
+  body:not(.student-mode) { overflow:auto!important; }
+  body:not(.student-mode) .app { min-height:100dvh!important; height:auto!important; overflow:visible!important; }
+  body:not(.student-mode) .topbar { flex-wrap:wrap!important; height:auto!important; min-height:0!important; }
+  body:not(.student-mode) .workspace { display:flex!important; flex-direction:column!important; height:auto!important; min-height:0!important; overflow:visible!important; }
+  body:not(.student-mode) .leftbar, body:not(.student-mode) .main, body:not(.student-mode) .rightbar { width:100%!important; min-width:0!important; max-width:none!important; height:auto!important; min-height:0!important; overflow:visible!important; }
+  body:not(.student-mode) .main { min-height:55vh!important; }
+  body:not(.student-mode) .canvas-wrap { height:55vh!important; min-height:300px!important; flex:none!important; }
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
