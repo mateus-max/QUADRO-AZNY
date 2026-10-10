@@ -1,0 +1,43 @@
+{
+  "id": "/QUADRO-AZNY/",
+  "name": "AZNY — Painel do Professor",
+  "short_name": "AZNY Professor",
+  "description": "Aplicação AZNY para professores: login, painel de controlo, quadro virtual, aulas online, testes, avaliações, supervisão e gestão de planos.",
+  "lang": "pt-AO",
+  "start_url": "/QUADRO-AZNY/",
+  "scope": "/QUADRO-AZNY/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#eef2f7",
+  "theme_color": "#071b33",
+  "icons": [
+    {
+      "src": "icons/azny-board.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/azny-exam-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/azny-exam-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "education",
+    "productivity",
+    "business"
+  ],
+  "prefer_related_applications": false
+}
