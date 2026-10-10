@@ -120,7 +120,7 @@ async function startExam(){
   $("studentLocalCamera").srcObject=localCamera;
   await $("studentLocalCamera").play().catch(()=>{});
   $("studentVideoArea").classList.remove("hidden");
-  screenActive=true;examStarted=true;attemptId=uid();
+  screenActive=true;examStarted=true;if(!nativeMode)attemptId=uid();
   attemptRef=db.ref("assessments/"+assessmentId+"/attempts/"+attemptId);
   const lockKey="azny_exam_lock_"+assessmentId+"_"+name.trim().toLowerCase();
   localStorage.setItem(lockKey,JSON.stringify({attemptId,startedAt:Date.now(),status:"in-progress"}));
