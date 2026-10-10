@@ -1,0 +1,26 @@
+{
+  "id": "/QUADRO-AZNY/quadro_virtual_azny_quadro.html",
+  "name": "AZNY — Quadro Virtual",
+  "short_name": "AZNY Quadro",
+  "description": "Quadro virtual interativo para aulas online, com ferramentas do professor e participação dos alunos.",
+  "lang": "pt-AO",
+  "start_url": "/QUADRO-AZNY/quadro_virtual_azny_quadro.html",
+  "scope": "/QUADRO-AZNY/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef2f7",
+  "theme_color": "#071b33",
+  "icons": [
+    {
+      "src": "icons/azny-board.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "prefer_related_applications": false
+}
