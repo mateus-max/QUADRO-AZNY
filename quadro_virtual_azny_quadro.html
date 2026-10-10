@@ -1671,36 +1671,43 @@ function updateTeacherMediaStatus(){
 }
 async function startCamera(){
  const btn=document.getElementById("cameraBtn"),video=document.getElementById("teacherVideo");
- if(!navigator.mediaDevices?.getUserMedia){toast("O navegador não disponibiliza a câmara. Abre o quadro em HTTPS no Chrome.");return}
+ if(!navigator.mediaDevices?.getUserMedia){toast("A câmara exige HTTPS ou localhost. Abre o quadro no Chrome.");return}
  if(teacherStream?.getVideoTracks?.().some(t=>t.readyState==="live")){
-  video.muted=true;video.autoplay=true;video.playsInline=true;video.srcObject=teacherStream;video.hidden=false;
-  try{await video.play()}catch(e){console.warn("Reprodução local da câmara:",e)}
+  video.srcObject=teacherStream;video.hidden=false;video.autoplay=true;video.playsInline=true;video.muted=true;
+  try{await video.play()}catch(e){console.warn("Reprodução da câmara:",e)}
   return;
  }
  if(btn){btn.disabled=true;btn.textContent="A abrir câmara…"}
  try{
+  // Restaurada a configuração de câmara que funcionava anteriormente no quadro.
   let stream;
   try{
-   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"user"},width:{ideal:640},height:{ideal:480}},audio:false});
+   stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},audio:false});
   }catch(firstError){
-   console.warn("Primeira tentativa de câmara falhou; a tentar sem restrições:",firstError);
-   stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+   console.warn("A configuração principal da câmara falhou; a tentar uma configuração compatível:",firstError);
+   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"user"},width:{ideal:640},height:{ideal:480}},audio:false})}
+   catch(secondError){stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false})}
   }
   teacherStream=stream;
-  video.muted=true;video.autoplay=true;video.playsInline=true;video.srcObject=stream;video.hidden=false;
+  video.srcObject=stream;video.hidden=false;video.autoplay=true;video.playsInline=true;video.muted=true;
   const off=document.querySelector("#teacherCamera .cam-off");if(off)off.style.display="none";
   document.getElementById("camStatus").textContent="Ligada";
-  if(btn){btn.disabled=true;btn.textContent="🎥 Ligar câmera"}
+  if(btn){btn.disabled=true;btn.textContent="🎥 Câmara ligada"}
   document.getElementById("cameraStopBtn").disabled=false;
   stream.getVideoTracks().forEach(t=>t.onended=()=>{if(teacherStream===stream)stopCamera()});
-  try{await video.play()}catch(playError){console.warn("Vídeo local aguarda reprodução:",playError)}
+  try{await video.play()}catch(playError){console.warn("A câmara foi aberta, mas o vídeo aguarda reprodução:",playError)}
   syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmara do professor ligada");
  }catch(e){
+  if(teacherStream){try{teacherStream.getTracks().forEach(t=>t.stop())}catch(_){}teacherStream=null}
+  video.srcObject=null;video.hidden=true;
+  const off=document.querySelector("#teacherCamera .cam-off");if(off)off.style.display="flex";
+  document.getElementById("camStatus").textContent="Desligada";
   if(btn){btn.disabled=false;btn.textContent="🎥 Ligar câmera"}
-  let message="Não foi possível ligar a câmara ("+(e.name||"erro")+")";
-  if(e.name==="NotAllowedError"||e.name==="PermissionDeniedError")message="Acesso à câmara bloqueado. Clica no cadeado ao lado do endereço e permite a câmara.";
+  document.getElementById("cameraStopBtn").disabled=true;
+  let message="Não foi possível ligar a câmara ("+(e.name||"erro")+").";
+  if(e.name==="NotAllowedError"||e.name==="PermissionDeniedError")message="Permite o acesso à câmara nas permissões do navegador e tenta novamente.";
   else if(e.name==="NotFoundError"||e.name==="DevicesNotFoundError")message="Não foi encontrada uma câmara neste dispositivo.";
-  else if(e.name==="NotReadableError"||e.name==="AbortError"||e.name==="TrackStartError")message="O Chrome não conseguiu iniciar a câmara. Fecha outras abas do quadro e aplicações que usem a câmara (Câmara, Meet, Zoom) e tenta novamente.";
+  else if(e.name==="NotReadableError"||e.name==="AbortError")message="A câmara pode estar a ser usada por outra aplicação. Fecha-a e tenta novamente.";
   console.error("AZNY teacher camera error",e);toast(message);
  }
 }
