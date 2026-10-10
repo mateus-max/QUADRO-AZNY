@@ -15,7 +15,7 @@
 <section class="panel"><h2>As minhas avaliações</h2><div id="assessmentList" class="muted">A carregar…</div></section>
 <section class="panel hidden" id="attemptPanel"><h2>Supervisão ao vivo</h2><p class="muted">Escolha um participante para iniciar a ligação de vídeo. A transmissão só começa depois das permissões concedidas pelo aluno e da ligação estabelecida.</p><div id="attemptList"></div><div class="videos"><div><b>Câmara do professor</b><video id="teacherLocalCamera" autoplay muted playsinline></video><div class="actions"><button class="btn primary" id="teacherCamOn">Ligar a minha câmara</button><button class="btn" id="teacherCamOff">Desligar a minha câmara</button><button class="btn primary" id="teacherMicOn">Ligar o meu microfone</button><button class="btn" id="teacherMicOff">Desligar o meu microfone</button></div></div><div><b>Câmara do aluno</b><video id="remoteCamera" autoplay playsinline></video></div></div><div class="videos"><div><b>Microfone do aluno</b><audio id="remoteAudio" autoplay controls></audio></div></div><div id="monitorStatus" class="notice">Selecione um aluno para supervisionar.</div></section>
 </main>
-<main class="exam-content hidden" id="studentView"><div class="panel"><h1 id="examTitle">Avaliação</h1><p id="examMeta" class="muted"></p><div class="attempt-head"><strong id="studentLabel">Identificação do aluno</strong><span class="timer" id="timer">--:--</span></div><div class="progress"><div id="progressBar"></div></div><div class="videos" id="studentVideoArea"><div><b>A sua câmara</b><video id="studentLocalCamera" autoplay muted playsinline></video></div><div><b>Professor</b><video id="studentRemoteTeacher" autoplay playsinline></video></div></div><div id="studentNotice" class="notice">Antes de iniciar, leia as regras: mantenha-se nesta página. Se sair duas vezes, a avaliação será cancelada. Autorize a câmara e o microfone.</div><div id="identityBox"><label>Nome completo</label><input class="input" id="studentName" autocomplete="name" placeholder="Introduza o seu nome"><button class="btn primary" id="startExam">Autorizar câmara e microfone e iniciar avaliação</button></div><div id="examQuestions" class="hidden"></div><div class="actions hidden" id="submitRow"><button class="btn primary" id="submitExam">Submeter avaliação</button></div></div></main>
+<main class="exam-content hidden" id="studentView"><div class="panel"><h1 id="examTitle">Avaliação</h1><p id="examMeta" class="muted"></p><div class="attempt-head"><strong id="studentLabel">Identificação do aluno</strong><span class="timer" id="timer">--:--</span></div><div class="progress"><div id="progressBar"></div></div><div class="videos" id="studentVideoArea"><div><b>A sua câmara</b><video id="studentLocalCamera" autoplay muted playsinline></video></div><div><b>Professor</b><video id="studentRemoteTeacher" autoplay playsinline></video></div></div><div id="studentNotice" class="notice">AVISO ANTES DE COMEÇAR: se sair da página pela primeira vez, o cronómetro será pausado e poderá retomar a avaliação do tempo guardado. Se sair pela segunda vez, a avaliação será encerrada definitivamente e não poderá entrar novamente. Autorize a câmara e o microfone e mantenha esta página aberta.</div><div id="identityBox"><label>Nome completo</label><input class="input" id="studentName" autocomplete="name" placeholder="Introduza o seu nome"><button class="btn primary" id="startExam">Autorizar câmara e microfone e iniciar avaliação</button></div><div id="examQuestions" class="hidden"></div><div class="actions hidden" id="submitRow"><button class="btn primary" id="submitExam">Submeter avaliação</button></div></div></main>
 <div id="examLock" class="exam-lock hidden"><div class="box"><h2 id="lockTitle">Avaliação supervisionada</h2><p id="lockText">A preparar a sessão…</p><div id="lockActions" class="actions" style="justify-content:center"></div></div></div>
 <div class="wrap hidden" id="resultView"><section class="panel"><h1>Resultado da avaliação</h1><div id="resultBody"></div><button class="btn" onclick="location.href='index.html'">Fechar</button></section></div>
 <script>
@@ -123,39 +123,62 @@ async function startExam(){
  if(!name)return note("studentNotice","Introduza o seu nome para continuar.",true);
  const b=$("startExam");b.disabled=true;
  note("studentNotice","A solicitar autorização para a câmara e o microfone…");
- let lockKey="",exitHandler=null,pageHideHandler=null,beforeUnloadHandler=null;
+ let lockKey="",exitHandler=null,pageHideHandler=null,beforeUnloadHandler=null,lastExitEventAt=0,paused=false;
  try{
   if(!navigator.mediaDevices?.getUserMedia)throw new Error("Este navegador não permite acesso à câmara e ao microfone. Atualize o navegador e permita estas duas funções.");
   lockKey="azny_exam_lock_"+assessmentId+"_"+name.trim().toLowerCase();
   let previous=null;try{previous=JSON.parse(localStorage.getItem(lockKey)||"null")}catch(_){}
-  if(previous&&(previous.status==="terminated"||previous.status==="cancelled"||previous.status==="submitted"||previous.status==="in-progress"))throw new Error("A sua avaliação foi encerrada. Já não pode entrar novamente. Contacte o professor.");
+  if(previous&&["terminated","cancelled","submitted"].includes(previous.status))throw new Error("Esta avaliação foi encerrada. Já não pode entrar novamente. Contacte o professor.");
+  if(previous&&previous.status==="in-progress")throw new Error("Esta avaliação já foi iniciada. Se a página foi recarregada, contacte o professor para autorizar a retoma.");
+  if(previous&&Number(previous.exitCount)>=2)throw new Error("Saiu da avaliação duas vezes. A avaliação está encerrada e não pode ser retomada.");
   localCamera=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true}});
-  $("studentLocalCamera").srcObject=localCamera;$("studentLocalCamera").muted=true;$("studentLocalCamera").play().catch(()=>{});
-  $("studentVideoArea").classList.remove("hidden");
-  attemptId=uid();attemptRef=db.ref("assessments/"+assessmentId+"/attempts/"+attemptId);
-  const startedAt=Date.now();
-  const state={name,attemptId,startedAt,status:"in-progress",alerts:[],answers:{},screenActive:false,cameraActive:true,micActive:true,exitCount:0,supervisionMode:"camera-microphone"};
-  await attemptRef.set(state);
-  localStorage.setItem(lockKey,JSON.stringify({attemptId,startedAt,status:"in-progress",exitCount:0}));
-  examStarted=true;attemptData=state;
+  $("studentLocalCamera").srcObject=localCamera;$("studentLocalCamera").muted=true;$("studentLocalCamera").play().catch(()=>{});$("studentVideoArea").classList.remove("hidden");
+  const resuming=!!(previous&&previous.status==="paused"&&previous.attemptId);
+  attemptId=resuming?previous.attemptId:uid();
+  attemptRef=db.ref("assessments/"+assessmentId+"/attempts/"+attemptId);
+  let state,remaining;
+  if(resuming){
+   const snap=await attemptRef.once("value");state=snap.val();
+   if(!state||["cancelled","terminated","submitted"].includes(state.status))throw new Error("Esta avaliação já foi encerrada e não pode ser retomada.");
+   remaining=Math.max(0,Number(previous.remainingSeconds??state.remainingSeconds??((+assessment.duration||45)*60)));
+   state={...state,name,attemptId,status:"in-progress",resumedAt:Date.now(),exitCount:Number(previous.exitCount)||1,remainingSeconds:remaining,alerts:state.alerts||[],answers:state.answers||{}};
+   answers=state.answers||{};
+  }else{
+   const startedAt=Date.now();remaining=Math.max(60,(+assessment.duration||45)*60);
+   state={name,attemptId,startedAt,status:"in-progress",alerts:[],answers:{},screenActive:false,cameraActive:true,micActive:true,exitCount:0,remainingSeconds:remaining,supervisionMode:"camera-microphone"};
+  }
+  await attemptRef.update({...state,cameraActive:true,micActive:true,status:"in-progress",remainingSeconds:remaining});
+  localStorage.setItem(lockKey,JSON.stringify({attemptId,startedAt:state.startedAt||previous?.startedAt||Date.now(),status:"in-progress",exitCount:Number(state.exitCount)||0,remainingSeconds:remaining}));
+  examStarted=true;attemptData=state;secondsLeft=remaining;
   attemptRef.child("teacherCommands").on("value",snap=>{const cmd=snap.val()||{};if(cmd.camera==="off")localCamera?.getVideoTracks().forEach(t=>t.enabled=false);if(cmd.camera==="on")localCamera?.getVideoTracks().forEach(t=>t.enabled=true);if(cmd.microphone==="off")localCamera?.getAudioTracks().forEach(t=>t.enabled=false);if(cmd.microphone==="on")localCamera?.getAudioTracks().forEach(t=>t.enabled=true)});
-  const terminate=async(reason,status="cancelled")=>{
-   if(!examStarted||!attemptRef)return;examStarted=false;clearInterval(timerHandle);
-   const endedAt=Date.now();const finalStatus=status==="submitted"?"submitted":"cancelled";
-   try{await attemptRef.update({status:finalStatus,terminatedAt:endedAt,submittedAt:endedAt,autoSubmitted:true,alert:reason,exitCount:state.exitCount,screenActive:false,updatedAt:endedAt})}catch(_){}
-   localStorage.setItem(lockKey,JSON.stringify({attemptId,startedAt,status:finalStatus,exitCount:state.exitCount,terminatedAt:endedAt}));
-   try{studentPC?.close()}catch(_){};try{localCamera?.getTracks().forEach(t=>t.stop())}catch(_){}
-   $("examQuestions").classList.add("hidden");$("submitRow").classList.add("hidden");$("studentVideoArea").classList.add("hidden");$("identityBox").classList.add("hidden");
-   note("studentNotice",finalStatus==="submitted"?"Avaliação submetida.":"A sua avaliação foi encerrada. Já não pode continuar nem entrar novamente.",true);
-   $("studentNotice").classList.remove("hidden");
+  const pauseExam=async reason=>{
+   if(!examStarted||!attemptRef)return;
+   examStarted=false;paused=true;clearInterval(timerHandle);
+   answers=currentAnswers();
+   const exits=(Number(state.exitCount)||0)+1,now=Date.now();
+   state.exitCount=exits;state.remainingSeconds=secondsLeft;
+   const msg=exits>=2?"A avaliação foi encerrada porque saiu da página pela segunda vez.":"Primeira saída detetada. O tempo foi pausado; regresse à avaliação para continuar do tempo restante.";
+   const finalStatus=exits>=2?"cancelled":"paused";
+   try{await attemptRef.update({answers,remainingSeconds:secondsLeft,status:finalStatus,exitCount:exits,alert:msg,lastExitAt:now,terminatedAt:exits>=2?now:null,updatedAt:now,screenActive:false})}catch(_){}
+   localStorage.setItem(lockKey,JSON.stringify({attemptId,startedAt:state.startedAt||previous?.startedAt||now,status:finalStatus,exitCount:exits,remainingSeconds:secondsLeft,lastExitAt:now,terminatedAt:exits>=2?now:null}));
+   if(exits>=2){
+    $("examQuestions").classList.add("hidden");$("submitRow").classList.add("hidden");$("studentVideoArea").classList.add("hidden");$("identityBox").classList.add("hidden");
+    try{studentPC?.close()}catch(_){};try{localCamera?.getTracks().forEach(t=>t.stop())}catch(_){}
+    note("studentNotice",msg+" Já não pode entrar novamente. Contacte o professor.",true);
+   }else{
+    note("studentNotice",msg+" Tempo restante guardado: "+String(Math.floor(secondsLeft/60)).padStart(2,"0")+":"+String(secondsLeft%60).padStart(2,"0")+". Volte a esta página e prima «Retomar avaliação».",true);
+    $("studentNotice").classList.remove("hidden");
+   }
   };
-  exitHandler=()=>{if(document.hidden&&examStarted){state.exitCount=(state.exitCount||0)+1;const msg=state.exitCount>=2?"A avaliação foi cancelada porque saiu da página duas vezes.":"Atenção: saiu da página. Se sair novamente, a sua avaliação será cancelada.";attemptRef.update({exitCount:state.exitCount,alert:msg,lastExitAt:Date.now(),status:state.exitCount>=2?"cancelled":"in-progress"}).catch(()=>{});localStorage.setItem(lockKey,JSON.stringify({attemptId,startedAt,status:state.exitCount>=2?"cancelled":"in-progress",exitCount:state.exitCount,lastExitAt:Date.now()}));if(state.exitCount>=2)terminate(msg,"cancelled");else note("studentNotice",msg,true)}};
-  pageHideHandler=()=>{if(examStarted)terminate("A sua avaliação foi encerrada porque saiu ou recarregou a página.","cancelled")};
-  beforeUnloadHandler=()=>{if(examStarted){try{attemptRef.update({status:"cancelled",alert:"A sua avaliação foi encerrada porque saiu ou recarregou a página.",terminatedAt:Date.now(),exitCount:state.exitCount}).catch(()=>{})}catch(_){};try{localStorage.setItem(lockKey,JSON.stringify({attemptId,startedAt,status:"cancelled",exitCount:state.exitCount,terminatedAt:Date.now()}))}catch(_){}}};
+  const registerExit=()=>{const now=Date.now();if(now-lastExitEventAt<1800)return;lastExitEventAt=now;pauseExam("exit")};
+  exitHandler=()=>{if(document.hidden&&examStarted)registerExit();else if(!document.hidden&&paused&&state.exitCount===1){paused=false;examStarted=true;localCamera?.getTracks().forEach(t=>t.enabled=true);attemptRef.update({status:"in-progress",resumedAt:Date.now(),remainingSeconds:secondsLeft,alert:"O aluno regressou após a primeira saída."}).catch(()=>{});localStorage.setItem(lockKey,JSON.stringify({attemptId,startedAt:state.startedAt||previous?.startedAt||Date.now(),status:"in-progress",exitCount:1,remainingSeconds:secondsLeft}));startTimer();note("studentNotice","Avaliação retomada. O cronómetro continuou do tempo guardado. Não saia novamente: uma segunda saída encerra a prova.",true)}};
+  pageHideHandler=()=>{if(examStarted)registerExit()};
+  beforeUnloadHandler=()=>{if(examStarted)registerExit()};
   document.addEventListener("visibilitychange",exitHandler);window.addEventListener("pagehide",pageHideHandler);window.addEventListener("beforeunload",beforeUnloadHandler);
   $("identityBox").classList.add("hidden");$("examQuestions").classList.remove("hidden");$("submitRow").classList.remove("hidden");$("studentLabel").textContent="Aluno: "+name;
-  secondsLeft=Math.max(60,(+assessment.duration||45)*60);startTimer();
-  note("studentNotice","Avaliação iniciada. A câmara e o microfone estão ativos. Não saia desta página: na segunda saída, a avaliação será cancelada.",true);
+  if(resuming){for(const [qid,val] of Object.entries(answers||{})){const q=(assessment.questions||[]).find(x=>x.id===qid);if(!q)continue;if(["choice","tf"].includes(q.type)){const el=document.querySelector('input[name="q-'+CSS.escape(qid)+'"][value="'+String(val)+'"]');if(el)el.checked=true}else{const el=document.querySelector('[data-answer="'+CSS.escape(qid)+'"]');if(el&&typeof val!=="object")el.value=val}}}
+  startTimer();
+  note("studentNotice",resuming?"Avaliação retomada. O tempo continua a partir do ponto guardado. Não saia novamente: uma segunda saída encerra a prova.":"Antes de começar: se sair da página uma primeira vez, o tempo será pausado e poderá retomar do mesmo ponto. Se sair uma segunda vez, a avaliação será encerrada e não poderá entrar novamente.",true);
   wireStudentMedia();saveAnswers();
   localCamera.getVideoTracks().forEach(t=>{t.addEventListener("ended",()=>mediaInterrupted("camera"));t.addEventListener("mute",()=>mediaInterrupted("camera"))});
   localCamera.getAudioTracks().forEach(t=>t.addEventListener("ended",()=>mediaInterrupted("microphone")));
