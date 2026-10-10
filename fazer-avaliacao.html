@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AZNY — Fazer avaliação</title>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><title>AZNY — Fazer avaliação</title>
 <style>
 :root{--navy:#071b33;--blue:#1677ff;--line:#dbe4ed;--muted:#64748b}*{box-sizing:border-box}body{margin:0;font:14px Inter,Segoe UI,Arial,sans-serif;background:#eef3f8;color:#172536}.top{background:var(--navy);color:white;padding:14px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}.top strong{font-size:18px}.top a{color:#fff}.top small{margin-left:auto}.wrap{max-width:1100px;margin:20px auto;padding:0 14px}.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}.panel h1,.panel h2{margin:0 0 10px}.muted{color:var(--muted);line-height:1.5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.input,select,textarea{width:100%;padding:10px;border:1px solid #cbd7e4;border-radius:8px;font:inherit;margin:4px 0 9px;background:#fff}.btn{border:1px solid #cbd7e4;background:#f8fafc;border-radius:8px;padding:10px 13px;cursor:pointer;font-weight:700;color:#172536}.btn.primary{background:var(--blue);border-color:var(--blue);color:white}.btn.dark{background:var(--navy);color:white}.btn:disabled{opacity:.5;cursor:not-allowed}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.qcard,.attempt{border:1px solid var(--line);border-radius:10px;padding:12px;margin:9px 0}.qcard h3{font-size:14px;margin:0 0 8px}.choice-row{display:flex;gap:8px;align-items:center}.choice-row input{flex:1}.notice{padding:11px;border-radius:9px;background:#eef5ff;color:#214e7a;font-size:12px;line-height:1.5;margin:9px 0}.notice.warn{background:#fff3d8;color:#815600}.notice.bad{background:#fff0f0;color:#a61c1c}.hidden{display:none!important}.question{border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;background:#fff}.question h3{margin:0 0 10px;font-size:16px}.option{display:flex;gap:8px;align-items:flex-start;margin:9px 0}.option input{margin-top:4px}.timer{font-size:21px;font-weight:900;font-variant-numeric:tabular-nums;color:#b42318}.videos{display:grid;grid-template-columns:1fr 1fr;gap:8px}.videos video{width:100%;height:210px;background:#091626;border-radius:9px;object-fit:contain}.attempt-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.attempt-head strong{flex:1}.status{font-size:11px;font-weight:800;border-radius:99px;padding:5px 8px;background:#e8f8ed;color:#187a35}.status.warn{background:#fff3d8;color:#815600}.status.bad{background:#fff0f0;color:#a61c1c}.small{font-size:12px}.linkbox{padding:10px;background:#f4f8fc;border:1px solid var(--line);border-radius:8px;word-break:break-all}.resultrow{border-bottom:1px solid #e7edf3;padding:8px 0;line-height:1.5}body.exam-mode{background:#e8eef5}.exam-head{position:sticky;top:0;z-index:20;background:var(--navy);color:white;padding:10px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between}.exam-head span{font-weight:800}.exam-content{max-width:850px;margin:14px auto;padding:0 12px 30px}.exam-lock{position:fixed;inset:0;background:#071b33f2;color:white;z-index:1000;display:flex;align-items:center;justify-content:center;text-align:center;padding:22px}.exam-lock .box{max-width:560px}.exam-lock h2{margin:0 0 10px}.exam-lock p{line-height:1.6;color:#dce7f3}.answer-input{width:100%;min-height:80px;padding:10px;border:1px solid #cbd7e4;border-radius:8px;font:inherit}.progress{height:6px;background:#dbe4ed;border-radius:99px;overflow:hidden}.progress div{height:100%;width:0;background:#1677ff}@media(max-width:700px){.grid{grid-template-columns:1fr}.videos video{height:150px}.top small{margin-left:0;width:100%}}
 /* Câmara fixa durante a resolução: só as perguntas e o formulário fazem scroll. */
@@ -105,35 +105,32 @@ window.aznyStartExam=startExam;
 async function startExam(){
  const name=$("studentName").value.trim();
  if(!name){note("studentNotice","Introduza o seu nome para continuar.",true);return}
- const b=$("startExam");b.disabled=true;note("studentNotice","Selecione este separador do navegador na janela de partilha. Depois autorize a câmara e o microfone…");
+ const b=$("startExam");b.disabled=true;note("studentNotice","A solicitar autorização para a câmara e o microfone…");
  try{
   if(!assessment||!assessmentId)throw new Error("A avaliação ainda não foi carregada. Atualize a página e tente novamente.");
-  if(nativeMode){if(!window.AZNYAndroid||!window.AZNYAndroid.isNativeApp()||!nativeAttemptId)throw new Error("A aplicação AZNY não está ligada corretamente. Abra a avaliação pela aplicação Android.");localCamera=null;localScreen=null;screenActive=true;examStarted=true;attemptId=nativeAttemptId;attemptRef=db.ref("assessments/"+assessmentId+"/attempts/"+attemptId);}
+  if(nativeMode){if(!window.AZNYAndroid||!window.AZNYAndroid.isNativeApp()||!nativeAttemptId)throw new Error("A aplicação AZNY não está ligada corretamente. Abra a avaliação pela aplicação Android.");localCamera=null;localScreen=null;screenActive=false;examStarted=true;attemptId=nativeAttemptId;attemptRef=db.ref("assessments/"+assessmentId+"/attempts/"+attemptId);}
   else {
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error("Este navegador não permite acesso à câmara. Abra o link num navegador atualizado.");
-  if(!navigator.mediaDevices.getDisplayMedia)throw new Error("Este navegador não suporta partilha do ecrã. Abra a avaliação na aplicação AZNY para Android.");
-  localScreen=await withTimeout(navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:10,max:15}},audio:false}),20000,"A autorização da partilha do ecrã");
-  const screenTrack=localScreen.getVideoTracks()[0];if(!screenTrack)throw new Error("Não foi possível obter a imagem do separador partilhado.");
-  const displaySurface=screenTrack.getSettings&&screenTrack.getSettings().displaySurface;if(displaySurface&&displaySurface!=="browser"){localScreen.getTracks().forEach(t=>t.stop());localScreen=null;throw new Error("Selecione o separador do navegador onde está aberta a avaliação, e não o ecrã inteiro ou outra janela.");}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error("Este navegador não permite acesso à câmara e ao microfone. Abra o link diretamente no Chrome atualizado e permita estas duas funções.");
+  localScreen=null;screenActive=false;
   localCamera=await withTimeout(navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true}}),20000,"A autorização da câmara e do microfone");
   }
   $("studentLocalCamera").srcObject=localCamera;
   await $("studentLocalCamera").play().catch(()=>{});
   $("studentVideoArea").classList.remove("hidden");
-  screenActive=true;examStarted=true;if(!nativeMode)attemptId=uid();
+  screenActive=false;examStarted=true;if(!nativeMode)attemptId=uid();
   attemptRef=db.ref("assessments/"+assessmentId+"/attempts/"+attemptId);
   const lockKey="azny_exam_lock_"+assessmentId+"_"+name.trim().toLowerCase();
   localStorage.setItem(lockKey,JSON.stringify({attemptId,startedAt:Date.now(),status:"in-progress"}));
-  attemptData={name,attemptId,status:"in-progress",startedAt:Date.now(),alerts:[],answers:{},screenActive:true,cameraActive:true,micActive:true,screenShareSupported:true,supervisionMode:nativeMode?"android-native-media-projection":"browser-tab-share",supervisionWarning:nativeMode?"Partilha nativa do ecrã Android ativa.":"Partilha do separador do navegador ativa."};
+  attemptData={name,attemptId,status:"in-progress",startedAt:Date.now(),alerts:[],answers:{},screenActive:false,cameraActive:true,micActive:true,screenShareSupported:false,supervisionMode:"camera-microphone",supervisionWarning:"Supervisão por câmara e microfone; partilha do ecrã desativada."};
   $("identityBox").classList.add("hidden");$("examQuestions").classList.remove("hidden");$("submitRow").classList.remove("hidden");
   $("studentLabel").textContent="Aluno: "+name;secondsLeft=Math.max(60,(+assessment.duration||45)*60);startTimer();
-  note("studentNotice","Câmara, microfone e partilha do separador ativos. O professor pode acompanhar a avaliação.");
+  note("studentNotice","Câmara e microfone ativos. O professor pode acompanhar a avaliação.");
   document.querySelectorAll("#examQuestions input,#examQuestions textarea,#examQuestions select").forEach(e=>{e.addEventListener("change",saveAnswers);e.addEventListener("input",saveAnswers)});
   document.querySelectorAll("[data-record]").forEach(b=>b.onclick=()=>recordOralAnswer(b.dataset.record));
   document.querySelectorAll("[data-file-answer]").forEach(e=>e.addEventListener("change",()=>saveFileAnswer(e.dataset.fileAnswer,e.files&&e.files[0])));
   localCamera?.getVideoTracks().forEach(t=>{t.addEventListener("ended",()=>mediaInterrupted("camera"));t.addEventListener("mute",()=>mediaInterrupted("camera"))});
   localCamera?.getAudioTracks().forEach(t=>t.addEventListener("ended",()=>mediaInterrupted("microphone")));
-  localScreen?.getVideoTracks().forEach(t=>t.addEventListener("ended",()=>mediaInterrupted("screen-share")));
+  
   document.addEventListener("visibilitychange",visibilityLog);window.addEventListener("blur",blurLog);
   // A ligação ao Firebase e à supervisão é iniciada em segundo plano para não bloquear a entrada no teste.
   withTimeout(attemptRef.update(attemptData),10000,"O registo da avaliação no servidor").then(()=>{
