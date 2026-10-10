@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "AZNY Exam — Avaliações",
+  "short_name": "AZNY Exam",
+  "description": "Aplicação para entrar em avaliações e exames AZNY.",
+  "lang": "pt-AO",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eaf0f7",
+  "theme_color": "#071b33",
+  "icons": [
+    {
+      "src": "./azny-exam-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
