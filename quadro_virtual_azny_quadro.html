@@ -770,7 +770,7 @@ body:not(.student-mode) .camera-panel>.cam-buttons button:disabled{opacity:.45!i
   body:not(.student-mode) .canvas-wrap { height:55vh!important; min-height:300px!important; flex:none!important; }
 }
 
-\n#aznyContextMenu{position:fixed;z-index:99999;display:none;min-width:210px;max-width:min(300px,90vw);max-height:75vh;overflow:auto;background:#fff;border:1px solid #b9c8d8;border-radius:10px;box-shadow:0 12px 35px #0004;padding:6px;color:#172536}#aznyContextMenu.open{display:block}#aznyContextMenu .ctx-title{font-size:11px;font-weight:800;color:#64748b;padding:7px 9px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}#aznyContextMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;cursor:pointer}#aznyContextMenu button:hover{background:#edf5ff}#aznyContextMenu button:disabled{opacity:.4}\n#refreshBoardBtn{font-size:22px;font-weight:800}#refreshBoardBtn:active{transform:rotate(25deg)}\n#studentRefreshBoardBtn{font-weight:800;background:#e8f2ff;border:1px solid #93b8e8;border-radius:8px;padding:7px 10px;color:#12345a;cursor:pointer}#studentRefreshBoardBtn:disabled{opacity:.6}</style>
+\n#aznyContextMenu{position:fixed;z-index:99999;display:none;min-width:210px;max-width:min(300px,90vw);max-height:75vh;overflow:auto;background:#fff;border:1px solid #b9c8d8;border-radius:10px;box-shadow:0 12px 35px #0004;padding:6px;color:#172536}#aznyContextMenu.open{display:block}#aznyContextMenu .ctx-title{font-size:11px;font-weight:800;color:#64748b;padding:7px 9px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}#aznyContextMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;cursor:pointer}#aznyContextMenu button:hover{background:#edf5ff}#aznyContextMenu button:disabled{opacity:.4}\n#refreshBoardBtn{font-size:22px;font-weight:800}#refreshBoardBtn:active{transform:rotate(25deg)}\n#studentRefreshBoardBtn{font-weight:800;background:#e8f2ff;border:1px solid #93b8e8;border-radius:8px;padding:7px 10px;color:#12345a;cursor:pointer}#studentRefreshBoardBtn:disabled{opacity:.6}\n.bottom-status{display:flex;justify-content:center;align-items:center;gap:12px;text-align:center;width:100%;font-weight:800}.bottom-status .azny-realtime-label{font-size:12px;font-weight:900;letter-spacing:.08em;text-align:center}.bottom-status #storageState{font-weight:800}</style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
 <div class="app">
@@ -815,7 +815,7 @@ body:not(.student-mode) .camera-panel>.cam-buttons button:disabled{opacity:.45!i
   </div>
   <input id="imageInput" type="file" accept="image/*" hidden>
   <input id="docInput" type="file" accept=".txt,.md,.csv,.json,.html,.htm,.pdf,.doc,.docx" hidden>
-  <div class="bottom-status"><span>Tempo real</span><span id="storageState">● Firebase</span></div>
+  <div class="bottom-status"><strong class="azny-realtime-label">TEMPO REAL</strong><span id="storageState" aria-label="Estado da ligação">● Ligação ativa</span></div>
 </aside>
 
 <main class="main">
