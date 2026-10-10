@@ -18,12 +18,29 @@
 <div id="notice" class="notice">A instalação da aplicação não substitui as permissões do navegador. A avaliação utiliza a câmara e o microfone; não solicita partilha do ecrã.</div>
 </section></main><footer>AZNY Exam · Plataforma de avaliações</footer><iframe id="examFrame" title="Avaliação AZNY" allow="camera; microphone; display-capture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 <script>
-const $=id=>document.getElementById(id),base=new URL("../",location.href);
+const $=id=>document.getElementById(id);
+let currentExamId="";
 function getId(value){let s=String(value||"").trim();if(!s)return "";try{const u=new URL(s,location.href);return u.searchParams.get("id")||u.searchParams.get("avaliacao")||""}catch(_){return s.replace(/[^a-zA-Z0-9_-]/g,"")}}
-function openExam(value){const id=getId(value);if(!id){$("notice").className="notice bad";$("notice").textContent="Cole um link válido enviado pelo professor ou introduza o código da avaliação.";return}location.href=new URL("./?id="+encodeURIComponent(id),location.href).href}
+function openExam(value){
+ const id=getId(value);
+ if(!id){$("notice").className="notice bad";$("notice").textContent="Cole um link válido enviado pelo professor ou introduza o código da avaliação.";return}
+ currentExamId=id;
+ const frame=$("examFrame");
+ document.body.classList.add("exam-open");
+ $("notice").className="notice";
+ $("notice").textContent="A abrir avaliação…";
+ frame.onload=()=>{$("notice").textContent="Avaliação aberta. Para atualizar, puxe o ecrã para baixo."};
+ frame.src=new URL("../fazer-avaliacao.html?id="+encodeURIComponent(id)+"&fast=1",location.href).href;
+ history.replaceState({exam:id},"","?id="+encodeURIComponent(id));
+}
 $("openExam").addEventListener("click",()=>openExam($("examLink").value));
-$("examLink").addEventListener("keydown",e=>{if(e.key==="Enter")openExam($("examLink").value)});
-const incoming=new URLSearchParams(location.search),incomingId=incoming.get("id");if(incomingId){document.body.classList.add("exam-open");$("examFrame").src=new URL("../fazer-avaliacao.html?id="+encodeURIComponent(incomingId),location.href).href}
-let deferredPrompt;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("install").classList.remove("hidden")});$("install").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("install").classList.add("hidden")});
+$("examLink").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();openExam($("examLink").value)}});
+const incoming=new URLSearchParams(location.search),incomingId=incoming.get("id");
+if(incomingId){currentExamId=incomingId;document.body.classList.add("exam-open");$("examFrame").src=new URL("../fazer-avaliacao.html?id="+encodeURIComponent(incomingId)+"&fast=1",location.href).href}
+let touchStartY=0,pullArmed=false,refreshing=false;
+document.addEventListener("touchstart",e=>{if(!document.body.classList.contains("exam-open")&&window.scrollY===0){touchStartY=e.touches[0].clientY;pullArmed=true}else{touchStartY=0;pullArmed=false}},{passive:true});
+document.addEventListener("touchend",e=>{if(!pullArmed||refreshing||!currentExamId)return;const distance=e.changedTouches[0].clientY-touchStartY;if(distance>95&&window.scrollY===0){refreshing=true;const n=$("notice");n.className="notice";n.textContent="A atualizar a avaliação…";const frame=$("examFrame");frame.src=new URL("../fazer-avaliacao.html?id="+encodeURIComponent(currentExamId)+"&fast=1&refresh="+Date.now(),location.href).href;setTimeout(()=>{refreshing=false},1800)}pullArmed=false;},{passive:true});
+let deferredPrompt;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("install").classList.remove("hidden")});
+$("install").addEventListener("click",async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("install").classList.add("hidden")});
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
 </script></body></html>
