@@ -16,13 +16,13 @@
   "theme_color": "#071b33",
   "icons": [
     {
-      "src": "icons/azny-board-192.png",
+      "src": "https://raw.githubusercontent.com/mateus-max/QUADRO-AZNY/main/icons/azny-board-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icons/azny-board-512.png",
+      "src": "https://raw.githubusercontent.com/mateus-max/QUADRO-AZNY/main/icons/azny-board-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
