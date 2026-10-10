@@ -2248,5 +2248,30 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
 }
 </style>
 
+<script id="azny-auto-landscape-phone">
+/* On phones, request landscape fullscreen at the first user interaction. Browsers may reject orientation locking unless fullscreen is allowed. */
+(function(){
+ if(document.body.classList.contains("student-mode"))return;
+ const phone=()=>window.matchMedia("(max-width: 700px)").matches;
+ let tried=false;
+ async function requestLandscape(){
+  if(tried||!phone())return;
+  tried=true;
+  try{
+   if(!document.fullscreenElement&&document.documentElement.requestFullscreen){
+    await document.documentElement.requestFullscreen();
+   }
+  }catch(e){/* Continue: layout still adapts to actual orientation. */}
+  try{
+   if(screen.orientation&&typeof screen.orientation.lock==="function"){
+    await screen.orientation.lock("landscape");
+   }
+  }catch(e){/* Some mobile browsers only allow manual rotation. */}
+  setTimeout(()=>{window.dispatchEvent(new Event("resize"));if(typeof resizeCanvas==="function")resizeCanvas()},220);
+ }
+ document.addEventListener("pointerdown",requestLandscape,{capture:true,passive:true,once:true});
+ window.addEventListener("orientationchange",()=>setTimeout(()=>{window.dispatchEvent(new Event("resize"));if(typeof resizeCanvas==="function")resizeCanvas()},250),{passive:true});
+})();
+</script>
 </body>
 </html>
