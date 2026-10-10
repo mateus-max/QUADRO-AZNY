@@ -1679,17 +1679,24 @@ async function startCamera(){
   const v=document.getElementById("teacherVideo");
   if(v){v.pause?.();v.srcObject=null;v.hidden=true}
   let lastError=null;
-  // Começar com requisitos simples; alguns controladores falham com resoluções altas.
-  for(const constraints of [
+  // Manter a configuração simples que funciona no telefone e acrescentar alternativas para webcams de computador.
+  const constraintsList=[
    {video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false},
    {video:{width:{ideal:640},height:{ideal:480}},audio:false},
    {video:true,audio:false}
-  ]){
-   try{teacherStream=await navigator.mediaDevices.getUserMedia(constraints);break}
-   catch(e){lastError=e;if(e.name==="NotAllowedError"||e.name==="SecurityError")throw e;await new Promise(resolve=>setTimeout(resolve,300))}
+  ];
+  try{
+   const devices=await navigator.mediaDevices.enumerateDevices();
+   const cameras=devices.filter(d=>d.kind==="videoinput");
+   const preferred=cameras.find(d=>/integrated|webcam|camera|hd camera/i.test(d.label))||cameras[0];
+   if(preferred?.deviceId)constraintsList.splice(2,0,{video:{deviceId:{exact:preferred.deviceId},width:{ideal:640},height:{ideal:480}},audio:false});
+  }catch(_){}
+  for(const constraints of constraintsList){
+   try{teacherStream=await navigator.mediaDevices.getUserMedia(constraints);if(teacherStream?.getVideoTracks?.().length)break;teacherStream?.getTracks?.().forEach(t=>t.stop());teacherStream=null;lastError=new Error("A câmara não devolveu vídeo.")}
+   catch(e){lastError=e;if(e.name==="NotAllowedError"||e.name==="SecurityError")throw e;await new Promise(resolve=>setTimeout(resolve,350))}
   }
   if(!teacherStream)throw lastError||new Error("A câmara não devolveu uma transmissão.");
-  if(v){v.srcObject=teacherStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.hidden=false;try{await v.play()}catch(playError){console.warn("A câmara abriu, mas o vídeo ainda não iniciou:",playError)}}
+  if(v){v.srcObject=teacherStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.hidden=false;v.style.display="block";v.style.visibility="visible";v.style.opacity="1";try{await v.play()}catch(playError){console.warn("Autoplay bloqueado; a tentar reproduzir após interação:",playError);const retry=()=>v.play?.().catch(()=>{});document.addEventListener("pointerdown",retry,{once:true});document.addEventListener("keydown",retry,{once:true})}}
   document.querySelector("#teacherCamera .cam-off").style.display="none";
   document.getElementById("camStatus").textContent="Ligada";
   if(btn)btn.disabled=true;
