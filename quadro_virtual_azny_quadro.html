@@ -904,7 +904,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
     <button id="recordClassBtn">⏺ Gravar aula</button>
     <div class="record-download" id="recordDownload"></div>
   </div>
-  <div class="top-actions"><button class="iconbtn" id="teacherDashboardBtn" title="Painel do professor">⌂</button>
+  <div class="top-actions"><button class="iconbtn" id="aznyFullscreenBtn" title="Ecrã inteiro" aria-label="Ecrã inteiro">⛶</button><button class="iconbtn" id="teacherDashboardBtn" title="Painel do professor">⌂</button>
     <button class="iconbtn" id="saveBtn" title="Guardar">💾</button>
     <button class="iconbtn" id="refreshBoardBtn" title="Atualizar quadro e restabelecer ligação">⟳</button>
     <button class="iconbtn" id="clearBtn" title="Limpar quadro">🗑</button>
@@ -2129,6 +2129,7 @@ function shareFacebook(){
  window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link),"_blank","noopener,noreferrer,width=700,height=600");
 }
 const dashboardBtn=document.getElementById("teacherDashboardBtn");if(dashboardBtn)dashboardBtn.onclick=()=>{if(!isStudent)location.href="dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN)};
+const aznyFullscreenBtn=document.getElementById("aznyFullscreenBtn");if(aznyFullscreenBtn){aznyFullscreenBtn.onclick=async()=>{try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen();aznyFullscreenBtn.textContent="⤢";aznyFullscreenBtn.title="Sair do ecrã inteiro"}else{await document.exitFullscreen();aznyFullscreenBtn.textContent="⛶";aznyFullscreenBtn.title="Ecrã inteiro"}}catch(e){toast("O navegador não permitiu o modo de ecrã inteiro. Para ocultar também a barra de endereço, instale o AZNY no ecrã inicial e abra-o pelo ícone.");}};document.addEventListener("fullscreenchange",()=>{if(aznyFullscreenBtn){const on=!!document.fullscreenElement;aznyFullscreenBtn.textContent=on?"⤢":"⛶";aznyFullscreenBtn.title=on?"Sair do ecrã inteiro":"Ecrã inteiro"}})}
 document.getElementById("copyClassLink").onclick=copyClassLink;
 document.getElementById("shareWhatsApp").onclick=shareWhatsApp;
 document.getElementById("shareFacebook").onclick=shareFacebook;
