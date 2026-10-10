@@ -2254,5 +2254,17 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
 }
 </style>
 
+
+<style id="azny-mobile-layout-final">
+@media (max-width:700px), (max-device-width:700px), (orientation:portrait) and (pointer:coarse) {
+ body:not(.student-mode) .workspace { display:grid!important; grid-template-columns:minmax(0,1fr) 112px!important; grid-template-rows:minmax(0,1fr) auto!important; }
+ body:not(.student-mode) .workspace > .leftbar { grid-column:1!important; grid-row:2!important; width:100%!important; max-height:104px!important; }
+ body:not(.student-mode) .workspace > .main { grid-column:1!important; grid-row:1!important; min-width:0!important; }
+ body:not(.student-mode) .workspace > .rightbar { grid-column:2!important; grid-row:1 / span 2!important; width:112px!important; min-width:112px!important; }
+ body:not(.student-mode) .workspace > .leftbar > .sidehead, body:not(.student-mode) .workspace > .leftbar > .bottom-status { display:none!important; }
+ body:not(.student-mode) .workspace > .leftbar .tools { flex-direction:row!important; overflow-x:auto!important; overflow-y:hidden!important; }
+ body:not(.student-mode) .workspace > .leftbar .tool, body:not(.student-mode) .workspace > .leftbar .tool.wide { flex:0 0 70px!important; width:70px!important; min-width:70px!important; max-width:70px!important; min-height:64px!important; }
+}
+</style>
 </body>
 </html>
