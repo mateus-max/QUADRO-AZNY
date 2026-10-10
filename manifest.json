@@ -6,8 +6,9 @@
   "lang": "pt-AO",
   "start_url": "/QUADRO-AZNY/",
   "scope": "/QUADRO-AZNY/",
-  "display": "standalone",
+  "display": "fullscreen",
   "display_override": [
+    "fullscreen",
     "standalone",
     "minimal-ui"
   ],
