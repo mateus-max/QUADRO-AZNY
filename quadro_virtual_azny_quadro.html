@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#071b33">
+<meta name="description" content="Quadro Virtual AZNY para aulas online interativas.">
+<link rel="manifest" href="manifest-quadro.webmanifest">
+<link rel="icon" href="icons/azny-board.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/azny-board.svg">
 <title>Quadro Virtual AZNY</title>
 <style>
 *{box-sizing:border-box}
@@ -1825,6 +1830,17 @@ window.addEventListener("resize",resizeCanvas);
 if(!isStudent)load();setTimeout(()=>{setZoom(1);resizeCanvas()},80);
 
 })();
+</script>
+
+<script>
+/* Instalação PWA do Quadro Virtual AZNY */
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+ window.addEventListener("load", () => {
+  navigator.serviceWorker.register("service-worker.js", {scope:"/QUADRO-AZNY/"})
+   .then(reg => { console.info("AZNY PWA pronto", reg.scope); })
+   .catch(err => console.warn("AZNY PWA: não foi possível registar o modo app.", err));
+ });
+}
 </script>
 </body>
 </html>
