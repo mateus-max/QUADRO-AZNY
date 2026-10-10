@@ -2266,5 +2266,16 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
  body:not(.student-mode) .workspace > .leftbar .tool, body:not(.student-mode) .workspace > .leftbar .tool.wide { flex:0 0 70px!important; width:70px!important; min-width:70px!important; max-width:70px!important; min-height:64px!important; }
 }
 </style>
+<style id="azny-mobile-bottom-tools-height">
+@media (max-width:700px), (max-device-width:700px), (orientation:portrait) and (pointer:coarse) {
+ body:not(.student-mode) .workspace { grid-template-rows:minmax(0,1fr) 112px!important; }
+ body:not(.student-mode) .workspace > .leftbar { grid-row:2!important; min-height:112px!important; height:112px!important; max-height:112px!important; align-self:stretch!important; overflow:hidden!important; }
+ body:not(.student-mode) .workspace > .leftbar .tools { height:100%!important; min-height:0!important; flex:1 1 auto!important; align-items:stretch!important; padding:8px 6px!important; overflow-x:auto!important; overflow-y:hidden!important; }
+ body:not(.student-mode) .workspace > .leftbar .tool,
+ body:not(.student-mode) .workspace > .leftbar .tool.wide { height:92px!important; min-height:92px!important; max-height:92px!important; flex-basis:88px!important; width:88px!important; min-width:88px!important; max-width:88px!important; font-size:11px!important; }
+ body:not(.student-mode) .workspace > .rightbar { grid-row:1 / span 2!important; height:100%!important; min-height:0!important; overflow-y:auto!important; }
+ body:not(.student-mode) .workspace > .main { grid-row:1!important; min-height:0!important; }
+}
+</style>
 </body>
 </html>
