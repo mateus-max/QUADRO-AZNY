@@ -2149,6 +2149,7 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
 })();
 </script>
 
+<script>
 /* AZNY: barra de ferramentas do aluno arrastável para cima/baixo em ecrãs táteis. */
 (function(){
  const bar=document.getElementById("studentControls");
@@ -2195,6 +2196,40 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
   if(r.top<8||r.bottom>innerHeight-8||r.left<8||r.right>innerWidth-8)bar.style.transform="translate3d(0,0,0)";
  },{passive:true});
 })();
+</script>
+
+<style>
+/* Mobile teacher layout: keep the board usable and compact the tool panels. */
+@media (max-width: 700px) {
+  body:not(.student-mode) { overflow:auto; }
+  body:not(.student-mode) .app { height:auto; min-height:100dvh; }
+  body:not(.student-mode) .topbar { min-height:48px; height:auto; padding:7px 9px; gap:7px; flex-wrap:wrap; }
+  body:not(.student-mode) .logo { font-size:14px; }
+  body:not(.student-mode) .title { min-width:90px; }
+  body:not(.student-mode) .title input { font-size:13px; }
+  body:not(.student-mode) .top-actions { margin-left:auto; gap:4px; }
+  body:not(.student-mode) .iconbtn { width:32px; height:32px; }
+  body:not(.student-mode) .class-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  body:not(.student-mode) .class-timer { grid-column:1/-1; padding:6px; }
+  body:not(.student-mode) .workspace { display:flex; flex-direction:column; min-height:0; overflow:visible; }
+  body:not(.student-mode) .main { order:0; min-height:0; }
+  body:not(.student-mode) .toolbar { height:44px; min-height:44px; padding:5px; gap:5px; }
+  body:not(.student-mode) .group { gap:3px; padding-right:5px; }
+  body:not(.student-mode) .mini, body:not(.student-mode) .select { height:31px; min-width:30px; }
+  body:not(.student-mode) .canvas-wrap { flex:none; height:48vh; min-height:280px; }
+  body:not(.student-mode) #board { border-width:5px; }
+  body:not(.student-mode) .leftbar, body:not(.student-mode) .rightbar { width:100%; min-width:0; border:0; border-top:1px solid var(--line); }
+  body:not(.student-mode) .sidehead { height:38px; min-height:38px; }
+  body:not(.student-mode) .tools { grid-template-columns:repeat(2,minmax(0,1fr)); padding:8px; gap:6px; overflow:visible; }
+  body:not(.student-mode) .tool { min-height:39px; padding:7px 5px; font-size:12px; }
+  body:not(.student-mode) .tool.wide { grid-column:span 1; }
+  body:not(.student-mode) .bottom-status { margin-top:0; }
+  body:not(.student-mode) .camera-panel { padding:8px; }
+  body:not(.student-mode) .camera { height:190px; }
+  body:not(.student-mode) .students { max-height:none; overflow:visible; }
+  body:not(.student-mode) .student { height:180px; }
+}
+</style>
 
 </body>
 </html>
