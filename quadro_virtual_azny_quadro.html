@@ -1830,7 +1830,8 @@ async function connectStudentPeer(id,d){
   if(online===lastStudentOnline)return;
   lastStudentOnline=online;
   const studentLabel=d.name||"O aluno";
-  toast(online?studentLabel+" voltou à aula.":(navigator.onLine?studentLabel+" saiu da aula.":studentLabel+" perdeu a ligação à rede."));
+  if(online){toast(studentLabel+" voltou à aula.");showNetworkNotice(studentLabel+" voltou à aula.","good")}
+  else{ref.once("value").then(current=>{const currentData=current.val()||{};const network=currentData.network||"unknown";if(network==="poor"||network==="disconnected"){toast("A rede de "+studentLabel+" está instável. A ligação foi perdida.");showNetworkNotice("A rede de "+studentLabel+" está instável ou sem ligação.","bad")}else{toast(studentLabel+" saiu da aula.");showNetworkNotice(studentLabel+" saiu da aula.","bad")}}).catch(()=>{toast(studentLabel+" saiu da aula.")})}
   if(!online){
    const departedPeer=window.aznyTeacherPeers?.[id];
    if(departedPeer){try{departedPeer.close()}catch(_){};delete window.aznyTeacherPeers[id]}
