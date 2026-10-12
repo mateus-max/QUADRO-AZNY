@@ -1934,7 +1934,7 @@ function addStudentVideoCard(id,name,stream,track){
  document.addEventListener("pointerdown",()=>{playVideo();playAudio()},{once:true});
  card.querySelector(".label").textContent=name||"Aluno";
 }
-function removeStudentVideoCard(id){document.getElementById("student-"+id)?.remove();if(!document.querySelector("#students .student"))document.getElementById("students").innerHTML='<div class="no-students" id="noStudents">Nenhum aluno entrou na aula.</div>'}
+function removeStudentVideoCard(id){const pc=window.aznyTeacherPeers?.[id];if(pc){try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}if(window.aznyTeacherPeers[id]===pc)delete window.aznyTeacherPeers[id]}const card=document.getElementById("student-"+id);if(card){card.querySelectorAll("video,audio").forEach(el=>{try{el.pause?.()}catch(_){}try{el.srcObject=null}catch(_){}try{el.removeAttribute("src");el.load?.()}catch(_){}});card.remove()}if(!document.querySelector("#students .student"))document.getElementById("students").innerHTML='<div class="no-students" id="noStudents">Nenhum aluno entrou na aula.</div>'}
 let aznyTeacherDisplayName="Professor";
 function prepareJoinVoice(){try{if(!("speechSynthesis" in window))return;const unlock=()=>{try{const u=new SpeechSynthesisUtterance("Notificações de entrada ativadas.");u.lang="pt-PT";u.volume=0;speechSynthesis.speak(u)}catch(_){}};document.addEventListener("pointerdown",unlock,{once:true});document.addEventListener("keydown",unlock,{once:true})}catch(_){}}
 async function loadTeacherDisplayName(){try{if(!AZNY_DB||!AZNY_ACCESS_TOKEN)return;const snap=await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).once("value");const d=snap.val()||{};aznyTeacherDisplayName=d.teacherName||d.name||d.fullName||d.nome||"Professor"}catch(e){console.warn("AZNY nome do professor:",e)}}
@@ -1948,11 +1948,11 @@ function notifyTeacherStudentPresence(ref){
  if(!ref||!isStudent||!studentRequestId)return;
  try{ref.child("studentOnline").onDisconnect().set(false)}catch(_){}
 }
-async function startStudentWebRTC(){
+async function startStudentWebRTC(options={}){
  if(!studentApproved||!studentRequestId)return;
  try{
   if(!navigator.mediaDevices?.getUserMedia){toast("A câmera e o microfone exigem HTTPS ou localhost.");return}
-  if(studentPeer)studentPeer.close();
+  if(studentPeer){try{studentPeer._aznyBoardChannel?.close()}catch(_){}try{studentPeer.close()}catch(_){}}if(options.reconnect&&studentLocalStream){try{studentLocalStream.getTracks().forEach(t=>t.stop())}catch(_){}studentLocalStream=null}
   studentRemoteDescriptionReady=false;studentPendingTeacherCandidates=[];studentBoardChunks.clear();
   toast("A ligar câmera e microfone do aluno...");
   studentLocalStream=await navigator.mediaDevices.getUserMedia({
@@ -1977,7 +1977,7 @@ async function startStudentWebRTC(){
   const addRemoteTrack=(target,track)=>{if(track&&!target.getTracks().some(t=>t.id===track.id))target.addTrack(track)};
   const playTeacherAudio=()=>{if(!teacherAudioIn.getAudioTracks().length)return;if(teacherAudioOut.srcObject!==teacherAudioIn)teacherAudioOut.srcObject=teacherAudioIn;teacherAudioOut.muted=false;teacherAudioOut.volume=1;teacherAudioOut.play?.().catch(err=>console.warn("AZNY áudio do professor bloqueado:",err))};
   const playTeacherVideo=()=>{const v=document.getElementById("studentTeacherVideo");if(v&&teacherVideoIn.getVideoTracks().length){if(v.srcObject!==teacherVideoIn)v.srcObject=teacherVideoIn;v.muted=true;v.autoplay=true;v.playsInline=true;v.style.display="block";v.play?.().catch(err=>console.warn("AZNY vídeo do professor:",err))}};
-  studentPeer.ontrack=e=>{
+  const activeStudentPeer=studentPeer;studentPeer.ontrack=e=>{if(studentPeer!==activeStudentPeer||activeStudentPeer.signalingState==="closed")return;
    const track=e.track;
    // Preferir os tracks recebidos no evento; não depender de e.streams[0],
    // que pode vir vazio em alguns navegadores/dispositivos móveis.
@@ -1995,7 +1995,7 @@ async function startStudentWebRTC(){
    }
   };
   bindStudentNetworkQuality(studentPeer,studentRequestId);
-  studentPeer.onconnectionstatechange=()=>{
+  studentPeer.onconnectionstatechange=()=>{if(studentPeer!==activeStudentPeer)return;
    if(studentPeer.connectionState==="connected")toast("Videochamada ligada: pode ver e ouvir o professor.");
    if(studentPeer.connectionState==="failed"){toast("A chamada falhou nesta rede. A tentar recuperar a ligação.");try{studentPeer.restartIce()}catch(_){}}
   };
@@ -2044,6 +2044,7 @@ async function startStudentWebRTC(){
   toast("Aluno ligado: câmera e áudio preparados para transmissão.");
  }catch(e){console.error(e);toast("Não foi possível ligar câmera/microfone do aluno: "+(e.name||"erro"))}
 }
+async function aznyReconnectStudentMedia(){if(!isStudent||!studentApproved||!studentRequestId)return false;aznyStopStudentMesh();try{studentPeer?._aznyBoardChannel?.close()}catch(_){}try{studentPeer?.close()}catch(_){}studentPeer=null;studentBoardChannel=null;studentBoardChunks.clear();studentPendingTeacherCandidates=[];studentRemoteDescriptionReady=false;const tv=document.getElementById("studentTeacherVideo");if(tv){try{tv.pause()}catch(_){}tv.srcObject=null;tv.style.display="block"}const ta=document.getElementById("studentTeacherAudioOut");if(ta){try{ta.pause()}catch(_){}ta.srcObject=null}document.querySelectorAll("#studentLive .azny-peer-video-card").forEach(card=>{card.querySelectorAll("video,audio").forEach(el=>{try{el.pause()}catch(_){}el.srcObject=null});card.remove()});try{await startStudentWebRTC({reconnect:true});return true}catch(e){console.warn("AZNY reconnect:",e);toast("Não foi possível restabelecer a chamada. Tente atualizar novamente.");return false}}
 async function ensureStudentMedia(){if(studentLocalStream?.getTracks?.().length)return true;try{if(!navigator.mediaDevices?.getUserMedia){toast("Câmera e microfone exigem HTTPS.");return false}studentLocalStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}});studentCameraOn=true;studentMicOn=true;const v=document.getElementById("studentSelfVideo");if(v){v.srcObject=studentLocalStream;v.muted=true;v.playsInline=true;v.play?.().catch(()=>{})}studentLocalStream.getTracks().forEach(t=>{if(studentPeer&&studentPeer.connectionState!=="closed"){const sender=studentPeer.getSenders().find(s=>s.track?.kind===t.kind);if(sender)sender.replaceTrack(t).catch(()=>{});else studentPeer.addTrack(t,studentLocalStream)}});const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");if(cb)cb.textContent="📷 Desligar câmera";if(mb)mb.textContent="🎙 Desligar microfone";toast("Câmera e microfone ativados");return true}catch(e){console.warn("Permissão de mídia do aluno:",e);toast("Permita o acesso à câmera e ao microfone no navegador.");return false}}
 function toggleStudentMic(){if(!studentLocalStream)return void ensureStudentMedia();const t=studentLocalStream?.getAudioTracks?.()[0];if(!t)return void ensureStudentMedia();t.enabled=!t.enabled;studentMicOn=t.enabled;const b=document.getElementById("studentMicBtn");if(b)b.textContent=t.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";toast(t.enabled?"Microfone ligado":"Microfone desligado")}
 function toggleStudentCamera(){
@@ -2141,7 +2142,7 @@ async function connectStudentPeer(id,d){
   };
   ch.onclose=()=>{if(pc._aznyBoardChannel===ch)pc._aznyBoardChannel=null};
  };
- pc.ontrack=e=>{
+ pc.ontrack=e=>{if(window.aznyTeacherPeers[id]!==pc||pc.signalingState==="closed")return;
   // Alguns navegadores não enviam e.streams; addStudentVideoCard mantém um
   // MediaStream estável e acrescenta cada track recebido individualmente.
   const stream=e.streams?.[0]||null;
@@ -2400,9 +2401,9 @@ async function forceRefreshBoard(forStudent){
   if(forStudent){
    if(!AZNY_DB)throw new Error("Sem ligação ao serviço");
    const snap=await aznyRoomRef().child("board").once("value"),data=snap.val();
-   if(data)applyRemoteBoardState(data);
+   if(data){selected=null;remoteBoardApplying=false;applyRemoteBoardState(data);selected=null;resizeCanvas();redraw();updateHint()}
    else toast("Ainda não existe um quadro sincronizado para atualizar.");
-   toast("Quadro atualizado com os dados mais recentes.");
+if(studentApproved){if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected"){try{studentBoardChannel.send(JSON.stringify({type:"board-request"}))}catch(_){await aznyReconnectStudentMedia()}}else{await aznyReconnectStudentMedia()}}toast("Quadro atualizado e pedido de sincronização enviado.");
   }else{
    pageStates[currentPage-1]=snapshot();
    if(AZNY_DB)await aznyRoomRef().child("board").update({
