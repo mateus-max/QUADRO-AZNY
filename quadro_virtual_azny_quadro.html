@@ -2212,6 +2212,7 @@ function bindTeacherRaisedHand(card,id){
 /* AZNY student-to-student media mesh. The teacher connection/data channel remains unchanged. */
 const aznyStudentMeshPeers=new Map();
 let aznyStudentMeshBound=false,aznyStudentMeshRosterHandler=null;
+const aznyStudentMeshWatched=new Set();
 function aznyMeshRef(a,b){return aznySessionRef()?.child("studentMesh").child(a).child(b)||null}
 function aznyMeshCard(id,name,stream){
  const pair=document.querySelector("#studentLive .student-video-pair");if(!pair)return;
@@ -2220,38 +2221,30 @@ function aznyMeshCard(id,name,stream){
   const video=document.createElement("video");video.autoplay=true;video.playsInline=true;video.setAttribute("playsinline","");video.muted=false;
   const label=document.createElement("span");card.append(video,label);pair.appendChild(card)}
  card.querySelector("span").textContent=name||"Colega";
- const video=card.querySelector("video");if(stream&&video.srcObject!==stream)video.srcObject=stream;
- video.play?.().catch(()=>{});
+ const video=card.querySelector("video");if(stream&&video.srcObject!==stream)video.srcObject=stream;video.play?.().catch(()=>{});
 }
 function aznyCloseMeshPeer(id){const item=aznyStudentMeshPeers.get(id);if(item){try{item.pc.close()}catch(_){};aznyStudentMeshPeers.delete(id)}document.getElementById("azny-mesh-card-"+id)?.remove()}
 async function aznyStartMeshPeer(id,name,initiator){
  if(!isStudent||!studentApproved||!studentRequestId||id===studentRequestId||aznyStudentMeshPeers.has(id)||!studentLocalStream||!AZNY_DB)return;
- // Keep mesh practical for mobile data; use direct links only for small classes.
- if(aznyStudentMeshPeers.size>=7){toast("A turma está grande para ligações diretas. Alguns vídeos podem não aparecer neste dispositivo.");return}
- const localId=studentRequestId,lo=initiator?localId:id,hi=initiator?id:localId;
- const base=aznyMeshRef(lo,hi);if(!base)return;
+ if(aznyStudentMeshPeers.size>=7){toast("A turma está grande para ligações diretas; alguns vídeos podem não aparecer neste dispositivo.");return}
+ const localId=studentRequestId,lo=initiator?localId:id,hi=initiator?id:localId,base=aznyMeshRef(lo,hi);if(!base)return;
  const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]});
- const remote=new MediaStream();aznyStudentMeshPeers.set(id,{pc,stream:remote,name});
+ const remote=new MediaStream(),item={pc,stream:remote,name};aznyStudentMeshPeers.set(id,item);
  studentLocalStream.getTracks().forEach(t=>pc.addTrack(t,studentLocalStream));
- pc.ontrack=e=>{const tr=e.track;if(!remote.getTracks().some(x=>x.id===tr.id))remote.addTrack(tr);aznyMeshCard(id,name,remote);tr.onunmute=()=>aznyMeshCard(id,name,remote)};
- pc.onicecandidate=e=>{if(e.candidate)base.child(initiator?"offerCandidates":"answerCandidates").push(e.candidate.toJSON()).catch(()=>{})};
+ pc.ontrack=e=>{if(!remote.getTracks().some(x=>x.id===e.track.id))remote.addTrack(e.track);aznyMeshCard(id,name,remote);e.track.onunmute=()=>aznyMeshCard(id,name,remote)};
  pc.onconnectionstatechange=()=>{if(["failed","closed"].includes(pc.connectionState))aznyCloseMeshPeer(id)};
  let remoteReady=false;const pending=[];
- const candidatesRef=base.child(initiator?"answerCandidates":"offerCandidates");
- candidatesRef.on("child_added",async snap=>{const c=snap.val();if(!c)return;if(!remoteReady){pending.push(c);return}try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(e){console.warn("AZNY mesh ICE:",e)}});
+ const ownCandidates=base.child(initiator?"offerCandidates":"answerCandidates");
+ ownCandidates.on("child_added",async snap=>{const c=snap.val();if(!c)return;if(!remoteReady){pending.push(c);return}try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(e){console.warn("AZNY mesh ICE:",e)}});
+ pc.onicecandidate=e=>{if(e.candidate)ownCandidates.push(e.candidate.toJSON()).catch(()=>{})};
+ const applyPending=async()=>{for(const c of pending.splice(0)){try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}};
  try{
   if(initiator){
    await base.set({offerer:localId,answerer:id,offer:null,answer:null,offerCandidates:null,answerCandidates:null,updatedAt:firebase.database.ServerValue.TIMESTAMP});
-   const offer=await pc.createOffer();await pc.setLocalDescription(offer);
-   await base.update({offer:{type:offer.type,sdp:offer.sdp}});
-   base.child("answer").on("value",async snap=>{const a=snap.val();if(!a||pc.signalingState!=="have-local-offer")return;try{await pc.setRemoteDescription(new RTCSessionDescription(a));remoteReady=true;for(const c of pending.splice(0)){try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}}catch(e){console.warn("AZNY mesh answer:",e)}});
+   const offer=await pc.createOffer();await pc.setLocalDescription(offer);await base.update({offer:{type:offer.type,sdp:offer.sdp}});
+   base.child("answer").on("value",async snap=>{const a=snap.val();if(!a||pc.signalingState!=="have-local-offer")return;try{await pc.setRemoteDescription(new RTCSessionDescription(a));remoteReady=true;await applyPending()}catch(e){console.warn("AZNY mesh answer:",e)}});
   }else{
-   base.child("offer").off();
-   const snap=await base.child("offer").once("value"),offer=snap.val();if(!offer)throw new Error("Oferta do colega ainda não disponível");
-   await pc.setRemoteDescription(new RTCSessionDescription(offer));remoteReady=true;
-   for(const c of pending.splice(0)){try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}
-   const answer=await pc.createAnswer();await pc.setLocalDescription(answer);
-   await base.update({answer:{type:answer.type,sdp:answer.sdp}});
+   base.child("offer").on("value",async snap=>{const offer=snap.val();if(!offer||pc.signalingState!=="stable")return;try{await pc.setRemoteDescription(new RTCSessionDescription(offer));remoteReady=true;await applyPending();const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await base.update({answer:{type:answer.type,sdp:answer.sdp}})}catch(e){console.warn("AZNY mesh offer:",e);aznyCloseMeshPeer(id)}});
   }
  }catch(e){console.warn("AZNY ligação entre alunos:",e);aznyCloseMeshPeer(id)}
 }
@@ -2259,31 +2252,27 @@ async function aznyStartStudentMesh(){
  if(!isStudent||!AZNY_DB||!classSessionId||!studentRequestId||aznyStudentMeshBound)return;
  aznyStudentMeshBound=true;
  const roster=aznySessionRef()?.child("joinRequests");if(!roster)return;
- const seen=new Map();
  aznyStudentMeshRosterHandler=roster.on("value",snap=>{
   const data=snap.val()||{};
   Object.entries(data).forEach(([id,d])=>{
-   if(id===studentRequestId||!d||d.status!=="approved")return;
+   if(id===studentRequestId||!d||d.status!=="approved"||aznyStudentMeshWatched.has(id))return;
+   aznyStudentMeshWatched.add(id);
    const peerSignal=signalRef(id);if(!peerSignal)return;
    peerSignal.child("studentOnline").on("value",onlineSnap=>{
-    const online=onlineSnap.val()===true;
-    if(!online){aznyCloseMeshPeer(id);return}
+    if(!studentApproved)return;
+    if(onlineSnap.val()!==true){aznyCloseMeshPeer(id);return}
     if(aznyStudentMeshPeers.has(id))return;
-    // Exactly one endpoint creates the offer, avoiding offer glare.
-    const initiator=String(studentRequestId)<String(id);
-    aznyStartMeshPeer(id,d.name||"Colega",initiator);
+    aznyStartMeshPeer(id,d.name||"Colega",String(studentRequestId)<String(id));
    });
-   seen.set(id,true);
   });
-  for(const id of [...seen.keys()])if(!data[id]||data[id].status!=="approved"){aznyCloseMeshPeer(id);seen.delete(id)}
+  for(const id of [...aznyStudentMeshWatched])if(!data[id]||data[id].status!=="approved"){signalRef(id)?.child("studentOnline").off();aznyCloseMeshPeer(id);aznyStudentMeshWatched.delete(id)}
  });
 }
 function aznyStopStudentMesh(){
  if(AZNY_DB&&aznySessionRef())aznySessionRef().child("joinRequests").off("value",aznyStudentMeshRosterHandler||undefined);
- for(const id of [...aznyStudentMeshPeers.keys()])aznyCloseMeshPeer(id);
- aznyStudentMeshBound=false;aznyStudentMeshRosterHandler=null;
+ for(const id of aznyStudentMeshWatched){signalRef(id)?.child("studentOnline").off();aznyCloseMeshPeer(id)}
+ aznyStudentMeshWatched.clear();aznyStudentMeshBound=false;aznyStudentMeshRosterHandler=null;
 }
-
 async function leaveStudentClass(){
  if(!isStudent||!studentApproved)return;
  const oldRequestId=studentRequestId;
