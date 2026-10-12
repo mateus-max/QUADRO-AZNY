@@ -1,25 +1,28 @@
-# AZNY Avaliações — aplicação Android do aluno
+# Quadro Virtual AZNY — aplicação Android
 
-Esta pasta inicia o projeto Android nativo separado do site existente. O site e o quadro virtual permanecem intactos.
+Esta é a primeira versão nativa Android do AZNY, distribuída fora da Google Play. O objetivo é reunir numa aplicação instalada o acesso ao quadro/aulas e às avaliações, preservando o site oficial.
 
-## Objetivo
-A aplicação será a entrada para os links de avaliação e usará as APIs nativas do Android para pedir permissão explícita para captura de ecrã (MediaProjection), câmara e microfone. A transmissão deverá usar WebRTC e a sinalização Firebase já usada pelo painel do professor:
+## O que esta versão já prepara
+- Abre links HTTPS oficiais do AZNY colados pelo utilizador.
+- Reconhece links de aulas em `/aulas/` e o quadro virtual principal.
+- Mantém o fluxo específico de avaliação em `/fazer-avaliacao.html?id=...`, incluindo pedido de permissões e supervisão nativa existente.
+- O WebView só concede permissões de câmara/microfone ao domínio oficial `https://academia.apsanlda.com`.
+- O site continua disponível para quem não tiver a aplicação instalada.
 
-- Firebase Realtime Database: `https://quadro-azny-default-rtdb.firebaseio.com`
-- Caminho de sinalização existente: `assessments/{assessmentId}/attempts/{attemptId}/rtc`
-- Oferta do professor: `offer`
-- Resposta do aluno: `answer`
-- ICE do aluno: `studentCandidates`
-- ICE do professor: `teacherCandidates`
+## Construir APK de teste
+1. Abra a pasta `android-app` no Android Studio recente ou use a ação GitHub **Build AZNY Student Android App**.
+2. A ação compila um APK de depuração e guarda-o como artefacto `azny-student-debug-apk`.
+3. Descarregue o artefacto na página da execução do GitHub Actions, extraia o ZIP e instale o APK num Android de teste.
+4. Para instalar, o utilizador terá de permitir a instalação a partir da origem usada para descarregar o ficheiro.
 
-## Abrir no Android Studio
-1. Abra a pasta `android-app` no Android Studio (versão recente).
-2. Aguarde a sincronização do Gradle.
-3. Execute em dispositivo Android físico com câmara e microfone.
-4. A permissão de captura de ecrã tem de ser aceite pelo aluno; o Android não permite concedê-la silenciosamente.
+## Antes de distribuição pública no site
+O APK gerado pela ação atual é de teste/debug, não é ainda o pacote assinado para distribuição continuada. Antes de publicar um botão permanente de download no site, configure uma chave de assinatura de lançamento guardada em segredos do repositório e compile uma versão `release`. A mesma chave deve ser mantida para que futuras atualizações possam ser instaladas sem remover a versão anterior.
 
-## Estado atual
-É a estrutura inicial do projeto Android, não um APK de produção. A integração completa do formulário web com a captura MediaProjection e a ligação WebRTC tem de ser concluída e testada em dois dispositivos antes de usar em exames reais. Não remova nem substitua os ficheiros atuais do site.
+## Testes obrigatórios
+- Testar em dois dispositivos Android reais, em redes diferentes.
+- Verificar áudio e vídeo bidirecionais, câmara/microfone e entrada no quadro com o link permanente.
+- Testar links de avaliação e confirmar que o pedido Android de captura de ecrã é explícito.
+- Confirmar navegação, downloads, orientação horizontal e reconexão após perda de rede.
 
-## Privacidade e limites
-A aplicação só pode transmitir o ecrã depois de o aluno aceitar o diálogo do Android. O sistema operativo continua a controlar as permissões e o aluno pode parar a captura. O professor pode receber alertas de interrupção; não é possível prometer bloqueio absoluto do telefone.
+## Limites
+Esta é uma primeira integração, não uma equivalência completa ao Zoom/WhatsApp. A captura de ecrã depende do consentimento e controlo do Android; não se promete bloqueio absoluto do telefone. A WebRTC da aula ainda precisa de validação prática dentro do WebView em diferentes versões Android.
