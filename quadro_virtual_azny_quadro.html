@@ -2653,5 +2653,156 @@ body:not(.student-mode) .top-actions{display:flex!important;flex:0 0 auto!import
 @media(max-width:900px){body:not(.student-mode) .topbar>.logo{font-size:13px!important;min-width:0!important}body:not(.student-mode) #classControlsTop{gap:4px!important}}
 </style>
 
+
+<style>
+/* Teclado AZNY compacto: aparece apenas sobre a área verde do quadro no telefone do professor. */
+#aznyBoardKeyboard{display:none;position:absolute;z-index:80;left:0;bottom:0;width:100%;padding:5px 4px max(5px,env(safe-area-inset-bottom));background:#172536f5;border:1px solid #53677c;border-radius:8px 8px 0 0;box-shadow:0 -3px 14px #0005;box-sizing:border-box;touch-action:manipulation}
+body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
+#aznyBoardKeyboard .azny-key-row{display:flex;justify-content:center;gap:3px;margin:3px 0}
+#aznyBoardKeyboard button{flex:1;min-width:0;height:clamp(27px,5.2vh,39px);padding:0 2px;border:1px solid #6d8094;border-radius:5px;background:#f5f7fa;color:#152334;font:600 clamp(11px,2.5vw,15px)/1 Arial,sans-serif;touch-action:manipulation}
+#aznyBoardKeyboard button.azny-key-wide{flex:1.7;background:#dbe7f3}
+#aznyBoardKeyboard button.azny-key-space{flex:5}
+#aznyBoardKeyboard button.azny-key-done{background:#1677ff;color:white;border-color:#1677ff}
+@media (min-width:701px){#aznyBoardKeyboard{display:none!important}}
+</style>
+<script>
+/* Android does not support constraining its native keyboard to an element's width.
+   On teacher phones use a compact in-board keyboard instead, preserving cameras and side toolbars. */
+(function(){
+ "use strict";
+ const body=document.body;
+ const board=document.getElementById("board");
+ const wrap=document.querySelector(".canvas-wrap");
+ if(!board||!wrap)return;
+ let active=null,shift=false;
+ let savedRange=null;
+ const mobile=()=>matchMedia("(max-width:700px) and (pointer:coarse)").matches;
+ const keyboard=document.createElement("div");
+ keyboard.id="aznyBoardKeyboard";
+ keyboard.setAttribute("role","group");
+ keyboard.setAttribute("aria-label","Teclado para escrever no quadro");
+ const rows=[
+  ["1","2","3","4","5","6","7","8","9","0"],
+  ["q","w","e","r","t","y","u","i","o","p"],
+  ["a","s","d","f","g","h","j","k","l"],
+  ["⇧","z","x","c","v","b","n","m","⌫"],
+  ["?123"," , ","ESPAÇO"," . ","OK"]
+ ];
+ function saveSelection(){
+  const sel=getSelection();
+  if(!sel||!active)return;
+  if(sel.rangeCount&&active.contains(sel.anchorNode))savedRange=sel.getRangeAt(0).cloneRange();
+ }
+ function restoreSelection(){
+  if(!active)return;
+  active.focus({preventScroll:true});
+  const sel=getSelection();
+  if(savedRange){sel.removeAllRanges();sel.addRange(savedRange)}
+ }
+ function emitInput(){
+  if(!active)return;
+  active.dispatchEvent(new InputEvent("input",{bubbles:true,inputType:"insertText"}));
+  saveSelection();
+ }
+ function insertText(value){
+  if(!active)return;
+  restoreSelection();
+  if(!savedRange){active.append(document.createTextNode(value));return}
+  const range=savedRange;
+  range.deleteContents();
+  const node=document.createTextNode(value);
+  range.insertNode(node);
+  range.setStartAfter(node);range.collapse(true);
+  const sel=getSelection();sel.removeAllRanges();sel.addRange(range);
+  savedRange=range.cloneRange();emitInput();
+ }
+ function backspace(){
+  if(!active)return;restoreSelection();
+  const sel=getSelection();if(!sel||!sel.rangeCount)return;
+  const r=sel.getRangeAt(0);
+  if(!r.collapsed){r.deleteContents()}
+  else if(r.startOffset>0){r.setStart(r.startContainer,r.startOffset-1);r.deleteContents()}
+  else if(r.startContainer.previousSibling){r.setStartBefore(r.startContainer.previousSibling);r.deleteContents()}
+  else return;
+  r.collapse(true);sel.removeAllRanges();sel.addRange(r);savedRange=r.cloneRange();emitInput();
+ }
+ function addRow(keys){
+  const row=document.createElement("div");row.className="azny-key-row";
+  keys.forEach(key=>{
+   const b=document.createElement("button");b.type="button";
+   let label=key;
+   if(key==="ESPAÇO")label="Espaço";
+   b.textContent=label;
+   if(["⇧","⌫","?123"].includes(key))b.classList.add("azny-key-wide");
+   if(key==="ESPAÇO")b.classList.add("azny-key-space");
+   if(key==="OK")b.classList.add("azny-key-done");
+   b.addEventListener("pointerdown",e=>{e.preventDefault();saveSelection()});
+   b.addEventListener("click",()=>{
+    if(key==="OK"){closeKeyboard(true);return}
+    if(key==="⇧"){shift=!shift;renderCase();return}
+    if(key==="⌫"){backspace();return}
+    if(key==="?123"){keyboard.dataset.symbols=keyboard.dataset.symbols==="1"?"0":"1";build();return}
+    if(key==="ESPAÇO"){insertText(" ");return}
+    if(key===" , "){insertText(",");return}
+    if(key===" . "){insertText(".");return}
+    const value=keyboard.dataset.symbols==="1"?({"q":"@","w":"#","e":"$","r":"%","t":"&","y":"-","u":"+","i":"(","o":")","p":"/","a":"*","s":"\"","d":"'","f":":","g":";","h":"!","j":"?","k":"_","l":"=","z":"[","x":"]","c":"{","v":"}","b":"€","n":"£","m":"@"}[key]||key):key;
+    insertText(shift?value.toUpperCase():value);if(shift){shift=false;renderCase()}
+   });
+   row.appendChild(b);
+  });
+  keyboard.appendChild(row);
+ }
+ function renderCase(){
+  keyboard.querySelectorAll("button").forEach(b=>{
+   const v=b.dataset.value||b.textContent;
+   if(/^[a-z]$/i.test(v))b.textContent=shift?v.toUpperCase():v.toLowerCase();
+  });
+ }
+ function build(){
+  keyboard.innerHTML="";
+  let currentRows=rows;
+  if(keyboard.dataset.symbols==="1")currentRows=[
+   ["1","2","3","4","5","6","7","8","9","0"],
+   ["@","#","$","%","&","-","+","(",")","/"],
+   ["*","\"","'",":",";","!","?","_","="],
+   ["⇧","[","]","{","}","€","£","⌫"],
+   ["ABC"," , ","ESPAÇO"," . ","OK"]
+  ];
+  currentRows.forEach(r=>addRow(r));
+  if(keyboard.dataset.symbols==="1"){
+   keyboard.querySelectorAll("button").forEach(b=>{if(b.textContent==="ABC")b.addEventListener("click",()=>{keyboard.dataset.symbols="0";build()})});
+  }
+  renderCase();
+ }
+ function openKeyboard(el){
+  if(!mobile()||body.classList.contains("student-mode"))return;
+  active=el;active.setAttribute("inputmode","none");
+  body.classList.add("azny-custom-keyboard");
+  if(!keyboard.isConnected)wrap.appendChild(keyboard);
+  build();saveSelection();
+  requestAnimationFrame(()=>{
+   const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();
+   keyboard.style.left=Math.max(0,r.left-w.left)+"px";
+   keyboard.style.width=Math.min(r.width,w.right-r.left)+"px";
+  });
+ }
+ function closeKeyboard(blur){
+  body.classList.remove("azny-custom-keyboard");
+  if(blur&&active)active.blur();
+  active=null;savedRange=null;
+ }
+ document.addEventListener("focusin",e=>{
+  if(e.target?.classList?.contains("textobj")&&!body.classList.contains("student-mode"))openKeyboard(e.target);
+ },true);
+ document.addEventListener("focusout",e=>{
+  if(e.target?.classList?.contains("textobj")&&!keyboard.contains(e.relatedTarget))setTimeout(()=>{
+   if(!board.querySelector(".textobj:focus"))closeKeyboard(false);
+  },150);
+ },true);
+ document.addEventListener("selectionchange",()=>{if(active&&document.activeElement===active)saveSelection()});
+ window.addEventListener("resize",()=>{if(active)openKeyboard(active)},{passive:true});
+ window.addEventListener("orientationchange",()=>{if(active)closeKeyboard(false)},{passive:true});
+})();
+</script>
 </body>
 </html>
