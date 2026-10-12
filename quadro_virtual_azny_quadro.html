@@ -1053,7 +1053,7 @@ let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0;
 let isStudent=new URLSearchParams(location.search).get("aluno")==="1";
 const AZNY_URL_PARAMS=new URLSearchParams(location.search);let aznySavedRoom="";try{aznySavedRoom=localStorage.getItem("azny_teacher_room_v1")||""}catch(_){};let roomId=AZNY_URL_PARAMS.get("sala")||aznySavedRoom||("AZNY-"+(document.getElementById("boardTitle").value.trim().replace(/[^a-zA-Z0-9_-]+/g,"-")||"aula")+"-"+Date.now().toString(36));if(!AZNY_URL_PARAMS.get("sala")){try{localStorage.setItem("azny_teacher_room_v1",roomId)}catch(_){}}
-let classSessionId=AZNY_URL_PARAMS.get("sess")||"";
+let classSessionId=AZNY_URL_PARAMS.get("sess")||"";if(!classSessionId&&!isStudent){try{classSessionId=localStorage.getItem("azny-active-session-"+String(roomId))||""}catch(_){}}
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 const roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
@@ -1148,12 +1148,12 @@ function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restore(u
 function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(redoStack.pop());scheduleSave()}
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!isStudent&&!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,8)}}
 function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage,pages:pageStates}));document.getElementById("storageState").textContent="● Guardado"}catch(e){toast("Limite do Local Storage atingido")}}
-function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
+function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:pageStates}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
 function sendBoardSnapshotToChannel(ch){
  if(!ch||ch.readyState!=="open")return false;
  if(ch.bufferedAmount>262144)return false;
  try{
-  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates};
+  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates};
   const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=24000,total=Math.ceil(raw.length/size);
   for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
   return true;
@@ -1207,6 +1207,7 @@ function aznySameBoardPage(a,b){
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
  try{
+  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);
   if(Array.isArray(d.pages)){
    const incomingPages=normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize);
    const incomingPage=Math.max(1,Math.min(5,+d.currentPage||1));
@@ -1247,6 +1248,7 @@ function handleBoardChannelMessage(raw){
    if(el&&el.classList.contains("textobj")){const focused=document.activeElement===el;if(!focused)el.innerHTML=String(m.html||"");}
    return;
   }
+  if(m.type==="board-zoom"){if(Number.isFinite(Number(m.zoom)))setZoom(Number(m.zoom),false);return}
   if(m.type==="board-state"){applyRemoteBoardState(m);return}
   if(m.type==="board-chunk"){
    let entry=studentBoardChunks.get(m.id);
@@ -1278,7 +1280,7 @@ function publishLiveBoardState(){
    clearTimeout(firebaseBoardWriteTimer);
    firebaseBoardWriteTimer=setTimeout(()=>{
     const ref=aznyRoomRef().child("board");
-    ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e));
+    ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e));
    },700);
   }
  },30)
@@ -1290,6 +1292,7 @@ function setupBoardRealtime(){
  ref.on("value",snap=>{
   const d=snap.val();
   if(!d||remoteBoardApplying)return;
+  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);
   const activeText=document.activeElement?.closest?.(".textobj");
   if(localBoardEditing||(activeText&&board.contains(activeText)))return;
   /* Ignore a Firebase echo when the visible page is already identical.
@@ -1752,7 +1755,7 @@ document.addEventListener("keydown",e=>{
  else if(e.key==="Escape"){selectObject(null)}
  else if(e.key==="Delete"&&selected&&!selected.matches(":focus")){e.preventDefault();deleteSelected()}
 });
-function setZoom(z){zoom=Math.max(.5,Math.min(2,z));board.style.transform=`scale(${zoom})`;document.getElementById("zoomLabel").textContent=Math.round(zoom*100)+"%";resizeCanvas()}
+function setZoom(z,sync=true){zoom=Math.max(.5,Math.min(2,Number(z)||1));board.style.transform=`scale(${zoom})`;document.getElementById("zoomLabel").textContent=Math.round(zoom*100)+"%";resizeCanvas();if(sync&&!isStudent&&!remoteBoardApplying){const packet=JSON.stringify({type:"board-zoom",zoom});Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});if(AZNY_DB){aznyRoomRef().child("board/zoom").set(zoom).catch(e=>console.warn("AZNY zoom sync:",e))}}}
 document.getElementById("zoomIn").onclick=()=>setZoom(zoom+.1);document.getElementById("zoomOut").onclick=()=>setZoom(zoom-.1);document.getElementById("zoomReset").onclick=()=>setZoom(1);
 document.getElementById("boardTitle").oninput=scheduleSave;
 
@@ -1835,6 +1838,8 @@ function formatDuration(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor
 function updateClassTimer(){document.getElementById("classTimer").textContent=formatDuration(Date.now()-classStartTime)}
 async function startClass(){if(classStarted)return;if(!await ensureAZNYRealtime()){toast("Não foi possível ligar à aula em tempo real.");return}classSessionId="SES-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);localStorage.setItem("azny-active-session-"+String(roomId),classSessionId);sessionRealtimeBound=false;classStarted=true;classStartTime=Date.now();document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();if(AZNY_DB){await aznySessionRef().set({status:"active",startedAt:firebase.database.ServerValue.TIMESTAMP,title:document.getElementById("boardTitle").value,teacherUid:aznyUid||"",teacherPresence:{online:true,network:"online",updatedAt:firebase.database.ServerValue.TIMESTAMP}});try{aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}}bindClassSessionRealtime();bindTeacherPresenceWatch();loadTeacherDisplayName();roomChannel?.postMessage({type:"class-started",title:document.getElementById("boardTitle").value,session:classSessionId});toast("Aula iniciada")}
 
+
+async function restoreActiveTeacherSession(){if(isStudent||!classSessionId||!AZNY_DB)return;try{const snap=await aznySessionRef()?.once("value");const session=snap?.val();if(!session||session.status!=="active"){try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){}classSessionId="";return}classStarted=true;classStartTime=Number(session.startedAt)||Date.now();document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();try{await aznySessionRef().child("teacherPresence").update({online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP});aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}roomChannel?.postMessage({type:"class-started",title:session.title||document.getElementById("boardTitle").value,session:classSessionId});toast("Aula ativa restaurada após atualizar a página")}catch(e){console.warn("AZNY session restore:",e)}}
 async function endClass(){if(!classStarted)return;classStarted=false;clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;document.getElementById("classTimer").textContent="00:00:00";document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;try{stopCamera()}catch(e){console.warn("AZNY camera cleanup:",e)}try{stopMic()}catch(e){console.warn("AZNY microphone cleanup:",e)}if(AZNY_DB&&classSessionId)await aznySessionRef().update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP});localStorage.removeItem("azny-active-session-"+String(roomId));document.querySelectorAll("#cameraJoinRequests .join-request").forEach(e=>e.remove());Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc.close()}catch(_){}removeStudentVideoCard(id)});window.aznyTeacherPeers={};roomChannel?.postMessage({type:"class-ended",session:classSessionId});if(isStudent)showClassEnded();toast("Aula encerrada")}
 
 async function startRecording(){if(screenRecorder?.state==="recording")return;if(!navigator.mediaDevices?.getDisplayMedia){toast("A gravação de ecrã não é suportada neste navegador.");return}try{if(!teacherAudioStream){if(!navigator.mediaDevices?.getUserMedia){toast("O Chrome não permite usar o microfone neste modo.");return}teacherAudioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}},video:false});updateTeacherMediaStatus()}const screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:false});const audioContext=new (window.AudioContext||window.webkitAudioContext)();const source=audioContext.createMediaStreamSource(teacherAudioStream);const destination=audioContext.createMediaStreamDestination();source.connect(destination);const combinedStream=new MediaStream([...screenStream.getVideoTracks(),...destination.stream.getAudioTracks()]);combinedStream._aznyAudioContext=audioContext;combinedStream._aznyScreenStream=screenStream;recordedChunks=[];screenRecorder=new MediaRecorder(combinedStream,{mimeType:"video/webm"});recordingStartedAt=Date.now();screenRecorder.ondataavailable=e=>{if(e.data.size)recordedChunks.push(e.data)};screenRecorder.onstop=saveRecording;screenStream.getVideoTracks()[0].addEventListener("ended",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop()});screenRecorder.start(1000);document.getElementById("recordClassBtn").textContent="⏹ Parar gravação";document.getElementById("recordClassBtn").classList.add("recording");toast("Gravação iniciada com a voz do professor")}catch(e){toast(e.name==="NotAllowedError"?"Gravação cancelada.":"Não foi possível iniciar a gravação com o microfone do professor.")}}
@@ -2216,8 +2221,8 @@ document.getElementById("closeMusic").onclick=()=>document.getElementById("music
 document.querySelectorAll("[data-music]").forEach(b=>b.onclick=()=>addMusic(b.dataset.music));
 // Bíblia e Gramática — abrir e fechar os respetivos menus e inserir o recurso no quadro.
 document.getElementById("startClassBtn").onclick=startClass;document.getElementById("endClassBtn").onclick=endClass;document.getElementById("recordClassBtn").onclick=()=>screenRecorder?.state==="recording"?stopRecording():startRecording();
-setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}}).catch(e=>console.error(e));
-window.addEventListener("beforeunload",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close()});
+setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(async ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}if(ready&&!isStudent)await restoreActiveTeacherSession()}).catch(e=>console.error(e));
+window.addEventListener("beforeunload",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Atualizar/fechar o separador não encerra a sessão da aula. */});
 window.addEventListener("resize",resizeCanvas);
 if(!isStudent)load();setTimeout(()=>{setZoom(1);resizeCanvas()},80);
 
