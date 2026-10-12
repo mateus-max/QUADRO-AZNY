@@ -153,9 +153,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun openAssessment(rawUrl: String, name: String) {
         val uri = runCatching { Uri.parse(rawUrl) }.getOrNull()
-        if (uri == null || uri.scheme != "https" || uri.host != "mateus-max.github.io" ||
-            !uri.path.orEmpty().contains("/QUADRO-AZNY/fazer-avaliacao.html") ||
-            uri.getQueryParameter("id").isNullOrBlank()) {
+        val allowedHost = uri?.host in setOf("academia.apsanlda.com", "mateus-max.github.io")
+        val validAssessmentPath = uri?.path.orEmpty().endsWith("/fazer-avaliacao.html")
+        if (uri == null || uri.scheme != "https" || !allowedHost ||
+            !validAssessmentPath || uri.getQueryParameter("id").isNullOrBlank()) {
             setStatus("Link inválido. Cole o link oficial da avaliação AZNY enviado pelo professor.")
             return
         }
@@ -333,7 +334,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openAssessmentWebView() {
-        val base = "https://mateus-max.github.io/QUADRO-AZNY/fazer-avaliacao.html"
+        // Use the canonical custom domain to avoid project-subpath 403s on GitHub Pages.
+        val base = "https://academia.apsanlda.com/fazer-avaliacao.html"
         val target = Uri.parse(base).buildUpon()
             .appendQueryParameter("id", assessmentId)
             .appendQueryParameter("native", "1")
