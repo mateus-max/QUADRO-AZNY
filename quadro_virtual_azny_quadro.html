@@ -40,7 +40,7 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
 #board{position:absolute;left:0;top:0;width:100%;height:100%;min-width:0;min-height:0;background:#4f7f4f;transform-origin:0 0;overflow:hidden;border:8px solid #8b5a2b;box-shadow:inset 0 0 0 1px #6f431f,0 0 0 1px #6f431f}
 #drawLayer{position:absolute;inset:0;z-index:20;pointer-events:none}.drawing-active .object{pointer-events:none}
 .object{position:absolute;z-index:5}
-.textobj{display:inline-block;min-width:1px;min-height:1.2em;width:max-content!important;height:auto!important;padding:0;border:0;outline:0!important;white-space:pre;word-break:normal;overflow:visible;cursor:text;background:transparent!important;box-shadow:none!important;user-select:text;line-height:1.2;caret-color:#111}
+.textobj{display:inline-block;min-width:1px;min-height:1.2em;width:max-content!important;height:auto!important;padding:0;border:0;outline:0!important;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;overflow:visible;cursor:text;background:transparent!important;box-shadow:none!important;user-select:text;line-height:1.2;caret-color:#111}
 .textobj.selected{outline:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
 .textobj .resize{display:none!important}
 .mediaobj{border:1px solid transparent;cursor:move;overflow:hidden}.mediaobj.selected,.docobj.selected{border:2px solid #1677ff}
@@ -1382,10 +1382,20 @@ stage.addEventListener("pointermove",updateLivePointer,{passive:true});
 stage.addEventListener("pointerenter",e=>{if(pointerMode)document.getElementById("livePointer").classList.add("active")});
 stage.addEventListener("pointerleave",()=>document.getElementById("livePointer").classList.remove("active"));
 
+function constrainTextToBoard(el){
+ if(!el||!el.classList.contains("textobj"))return;
+ const left=Math.max(0,parseFloat(el.style.left)||0);
+ const border=parseFloat(getComputedStyle(board).borderLeftWidth)||4;
+ el.style.maxWidth=Math.max(24,board.clientWidth-left-border-4)+"px";
+ el.style.whiteSpace="pre-wrap";
+ el.style.overflowWrap="anywhere";
+ el.style.wordBreak="normal";
+}
 function createText(x,y,anchor){
  pushHistory();
  const el=document.createElement("div");el.className="object textobj";el.dataset.id="o"+(++objectId);el.contentEditable="true";el.spellcheck=true;
  el.style.left=x+"px";el.style.top=y+"px";el.style.fontSize=document.getElementById("fontSize").value+"px";el.style.fontFamily=document.getElementById("fontFamily").value;el.style.color="#ffffff";
+ constrainTextToBoard(el);
  if(anchor)anchorTextToObject(el,anchor,x,y);
  board.appendChild(el);makeInteractive(el);selectObject(el);
  el.focus({preventScroll:true});
@@ -1396,6 +1406,9 @@ function createText(x,y,anchor){
  updateHint();scheduleSave();
 }
 function selectObject(el){document.querySelectorAll(".object.selected").forEach(x=>x.classList.remove("selected"));selected=el;if(el)el.classList.add("selected");updateObjectActions()}
+/* Keep text within the green writing area as it grows, including text restored from sync. */
+document.addEventListener("input",e=>{const el=e.target;if(el&&el.classList&&el.classList.contains("textobj")){constrainTextToBoard(el);scheduleSave()}},true);
+window.addEventListener("resize",()=>board.querySelectorAll(".textobj").forEach(constrainTextToBoard),{passive:true});
 function anchorTextToObject(text,anchor,x,y){
  const b=anchorBox(anchor);text.dataset.anchorId=anchor.dataset.id;text.dataset.anchorX=(x-b.x)/b.w;text.dataset.anchorY=(y-b.y)/b.h;text.dataset.anchorW=b.w;text.dataset.anchorH=b.h;text.dataset.anchorFontSize=parseFloat(text.style.fontSize)||16;
 }
