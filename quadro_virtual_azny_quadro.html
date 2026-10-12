@@ -1757,6 +1757,8 @@ document.addEventListener("keydown",e=>{
 });
 function setZoom(z,sync=true){zoom=Math.max(.5,Math.min(2,Number(z)||1));board.style.transform=`scale(${zoom})`;document.getElementById("zoomLabel").textContent=Math.round(zoom*100)+"%";resizeCanvas();if(sync&&!isStudent&&!remoteBoardApplying){const packet=JSON.stringify({type:"board-zoom",zoom});Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});if(AZNY_DB){aznyRoomRef().child("board/zoom").set(zoom).catch(e=>console.warn("AZNY zoom sync:",e))}}}
 document.getElementById("zoomIn").onclick=()=>setZoom(zoom+.1);document.getElementById("zoomOut").onclick=()=>setZoom(zoom-.1);document.getElementById("zoomReset").onclick=()=>setZoom(1);
+/* Ctrl + roda do rato faz zoom do quadro; a alteração é propagada aos alunos. */
+stage.addEventListener("wheel",e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();setZoom(zoom+(e.deltaY<0?.1:-.1))}},{passive:false});
 document.getElementById("boardTitle").oninput=scheduleSave;
 
 document.getElementById("helpBtn").onclick=()=>document.getElementById("helpModal").classList.add("show");
