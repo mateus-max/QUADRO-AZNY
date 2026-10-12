@@ -961,7 +961,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
       <select class="select" id="fontFamily"><option>Arial</option><option>Verdana</option><option>Georgia</option><option>Times New Roman</option><option>Courier New</option><option>Trebuchet MS</option></select>
     </div>
     <div class="group">
-      <input class="color" type="color" id="textColor" value="#17212b" title="Cor">
+      <input class="color" type="color" id="textColor" value="#ffffff" title="Mudar a cor do texto selecionado">
       <button class="mini" id="alignLeft">≡</button><button class="mini" id="alignCenter">≡</button><button class="mini" id="alignRight">≡</button>
     </div>
     <div class="group">
@@ -1018,7 +1018,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 <div class="modal" id="helpModal"><div class="card">
 <h3>Quadro Virtual AZNY</h3>
 <p><b>Texto:</b> selecione Texto e clique diretamente no local desejado. O cursor entra naquele ponto.</p>
-<p><b>Formatação:</b> selecione uma parte do texto e use cor, tamanho, fonte, negrito, itálico ou sublinhado para alterar somente a seleção.</p>
+<p><b>Formatação:</b> todo o texto novo começa em branco. Para mudar a cor, selecione a escrita existente e escolha a cor no controlo de cor; a alteração aplica-se à seleção. Tamanho, fonte, negrito, itálico e sublinhado também podem ser aplicados à seleção.</p>
 <p><b>Objetos:</b> imagens e documentos podem ser selecionados, movidos, redimensionados e eliminados.</p>
 <p><b>Câmera:</b> a câmera do professor só aparece quando for autorizada e ligada. A área dos alunos permanece vazia até existir um participante.</p>
 <p><b>Nota:</b> câmeras reais exigem uma página HTTPS ou localhost no Chrome; abrir diretamente como <code>file://</code> pode impedir o acesso à câmera.</p>
@@ -1385,7 +1385,7 @@ stage.addEventListener("pointerleave",()=>document.getElementById("livePointer")
 function createText(x,y,anchor){
  pushHistory();
  const el=document.createElement("div");el.className="object textobj";el.dataset.id="o"+(++objectId);el.contentEditable="true";el.spellcheck=true;
- el.style.left=x+"px";el.style.top=y+"px";el.style.fontSize=document.getElementById("fontSize").value+"px";el.style.fontFamily=document.getElementById("fontFamily").value;el.style.color=document.getElementById("textColor").value;
+ el.style.left=x+"px";el.style.top=y+"px";el.style.fontSize=document.getElementById("fontSize").value+"px";el.style.fontFamily=document.getElementById("fontFamily").value;el.style.color="#ffffff";
  if(anchor)anchorTextToObject(el,anchor,x,y);
  board.appendChild(el);makeInteractive(el);selectObject(el);
  el.focus({preventScroll:true});
