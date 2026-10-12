@@ -2234,9 +2234,10 @@ async function aznyStartMeshPeer(id,name,initiator){
  pc.ontrack=e=>{if(!remote.getTracks().some(x=>x.id===e.track.id))remote.addTrack(e.track);aznyMeshCard(id,name,remote);e.track.onunmute=()=>aznyMeshCard(id,name,remote)};
  pc.onconnectionstatechange=()=>{if(["failed","closed"].includes(pc.connectionState))aznyCloseMeshPeer(id)};
  let remoteReady=false;const pending=[];
- const ownCandidates=base.child(initiator?"offerCandidates":"answerCandidates");
- ownCandidates.on("child_added",async snap=>{const c=snap.val();if(!c)return;if(!remoteReady){pending.push(c);return}try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(e){console.warn("AZNY mesh ICE:",e)}});
- pc.onicecandidate=e=>{if(e.candidate)ownCandidates.push(e.candidate.toJSON()).catch(()=>{})};
+ const localCandidates=base.child(initiator?"offerCandidates":"answerCandidates");
+ const remoteCandidates=base.child(initiator?"answerCandidates":"offerCandidates");
+ remoteCandidates.on("child_added",async snap=>{const c=snap.val();if(!c)return;if(!remoteReady){pending.push(c);return}try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(e){console.warn("AZNY mesh ICE:",e)}});
+ pc.onicecandidate=e=>{if(e.candidate)localCandidates.push(e.candidate.toJSON()).catch(()=>{})};
  const applyPending=async()=>{for(const c of pending.splice(0)){try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}};
  try{
   if(initiator){
