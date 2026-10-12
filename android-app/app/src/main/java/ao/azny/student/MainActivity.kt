@@ -103,17 +103,17 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(0xFFEAF1F8.toInt())
         }
         root.addView(TextView(this).apply {
-            text = "AZNY AVALIAÇÕES"
+            text = "QUADRO VIRTUAL AZNY"
             textSize = 26f
             setTextColor(0xFF0A2038.toInt())
         })
         root.addView(TextView(this).apply {
-            text = "Supervisão nativa para avaliações"
+            text = "Aulas online, quadro virtual e avaliações"
             textSize = 16f
             setPadding(0, 8, 0, 20)
         })
         urlInput = EditText(this).apply {
-            hint = "Cole o link da avaliação"
+            hint = "Cole o link da aula ou avaliação"
             setSingleLine(true)
         }
         nameInput = EditText(this).apply {
@@ -123,11 +123,11 @@ class MainActivity : AppCompatActivity() {
         root.addView(urlInput, matchWidth())
         root.addView(nameInput, matchWidth())
         root.addView(Button(this).apply {
-            text = "Abrir avaliação e preparar supervisão"
-            setOnClickListener { openAssessment(urlInput.text.toString().trim(), nameInput.text.toString().trim()) }
+            text = "Abrir link AZNY"
+            setOnClickListener { openLink(urlInput.text.toString().trim(), nameInput.text.toString().trim()) }
         }, matchWidth())
         status = TextView(this).apply {
-            text = "Cole o link recebido do professor. A captura só começa após autorização do Android."
+            text = "Cole o link oficial da aula ou avaliação. A supervisão só começa após autorização do Android."
             textSize = 14f
             setPadding(0, 18, 0, 0)
         }
@@ -145,12 +145,53 @@ class MainActivity : AppCompatActivity() {
             val link = uri.getQueryParameter("url").orEmpty()
             urlInput.setText(link)
             nameInput.setText(uri.getQueryParameter("name").orEmpty())
-            if (link.isNotBlank()) openAssessment(link, nameInput.text.toString())
+            if (link.isNotBlank()) openLink(link, nameInput.text.toString())
         } else if (uri.toString().contains("fazer-avaliacao.html")) {
             urlInput.setText(uri.toString())
         }
     }
 
+    private fun openLink(rawUrl: String, name: String) {
+        val uri = runCatching { Uri.parse(rawUrl) }.getOrNull()
+        val allowedHost = uri?.host in setOf("academia.apsanlda.com", "mateus-max.github.io")
+        val path = uri?.path.orEmpty()
+        if (uri == null || uri.scheme != "https" || !allowedHost) {
+            setStatus("Link inválido. Use um endereço HTTPS oficial do AZNY.")
+            return
+        }
+        if (path.endsWith("/fazer-avaliacao.html")) { openAssessment(rawUrl, name); return }
+        if (path.contains("/aulas/") || path.endsWith("quadro_virtual_azny_quadro.html")) { openClassroomWebView(uri); return }
+        setStatus("Este link não é uma aula nem uma avaliação AZNY reconhecida.")
+    }
+
+    private fun openClassroomWebView(uri: Uri) {
+        root.removeAllViews()
+        webView = WebView(this).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.mediaPlaybackRequiresUserGesture = false
+            settings.allowFileAccess = false
+            settings.allowContentAccess = false
+            webChromeClient = object : WebChromeClient() {
+                override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
+                    val origin = runCatching { Uri.parse(request.origin.toString()) }.getOrNull()
+                    if (origin?.scheme == "https" && origin.host == "academia.apsanlda.com") runOnUiThread { request.grant(request.resources) }
+                    else runOnUiThread { request.deny() }
+                }
+            }
+            webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(view: WebView, request: android.webkit.WebResourceRequest): Boolean {
+                    val next = request.url
+                    return next.scheme != "https" || next.host !in setOf("academia.apsanlda.com", "mateus-max.github.io")
+                }
+            }
+            loadUrl(uri.toString())
+        }
+        root.addView(webView, LinearLayout.LayoutParams(-1, 0, 1f))
+        status = TextView(this).apply { text = "Quadro Virtual AZNY — ligado ao site oficial"; setPadding(12, 8, 12, 8) }
+        root.addView(status, matchWidth())
+        setContentView(root)
+    }
     private fun openAssessment(rawUrl: String, name: String) {
         val uri = runCatching { Uri.parse(rawUrl) }.getOrNull()
         val allowedHost = uri?.host in setOf("academia.apsanlda.com", "mateus-max.github.io")
@@ -349,7 +390,9 @@ class MainActivity : AppCompatActivity() {
             settings.mediaPlaybackRequiresUserGesture = false
             webChromeClient = object : WebChromeClient() {
                 override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
-                    request.grant(request.resources)
+                    val origin = runCatching { Uri.parse(request.origin.toString()) }.getOrNull()
+                    if (origin?.scheme == "https" && origin.host == "academia.apsanlda.com") runOnUiThread { request.grant(request.resources) }
+                    else runOnUiThread { request.deny() }
                 }
             }
             webViewClient = WebViewClient()
