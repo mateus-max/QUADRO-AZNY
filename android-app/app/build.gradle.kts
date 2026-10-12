@@ -30,5 +30,5 @@ dependencies {
     implementation("androidx.webkit:webkit:1.12.1")
     implementation("com.google.firebase:firebase-database:21.0.0")
     implementation("com.google.firebase:firebase-auth:23.1.0")
-    implementation("org.webrtc:google-webrtc:1.0.32006")
+    implementation("com.quickblox:google-webrtc:1.0.32006")
 }
