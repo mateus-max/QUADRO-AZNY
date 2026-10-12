@@ -1833,15 +1833,15 @@ async function startCamera(){
   let lastError=null;
   // Manter a configuração simples que funciona no telefone e acrescentar alternativas para webcams de computador.
   const constraintsList=[
-   {video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false},
-   {video:{width:{ideal:640},height:{ideal:480}},audio:false},
+   {video:{facingMode:"user",width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},audio:false},
+   {video:{width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},audio:false},
    {video:true,audio:false}
   ];
   try{
    const devices=await navigator.mediaDevices.enumerateDevices();
    const cameras=devices.filter(d=>d.kind==="videoinput");
    const preferred=cameras.find(d=>/integrated|webcam|camera|hd camera/i.test(d.label))||cameras[0];
-   if(preferred?.deviceId)constraintsList.splice(2,0,{video:{deviceId:{exact:preferred.deviceId},width:{ideal:640},height:{ideal:480}},audio:false});
+   if(preferred?.deviceId)constraintsList.splice(2,0,{video:{deviceId:{exact:preferred.deviceId},width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},audio:false});
   }catch(_){}
   for(const constraints of constraintsList){
    try{teacherStream=await navigator.mediaDevices.getUserMedia(constraints);if(teacherStream?.getVideoTracks?.().length)break;teacherStream?.getTracks?.().forEach(t=>t.stop());teacherStream=null;lastError=new Error("A câmara não devolveu vídeo.")}
@@ -1952,7 +1952,7 @@ async function startStudentWebRTC(){
   studentRemoteDescriptionReady=false;studentPendingTeacherCandidates=[];studentBoardChunks.clear();
   toast("A ligar câmera e microfone do aluno...");
   studentLocalStream=await navigator.mediaDevices.getUserMedia({
-   video:{facingMode:"user",width:{ideal:480,max:640},height:{ideal:360,max:480},frameRate:{ideal:15,max:20}},
+   video:{facingMode:"user",width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},
    audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}
   });
   studentCameraOn=true;studentMicOn=true;
@@ -1960,7 +1960,7 @@ async function startStudentWebRTC(){
   const scb=document.getElementById("studentCameraBtn"),smb=document.getElementById("studentMicBtn");
   if(scb)scb.textContent="📷 Desligar câmera";if(smb)smb.textContent="🎙 Desligar microfone";
   studentPeer=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
-  studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));
+  studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));aznyApplyLowDataMode(studentPeer);
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
   studentBoardChannel.bufferedAmountLowThreshold=65536;
   studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}))}catch(_){}};
@@ -2040,7 +2040,7 @@ async function startStudentWebRTC(){
   toast("Aluno ligado: câmera e áudio preparados para transmissão.");
  }catch(e){console.error(e);toast("Não foi possível ligar câmera/microfone do aluno: "+(e.name||"erro"))}
 }
-async function ensureStudentMedia(){if(studentLocalStream?.getTracks?.().length)return true;try{if(!navigator.mediaDevices?.getUserMedia){toast("Câmera e microfone exigem HTTPS.");return false}studentLocalStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}});studentCameraOn=true;studentMicOn=true;const v=document.getElementById("studentSelfVideo");if(v){v.srcObject=studentLocalStream;v.muted=true;v.playsInline=true;v.play?.().catch(()=>{})}studentLocalStream.getTracks().forEach(t=>{if(studentPeer&&studentPeer.connectionState!=="closed"){const sender=studentPeer.getSenders().find(s=>s.track?.kind===t.kind);if(sender)sender.replaceTrack(t).catch(()=>{});else studentPeer.addTrack(t,studentLocalStream)}});const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");if(cb)cb.textContent="📷 Desligar câmera";if(mb)mb.textContent="🎙 Desligar microfone";toast("Câmera e microfone ativados");return true}catch(e){console.warn("Permissão de mídia do aluno:",e);toast("Permita o acesso à câmera e ao microfone no navegador.");return false}}
+async function ensureStudentMedia(){if(studentLocalStream?.getTracks?.().length)return true;try{if(!navigator.mediaDevices?.getUserMedia){toast("Câmera e microfone exigem HTTPS.");return false}studentLocalStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}});studentCameraOn=true;studentMicOn=true;const v=document.getElementById("studentSelfVideo");if(v){v.srcObject=studentLocalStream;v.muted=true;v.playsInline=true;v.play?.().catch(()=>{})}studentLocalStream.getTracks().forEach(t=>{if(studentPeer&&studentPeer.connectionState!=="closed"){const sender=studentPeer.getSenders().find(s=>s.track?.kind===t.kind);if(sender)sender.replaceTrack(t).catch(()=>{});else studentPeer.addTrack(t,studentLocalStream)}});const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");if(cb)cb.textContent="📷 Desligar câmera";if(mb)mb.textContent="🎙 Desligar microfone";toast("Câmera e microfone ativados");return true}catch(e){console.warn("Permissão de mídia do aluno:",e);toast("Permita o acesso à câmera e ao microfone no navegador.");return false}}
 function toggleStudentMic(){if(!studentLocalStream)return void ensureStudentMedia();const t=studentLocalStream?.getAudioTracks?.()[0];if(!t)return void ensureStudentMedia();t.enabled=!t.enabled;studentMicOn=t.enabled;const b=document.getElementById("studentMicBtn");if(b)b.textContent=t.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";toast(t.enabled?"Microfone ligado":"Microfone desligado")}
 function toggleStudentCamera(){
  if(!studentLocalStream)return void ensureStudentMedia();
@@ -2123,7 +2123,7 @@ async function connectStudentPeer(id,d){
  bindStudentNetworkQuality(pc,id);
  let remoteDescriptionReady=false,pendingStudentCandidates=[];
  pc._aznyOfferSdp=d.offer?.sdp||"";
- window.aznyTeacherPeers[id]=pc;
+ window.aznyTeacherPeers[id]=pc;aznyApplyLowDataMode(pc);
  // The student offer already contains audio/video transceivers because the
  // student adds their camera and microphone before creating the offer.
  // Reuse those negotiated transceivers instead of creating duplicate m-lines.
@@ -2210,6 +2210,14 @@ function bindTeacherRaisedHand(card,id){
 
 
 
+
+/* AZNY Low Data Mode: cap outbound video bitrate/framerate on every peer connection. */
+function aznyApplyLowDataMode(pc){
+ if(!pc||pc._aznyLowDataModeApplied)return;pc._aznyLowDataModeApplied=true;
+ const tune=async()=>{for(const sender of (pc.getSenders?.()||[])){if(sender.track?.kind!=="video")continue;try{const p=sender.getParameters()||{};p.encodings=p.encodings?.length?p.encodings:[{}];p.encodings=p.encodings.map(e=>({...e,maxBitrate:180000,maxFramerate:10,scaleResolutionDownBy:Math.max(1,Number(e.scaleResolutionDownBy)||1)}));await sender.setParameters(p)}catch(e){console.debug("AZNY low-data video tuning unavailable:",e?.message||e)}}};
+ pc.addEventListener?.("negotiationneeded",()=>tune());tune();
+}
+
 /* AZNY student-to-student media mesh. The teacher connection/data channel remains unchanged. */
 const aznyStudentMeshPeers=new Map();
 let aznyStudentMeshBound=false,aznyStudentMeshRosterHandler=null;
@@ -2231,7 +2239,7 @@ async function aznyStartMeshPeer(id,name,initiator){
  const localId=studentRequestId,lo=initiator?localId:id,hi=initiator?id:localId,base=aznyMeshRef(lo,hi);if(!base)return;
  const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]});
  const remote=new MediaStream(),item={pc,stream:remote,name};aznyStudentMeshPeers.set(id,item);
- studentLocalStream.getTracks().forEach(t=>pc.addTrack(t,studentLocalStream));
+ studentLocalStream.getTracks().forEach(t=>pc.addTrack(t,studentLocalStream));aznyApplyLowDataMode(pc);
  pc.ontrack=e=>{if(!remote.getTracks().some(x=>x.id===e.track.id))remote.addTrack(e.track);aznyMeshCard(id,name,remote);e.track.onunmute=()=>aznyMeshCard(id,name,remote)};
  pc.onconnectionstatechange=()=>{if(["failed","closed"].includes(pc.connectionState))aznyCloseMeshPeer(id)};
  let remoteReady=false;const pending=[];
