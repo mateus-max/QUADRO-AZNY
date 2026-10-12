@@ -1423,6 +1423,7 @@ function constrainTextToBoard(el){
 function createText(x,y,anchor){
  pushHistory();
  const el=document.createElement("div");el.className="object textobj";el.dataset.id="o"+(++objectId);el.contentEditable="true";el.spellcheck=true;
+ if(!document.body.classList.contains("student-mode")&&matchMedia("(max-width:700px) and (pointer:coarse)").matches)el.setAttribute("inputmode","none");
  el.style.left=x+"px";el.style.top=y+"px";el.style.fontSize=document.getElementById("fontSize").value+"px";el.style.fontFamily=document.getElementById("fontFamily").value;el.style.color="#ffffff";
  constrainTextToBoard(el);
  if(anchor)anchorTextToObject(el,anchor,x,y);
@@ -2739,6 +2740,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    b.addEventListener("pointerdown",e=>{e.preventDefault();saveSelection()});
    b.addEventListener("click",()=>{
     if(key==="OK"){closeKeyboard(true);return}
+    if(key==="ABC"){keyboard.dataset.symbols="0";build();return}
     if(key==="⇧"){shift=!shift;renderCase();return}
     if(key==="⌫"){backspace();return}
     if(key==="?123"){keyboard.dataset.symbols=keyboard.dataset.symbols==="1"?"0":"1";build();return}
