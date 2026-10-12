@@ -2281,6 +2281,29 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
 
 </script>
 
+<style>
+/* Keep the teacher's board coordinate space stable while the mobile keyboard opens/closes. */
+@media (max-width:700px) and (orientation:portrait){
+ body:not(.student-mode) .main{min-height:0!important}
+ body:not(.student-mode) .canvas-wrap{height:var(--azny-teacher-board-height,55vh)!important;min-height:260px!important;flex:0 0 var(--azny-teacher-board-height,55vh)!important}
+}
+</style>
+<script>
+/* Freeze the teacher board's portrait height across virtual-keyboard viewport changes.
+   Recalculate only when the device orientation changes, not when the keyboard opens. */
+(function(){
+ "use strict";
+ const body=document.body;
+ function setStableTeacherBoardHeight(){
+  if(body.classList.contains("student-mode")||!matchMedia("(max-width:700px) and (orientation:portrait)").matches)return;
+  const h=Math.max(260,Math.round(window.innerHeight*.55));
+  body.style.setProperty("--azny-teacher-board-height",h+"px");
+ }
+ setStableTeacherBoardHeight();
+ window.addEventListener("orientationchange",()=>setTimeout(setStableTeacherBoardHeight,250),{passive:true});
+})();
+</script>
+
 <script>
 /* AZNY mobile text-entry layout: use the normal Android keyboard (never create/split a custom keyboard). */
 (function(){
