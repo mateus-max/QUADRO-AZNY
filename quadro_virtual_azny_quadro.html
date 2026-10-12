@@ -908,6 +908,8 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 .student-mode .azny-peer-video-card{min-width:0;min-height:0}
 .student-mode .azny-peer-video-card video{width:100%;height:100%;object-fit:cover}
 .student-mode .student-video-pair .student-video-card{min-width:0}
+
+.azny-audio-output-picker{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12px;color:inherit;flex-wrap:wrap}.azny-audio-output-picker select{max-width:100%;min-width:0;flex:1;padding:7px;border:1px solid #8a9aab;border-radius:7px;background:#fff;color:#15263a}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -1007,6 +1009,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
       <button id="micStopBtn" disabled>🔇 Desligar</button>
     </div>
     <div class="teacher-media-status" id="teacherMediaStatus">Câmera: desligada · Microfone: desligado</div>
+    <label class="azny-audio-output-picker" for="aznyAudioOutputSelect">🔊 Saída de som <select id="aznyAudioOutputSelect"><option value="default">Saída automática do dispositivo</option></select></label><div id="aznyAudioOutputStatus" class="teacher-media-status">Saída automática do dispositivo</div>
     <div class="camera-join-requests" id="cameraJoinRequests"></div>
   </div>
   <div class="sidehead">Alunos na aula</div>
@@ -1923,7 +1926,7 @@ function addStudentVideoCard(id,name,stream,track){
  if(track&&!inbound.getTracks().some(t=>t.id===track.id))inbound.addTrack(track);
  video.srcObject=inbound;video.autoplay=true;video.playsInline=true;video.muted=true;video.volume=1;
  let audio=card.querySelector("audio.azny-student-audio");
- if(!audio){audio=document.createElement("audio");audio.className="azny-student-audio";audio.autoplay=true;audio.playsInline=true;audio.muted=false;audio.volume=1;audio.setAttribute("aria-label","Áudio do aluno");audio.style.cssText="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";card.appendChild(audio)}
+ if(!audio){audio=document.createElement("audio");audio.className="azny-student-audio";audio.autoplay=true;audio.playsInline=true;audio.muted=false;audio.volume=1;audio.setAttribute("aria-label","Áudio do aluno");aznyRegisterRemoteAudio(audio);audio.style.cssText="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";card.appendChild(audio)}
  const playVideo=()=>video.play?.().catch(()=>{});
  const playAudio=()=>{if(!inbound.getAudioTracks().length)return;if(audio.srcObject!==inbound)audio.srcObject=inbound;audio.muted=false;audio.volume=1;audio.play?.().catch(err=>console.warn("AZNY áudio do aluno bloqueado:",err))};
  inbound.getTracks().forEach(t=>{t.onunmute=()=>{playVideo();playAudio()};t.onended=()=>{playAudio()}});
@@ -1939,6 +1942,7 @@ function aznyPersonType(fullName){const first=String(fullName||"").trim().split(
 function aznySpeakTeacherNotice(message){try{if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;const speak=()=>{try{const u=new SpeechSynthesisUtterance(message);u.lang="pt-PT";u.volume=1;u.rate=0.9;u.pitch=1;const voices=speechSynthesis.getVoices();const v=voices.find(x=>/^pt(-|_)(PT|BR)/i.test(x.lang))||voices.find(x=>/^pt/i.test(x.lang));if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){console.warn("AZNY voz:",e)}};if(speechSynthesis.getVoices().length)speak();else{const previous=speechSynthesis.onvoiceschanged;speechSynthesis.onvoiceschanged=()=>{speechSynthesis.onvoiceschanged=previous||null;speak()};setTimeout(speak,600)}}catch(e){console.warn("AZNY anúncio:",e)}}
 function announceJoinRequest(studentName,requestId){try{if(isStudent||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;let said=[];try{said=JSON.parse(sessionStorage.getItem("azny-join-voice-"+String(classSessionId))||"[]")}catch(_){}if(said.includes(requestId))return;said.push(requestId);try{sessionStorage.setItem("azny-join-voice-"+String(classSessionId),JSON.stringify(said.slice(-100)))}catch(_){}const person=aznyPersonType(studentName);const message="Atenção, senhor "+aznyTeacherDisplayName+". O "+person+" "+studentName+" está à espera da sua autorização para entrar na aula.";aznySpeakTeacherNotice(message)}catch(e){console.warn("AZNY anúncio de entrada:",e)}}
 prepareJoinVoice();
+aznyInitAudioOutputPicker();
 function renderJoinRequest(name,requestId){const wrap=document.getElementById("cameraJoinRequests");if(!wrap)return;const id="jr-"+requestId;if(document.getElementById(id))return;const el=document.createElement("div");el.dataset.requestId=requestId;el.className="join-request";announceJoinRequest(name,requestId);el.id=id;el.innerHTML='<div>Pedido para entrar</div><div class="jr-name">'+escapeHtml(name)+'</div><div class="jr-actions"><button data-accept>✓ Aceitar</button><button data-reject>✕ Rejeitar</button></div>';el.querySelector("[data-accept]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"approved",approvedAt:firebase.database.ServerValue.TIMESTAMP,teacherUid:aznyUid||""});roomChannel?.postMessage({type:"join-response",name,approved:true});el.remove();toast(name+" foi aceite")}catch(e){toast("Não foi possível aceitar o aluno.")}};el.querySelector("[data-reject]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"rejected",rejectedAt:firebase.database.ServerValue.TIMESTAMP,teacherUid:aznyUid||""});roomChannel?.postMessage({type:"join-response",name,approved:false});el.remove();toast(name+" foi rejeitado")}catch(e){toast("Não foi possível rejeitar o aluno.")}};wrap.appendChild(el)}
 function notifyTeacherStudentPresence(ref){
  if(!ref||!isStudent||!studentRequestId)return;
@@ -1968,7 +1972,7 @@ async function startStudentWebRTC(){
   studentBoardChannel.onclose=()=>{studentBoardChannel=null};
   /* Keep the teacher's microphone on an audio-only element. Video visibility/state must never control playback of the microphone. */
   let teacherAudioOut=document.getElementById("studentTeacherAudioOut");
-  if(!teacherAudioOut){teacherAudioOut=document.createElement("audio");teacherAudioOut.id="studentTeacherAudioOut";teacherAudioOut.autoplay=true;teacherAudioOut.playsInline=true;teacherAudioOut.muted=false;teacherAudioOut.volume=1;teacherAudioOut.style.cssText="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-10px;bottom:0";document.body.appendChild(teacherAudioOut)}
+  if(!teacherAudioOut){teacherAudioOut=document.createElement("audio");teacherAudioOut.id="studentTeacherAudioOut";teacherAudioOut.autoplay=true;teacherAudioOut.playsInline=true;teacherAudioOut.muted=false;teacherAudioOut.volume=1;aznyRegisterRemoteAudio(teacherAudioOut);teacherAudioOut.style.cssText="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-10px;bottom:0";document.body.appendChild(teacherAudioOut)}
   const teacherAudioIn=new MediaStream(),teacherVideoIn=new MediaStream();
   const addRemoteTrack=(target,track)=>{if(track&&!target.getTracks().some(t=>t.id===track.id))target.addTrack(track)};
   const playTeacherAudio=()=>{if(!teacherAudioIn.getAudioTracks().length)return;if(teacherAudioOut.srcObject!==teacherAudioIn)teacherAudioOut.srcObject=teacherAudioIn;teacherAudioOut.muted=false;teacherAudioOut.volume=1;teacherAudioOut.play?.().catch(err=>console.warn("AZNY áudio do professor bloqueado:",err))};
@@ -2211,6 +2215,15 @@ function bindTeacherRaisedHand(card,id){
 
 
 
+
+/* AZNY audio output routing: remote voices follow the selected OS/browser output. */
+const aznyRemoteAudioElements=new Set();
+let aznyChosenAudioOutput="default";
+function aznyRegisterRemoteAudio(el){if(!el)return;aznyRemoteAudioElements.add(el);el.muted=false;el.volume=1;try{if(typeof el.setSinkId==="function")el.setSinkId(aznyChosenAudioOutput).catch(e=>console.debug("AZNY audio output:",e?.message||e))}catch(_){}}
+async function aznySetAudioOutput(deviceId){aznyChosenAudioOutput=deviceId||"default";const tasks=[];for(const el of aznyRemoteAudioElements){try{if(typeof el.setSinkId==="function")tasks.push(el.setSinkId(aznyChosenAudioOutput).catch(e=>console.warn("Não foi possível mudar a saída de áudio:",e)))}catch(_){}}await Promise.all(tasks);const status=document.getElementById("aznyAudioOutputStatus");if(status)status.textContent=aznyChosenAudioOutput==="default"?"Saída automática do dispositivo":"Saída selecionada";}
+async function aznyRefreshAudioOutputs(){const sel=document.getElementById("aznyAudioOutputSelect");if(!sel||!navigator.mediaDevices?.enumerateDevices)return;const old=sel.value||aznyChosenAudioOutput;try{const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audiooutput");sel.innerHTML="";const def=document.createElement("option");def.value="default";def.textContent="Saída automática do dispositivo";sel.appendChild(def);devices.forEach((d,i)=>{if(!d.deviceId||d.deviceId==="default")return;const o=document.createElement("option");o.value=d.deviceId;o.textContent=d.label||("Saída de áudio "+(i+1));sel.appendChild(o)});sel.value=[...sel.options].some(o=>o.value===old)?old:"default";aznyChosenAudioOutput=sel.value}catch(e){console.debug("AZNY enumeração de saídas:",e?.message||e)}}
+function aznyInitAudioOutputPicker(){const sel=document.getElementById("aznyAudioOutputSelect");if(!sel||sel.dataset.bound)return;sel.dataset.bound="1";sel.addEventListener("change",()=>aznySetAudioOutput(sel.value));document.addEventListener("pointerdown",()=>aznyRefreshAudioOutputs(),{once:true});navigator.mediaDevices?.addEventListener?.("devicechange",aznyRefreshAudioOutputs);aznyRefreshAudioOutputs()}
+
 /* AZNY Low Data Mode: cap outbound video bitrate/framerate on every peer connection. */
 function aznyApplyLowDataMode(pc){
  if(!pc||pc._aznyLowDataModeApplied)return;pc._aznyLowDataModeApplied=true;
@@ -2230,7 +2243,7 @@ function aznyMeshCard(id,name,stream){
   const video=document.createElement("video");video.autoplay=true;video.playsInline=true;video.setAttribute("playsinline","");video.muted=false;
   const label=document.createElement("span");card.append(video,label);pair.appendChild(card)}
  card.querySelector("span").textContent=name||"Colega";
- const video=card.querySelector("video");if(stream&&video.srcObject!==stream)video.srcObject=stream;video.play?.().catch(()=>{});
+ const video=card.querySelector("video");video.muted=true;video.volume=0;if(stream&&video.srcObject!==stream)video.srcObject=stream;video.play?.().catch(()=>{});let audio=card.querySelector("audio.azny-peer-audio");if(!audio){audio=document.createElement("audio");audio.className="azny-peer-audio";audio.autoplay=true;audio.playsInline=true;audio.muted=false;audio.volume=1;audio.style.cssText="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";card.appendChild(audio);aznyRegisterRemoteAudio(audio)}if(stream&&audio.srcObject!==stream)audio.srcObject=stream;audio.play?.().catch(()=>{});
 }
 function aznyCloseMeshPeer(id){const item=aznyStudentMeshPeers.get(id);if(item){try{item.pc.close()}catch(_){};aznyStudentMeshPeers.delete(id)}document.getElementById("azny-mesh-card-"+id)?.remove()}
 async function aznyStartMeshPeer(id,name,initiator){
