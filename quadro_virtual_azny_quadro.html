@@ -1207,7 +1207,7 @@ function aznySameBoardPage(a,b){
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
  try{
-  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);if(d.pan)applyBoardPan(d.pan);
+  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
   if(Array.isArray(d.pages)){
    const incomingPages=normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize);
    const incomingPage=Math.max(1,Math.min(5,+d.currentPage||1));
@@ -1292,7 +1292,7 @@ function setupBoardRealtime(){
  ref.on("value",snap=>{
   const d=snap.val();
   if(!d||remoteBoardApplying)return;
-  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);
+  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
   const activeText=document.activeElement?.closest?.(".textobj");
   if(localBoardEditing||(activeText&&board.contains(activeText)))return;
   /* Ignore a Firebase echo when the visible page is already identical.
