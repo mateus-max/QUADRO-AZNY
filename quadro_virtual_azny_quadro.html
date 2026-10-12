@@ -38,9 +38,13 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
 .canvas-wrap{flex:1;position:relative;overflow:hidden;background:#cbd4df}
  #stage{position:absolute;left:0;top:0;width:100%;height:100%;overflow:auto;overflow-x:auto;overflow-y:auto;background:#d6dee7;overscroll-behavior:contain;touch-action:pan-x pan-y}#zoomExtent{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;visibility:hidden}
 #board{position:absolute;left:0;top:0;width:100%;height:100%;min-width:0;min-height:0;background:#4f7f4f;transform-origin:0 0;overflow:hidden;border:8px solid #8b5a2b;box-shadow:inset 0 0 0 1px #6f431f,0 0 0 1px #6f431f}
+body.teacher-text-entry-active .app{height:var(--azny-frozen-app-height,100vh)!important;min-height:0!important}
+body.teacher-text-entry-active .canvas-wrap{flex:0 0 var(--azny-frozen-board-height,55vh)!important;height:var(--azny-frozen-board-height,55vh)!important;min-height:0!important}
+body.teacher-text-entry-active #board{width:var(--azny-frozen-board-width,100%)!important;height:var(--azny-frozen-board-height,100%)!important;max-width:none!important;max-height:none!important}
+
 #drawLayer{position:absolute;inset:0;z-index:20;pointer-events:none}.drawing-active .object{pointer-events:none}
 .object{position:absolute;z-index:5}
-.textobj{display:inline-block;min-width:1px;min-height:1.2em;width:max-content!important;height:auto!important;padding:0;border:0;outline:0!important;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;overflow:visible;cursor:text;background:transparent!important;box-shadow:none!important;user-select:text;line-height:1.2;caret-color:#111}
+.textobj{display:inline-block;min-width:1px;min-height:1.2em;width:max-content!important;height:auto!important;padding:0;border:0;outline:0!important;white-space:pre;overflow-wrap:normal;word-break:normal;overflow:visible;cursor:text;background:transparent!important;box-shadow:none!important;user-select:text;line-height:1.2;caret-color:#111}
 .textobj.selected{outline:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
 .textobj .resize{display:none!important}
 .mediaobj{border:1px solid transparent;cursor:move;overflow:hidden}.mediaobj.selected,.docobj.selected{border:2px solid #1677ff}
@@ -1384,13 +1388,38 @@ stage.addEventListener("pointerleave",()=>document.getElementById("livePointer")
 
 function constrainTextToBoard(el){
  if(!el||!el.classList.contains("textobj"))return;
- const left=Math.max(0,parseFloat(el.style.left)||0);
- const border=parseFloat(getComputedStyle(board).borderLeftWidth)||4;
- el.style.maxWidth=Math.max(24,board.clientWidth-left-border-4)+"px";
- el.style.whiteSpace="pre-wrap";
- el.style.overflowWrap="anywhere";
+ /* Text stays on one line; the board itself clips it exactly at its inner green edge. */
+ el.style.maxWidth="none";
+ el.style.whiteSpace="pre";
+ el.style.overflowWrap="normal";
  el.style.wordBreak="normal";
 }
+/* Prevent the mobile keyboard/navigation UI from resizing the teacher board while editing. */
+(function(){
+ const body=document.body;
+ let frozen=null;
+ function freezeBoard(){
+  if(body.classList.contains("student-mode")||frozen)return;
+  const r=board.getBoundingClientRect();
+  frozen={width:board.offsetWidth,height:board.offsetHeight,appHeight:document.querySelector(".app")?.getBoundingClientRect().height};
+  body.classList.add("teacher-text-entry-active");
+  body.style.setProperty("--azny-frozen-board-width",frozen.width+"px");
+  body.style.setProperty("--azny-frozen-board-height",frozen.height+"px");
+  if(frozen.appHeight)body.style.setProperty("--azny-frozen-app-height",frozen.appHeight+"px");
+ }
+ function unfreezeBoard(){
+  if(!frozen)return;
+  body.classList.remove("teacher-text-entry-active");
+  body.style.removeProperty("--azny-frozen-board-width");
+  body.style.removeProperty("--azny-frozen-board-height");
+  body.style.removeProperty("--azny-frozen-app-height");
+  frozen=null;
+  requestAnimationFrame(()=>{resizeCanvas();updateZoomExtent();});
+ }
+ document.addEventListener("focusin",e=>{if(e.target?.classList?.contains("textobj"))freezeBoard()},true);
+ document.addEventListener("focusout",e=>{if(e.target?.classList?.contains("textobj"))setTimeout(()=>{if(!board.querySelector(".textobj:focus"))unfreezeBoard()},180)},true);
+ window.addEventListener("orientationchange",()=>{if(frozen)unfreezeBoard()},{passive:true});
+})();
 function createText(x,y,anchor){
  pushHistory();
  const el=document.createElement("div");el.className="object textobj";el.dataset.id="o"+(++objectId);el.contentEditable="true";el.spellcheck=true;
