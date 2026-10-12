@@ -8,7 +8,7 @@
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
     <application
         android:allowBackup="false"
-        android:label="AZNY Avaliações"
+        android:label="Quadro Virtual AZNY"
         android:usesCleartextTraffic="false"
         android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
         <service
