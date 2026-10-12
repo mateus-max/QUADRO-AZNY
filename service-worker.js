@@ -1,5 +1,6 @@
-const CACHE_NAME="azny-pwa-shell-v10";
-const BASE="/QUADRO-AZNY/";
+const CACHE_NAME="azny-pwa-shell-v11";
+/* Works on both academia.apsanlda.com (site root) and github.io/QUADRO-AZNY/. */
+const BASE=new URL("./",self.location.href).pathname;
 const SHELL=[BASE,BASE+"aulas/",BASE+"aulas/index.html",BASE+"avaliacoes/",BASE+"avaliacoes/index.html",BASE+"supervisao/",BASE+"supervisao/index.html",BASE+"responder/",BASE+"responder/index.html",BASE+"index.html",BASE+"dashboard.html",BASE+"avaliacao.html",BASE+"supervisao.html",BASE+"manifest.json",BASE+"exames.html",BASE+"manifest.webmanifest",BASE+"icons/azny-exam.svg",BASE+"icons/azny-exam-192.png",BASE+"icons/azny-exam-512.png",BASE+"screenshots/azny-exams-mobile.png",BASE+"screenshots/azny-dashboard-desktop.png",BASE+"quadro_virtual_azny_quadro.html",BASE+"manifest-quadro.webmanifest",BASE+"icons/azny-board.svg",BASE+"icons/express-logo.svg",BASE+"icons/azny-board-192.png",BASE+"icons/azny-board-512.png"];
 self.addEventListener("install",event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE_NAME);await Promise.all(SHELL.map(async path=>{try{const response=await fetch(path,{cache:"reload"});if(response.ok)await cache.put(path,response)}catch(e){console.warn("AZNY asset not cached:",path,e)}}));await self.skipWaiting()})()));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>(k.startsWith("azny-exam-shell-")||k.startsWith("azny-pwa-shell-"))&&k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
