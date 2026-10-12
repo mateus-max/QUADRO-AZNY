@@ -48,7 +48,7 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
 .docobj{width:440px;height:310px;background:#fff;border:1px solid #aebbc8;box-shadow:0 5px 20px #0002;display:flex;flex-direction:column;overflow:hidden}
 .dochead{height:31px;min-height:31px;background:#edf2f7;display:flex;align-items:center;padding:0 8px;font-size:11px;cursor:move;gap:5px}
 .docbody{flex:1;overflow:auto;padding:12px;white-space:pre-wrap;font:13px/1.5 Arial;color:#222}
-.docpdf{width:100%;height:100%;border:0}.resize{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;background:#1677ff;border-radius:3px;display:none;cursor:nwse-resize}.selected .resize{display:block}
+.docpdf{width:100%;height:100%;border:0}.docpdf-viewer{flex:1;min-height:0;display:flex;flex-direction:column;background:#eef2f6;overflow:hidden;color:#17212b}.docpdf-toolbar{height:34px;min-height:34px;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 6px;background:#f8fafc;border-bottom:1px solid #d5dde6;font:11px Arial;color:#17212b}.docpdf-toolbar button{border:1px solid #c6d0db;background:#fff;border-radius:4px;padding:3px 8px;cursor:pointer;color:#17212b}.docpdf-toolbar button:disabled{opacity:.45;cursor:default}.docpdf-pages{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px;box-sizing:border-box;background:#e9edf2}.docpdf-page{display:block;max-width:none;background:#fff;box-shadow:0 2px 8px #0002}.docpdf-loading{margin:auto;color:#5b6878;font:12px Arial;text-align:center;padding:18px}.resize{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;background:#1677ff;border-radius:3px;display:none;cursor:nwse-resize}.selected .resize{display:block}
 .hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:#8492a2;pointer-events:none;z-index:3}
 .hint strong{display:block;color:#637386;font-size:21px;margin-bottom:8px}
 #livePointer{position:absolute;left:0;top:0;width:34px;height:42px;z-index:40;pointer-events:none;display:none;transform:translate(-2px,-2px);filter:drop-shadow(0 2px 2px #0005);will-change:transform}
@@ -899,7 +899,8 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
  body.student-mode.azny-auto-rotated .workspace{width:100%!important;height:100%!important;min-height:0!important}
 }
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
 <body>
 <div class="app">
 <header class="topbar">
@@ -1428,7 +1429,7 @@ function createFromData(o){
  else{
   el=document.createElement("div");el.className="object docobj";el.dataset.name=o.name||"Documento";el.dataset.pdf=o.pdf||"";
   el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(o.name||"Documento")+'</span></div>';
-  if(o.pdf){const iframe=document.createElement("iframe");iframe.className="docpdf";iframe.src=o.pdf;el.appendChild(iframe)}else{const body=document.createElement("div");body.className="docbody";body.textContent=o.content||"";el.appendChild(body)}
+  if(o.pdf){el.appendChild(createAZNYPdfViewer(o.pdf))}else{const body=document.createElement("div");body.className="docbody";body.textContent=o.content||"";el.appendChild(body)}
   Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});
  }
  el.dataset.id=o.id||"o"+(++objectId);board.appendChild(el);makeInteractive(el);
@@ -1502,9 +1503,23 @@ function resizeStart(e){
 function addImage(file){
  const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object mediaobj";el.dataset.id="o"+(++objectId);const img=document.createElement("img");img.src=reader.result;el.appendChild(img);Object.assign(el.style,{left:"100px",top:"80px",width:"360px",height:"260px"});board.appendChild(el);makeInteractive(el);selectObject(el);updateHint();scheduleSave();toast("Imagem adicionada")};reader.readAsDataURL(file)
 }
+
+async function renderAZNYPdfViewer(viewer,dataUrl){
+ const pages=viewer.querySelector('.docpdf-pages'),status=viewer.querySelector('.docpdf-status'),prev=viewer.querySelector('.docpdf-prev'),next=viewer.querySelector('.docpdf-next'),zoomOut=viewer.querySelector('.docpdf-zoom-out'),zoomIn=viewer.querySelector('.docpdf-zoom-in'),zoomLabel=viewer.querySelector('.docpdf-zoom-label');
+ if(!pages)return;pages.innerHTML='<div class="docpdf-loading">A carregar documento…</div>';
+ if(!window.pdfjsLib){pages.innerHTML='<div class="docpdf-loading">Não foi possível carregar o leitor de PDF. Verifique a ligação à Internet e recarregue o quadro.</div>';return}
+ try{
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const base64=String(dataUrl||'').split(',').pop();const binary=atob(base64);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  const pdf=await pdfjsLib.getDocument({data:bytes}).promise;let pageNum=1,scale=1,renderToken=0;pages.innerHTML='';
+  const renderPage=async(n)=>{const token=++renderToken;pageNum=Math.max(1,Math.min(pdf.numPages,n));pages.innerHTML='';if(status)status.textContent=pageNum+' / '+pdf.numPages;if(prev)prev.disabled=pageNum<=1;if(next)next.disabled=pageNum>=pdf.numPages;if(zoomLabel)zoomLabel.textContent=Math.round(scale*100)+'%';const loading=document.createElement('div');loading.className='docpdf-loading';loading.textContent='A preparar página…';pages.appendChild(loading);try{const page=await pdf.getPage(pageNum);if(token!==renderToken)return;const available=Math.max(180,pages.clientWidth-28);const base=page.getViewport({scale:1});const fit=Math.min(available/base.width,1.5);const viewport=page.getViewport({scale:fit*scale});const canvas=document.createElement('canvas');canvas.className='docpdf-page';canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);canvas.style.width=viewport.width+'px';canvas.style.height=viewport.height+'px';const ctx=canvas.getContext('2d',{alpha:false});pages.innerHTML='';pages.appendChild(canvas);await page.render({canvasContext:ctx,viewport}).promise;if(token!==renderToken)return;}catch(err){pages.innerHTML='<div class="docpdf-loading">Não foi possível mostrar esta página.</div>';console.warn('AZNY PDF render:',err)}};
+  prev?.addEventListener('click',()=>renderPage(pageNum-1));next?.addEventListener('click',()=>renderPage(pageNum+1));zoomOut?.addEventListener('click',()=>{scale=Math.max(.5,Math.round((scale-.15)*100)/100);renderPage(pageNum)});zoomIn?.addEventListener('click',()=>{scale=Math.min(2.5,Math.round((scale+.15)*100)/100);renderPage(pageNum)});let resizeTimer;new ResizeObserver(()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>renderPage(pageNum),120)}).observe(pages);await renderPage(1);
+ }catch(err){pages.innerHTML='<div class="docpdf-loading">Não foi possível abrir este PDF.</div>';console.warn('AZNY PDF load:',err)}
+}
+function createAZNYPdfViewer(dataUrl){const viewer=document.createElement('div');viewer.className='docpdf-viewer';viewer.innerHTML='<div class="docpdf-toolbar"><button type="button" class="docpdf-prev" aria-label="Página anterior">◀</button><span class="docpdf-status">1 / 1</span><button type="button" class="docpdf-next" aria-label="Página seguinte">▶</button><span style="margin:0 3px;color:#c2cad3">|</span><button type="button" class="docpdf-zoom-out" aria-label="Reduzir">−</button><span class="docpdf-zoom-label">100%</span><button type="button" class="docpdf-zoom-in" aria-label="Ampliar">+</button></div><div class="docpdf-pages"><div class="docpdf-loading">A carregar documento…</div></div>';renderAZNYPdfViewer(viewer,dataUrl);return viewer}
 function addDoc(file){
  if(file.type==="application/pdf"||/\.pdf$/i.test(file.name)){
-  const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+(++objectId);el.dataset.name=file.name;el.dataset.pdf=reader.result;el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(file.name)+'</span></div>';const iframe=document.createElement("iframe");iframe.className="docpdf";iframe.src=reader.result;el.appendChild(iframe);Object.assign(el.style,{left:"100px",top:"80px",width:"620px",height:"450px"});board.appendChild(el);makeInteractive(el);selectObject(el);updateHint();scheduleSave();toast("PDF aberto no quadro")};reader.readAsDataURL(file);return
+  const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+(++objectId);el.dataset.name=file.name;el.dataset.pdf=reader.result;el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(file.name)+'</span></div>';el.appendChild(createAZNYPdfViewer(reader.result));Object.assign(el.style,{left:"100px",top:"80px",width:"620px",height:"450px"});board.appendChild(el);makeInteractive(el);selectObject(el);updateHint();scheduleSave();toast("PDF aberto no quadro")};reader.readAsDataURL(file);return
  }
  const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+(++objectId);el.dataset.name=file.name;el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(file.name)+'</span></div><div class="docbody"></div>';el.querySelector(".docbody").textContent=reader.result;Object.assign(el.style,{left:"100px",top:"80px",width:"500px",height:"350px"});board.appendChild(el);makeInteractive(el);selectObject(el);updateHint();scheduleSave();toast("Documento aberto no quadro")};reader.readAsText(file)
 }
