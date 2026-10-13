@@ -44,6 +44,23 @@ body.teacher-text-entry-active #board{width:var(--azny-frozen-board-width,100%)!
 
 #drawLayer{position:absolute;inset:0;z-index:20;pointer-events:none}.drawing-active .object{pointer-events:none}
 .object{position:absolute;z-index:5}
+/* Android/PWA: dragging an object must own the touch gesture from the first contact.
+   Prevent the browser from interpreting the same gesture as page scrolling or zooming. */
+body:not(.student-mode) #board .mediaobj,
+body:not(.student-mode) #board .chartobj,
+body:not(.student-mode) #board .musicobj,
+body:not(.student-mode) #board .docobj,
+body:not(.student-mode) #board .object .resize{
+ touch-action:none!important;
+ -webkit-user-select:none!important;
+ user-select:none!important;
+ -webkit-user-drag:none!important;
+}
+body:not(.student-mode) #board .mediaobj img,
+body:not(.student-mode) #board .chartobj svg,
+body:not(.student-mode) #board .musicobj svg{
+ -webkit-user-drag:none!important;
+}
 .textobj{display:inline-block;min-width:1px;min-height:1.2em;width:max-content!important;height:auto!important;padding:0;border:0;outline:0!important;white-space:pre;overflow-wrap:normal;word-break:normal;overflow:visible;cursor:text;background:transparent!important;box-shadow:none!important;user-select:text;line-height:1.2;caret-color:#111}
 .textobj.selected{outline:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
 .textobj .resize{display:none!important}
