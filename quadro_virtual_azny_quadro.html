@@ -1190,10 +1190,13 @@ function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(ST
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:pageStates}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
 function sendBoardSnapshotToChannel(ch){
  if(!ch||ch.readyState!=="open")return false;
- if(ch.bufferedAmount>262144)return false;
+ if(ch.bufferedAmount>2097152)return false;
  try{
+  /* Always serialize the visible page immediately before sending: this includes
+     images/data URLs, documents, charts, music objects and fresh text edits. */
+  pageStates[currentPage-1]=snapshot();
   const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates};
-  const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=24000,total=Math.ceil(raw.length/size);
+  const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=12000,total=Math.ceil(raw.length/size);
   for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
   return true;
  }catch(e){console.warn("AZNY board channel:",e);return false}
@@ -2014,9 +2017,9 @@ function addStudentVideoCard(id,name,stream,track){
   const signal=signalRef(id);
   const micBtn=card.querySelector("[data-student-mic]"),camBtn=card.querySelector("[data-student-camera]");
   card._aznyTeacherControls={mic:true,camera:true};
-  const paintControls=()=>{micBtn.textContent=card._aznyTeacherControls.mic?"🎙":"🎙̸";camBtn.textContent=card._aznyTeacherControls.camera?"📷":"📷̸";micBtn.setAttribute("aria-label",card._aznyTeacherControls.mic?"Desligar microfone":"Ligar microfone");micBtn.title=micBtn.getAttribute("aria-label");camBtn.setAttribute("aria-label",card._aznyTeacherControls.camera?"Desligar câmera":"Ligar câmera");camBtn.title=camBtn.getAttribute("aria-label");micBtn.classList.toggle("is-off",!card._aznyTeacherControls.mic);camBtn.classList.toggle("is-off",!card._aznyTeacherControls.camera)};
-  micBtn.onclick=async()=>{const next=!card._aznyTeacherControls.mic;try{await signal.child("teacherControls/micEnabled").set(next);card._aznyTeacherControls.mic=next;paintControls();toast((name||"Aluno")+": microfone "+(next?"autorizado":"desligado"))}catch(e){toast("Não foi possível alterar o microfone deste aluno.")}};
-  camBtn.onclick=async()=>{const next=!card._aznyTeacherControls.camera;try{await signal.child("teacherControls/cameraEnabled").set(next);card._aznyTeacherControls.camera=next;paintControls();toast((name||"Aluno")+": câmera "+(next?"autorizada":"desligada"))}catch(e){toast("Não foi possível alterar a câmera deste aluno.")}};
+  const paintControls=()=>{micBtn.textContent=card._aznyTeacherControls.mic?"🎙":"🔇";camBtn.textContent=card._aznyTeacherControls.camera?"📷":"🚫";micBtn.setAttribute("aria-label",card._aznyTeacherControls.mic?"Desligar microfone":"Ligar microfone");micBtn.title=micBtn.getAttribute("aria-label");camBtn.setAttribute("aria-label",card._aznyTeacherControls.camera?"Desligar câmera do aluno":"Ligar câmera do aluno");camBtn.title=camBtn.getAttribute("aria-label");micBtn.classList.toggle("is-off",!card._aznyTeacherControls.mic);camBtn.classList.toggle("is-off",!card._aznyTeacherControls.camera)};
+  micBtn.addEventListener("click",async e=>{e.preventDefault();e.stopPropagation();const next=!card._aznyTeacherControls.mic;micBtn.disabled=true;try{await signal.child("teacherControls/micEnabled").set(next);card._aznyTeacherControls.mic=next;paintControls();toast((name||"Aluno")+": microfone "+(next?"ligado":"desligado"))}catch(e){toast("Não foi possível controlar o microfone deste aluno.")}finally{micBtn.disabled=false}});
+  camBtn.addEventListener("click",async e=>{e.preventDefault();e.stopPropagation();const next=!card._aznyTeacherControls.camera;camBtn.disabled=true;try{await signal.child("teacherControls/cameraEnabled").set(next);card._aznyTeacherControls.camera=next;paintControls();toast((name||"Aluno")+": câmera "+(next?"ligada":"desligada"))}catch(e){toast("Não foi possível controlar a câmera deste aluno.")}finally{camBtn.disabled=false}});
   signal.child("teacherControls").on("value",snap=>{const controls=snap.val()||{};card._aznyTeacherControls.mic=controls.micEnabled!==false;card._aznyTeacherControls.camera=controls.cameraEnabled!==false;paintControls()});
   paintControls();
  }
@@ -2115,8 +2118,9 @@ async function startStudentWebRTC(options={}){
    studentLocalStream.getVideoTracks().forEach(t=>t.enabled=cameraEnabled);
    studentMicOn=micEnabled;studentCameraOn=cameraEnabled;
    const micButton=document.getElementById("studentMicBtn"),cameraButton=document.getElementById("studentCameraBtn");
-   if(micButton){micButton.textContent=micEnabled?"🎙 Desligar microfone":"🔇 Ligar microfone";micButton.disabled=!micEnabled;micButton.title="O professor controla este microfone"}
-   if(cameraButton){cameraButton.textContent=cameraEnabled?"📷 Desligar câmera":"📷 Ligar câmera";cameraButton.disabled=!cameraEnabled;cameraButton.title="O professor controla esta câmera"}
+   if(micButton){micButton.textContent=micEnabled?"🎙 Desligar microfone":"🔇 Ligar microfone";micButton.disabled=true;micButton.title="O professor controla este microfone"}
+   if(cameraButton){cameraButton.textContent=cameraEnabled?"📷 Câmera ligada":"🚫 Câmera desligada";cameraButton.disabled=true;cameraButton.title="O professor controla esta câmera"}
+   const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo)selfVideo.style.opacity=cameraEnabled?"1":".22";
    toast("O professor "+(micEnabled?"autorizou":"desligou")+" o microfone e "+(cameraEnabled?"autorizou":"desligou")+" a câmera.");
   });
   studentPeer.onicecandidate=e=>{if(e.candidate)ref.child("studentCandidates").push(e.candidate.toJSON())};
