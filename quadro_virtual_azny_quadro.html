@@ -2182,16 +2182,13 @@ async function startStudentWebRTC(options={}){
    const controls=snap.val()||{};
    if(!studentLocalStream)return;
    const micEnabled=controls.micEnabled!==false,cameraEnabled=controls.cameraEnabled!==false;
-   studentLocalStream.getAudioTracks().forEach(t=>t.enabled=micEnabled);
-   studentLocalStream.getVideoTracks().forEach(t=>t.enabled=cameraEnabled);
-   studentMicOn=micEnabled;studentCameraOn=cameraEnabled;
+   aznyTeacherMicAllowed=micEnabled;aznyTeacherCameraAllowed=cameraEnabled;
+   if(!micEnabled){studentLocalStream.getAudioTracks().forEach(t=>t.enabled=false);studentMicOn=false}
+   if(!cameraEnabled){studentLocalStream.getVideoTracks().forEach(t=>t.enabled=false);studentCameraOn=false}
    const micButton=document.getElementById("studentMicBtn"),cameraButton=document.getElementById("studentCameraBtn");
-   // Só bloquear o botão do aluno quando o professor o tiver desligado.
-   // Quando autorizado, o próprio aluno pode ligar/desligar o seu dispositivo.
    if(micButton){micButton.textContent=studentMicOn?"🎙 Desligar microfone":"🔇 Ligar microfone";micButton.disabled=!micEnabled;micButton.title=micEnabled?"Ligar ou desligar o seu microfone":"O professor desligou o microfone"}
-   if(cameraButton){cameraButton.textContent=studentCameraOn?"📷 Desligar câmera":"🚫 Ligar câmera";cameraButton.disabled=!cameraEnabled;cameraButton.title=cameraEnabled?"Ligar ou desligar a sua câmera":"O professor desligou a câmera"}
-   const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo)selfVideo.style.opacity=cameraEnabled?"1":".22";
-   toast("O professor "+(micEnabled?"autorizou":"desligou")+" o microfone e "+(cameraEnabled?"autorizou":"desligou")+" a câmera.");
+   if(cameraButton){cameraButton.textContent=studentCameraOn?"📷 Desligar câmera":"📷 Ligar câmera";cameraButton.disabled=!cameraEnabled;cameraButton.title=cameraEnabled?"Ligar ou desligar a sua câmera":"O professor desligou a câmera"}
+   const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo)selfVideo.style.opacity=studentCameraOn?"1":".22";
   });
   studentPeer.onicecandidate=e=>{if(e.candidate)ref.child("studentCandidates").push(e.candidate.toJSON())};
   const offer=await studentPeer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
@@ -2219,15 +2216,22 @@ async function startStudentWebRTC(options={}){
 }
 async function aznyReconnectStudentMedia(){if(!isStudent||!studentApproved||!studentRequestId)return false;aznyStopStudentMesh();try{studentPeer?._aznyBoardChannel?.close()}catch(_){}try{studentPeer?.close()}catch(_){}studentPeer=null;studentBoardChannel=null;studentBoardChunks.clear();studentPendingTeacherCandidates=[];studentRemoteDescriptionReady=false;const tv=document.getElementById("studentTeacherVideo");if(tv){try{tv.pause()}catch(_){}tv.srcObject=null;tv.style.display="block"}const ta=document.getElementById("studentTeacherAudioOut");if(ta){try{ta.pause()}catch(_){}ta.srcObject=null}document.querySelectorAll("#studentLive .azny-peer-video-card").forEach(card=>{card.querySelectorAll("video,audio").forEach(el=>{try{el.pause()}catch(_){}el.srcObject=null});card.remove()});try{await startStudentWebRTC({reconnect:true});return true}catch(e){console.warn("AZNY reconnect:",e);toast("Não foi possível restabelecer a chamada. Tente atualizar novamente.");return false}}
 async function ensureStudentMedia(){if(studentLocalStream?.getTracks?.().length)return true;try{if(!navigator.mediaDevices?.getUserMedia){toast("Câmera e microfone exigem HTTPS.");return false}studentLocalStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}});studentCameraOn=true;studentMicOn=true;const v=document.getElementById("studentSelfVideo");if(v){v.srcObject=studentLocalStream;v.muted=true;v.playsInline=true;v.play?.().catch(()=>{})}studentLocalStream.getTracks().forEach(t=>{if(studentPeer&&studentPeer.connectionState!=="closed"){const sender=studentPeer.getSenders().find(s=>s.track?.kind===t.kind);if(sender)sender.replaceTrack(t).catch(()=>{});else studentPeer.addTrack(t,studentLocalStream)}});const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");if(cb)cb.textContent="📷 Desligar câmera";if(mb)mb.textContent="🎙 Desligar microfone";toast("Câmera e microfone ativados");return true}catch(e){console.warn("Permissão de mídia do aluno:",e);toast("Permita o acesso à câmera e ao microfone no navegador.");return false}}
-function toggleStudentMic(){if(!studentLocalStream)return void ensureStudentMedia();const t=studentLocalStream?.getAudioTracks?.()[0];if(!t)return void ensureStudentMedia();t.enabled=!t.enabled;studentMicOn=t.enabled;const b=document.getElementById("studentMicBtn");if(b)b.textContent=t.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";toast(t.enabled?"Microfone ligado":"Microfone desligado")}
-function toggleStudentCamera(){
- if(!studentLocalStream)return void ensureStudentMedia();
- const videoTrack=studentLocalStream.getVideoTracks?.()[0];
- if(!videoTrack)return void ensureStudentMedia();
+async function toggleStudentMic(){if(!studentLocalStream?.getAudioTracks?.().length){const ok=await ensureStudentMedia();if(!ok)return}const t=studentLocalStream?.getAudioTracks?.()[0];if(!t){toast("O microfone ainda não está disponível.");return}if(!aznyTeacherMicAllowed){toast("O professor desligou o seu microfone.");return}t.enabled=!t.enabled;studentMicOn=t.enabled;const b=document.getElementById("studentMicBtn");if(b){b.textContent=t.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";b.disabled=!aznyTeacherMicAllowed}toast(t.enabled?"Microfone ligado":"Microfone desligado")}
+let aznyTeacherCameraAllowed=true,aznyTeacherMicAllowed=true;
+async function toggleStudentCamera(){
+ // Se ainda não houver stream, pedir acesso e aplicar o clique após a permissão.
+ if(!studentLocalStream?.getVideoTracks?.().length){
+  const ok=await ensureStudentMedia();
+  if(!ok)return;
+ }
+ const videoTrack=studentLocalStream?.getVideoTracks?.()[0];
+ if(!videoTrack){toast("A câmera ainda não está disponível. Verifique a permissão do navegador.");return}
+ if(!aznyTeacherCameraAllowed){toast("O professor desligou a sua câmera. Peça autorização para voltar a ligá-la.");return}
  videoTrack.enabled=!videoTrack.enabled;
  studentCameraOn=videoTrack.enabled;
  const cameraBtn=document.getElementById("studentCameraBtn");
- if(cameraBtn)cameraBtn.textContent=studentCameraOn?"📷 Desligar câmera":"📷 Ligar câmera";
+ if(cameraBtn){cameraBtn.textContent=studentCameraOn?"📷 Desligar câmera":"📷 Ligar câmera";cameraBtn.disabled=!aznyTeacherCameraAllowed}
+ const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo)selfVideo.style.opacity=studentCameraOn?"1":".22";
  toast(studentCameraOn?"Câmera ligada.":"Câmera desligada.");
 }
 function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);toast("Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
