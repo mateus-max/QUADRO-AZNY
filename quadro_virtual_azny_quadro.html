@@ -1417,12 +1417,12 @@ function moveStudentPointer(e){
 }
 stage.addEventListener("pointerdown",function(e){if(!isStudent||!pointerMode||!board.contains(e.target))return;aznyPointerDragId=e.pointerId;try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();moveStudentPointer(e)},{passive:false});
 stage.addEventListener("pointermove",moveStudentPointer,{passive:false});
-function endStudentPointerDrag(e){if(aznyPointerDragId===null||(e.pointerId!==undefined&&e.pointerId!==aznyPointerDragId))return;aznyPointerDragId=null;try{if(e.pointerId!==undefined&&stage.hasPointerCapture(e.pointerId))stage.releasePointerCapture(e.pointerId)}catch(_){}}
+function endStudentPointerDrag(e){if(aznyPointerDragId===null||(e.pointerId!==undefined&&e.pointerId!==aznyPointerDragId))return;aznyPointerDragId=null;try{if(e.pointerId!==undefined&&stage.hasPointerCapture(e.pointerId))stage.releasePointerCapture(e.pointerId)}catch(_){}if(pointerMode){const p=document.getElementById("livePointer");if(p)p.classList.add("active")}}
 stage.addEventListener("pointerup",endStudentPointerDrag);
 stage.addEventListener("pointercancel",endStudentPointerDrag);
 stage.addEventListener("pointermove",updateLivePointer,{passive:true});
 stage.addEventListener("pointerenter",e=>{if(pointerMode)document.getElementById("livePointer").classList.add("active")});
-stage.addEventListener("pointerleave",()=>document.getElementById("livePointer").classList.remove("active"));
+stage.addEventListener("pointerleave",()=>{if(aznyPointerDragId===null)document.getElementById("livePointer").classList.remove("active")});
 
 function constrainTextToBoard(el){
  if(!el||!el.classList.contains("textobj"))return;
