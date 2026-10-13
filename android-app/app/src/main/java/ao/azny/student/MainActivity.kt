@@ -79,8 +79,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initFirebase()
-        buildHome()
-        handleIncomingIntent(intent)
+        // Esta aplicação é a entrada do PROFESSOR. Os alunos continuam a entrar
+        // pelo link da aula/avaliação recebido no WhatsApp, no navegador.
+        root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(0xFFEAF1F8.toInt())
+        }
+        openClassroomWebView(Uri.parse("https://academia.apsanlda.com/"))
     }
 
     private fun initFirebase() {
@@ -412,6 +417,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun setStatus(message: String) {
         if (::status.isInitialized) runOnUiThread { status.text = message }
+    }
+
+    @Deprecated("Deprecated in Android API; retained for broad device compatibility")
+    override fun onBackPressed() {
+        val current = webView
+        if (current != null && current.canGoBack()) {
+            current.goBack()
+        } else {
+            super.onBackPressed()
+        }
     }
 
     override fun onDestroy() {
