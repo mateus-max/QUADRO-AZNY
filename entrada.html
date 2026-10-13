@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-AO">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071b33">
+<meta name="description" content="Escolha entrar numa aula online ou consultar avaliações e exames no AZNY.">
+<title>Entrar · AZNY</title>
+<link rel="icon" href="icons/azny-board.svg" type="image/svg+xml">
+<style>
+:root{--navy:#071b33;--blue:#1677ff;--muted:#64748b;--line:#dbe4ed;--bg:#eef3f8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100dvh;padding:24px;display:grid;place-items:center;background:radial-gradient(ellipse at top,#e1edff 0,#eef3f8 52%,#e9eef5 100%);font:16px Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#172536}
+.wrap{width:min(900px,100%)}.brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;color:var(--navy);font-weight:900;font-size:clamp(20px,4vw,28px);letter-spacing:.02em}.brand img{width:54px;height:54px;object-fit:contain}.brand span{color:var(--blue)}
+header{text-align:center;margin-bottom:28px}h1{font-size:clamp(26px,5vw,38px);line-height:1.15;margin:0 0 12px;color:var(--navy)}header p{color:var(--muted);margin:0;line-height:1.6}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.choice{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-height:270px;padding:26px;border:1px solid var(--line);border-radius:22px;background:#fff;color:inherit;text-decoration:none;box-shadow:0 14px 38px #071b3310;transition:transform .18s,box-shadow .18s,border-color .18s}.choice:hover,.choice:focus-visible{transform:translateY(-3px);border-color:#9fc5ff;box-shadow:0 18px 42px #071b331b;outline:none}.icon{display:grid;place-items:center;width:62px;height:62px;border-radius:17px;background:#eaf2ff;font-size:31px;margin-bottom:22px}.choice.exam .icon{background:#e7f8ef}.choice h2{font-size:23px;margin:0 0 10px;color:var(--navy)}.choice p{margin:0 0 24px;color:var(--muted);line-height:1.6;font-size:14px}.go{margin-top:auto;display:inline-flex;align-items:center;gap:9px;padding:11px 15px;border-radius:10px;background:var(--blue);color:white;font-weight:800}.exam .go{background:#11794b}.foot{text-align:center;color:#7b8797;font-size:12px;margin-top:24px}
+@media(max-width:620px){body{padding:18px}.brand{margin-bottom:24px}.choices{grid-template-columns:1fr;gap:14px}.choice{min-height:0;padding:22px}.icon{margin-bottom:15px}.choice p{margin-bottom:18px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="brand"><img src="icons/azny-board.svg" alt=""><div>AZNY <span>ACADEMY</span></div></div>
+  <header><h1>Onde pretende entrar?</h1><p>Escolha uma das opções para continuar.</p></header>
+  <section class="choices" aria-label="Escolher serviço">
+    <a class="choice" id="classesChoice" href="quadro_virtual_azny_quadro.html?aluno=1">
+      <div class="icon" aria-hidden="true">🎓</div><h2>Entrar nas aulas</h2>
+      <p>Aceda ao quadro virtual, identifique-se com o seu nome e peça entrada na aula ao professor.</p>
+      <span class="go">Ir para as aulas <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="choice exam" id="examsChoice" href="exames.html">
+      <div class="icon" aria-hidden="true">📝</div><h2>Avaliações e exames</h2>
+      <p>Consulte os testes, avaliações e exames publicados pelos professores e entre numa prova disponível.</p>
+      <span class="go">Ver avaliações <span aria-hidden="true">→</span></span>
+    </a>
+  </section>
+  <div class="foot">AZNY · Aulas, testes e exames num só lugar</div>
+</main>
+<script>
+(function(){
+  const incoming=new URL(location.href);
+  const classes=new URL("quadro_virtual_azny_quadro.html",location.href);
+  classes.searchParams.set("aluno","1");
+  ["sala","sess","acesso"].forEach(k=>{if(incoming.searchParams.has(k))classes.searchParams.set(k,incoming.searchParams.get(k))});
+  document.getElementById("classesChoice").href=classes.href;
+  document.getElementById("examsChoice").href=new URL("exames.html",location.href).href;
+})();
+</script>
+</body></html>
