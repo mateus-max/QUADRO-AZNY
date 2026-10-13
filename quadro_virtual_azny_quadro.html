@@ -1771,7 +1771,7 @@ function toggleInlineStyle(property,onValue,offValue){
  const range=sel.getRangeAt(0),span=document.createElement("span");span.style[property]=onValue;
  try{span.appendChild(range.extractContents());range.insertNode(span);const after=document.createRange();after.selectNodeContents(span);sel.removeAllRanges();sel.addRange(after);savedRange=after.cloneRange();scheduleSave()}catch(_){}
 }
-document.querySelectorAll("#bold,#italic,#underline,#alignLeft,#alignCenter,#alignRight").forEach(b=>b.addEventListener("pointerdown",e=>{if(selected?.classList.contains("textobj")){rememberSelection();e.preventDefault()}},{passive:false}));
+document.querySelectorAll("#bold,#italic,#underline,#alignLeft,#alignCenter,#alignRight").forEach(b=>b.addEventListener("pointerdown",()=>{if(selected?.classList.contains("textobj"))rememberSelection()},{passive:true}));
 document.getElementById("bold").onclick=()=>toggleInlineStyle("fontWeight","700","400");
 document.getElementById("italic").onclick=()=>toggleInlineStyle("fontStyle","italic","normal");
 document.getElementById("underline").onclick=()=>toggleInlineStyle("textDecoration","underline","none");
