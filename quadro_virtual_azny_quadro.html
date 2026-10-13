@@ -1602,15 +1602,40 @@ function addImage(file){
 
 async function renderAZNYPdfViewer(viewer,dataUrl){
  const pages=viewer.querySelector('.docpdf-pages'),status=viewer.querySelector('.docpdf-status'),prev=viewer.querySelector('.docpdf-prev'),next=viewer.querySelector('.docpdf-next'),zoomOut=viewer.querySelector('.docpdf-zoom-out'),zoomIn=viewer.querySelector('.docpdf-zoom-in'),zoomLabel=viewer.querySelector('.docpdf-zoom-label');
- if(!pages)return;pages.innerHTML='<div class="docpdf-loading">A carregar documento…</div>';
- if(!window.pdfjsLib){pages.innerHTML='<div class="docpdf-loading">Não foi possível carregar o leitor de PDF. Verifique a ligação à Internet e recarregue o quadro.</div>';return}
+ if(!pages)return;
+ if(!window.pdfjsLib){pages.innerHTML='<div class="docpdf-loading">Não foi possível carregar o leitor de PDF. Verifique a ligação à Internet.</div>';return}
  try{
   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  const base64=String(dataUrl||'').split(',').pop();const binary=atob(base64);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-  const pdf=await pdfjsLib.getDocument({data:bytes}).promise;let pageNum=Math.max(1,Math.min(pdf.numPages,Number(viewer.dataset.initialPage)||1)),scale=Math.max(.5,Math.min(2.5,Number(viewer.dataset.initialScale)||1)),renderToken=0;pages.innerHTML='';
-  const renderPage=async(n,initial=false)=>{const oldLeft=pages.scrollLeft,oldTop=pages.scrollTop;const token=++renderToken;pageNum=Math.max(1,Math.min(pdf.numPages,n));const host=viewer.closest(".docobj");if(host){host.dataset.pdfPage=String(pageNum);host.dataset.pdfScale=String(scale)}pages.innerHTML='';if(status)status.textContent=pageNum+' / '+pdf.numPages;if(prev)prev.disabled=pageNum<=1;if(next)next.disabled=pageNum>=pdf.numPages;if(zoomLabel)zoomLabel.textContent=Math.round(scale*100)+'%';const loading=document.createElement('div');loading.className='docpdf-loading';loading.textContent='A preparar página…';pages.appendChild(loading);try{const page=await pdf.getPage(pageNum);if(token!==renderToken)return;const available=Math.max(180,pages.clientWidth-28);const base=page.getViewport({scale:1});const fit=Math.min(available/base.width,1.5);const viewport=page.getViewport({scale:fit*scale});const canvas=document.createElement('canvas');canvas.className='docpdf-page';canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);canvas.style.width=viewport.width+'px';canvas.style.height=viewport.height+'px';const ctx=canvas.getContext('2d',{alpha:false});pages.innerHTML='';pages.appendChild(canvas);await page.render({canvasContext:ctx,viewport}).promise;if(token!==renderToken)return;pages.scrollLeft=oldLeft;pages.scrollTop=oldTop;if(host){host.dataset.pdfPage=String(pageNum);host.dataset.pdfScale=String(scale)}if(!initial){scheduleSave();publishLiveBoardState()}}catch(err){pages.innerHTML='<div class="docpdf-loading">Não foi possível mostrar esta página.</div>';console.warn('AZNY PDF render:',err)}};
-  prev?.addEventListener('click',()=>renderPage(pageNum-1));next?.addEventListener('click',()=>renderPage(pageNum+1));zoomOut?.addEventListener('click',()=>{scale=Math.max(.5,Math.round((scale-.15)*100)/100);renderPage(pageNum)});zoomIn?.addEventListener('click',()=>{scale=Math.min(2.5,Math.round((scale+.15)*100)/100);renderPage(pageNum)});let resizeTimer,lastObservedWidth=0;new ResizeObserver(()=>{const width=Math.round(pages.clientWidth);if(!width||Math.abs(width-lastObservedWidth)<8)return;lastObservedWidth=width;clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>renderPage(pageNum),180)}).observe(pages);lastObservedWidth=Math.round(pages.clientWidth);await renderPage(pageNum,true);
- }catch(err){pages.innerHTML='<div class="docpdf-loading">Não foi possível abrir este PDF.</div>';console.warn('AZNY PDF load:',err)}
+  const comma=String(dataUrl||'').indexOf(',');if(comma<0)throw new Error('Formato PDF inválido');
+  const binary=atob(String(dataUrl).slice(comma+1)),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  const pdf=await pdfjsLib.getDocument({data:bytes}).promise;
+  let pageNum=Math.max(1,Math.min(pdf.numPages,Number(viewer.dataset.initialPage)||1));
+  let scale=Math.max(.5,Math.min(2.5,Number(viewer.dataset.initialScale)||1));
+  let renderToken=0,renderTask=null,resizeTimer=null,lastWidth=0;
+  const renderPage=async(n,persist=false)=>{
+   const token=++renderToken;pageNum=Math.max(1,Math.min(pdf.numPages,n));
+   if(renderTask){try{renderTask.cancel()}catch(_){}}
+   const host=viewer.closest('.docobj');if(host){host.dataset.pdfPage=String(pageNum);host.dataset.pdfScale=String(scale)}
+   if(status)status.textContent=pageNum+' / '+pdf.numPages;if(prev)prev.disabled=pageNum<=1;if(next)next.disabled=pageNum>=pdf.numPages;if(zoomLabel)zoomLabel.textContent=Math.round(scale*100)+'%';
+   const width=Math.round(pages.clientWidth);if(width<20)return;
+   try{
+    const page=await pdf.getPage(pageNum);if(token!==renderToken)return;
+    const available=Math.max(180,width-28),base=page.getViewport({scale:1}),fit=Math.min(available/base.width,1.5),viewport=page.getViewport({scale:fit*scale});
+    const canvas=document.createElement('canvas');canvas.className='docpdf-page';canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);canvas.style.width=viewport.width+'px';canvas.style.height=viewport.height+'px';
+    const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error('Canvas indisponível');
+    renderTask=page.render({canvasContext:ctx,viewport});await renderTask.promise;renderTask=null;if(token!==renderToken)return;
+    /* Keep the previous page visible until the new canvas is completely rendered. */
+    const oldCanvas=pages.querySelector('canvas.docpdf-page');if(oldCanvas)oldCanvas.replaceWith(canvas);else{pages.querySelector('.docpdf-loading')?.remove();pages.appendChild(canvas)}
+    if(host){host.dataset.pdfPage=String(pageNum);host.dataset.pdfScale=String(scale)}
+    if(persist){scheduleSave();publishLiveBoardState()}
+   }catch(err){if(err?.name==='RenderingCancelledException')return;console.warn('AZNY PDF render:',err);if(!pages.querySelector('canvas.docpdf-page')){pages.innerHTML='<div class="docpdf-loading">Não foi possível mostrar esta página. Tente abrir o documento novamente.</div>'}}
+  };
+  prev?.addEventListener('click',()=>renderPage(pageNum-1,true));next?.addEventListener('click',()=>renderPage(pageNum+1,true));
+  zoomOut?.addEventListener('click',()=>{scale=Math.max(.5,Math.round((scale-.15)*100)/100);renderPage(pageNum,true)});
+  zoomIn?.addEventListener('click',()=>{scale=Math.min(2.5,Math.round((scale+.15)*100)/100);renderPage(pageNum,true)});
+  const observer=new ResizeObserver(()=>{const width=Math.round(pages.clientWidth);if(!width||Math.abs(width-lastWidth)<16)return;lastWidth=width;clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>renderPage(pageNum,false),250)});
+  observer.observe(pages);lastWidth=Math.round(pages.clientWidth);await renderPage(pageNum,false);
+ }catch(err){pages.innerHTML='<div class="docpdf-loading">Não foi possível abrir este documento. Verifique se o ficheiro PDF é válido.</div>';console.warn('AZNY PDF load:',err)}
 }
 function createAZNYPdfViewer(dataUrl,initialPage=1,initialScale=1){const viewer=document.createElement('div');viewer.className='docpdf-viewer';viewer.dataset.initialPage=String(initialPage);viewer.dataset.initialScale=String(initialScale);viewer.innerHTML='<div class="docpdf-toolbar"><button type="button" class="docpdf-prev" aria-label="Página anterior">◀</button><span class="docpdf-status">1 / 1</span><button type="button" class="docpdf-next" aria-label="Página seguinte">▶</button><span style="margin:0 3px;color:#c2cad3">|</span><button type="button" class="docpdf-zoom-out" aria-label="Reduzir">−</button><span class="docpdf-zoom-label">100%</span><button type="button" class="docpdf-zoom-in" aria-label="Ampliar">+</button></div><div class="docpdf-pages"><div class="docpdf-loading">A carregar documento…</div></div>';renderAZNYPdfViewer(viewer,dataUrl);return viewer}
 function addDoc(file){
@@ -2625,10 +2650,10 @@ async function forceRefreshBoard(forStudent){
    }
    toast("Ligação verificada. A aula continua; a aguardar a sincronização em tempo real.");
   }else{
-   pageStates[currentPage-1]=snapshot();
-   publishLiveBoardState();sendBoardSnapshotToAllPeers();
-   if(AZNY_DB)await aznyRoomRef().child("board").update({forceRefreshAt:Date.now(),teacherRefreshAt:firebase.database.ServerValue.TIMESTAMP});
-   toast("Sincronização restabelecida. O quadro atual foi mantido.");
+   /* Do not overwrite the saved board when refreshing; request current live state from connected students. */
+   Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(JSON.stringify({type:"board-request"}))}catch(_){}}});
+   if(AZNY_DB)await aznyRoomRef().child("board").child("teacherRefreshAt").set(firebase.database.ServerValue.TIMESTAMP);
+   toast("Pedido de sincronização enviado. O conteúdo atual foi preservado.");
   }
 }catch(e){console.warn("AZNY force refresh:",e);toast("A ligação ainda não foi restabelecida. Tente novamente quando houver rede.")}
  finally{if(btn){btn.disabled=false;btn.textContent=originalText}}
