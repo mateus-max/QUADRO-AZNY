@@ -1853,7 +1853,7 @@ async function startCamera(){
    catch(e){lastError=e;if(e.name==="NotAllowedError"||e.name==="SecurityError")throw e;await new Promise(resolve=>setTimeout(resolve,350))}
   }
   if(!teacherStream)throw lastError||new Error("A câmara não devolveu uma transmissão.");
-  if(v){v.srcObject=teacherStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.hidden=false;v.style.display="block";v.style.visibility="visible";v.style.opacity="1";try{await v.play()}catch(playError){console.warn("Autoplay bloqueado; a tentar reproduzir após interação:",playError);const retry=()=>v.play?.().catch(()=>{});document.addEventListener("pointerdown",retry,{once:true});document.addEventListener("keydown",retry,{once:true})}}
+  if(v){v.srcObject=teacherStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.removeAttribute("hidden");v.hidden=false;v.style.cssText+=";display:block!important;visibility:visible!important;opacity:1!important;width:100%;height:100%;min-height:60px;object-fit:cover;background:#0b1828;position:absolute;inset:0;z-index:2";v.onloadedmetadata=()=>{v.play?.().catch(()=>{})};await new Promise(resolve=>{if(v.readyState>=2){resolve();return}const done=()=>resolve();v.addEventListener("loadeddata",done,{once:true});setTimeout(done,1200)});try{await v.play()}catch(playError){console.warn("AZNY camera play:",playError);toast("A câmara está ligada. Toque no vídeo para iniciar a imagem.");v.addEventListener("pointerdown",()=>v.play?.().catch(()=>{}),{once:true})}}
   document.querySelector("#teacherCamera .cam-off").style.display="none";
   document.getElementById("camStatus").textContent="Ligada";
   if(btn)btn.disabled=true;
@@ -1903,9 +1903,10 @@ async function restoreActiveTeacherSession(){if(isStudent||!classSessionId||!AZN
 async function endClass(){if(!classStarted)return;classStarted=false;clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;document.getElementById("classTimer").textContent="00:00:00";document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;try{stopCamera()}catch(e){console.warn("AZNY camera cleanup:",e)}try{stopMic()}catch(e){console.warn("AZNY microphone cleanup:",e)}if(AZNY_DB&&classSessionId)await aznySessionRef().update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP});localStorage.removeItem("azny-active-session-"+String(roomId));document.querySelectorAll("#cameraJoinRequests .join-request").forEach(e=>e.remove());Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc.close()}catch(_){}removeStudentVideoCard(id)});window.aznyTeacherPeers={};roomChannel?.postMessage({type:"class-ended",session:classSessionId});if(isStudent)showClassEnded();toast("Aula encerrada")}
 
 async function startRecording(forStudent=isStudent){
- if(screenRecorder&&screenRecorder.state==="recording")return;
- if(!navigator.mediaDevices?.getDisplayMedia||!window.MediaRecorder){toast("A gravação de ecrã não é suportada neste navegador.");return}
+ if(screenRecorder&&screenRecorder.state==="recording"){stopRecording();return}
  const button=document.getElementById(forStudent?"studentRecordBtn":"recordClassBtn"),boxId=forStudent?"studentRecordDownload":"recordDownload";
+ if(!window.MediaRecorder){toast("Este navegador não disponibiliza a gravação de vídeo.");return}
+ if(!navigator.mediaDevices?.getDisplayMedia){startBoardFallbackRecording(forStudent,button,boxId);return}
  toast("Escolha o ecrã ou separador que pretende gravar.");
  navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:20,max:24}},audio:true}).then(display=>{
   let tracks=[...display.getVideoTracks(),...display.getAudioTracks()],micStream=null;
@@ -1924,6 +1925,48 @@ async function startRecording(forStudent=isStudent){
   };
   if(!display.getAudioTracks().length&&navigator.mediaDevices.getUserMedia){navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false}).then(m=>{micStream=m;tracks.push(...m.getAudioTracks());continueRecording()}).catch(e=>{console.info("AZNY recording microphone not added:",e?.message||e);continueRecording()})}else continueRecording();
  }).catch(e=>{console.warn("AZNY start recording:",e);toast(e.name==="NotAllowedError"?"Gravação cancelada.":"Não foi possível iniciar a gravação. Verifique as permissões do navegador.")});
+}
+async function startBoardFallbackRecording(forStudent,button,boxId){
+ const target=document.getElementById("board"),draw=document.getElementById("drawLayer");
+ if(!target||!window.MediaRecorder){toast("Não foi possível preparar a gravação neste navegador.");return}
+ const width=Math.max(320,Math.min(1920,target.clientWidth||800)),height=Math.max(240,Math.min(1080,target.clientHeight||450));
+ const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+ const ctx=canvas.getContext("2d");if(!ctx){toast("O navegador não permite preparar a gravação.");return}
+ let busy=false,stopped=false,frame=0;
+ const render=async()=>{
+  if(stopped||busy)return;busy=true;
+  try{
+   const clone=target.cloneNode(true);clone.setAttribute("xmlns","http://www.w3.org/1999/xhtml");
+   clone.style.width=width+"px";clone.style.height=height+"px";clone.style.transform="none";clone.style.position="relative";clone.style.left="0";clone.style.top="0";
+   const clonedCanvas=clone.querySelector("#drawLayer");
+   if(clonedCanvas&&draw){const img=document.createElement("img");img.src=draw.toDataURL("image/png");img.style.cssText="position:absolute;inset:0;width:100%;height:100%;pointer-events:none";clonedCanvas.replaceWith(img)}
+   const styles=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n");
+   const html='<div xmlns="http://www.w3.org/1999/xhtml"><style>'+styles+'</style>'+clone.outerHTML+'</div>';
+   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'"><foreignObject width="100%" height="100%">'+html+'</foreignObject></svg>';
+   const url=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml;charset=utf-8"}));
+   const img=new Image();
+   await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url});
+   ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);ctx.drawImage(img,0,0,width,height);URL.revokeObjectURL(url);
+   const cam=document.getElementById("teacherVideo");
+   if(cam&&cam.readyState>=2&&cam.videoWidth){const cw=Math.min(width*.24,220),ch=cw*cam.videoHeight/cam.videoWidth;ctx.save();ctx.fillStyle="#071b33";ctx.fillRect(width-cw-12,12,cw,ch);ctx.drawImage(cam,width-cw-10,14,cw-4,ch-4);ctx.restore()}
+  }catch(e){console.warn("AZNY board recording frame:",e)}
+  busy=false;
+ };
+ await render();
+ const stream=canvas.captureStream(10);
+ let audioStream=null;
+ try{if(teacherAudioStream?.getAudioTracks?.().length){audioStream=teacherAudioStream;audioStream.getAudioTracks().forEach(t=>stream.addTrack(t))}}catch(_){}
+ recordedChunks=[];recordingStartedAt=Date.now();
+ const types=["video/webm;codecs=vp8,opus","video/webm;codecs=vp8","video/webm"],mimeType=types.find(t=>MediaRecorder.isTypeSupported?.(t));
+ screenRecorder=mimeType?new MediaRecorder(stream,{mimeType}):new MediaRecorder(stream);
+ screenRecorder._aznyForStudent=!!forStudent;screenRecorder._aznyBoxId=boxId;screenRecorder._aznyButtonId=forStudent?"studentRecordBtn":"recordClassBtn";
+ screenRecorder.ondataavailable=e=>{if(e.data?.size)recordedChunks.push(e.data)};
+ screenRecorder.onerror=e=>{console.error("AZNY fallback recording:",e.error||e);toast("Ocorreu um erro durante a gravação.")};
+ screenRecorder.onstop=()=>{stopped=true;clearInterval(frame);saveRecording()};
+ frame=setInterval(render,100);
+ screenRecorder.start(1000);
+ if(button){button.textContent="⏹ Parar e guardar";button.classList.add("recording")}
+ toast("Gravação do quadro iniciada. A gravação inclui o quadro e, se estiver ligada, a imagem da câmara. O navegador Android não permite capturar todo o ecrã nesta versão.");
 }
 function stopRecording(){if(screenRecorder&&screenRecorder.state==="recording"){try{screenRecorder.requestData()}catch(_){}screenRecorder.stop()}}
 function saveRecording(){
