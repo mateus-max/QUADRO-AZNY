@@ -11,6 +11,12 @@
 <title>Quadro Virtual AZNY</title>
 <style>
 *{box-sizing:border-box}
+/* AZNY touch drawing: stop browser gestures from stealing pen/lupa strokes. */
+#stage,#board,#drawLayer{touch-action:none}
+#drawLayer{pointer-events:none}
+#board.drawing-active #drawLayer{pointer-events:none}
+.student-controls button{touch-action:manipulation}
+
 /* AZNY_INTERACTION_RECOVERY: controls must remain touch/click targets above decorative layers. */
 button,[role="button"],input,select{pointer-events:auto;touch-action:manipulation}button:disabled{cursor:not-allowed;opacity:.65}
 :root{--navy:#071b33;--navy2:#0e2c4c;--line:#d7e0e9;--bg:#eef2f7;--accent:#1677ff}
@@ -1679,9 +1685,13 @@ let textPointerTarget=null,textPointerX=0,textPointerY=0,textPointerMoved=false;
 
 stage.addEventListener("pointerdown",e=>{
  if(!e.isPrimary)return;
- // Caneta e borracha devem funcionar sobre qualquer conteúdo do quadro,
- // incluindo imagens, documentos, gráficos, pautas e teclados.
- if(tool==="pen"||tool==="eraser"){drawDown(e);return}
+ // Capturar o ponteiro no quadro mantém a caneta estável em ecrãs táteis,
+ // mesmo quando o dedo passa por cima de imagens ou sai ligeiramente do quadro.
+ if(tool==="pen"||tool==="eraser"){
+  if(e.cancelable)e.preventDefault();
+  try{stage.setPointerCapture(e.pointerId)}catch(_){}
+  drawDown(e);return
+ }
  if(tool==="text"){
   const textTarget=e.target.closest?.(".textobj");
   if(textTarget && board.contains(textTarget)){
@@ -1984,6 +1994,8 @@ document.getElementById("teacherScreenShareBtn")?.addEventListener("click",()=>a
 
 async function startRecording(forStudent=isStudent){
  if(screenRecorder&&screenRecorder.state==="recording"){stopRecording();return}
+ const previousBox=document.getElementById(forStudent?"studentRecordDownload":"recordDownload");
+ if(previousBox){previousBox.style.display="none";previousBox.replaceChildren()}
  const button=document.getElementById(forStudent?"studentRecordBtn":"recordClassBtn"),boxId=forStudent?"studentRecordDownload":"recordDownload";
  if(!window.MediaRecorder){toast("Este navegador não disponibiliza a gravação de vídeo.");return}
  /* Record the live AZNY board directly. This avoids the Android screen-picker
