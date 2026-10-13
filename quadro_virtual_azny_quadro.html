@@ -2265,9 +2265,10 @@ async function connectStudentPeer(id,d){
   }
  };
  pc.onicecandidate=e=>{if(e.candidate)ref.child("teacherCandidates").push(e.candidate.toJSON())};
+ let aznyPeerWasConnected=false;
  pc.onconnectionstatechange=()=>{
-  if(pc.connectionState==="connected"){sendBoardSnapshotToPeer(pc);toast("Videochamada ligada com "+(d.name||"o aluno"))}
-  if(pc.connectionState==="failed"){toast("A ligação do aluno está instável; a tentar recuperar sem o remover da aula.");try{pc.restartIce()}catch(_){} }
+  if(pc.connectionState==="connected"){aznyPeerWasConnected=true;sendBoardSnapshotToPeer(pc);toast("Videochamada ligada com "+(d.name||"o aluno"))}
+  if(pc.connectionState==="failed"){if(aznyPeerWasConnected){toast("A ligação do aluno "+(d.name||"participante")+" está instável; a tentar recuperar.");}try{pc.restartIce()}catch(_){} }
   if(pc.connectionState==="closed"&&aznySessionRef()){aznySessionRef().child("status").once("value",s=>{if(s.val()==="ended"){removeStudentVideoCard(id);delete window.aznyTeacherPeers[id]}})}
  };
  pc.oniceconnectionstatechange=()=>{if(pc.iceConnectionState==="failed"){try{pc.restartIce()}catch(_){}}};
