@@ -2625,35 +2625,25 @@ setupAznyContextMenu();
 async function forceRefreshBoard(forStudent){
  const btn=document.getElementById(forStudent?"studentRefreshBoardBtn":"refreshBoardBtn");
  const originalText=btn?.textContent||"↻";
- if(btn){btn.disabled=true;btn.textContent="A sincronizar…"}
+ if(btn){btn.disabled=true;btn.textContent="A restabelecer ligação…"}
  try{
-  /* Refresh the board in place: never reload the document or recreate the class session. */
+  /* Never reload or restore a historical snapshot: deletions must remain deleted. */
   resizeCanvas();
   if(forStudent){
    if(!AZNY_DB)throw new Error("Sem ligação ao serviço");
-   const snap=await aznyRoomRef().child("board").once("value"),data=snap.val();
-   if(data){selected=null;remoteBoardApplying=false;applyRemoteBoardState(data);selected=null;resizeCanvas();redraw();updateHint()}
    if(studentApproved){
-    if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected"){
-     try{studentBoardChannel.send(JSON.stringify({type:"board-request"}))}catch(_){await aznyReconnectStudentMedia()}
-    }else{await aznyReconnectStudentMedia()}
+    if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected"){studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
+    else{await aznyReconnectStudentMedia();if(studentBoardChannel?.readyState==="open")studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
    }
-   try{await navigator.serviceWorker?.getRegistration?.().then(reg=>reg?.update?.())}catch(_){}
-   toast(data?"Quadro atualizado e ligação verificada. A aula continua.":"Ligação verificada; à espera da primeira sincronização do quadro.");
+   toast("Ligação verificada. A aula continua; a aguardar a sincronização em tempo real.");
   }else{
    pageStates[currentPage-1]=snapshot();
-   if(AZNY_DB)await aznyRoomRef().child("board").update({
-    currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:pageStates,
-    boardSize:{width:board.clientWidth,height:board.clientHeight},
-    updatedAt:firebase.database.ServerValue.TIMESTAMP,forceRefreshAt:Date.now()
-   });
-   publishLiveBoardState();sendBoardSnapshotToAllPeers();redraw();updateHint();
-   try{await navigator.serviceWorker?.getRegistration?.().then(reg=>reg?.update?.())}catch(_){}
-   toast("Quadro sincronizado. A aula continua sem reiniciar.");
+   publishLiveBoardState();sendBoardSnapshotToAllPeers();
+   if(AZNY_DB)await aznyRoomRef().child("board").update({forceRefreshAt:Date.now(),teacherRefreshAt:firebase.database.ServerValue.TIMESTAMP});
+   toast("Sincronização restabelecida. O quadro atual foi mantido.");
   }
- }catch(e){console.warn("AZNY force refresh:",e);toast("Não foi possível sincronizar agora. Verifique a ligação e tente novamente.")}
+}catch(e){console.warn("AZNY force refresh:",e);toast("A ligação ainda não foi restabelecida. Tente novamente quando houver rede.")}
  finally{if(btn){btn.disabled=false;btn.textContent=originalText}}
- if(!forStudent){try{save()}catch(_){} }
 }
 document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(false)});
 document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(true)});
