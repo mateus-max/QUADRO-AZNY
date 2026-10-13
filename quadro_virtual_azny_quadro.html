@@ -1981,7 +1981,6 @@ async function aznyToggleScreenShare(forStudent){
  }
 }
 document.getElementById("teacherScreenShareBtn")?.addEventListener("click",()=>aznyToggleScreenShare(false));
-document.getElementById("studentScreenShareBtn")?.addEventListener("click",()=>aznyToggleScreenShare(true));
 
 async function startRecording(forStudent=isStudent){
  if(screenRecorder&&screenRecorder.state==="recording"){stopRecording();return}
