@@ -22,7 +22,12 @@ header{text-align:center;margin-bottom:28px}h1{font-size:clamp(26px,5vw,38px);li
   <div class="brand"><img src="icons/azny-board.svg" alt=""><div>AZNY <span>ACADEMY</span></div></div>
   <header><h1>Onde pretende entrar?</h1><p>Escolha uma das opções para continuar.</p></header>
   <section class="choices" aria-label="Escolher serviço">
-    <a class="choice exam" id="examsChoice" href="exames.html">\n      <div class="icon" aria-hidden="true">📝</div><h2>Avaliações e exames</h2>\n      <p>Abra a avaliação ou o exame através do link que o professor partilhou consigo.</p>\n      <span class="go">Aceder às avaliações <span aria-hidden="true">→</span></span>\n    </a>\n    <a class="choice" id="classesChoice" href="quadro_virtual_azny_quadro.html?aluno=1">
+    <a class="choice exam" id="examsChoice" href="exames.html">
+      <div class="icon" aria-hidden="true">📝</div><h2>Avaliações e exames</h2>
+      <p>Abra a avaliação ou o exame através do link que o professor partilhou consigo.</p>
+      <span class="go">Aceder às avaliações <span aria-hidden="true">→</span></span>
+    </a>
+    <a class="choice" id="classesChoice" href="quadro_virtual_azny_quadro.html?aluno=1">
       <div class="icon" aria-hidden="true">🎓</div><h2>Entrar nas aulas</h2>
       <p>Aceda ao quadro virtual, identifique-se com o seu nome e peça entrada na aula ao professor.</p>
       <span class="go">Ir para as aulas <span aria-hidden="true">→</span></span>
@@ -36,7 +41,8 @@ header{text-align:center;margin-bottom:28px}h1{font-size:clamp(26px,5vw,38px);li
   const classes=new URL("quadro_virtual_azny_quadro.html",location.href);
   classes.searchParams.set("aluno","1");
   ["sala","sess","acesso"].forEach(k=>{if(incoming.searchParams.has(k))classes.searchParams.set(k,incoming.searchParams.get(k))});
-  document.getElementById("examsChoice").href=new URL("exames.html",location.href).href;\n  document.getElementById("classesChoice").href=classes.href;
+  document.getElementById("examsChoice").href=new URL("exames.html",location.href).href;
+  document.getElementById("classesChoice").href=classes.href;
 })();
 </script>
 </body></html>
