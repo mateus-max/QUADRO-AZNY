@@ -11,6 +11,8 @@
 <title>Quadro Virtual AZNY</title>
 <style>
 *{box-sizing:border-box}
+/* AZNY_INTERACTION_RECOVERY: controls must remain touch/click targets above decorative layers. */
+button,[role="button"],input,select{pointer-events:auto;touch-action:manipulation}button:disabled{cursor:not-allowed;opacity:.65}
 :root{--navy:#071b33;--navy2:#0e2c4c;--line:#d7e0e9;--bg:#eef2f7;--accent:#1677ff}
 body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:#182433;overflow:hidden}
 button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:column}
@@ -1352,7 +1354,7 @@ function restore(s){
   createFromData(o);
   const el=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===String(o.id||""));
   if(el)el.style.zIndex=String(5+i);
-  const m=String(o.id||"").match(/^o(\\d+)$/);if(m)maxId=Math.max(maxId,+m[1]);
+  const m=String(o.id||"").match(/^o(\d+)$/);if(m)maxId=Math.max(maxId,+m[1]);
  });
  objectId=Math.max(objectId,maxId);
  document.getElementById("boardTitle").value=s?.title||"Nova aula";
