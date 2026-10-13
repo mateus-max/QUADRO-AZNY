@@ -2186,8 +2186,10 @@ async function startStudentWebRTC(options={}){
    studentLocalStream.getVideoTracks().forEach(t=>t.enabled=cameraEnabled);
    studentMicOn=micEnabled;studentCameraOn=cameraEnabled;
    const micButton=document.getElementById("studentMicBtn"),cameraButton=document.getElementById("studentCameraBtn");
-   if(micButton){micButton.textContent=micEnabled?"🎙 Desligar microfone":"🔇 Ligar microfone";micButton.disabled=true;micButton.title="O professor controla este microfone"}
-   if(cameraButton){cameraButton.textContent=cameraEnabled?"📷 Câmera ligada":"🚫 Câmera desligada";cameraButton.disabled=true;cameraButton.title="O professor controla esta câmera"}
+   // Só bloquear o botão do aluno quando o professor o tiver desligado.
+   // Quando autorizado, o próprio aluno pode ligar/desligar o seu dispositivo.
+   if(micButton){micButton.textContent=studentMicOn?"🎙 Desligar microfone":"🔇 Ligar microfone";micButton.disabled=!micEnabled;micButton.title=micEnabled?"Ligar ou desligar o seu microfone":"O professor desligou o microfone"}
+   if(cameraButton){cameraButton.textContent=studentCameraOn?"📷 Desligar câmera":"🚫 Ligar câmera";cameraButton.disabled=!cameraEnabled;cameraButton.title=cameraEnabled?"Ligar ou desligar a sua câmera":"O professor desligou a câmera"}
    const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo)selfVideo.style.opacity=cameraEnabled?"1":".22";
    toast("O professor "+(micEnabled?"autorizou":"desligou")+" o microfone e "+(cameraEnabled?"autorizou":"desligou")+" a câmera.");
   });
@@ -2224,18 +2226,9 @@ function toggleStudentCamera(){
  if(!videoTrack)return void ensureStudentMedia();
  videoTrack.enabled=!videoTrack.enabled;
  studentCameraOn=videoTrack.enabled;
- /* Ao desligar a câmera, silenciar também o microfone para evitar transmissão de áudio inesperada.
-    Voltar a ligar a câmera não reativa o microfone automaticamente; o aluno pode ativá-lo no botão próprio. */
- if(!studentCameraOn){
-  studentLocalStream.getAudioTracks?.().forEach(t=>{t.enabled=false});
-  studentMicOn=false;
- }
  const cameraBtn=document.getElementById("studentCameraBtn");
- const micBtn=document.getElementById("studentMicBtn");
  if(cameraBtn)cameraBtn.textContent=studentCameraOn?"📷 Desligar câmera":"📷 Ligar câmera";
- const micTrack=studentLocalStream.getAudioTracks?.()[0];
- if(micBtn)micBtn.textContent=micTrack?.enabled?"🎙 Desligar microfone":"🔇 Ligar microfone";
- toast(studentCameraOn?"Câmera ligada; confirme o microfone se quiser transmitir áudio.":"Câmera e microfone desligados");
+ toast(studentCameraOn?"Câmera ligada.":"Câmera desligada.");
 }
 function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);toast("Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
 async function syncTeacherMediaToPeer(pc){
