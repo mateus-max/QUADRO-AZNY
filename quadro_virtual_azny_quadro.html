@@ -1953,7 +1953,7 @@ async function startBoardFallbackRecording(forStudent,button,boxId){
  await render();
  const stream=canvas.captureStream(10);
  let audioStream=null;
- try{if(teacherAudioStream?.getAudioTracks?.().length){audioStream=teacherAudioStream;audioStream.getAudioTracks().forEach(t=>stream.addTrack(t))}}catch(_){}
+ try{if(teacherAudioStream?.getAudioTracks?.().length){audioStream=teacherAudioStream;audioStream.getAudioTracks().forEach(t=>{try{stream.addTrack(t.clone())}catch(_){}})}}catch(_){}
  recordedChunks=[];recordingStartedAt=Date.now();
  const types=["video/webm;codecs=vp8,opus","video/webm;codecs=vp8","video/webm"],mimeType=types.find(t=>MediaRecorder.isTypeSupported?.(t));
  screenRecorder=mimeType?new MediaRecorder(stream,{mimeType}):new MediaRecorder(stream);
