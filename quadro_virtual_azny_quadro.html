@@ -1726,7 +1726,6 @@ stage.addEventListener("pointerup",e=>{
  }
 });
 
-stage.addEventListener("pointerdown",e=>{if(tool!=="pen"&&tool!=="eraser")return;if(!board.contains(e.target))return;try{stage.setPointerCapture(e.pointerId)}catch(_){}drawDown(e)},{passive:false});
 stage.addEventListener("pointermove",e=>{if(!drawing)return;if(e.cancelable)e.preventDefault();drawMove(e)},{passive:false});
 stage.addEventListener("pointerup",e=>{if(drawing){if(e.cancelable)e.preventDefault();drawUp()}},{passive:false});
 stage.addEventListener("pointercancel",()=>{if(drawing)drawUp()});
