@@ -946,7 +946,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
     <div class="class-timer" id="classTimer">00:00:00</div>
     <button id="startClassBtn">▶ Iniciar aula</button>
     <button id="endClassBtn" disabled>⏹ Encerrar aula</button>
-    <button id="recordClassBtn">⏺ Gravar aula</button>
+    <button id="recordClassBtn">⏺ Gravar aula</button><button id="teacherScreenShareBtn" type="button" title="Partilhar ecrã com os alunos">▣ Partilhar ecrã</button>
     <div class="record-download" id="recordDownload"></div>
   </div>
   <div class="top-actions"><button class="iconbtn" id="aznyFullscreenBtn" title="Ecrã inteiro" aria-label="Ecrã inteiro">⛶</button><button class="iconbtn" id="teacherDashboardBtn" title="Painel do professor">⌂</button>
@@ -1045,7 +1045,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 </div>
 
 <div class="student-controls" id="studentControls">
-    <button id="studentPointerBtn">🔎 Lupa</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button><button id="studentRaiseHandBtn" type="button" aria-pressed="false">✋ Levantar mão</button><button id="studentRefreshBoardBtn" type="button" title="Atualizar e reconectar ao quadro">⟳ Atualizar</button><button id="studentLeaveClassBtn" type="button" title="Sair da aula">↩ Sair da aula</button>
+    <button id="studentPointerBtn">🔎 Lupa</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentScreenShareBtn" type="button" title="Partilhar o ecrã com o professor">▣ Partilhar ecrã</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button><button id="studentRaiseHandBtn" type="button" aria-pressed="false">✋ Levantar mão</button><button id="studentRefreshBoardBtn" type="button" title="Atualizar e reconectar ao quadro">⟳ Atualizar</button><button id="studentLeaveClassBtn" type="button" title="Sair da aula">↩ Sair da aula</button>
 </div>
 <div class="student-live" id="studentLive"><div class="student-video-pair"><div class="student-video-card"><video id="studentTeacherVideo" autoplay playsinline></video><span>Professor</span></div><div class="student-video-card azny-self-video-card"><video id="studentSelfVideo" autoplay muted playsinline></video><span>Você</span><b id="studentSelfRaisedHand" class="azny-self-raised-hand" aria-live="polite" hidden>✋</b></div></div></div>
 <div class="modal student-name-modal" id="studentNameModal"><div class="card">
@@ -1087,7 +1087,7 @@ let currentPage=1;
 let aznyLiveStrokeId="",aznyRemoteLiveStrokes=new Map();
 let pageStates=Array(5).fill(null);
 let pointerMode=false;
-let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0;
+let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0,aznyTeacherScreenTrack=null,aznyStudentScreenTrack=null;
 let isStudent=new URLSearchParams(location.search).get("aluno")==="1";
 const AZNY_URL_PARAMS=new URLSearchParams(location.search);let aznySavedRoom="";try{aznySavedRoom=localStorage.getItem("azny_teacher_room_v1")||""}catch(_){};let roomId=AZNY_URL_PARAMS.get("sala")||aznySavedRoom||("AZNY-"+(document.getElementById("boardTitle").value.trim().replace(/[^a-zA-Z0-9_-]+/g,"-")||"aula")+"-"+Date.now().toString(36));if(!AZNY_URL_PARAMS.get("sala")){try{localStorage.setItem("azny_teacher_room_v1",roomId)}catch(_){}}
 let classSessionId=isStudent?(AZNY_URL_PARAMS.get("sess")||""):"ROOM-"+String(roomId).replace(/[.#$\[\]\/]/g,"_");
@@ -1940,6 +1940,49 @@ async function startClass(){if(classStarted)return;if(!await ensureAZNYRealtime(
 async function restoreActiveTeacherSession(){if(isStudent||!classSessionId||!AZNY_DB)return;try{const snap=await aznySessionRef()?.once("value");const session=snap?.val();if(!session||session.status!=="active"){return}classStarted=true;classStartTime=Number(session.startedAt)||Date.now();document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();try{await aznySessionRef().child("teacherPresence").update({online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP});aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}roomChannel?.postMessage({type:"class-started",title:session.title||document.getElementById("boardTitle").value,session:classSessionId});toast("Aula ativa restaurada após atualizar a página")}catch(e){console.warn("AZNY session restore:",e)}}
 async function endClass(){if(!classStarted)return;classStarted=false;aznyObservedClassStatus="ended";clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;document.getElementById("classTimer").textContent="00:00:00";document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;try{stopCamera()}catch(e){console.warn("AZNY camera cleanup:",e)}try{stopMic()}catch(e){console.warn("AZNY microphone cleanup:",e)}try{if(AZNY_DB&&classSessionId)await aznySessionRef().update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP})}catch(e){console.warn("AZNY class end status:",e)}try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){}clearTeacherStudentCameras();Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}removeStudentVideoCard(id)});window.aznyTeacherPeers={};roomChannel?.postMessage({type:"class-ended",session:classSessionId});if(isStudent)showClassEnded();toast("Aula encerrada. As câmeras dos alunos foram removidas.")}
 
+async function aznyToggleScreenShare(forStudent){
+ const button=document.getElementById(forStudent?"studentScreenShareBtn":"teacherScreenShareBtn");
+ const active=forStudent?!!aznyStudentScreenTrack:!!aznyTeacherScreenTrack;
+ if(active){
+  if(forStudent){
+   try{aznyStudentScreenTrack?.stop()}catch(_){}
+   aznyStudentScreenTrack=null;
+   const cam=studentLocalStream?.getVideoTracks?.()[0]||null;
+   const tr=studentPeer?.getSenders?.().find(s=>s.track?.kind==="video");
+   if(tr)try{await tr.replaceTrack(cam)}catch(e){console.warn("AZNY restore student camera:",e)}
+  }else{
+   try{aznyTeacherScreenTrack?.stop()}catch(_){}
+   aznyTeacherScreenTrack=null;
+   await syncTeacherMediaToPeers();
+  }
+  if(button){button.textContent="▣ Partilhar ecrã";button.classList.remove("recording")}
+  toast("Partilha do ecrã terminada.");return;
+ }
+ if(!navigator.mediaDevices?.getDisplayMedia){toast("Este navegador não permite partilhar o ecrã. Atualize o Chrome e permita a captura do ecrã.");return}
+ try{
+  const display=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:12,max:20}},audio:false});
+  const track=display.getVideoTracks()[0];if(!track){display.getTracks().forEach(t=>t.stop());throw new Error("Não foi recebido vídeo do ecrã")}
+  if(forStudent){
+   aznyStudentScreenTrack=track;
+   const sender=studentPeer?.getSenders?.().find(s=>s.track?.kind==="video");
+   if(!sender)throw new Error("A ligação de vídeo do aluno ainda não está ativa");
+   await sender.replaceTrack(track);
+  }else{
+   aznyTeacherScreenTrack=track;
+   await syncTeacherMediaToPeers();
+  }
+  if(button){button.textContent="■ Parar partilha";button.classList.add("recording")}
+  track.addEventListener("ended",()=>{if((forStudent?aznyStudentScreenTrack:aznyTeacherScreenTrack)===track)aznyToggleScreenShare(forStudent)},{once:true});
+  toast("Partilha do ecrã iniciada.");
+ }catch(e){
+  console.warn("AZNY screen share:",e);
+  if(forStudent)aznyStudentScreenTrack=null;else aznyTeacherScreenTrack=null;
+  toast(e.name==="NotAllowedError"?"Partilha cancelada ou sem autorização.":(e.message||"Não foi possível partilhar o ecrã."));
+ }
+}
+document.getElementById("teacherScreenShareBtn")?.addEventListener("click",()=>aznyToggleScreenShare(false));
+document.getElementById("studentScreenShareBtn")?.addEventListener("click",()=>aznyToggleScreenShare(true));
+
 async function startRecording(forStudent=isStudent){
  if(screenRecorder&&screenRecorder.state==="recording"){stopRecording();return}
  const button=document.getElementById(forStudent?"studentRecordBtn":"recordClassBtn"),boxId=forStudent?"studentRecordDownload":"recordDownload";
@@ -2186,7 +2229,7 @@ function toggleStudentCamera(){
 function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);toast("Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
 async function syncTeacherMediaToPeer(pc){
  if(!pc||pc.connectionState==="closed")return;
- const cam=teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
+ const cam=aznyTeacherScreenTrack||teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
  const transceivers=pc.getTransceivers();
  const vt=transceivers.find(t=>t.receiver.track?.kind==="video"||t.sender.track?.kind==="video");
  const at=transceivers.find(t=>t.receiver.track?.kind==="audio"||t.sender.track?.kind==="audio");
@@ -2305,7 +2348,7 @@ async function connectStudentPeer(id,d){
   // Reuse the audio/video m-lines offered by the student. Adding new tracks
   // here would create duplicate m-lines and can leave the professor invisible
   // to the student even when the reverse media direction works.
-  const cam=teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
+  const cam=aznyTeacherScreenTrack||teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
   const transceivers=pc.getTransceivers();
   const vt=transceivers.find(t=>t.receiver.track?.kind==="video"||t.sender.track?.kind==="video");
   const at=transceivers.find(t=>t.receiver.track?.kind==="audio"||t.sender.track?.kind==="audio");
@@ -2376,7 +2419,7 @@ async function restoreStudentSessionIfApproved(){
   return true;
  }catch(e){console.warn("AZNY restore student session:",e);showStudentJoinReady();return false}
 }
-function setupStudent(){document.body.classList.add("student-mode","azny-landscape-view");document.body.classList.remove("student-approved");syncStudentAutoOrientation();if(!window.aznyStudentOrientationBound){window.aznyStudentOrientationBound=true;window.addEventListener("resize",syncStudentAutoOrientation,{passive:true});window.addEventListener("orientationchange",syncStudentAutoOrientation,{passive:true});if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener("change",syncStudentAutoOrientation)}const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}showStudentWaitingForClass();const bindStudentButton=(id,fn)=>{const b=document.getElementById(id);if(!b||b.dataset.aznyBound==="1")return;b.dataset.aznyBound="1";b.disabled=false;b.style.pointerEvents="auto";b.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();try{fn()}catch(err){console.error("AZNY student tool "+id,err);toast("Não foi possível ativar esta ferramenta.")}},{passive:false})};bindStudentButton("studentPointerBtn",()=>{const active=!pointerMode;if(active){setTool("select");setPointerMode(true);stage.style.cursor="none"}else{setPointerMode(false);stage.style.cursor="default"}});bindStudentButton("studentTextBtn",()=>setTool(tool==="text"?"select":"text"));bindStudentButton("studentEraseBtn",()=>setTool(tool==="eraser"?"select":"eraser"));bindStudentButton("studentRecordBtn",()=>screenRecorder?.state==="recording"?stopRecording():startRecording(true));if(!document.getElementById("studentRecordDownload")){const box=document.createElement("div");box.id="studentRecordDownload";box.className="record-download";box.style.cssText="display:none;position:fixed;left:10px;bottom:10px;z-index:9999;max-width:min(92vw,360px);background:#fff;color:#172536;box-shadow:0 5px 20px #0004;font-size:12px";document.body.appendChild(box)}bindStudentButton("studentMicBtn",()=>toggleStudentMic());bindStudentButton("studentCameraBtn",()=>toggleStudentCamera());bindStudentButton("studentRaiseHandBtn",()=>{const b=document.getElementById("studentRaiseHandBtn");setStudentRaisedHand(!(b?.classList.contains("is-raised")))});bindStudentButton("studentLeaveClassBtn",leaveStudentClass);if(!classSessionId){document.getElementById("studentWaiting").textContent="Esta ligação de aula já não está ativa. Peça ao professor o link da aula atual.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=true;return}bindTeacherPresenceWatch();
+function setupStudent(){document.body.classList.add("student-mode","azny-landscape-view");document.body.classList.remove("student-approved");syncStudentAutoOrientation();if(!window.aznyStudentOrientationBound){window.aznyStudentOrientationBound=true;window.addEventListener("resize",syncStudentAutoOrientation,{passive:true});window.addEventListener("orientationchange",syncStudentAutoOrientation,{passive:true});if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener("change",syncStudentAutoOrientation)}const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}showStudentWaitingForClass();const bindStudentButton=(id,fn)=>{const b=document.getElementById(id);if(!b||b.dataset.aznyBound==="1")return;b.dataset.aznyBound="1";b.disabled=false;b.style.pointerEvents="auto";b.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();try{fn()}catch(err){console.error("AZNY student tool "+id,err);toast("Não foi possível ativar esta ferramenta.")}},{passive:false})};bindStudentButton("studentPointerBtn",()=>{const active=!pointerMode;if(active){setTool("select");setPointerMode(true);stage.style.cursor="none"}else{setPointerMode(false);stage.style.cursor="default"}});bindStudentButton("studentTextBtn",()=>setTool(tool==="text"?"select":"text"));bindStudentButton("studentEraseBtn",()=>setTool(tool==="eraser"?"select":"eraser"));bindStudentButton("studentRecordBtn",()=>screenRecorder?.state==="recording"?stopRecording():startRecording(true));bindStudentButton("studentScreenShareBtn",()=>aznyToggleScreenShare(true));if(!document.getElementById("studentRecordDownload")){const box=document.createElement("div");box.id="studentRecordDownload";box.className="record-download";box.style.cssText="display:none;position:fixed;left:10px;bottom:10px;z-index:9999;max-width:min(92vw,360px);background:#fff;color:#172536;box-shadow:0 5px 20px #0004;font-size:12px";document.body.appendChild(box)}bindStudentButton("studentMicBtn",()=>toggleStudentMic());bindStudentButton("studentCameraBtn",()=>toggleStudentCamera());bindStudentButton("studentRaiseHandBtn",()=>{const b=document.getElementById("studentRaiseHandBtn");setStudentRaisedHand(!(b?.classList.contains("is-raised")))});bindStudentButton("studentLeaveClassBtn",leaveStudentClass);if(!classSessionId){document.getElementById("studentWaiting").textContent="Esta ligação de aula já não está ativa. Peça ao professor o link da aula atual.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=true;return}bindTeacherPresenceWatch();
 document.getElementById("studentJoinBtn").onclick=async()=>{const n=document.getElementById("studentNameInput").value.trim();if(!n){toast("Digite o seu nome.");return}studentName=n;/* Use the join tap to request fullscreen and lock landscape automatically. */try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen()}catch(_){}try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock("landscape")}catch(e){console.info("Landscape lock unavailable in this browser; keeping AZNY landscape layout:",e)}document.body.classList.add("azny-landscape-view");const btn=document.getElementById("studentJoinBtn");btn.disabled=true;document.getElementById("studentWaiting").textContent="A ligar ao serviço da aula…";document.getElementById("studentWaiting").style.display="block";try{const ready=await ensureAZNYRealtime();if(!ready||!AZNY_DB){btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível ligar ao serviço. Tente novamente.";return}const sref=aznySessionRef();const sessionSnap=await sref.once("value");const sessionData=sessionSnap.val()||{};const ref=sref.child("joinRequests");if(aznyUid){const previous=await ref.orderByChild("studentUid").equalTo(aznyUid).once("value");let approved=null;previous.forEach(item=>{const d=item.val()||{};if(d.status==="approved")approved={id:item.key,data:d}});if(approved){studentRequestId=approved.id;studentApproved=true;studentName=approved.data.name||n;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameInput").value=studentName;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";watchStudentRequest();document.getElementById("studentWaiting").style.display="none";toast("A voltar à aula ativa sem novo pedido");await startStudentWebRTC();return}}studentRequestId=ref.push().key;try{localStorage.setItem(aznyStudentSessionStorageKey(),JSON.stringify({id:studentRequestId,name:n}))}catch(_){}await ref.child(studentRequestId).set({name:n,status:"pending",createdAt:firebase.database.ServerValue.TIMESTAMP,studentUid:aznyUid||""});watchStudentRequest();document.getElementById("studentWaiting").textContent="Pedido enviado. Aguarde a aprovação do professor.";toast("Pedido enviado ao professor em tempo real.")}catch(e){console.error(e);btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível enviar o pedido. Tente novamente.";toast("Falha ao enviar o pedido.")}};document.getElementById("studentRotateBtn").onclick=toggleStudentOrientation;ensureAZNYRealtime().then(async ready=>{if(!ready||!AZNY_DB){showStudentWaitingForClass();const w=document.getElementById("studentWaiting");if(w)w.textContent="Sem ligação ao serviço da aula. A tentar novamente…";setTimeout(()=>ensureAZNYRealtime().then(()=>restoreStudentSessionIfApproved()),2500);return}bindClassSessionRealtime();await restoreStudentSessionIfApproved()}).catch(e=>{console.warn("AZNY student startup:",e);showStudentWaitingForClass()});}
 function setStudentRaisedHand(raised){
  const value=!!raised,btn=document.getElementById("studentRaiseHandBtn");
