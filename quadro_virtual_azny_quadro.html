@@ -2496,7 +2496,7 @@ function getClassLink(){
   /* O link partilhado durante a aula abre diretamente o quadro em modo aluno.
      Não passa pela página de escolha (aulas/avaliações). */
   const link=new URL("quadro_virtual_azny_quadro.html",location.href);
-  const permanentSession="ROOM-"+String(roomId).replace(/[.#$\\[\\]\\/]/g,"_");
+  const permanentSession="ROOM-"+String(roomId).replace(/[.#$\/\[\]]/g,"_");
   link.searchParams.set("aluno","1");
   link.searchParams.set("sala",roomId);
   link.searchParams.set("sess",permanentSession);
