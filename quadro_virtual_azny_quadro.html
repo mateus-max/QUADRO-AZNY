@@ -2528,40 +2528,28 @@ function aznyStopStudentMesh(){
  aznyStudentMeshWatched.clear();aznyStudentMeshBound=false;aznyStudentMeshRosterHandler=null;
 }
 async function leaveStudentClass(){
- if(!isStudent||!studentApproved)return;
+ if(!isStudent)return;
  const oldRequestId=studentRequestId;
- aznyStopStudentMesh();
  studentApproved=false;
+ aznyStopStudentMesh();
  document.body.classList.remove("student-approved","text-entry-active");
- document.getElementById("studentControls").style.display="none";
- document.getElementById("studentNameModal").classList.add("show");
- document.getElementById("studentJoinBtn").disabled=false;
- document.getElementById("studentWaiting").textContent="Saiu da aula. Pode voltar a entrar enquanto a aula estiver ativa.";
- document.getElementById("studentWaiting").style.display="block";
+ const controls=document.getElementById("studentControls");if(controls)controls.style.display="none";
+ const modal=document.getElementById("studentNameModal");if(modal)modal.classList.add("show");
+ const join=document.getElementById("studentJoinBtn");if(join)join.disabled=false;
+ const waiting=document.getElementById("studentWaiting");if(waiting){waiting.textContent="Saiu da aula. Pode voltar a entrar enquanto a aula estiver ativa.";waiting.style.display="block"}
  try{
   if(oldRequestId&&AZNY_DB){
-   const ref=studentRequestRef(oldRequestId);
-   if(ref){
-    // Publicar a saída antes de fechar a ligação para o professor remover
-    // imediatamente o cartão da câmera.
-    await ref.update({studentOnline:false,network:"offline",leftAt:firebase.database.ServerValue.TIMESTAMP});
-    // Apagar SDP/ICE desta ligação para que a próxima entrada não reutilize
-    // candidatos ou uma resposta WebRTC antigos.
-    const peerRef=signalRef(oldRequestId);
-    if(peerRef)await peerRef.remove();
-   }
+   const ref=studentRequestRef(oldRequestId);if(ref)await ref.update({studentOnline:false,network:"offline",leftAt:firebase.database.ServerValue.TIMESTAMP});
+   const peerRef=signalRef(oldRequestId);if(peerRef)await peerRef.remove();
   }
- }catch(e){console.warn("AZNY leave class presence:",e)}
- try{studentPeer?.close()}catch(_){}
- studentPeer=null;
- try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}
- studentLocalStream=null;
- studentBoardChannel=null;
- const selfVideo=document.getElementById("studentSelfVideo");
- if(selfVideo)selfVideo.srcObject=null;
- const teacherVideo=document.getElementById("studentTeacherVideo");
- if(teacherVideo){teacherVideo.pause?.();teacherVideo.srcObject=null}
- toast("Saiu da aula");
+}catch(e){console.warn("AZNY leave class presence:",e)}
+ try{studentPeer?.close()}catch(_){} studentPeer=null;studentRemoteDescriptionReady=false;studentPendingTeacherCandidates=[];
+ try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){} studentLocalStream=null;studentBoardChannel=null;
+ const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo)selfVideo.srcObject=null;
+ const teacherVideo=document.getElementById("studentTeacherVideo");if(teacherVideo){teacherVideo.pause?.();teacherVideo.srcObject=null}
+ try{const audio=document.getElementById("studentTeacherAudioOut");if(audio){audio.pause?.();audio.srcObject=null}}catch(_){}
+ studentRequestId="";try{sessionStorage.removeItem(aznyStudentSessionStorageKey())}catch(_){}
+ toast("Saiu da aula. A ligação foi fechada.");
 }
 function showClassEnded(){if(!isStudent)return;aznyStopStudentMesh();studentApproved=false;try{studentPeer?.close()}catch(_){}studentPeer=null;try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}studentLocalStream=null;document.getElementById("studentControls").style.display="none";document.getElementById("studentNameModal").classList.add("show");document.getElementById("studentJoinBtn").disabled=false;document.getElementById("studentWaiting").textContent="A aula foi encerrada. Pode voltar a entrar por este mesmo link quando o professor iniciar outra aula.";document.getElementById("studentWaiting").style.display="block";const remoteVideo=document.getElementById("studentTeacherVideo");if(remoteVideo){remoteVideo.pause?.();remoteVideo.srcObject=null;remoteVideo.removeAttribute("src");remoteVideo.load?.();remoteVideo.style.display="none"}const remoteCard=remoteVideo?.closest(".student-video-card");if(remoteCard)remoteCard.classList.add("teacher-camera-ended");toast("A aula foi encerrada pelo professor.")}
 function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo professor");startStudentWebRTC()}else{document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended"&&m.session===classSessionId)showClassEnded()}}
