@@ -3005,6 +3005,11 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
 #aznyBoardKeyboard button.azny-key-space{flex:5}
 #aznyBoardKeyboard button.azny-key-done{background:#1677ff;color:white;border-color:#1677ff}
 @media (min-width:701px){#aznyBoardKeyboard{display:none!important}}
+
+/* AZNY_LAYER_FIX: keep the shared pointer/loupe and ink above every board object,
+   including images, uploaded documents, PDFs, charts and music resources. */
+#board > #drawLayer{z-index:2147483000!important}
+#board > #livePointer{z-index:2147483647!important}
 </style>
 <script>
 /* Android does not support constraining its native keyboard to an element's width.
