@@ -1702,7 +1702,7 @@ function objectAtPoint(p){const els=[...board.querySelectorAll('.object')].rever
 function eraseAt(p){const radius=18;strokes=strokes.filter(s=>!strokePoints(s).some(q=>Math.hypot(q.x-p.x,q.y-p.y)<radius))}
 function broadcastLiveStroke(done=false){if(!currentStroke||!aznyLiveStrokeId)return;const points=currentStroke.anchorId?strokePoints(currentStroke):currentStroke.points;const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,done});const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}};if(isStudent){send(studentBoardChannel);return}Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null))}
 function drawDown(e){if(tool!=="pen"&&tool!=="eraser")return;if(e.cancelable)e.preventDefault();drawing=true;localBoardEditing=true;pushHistory();const p=localPoint(e);if(tool==="pen"){const anchor=objectAtPoint(p);currentStroke={color:document.getElementById("textColor").value||"#111111",width:3,points:[],anchorId:anchor?.dataset?.id||null};aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}else currentStroke.points.push(p);strokes.push(currentStroke);broadcastLiveStroke()}else eraseAt(p);redraw();publishLiveBoardState()}
-function drawMove(e){if(!drawing)return;const p=localPoint(e);if(tool==="pen"){currentStroke.points.push(p);redraw();broadcastLiveStroke()}else{eraseAt(p);redraw()}publishLiveBoardState()}
+function drawMove(e){if(!drawing)return;const p=localPoint(e);if(tool==="pen"){if(currentStroke?.anchorId){const anchor=document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]');if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}}else if(currentStroke)currentStroke.points.push(p);redraw();broadcastLiveStroke()}else{eraseAt(p);redraw()}publishLiveBoardState()}
 function drawUp(){if(!drawing)return;if(currentStroke)broadcastLiveStroke(true);drawing=false;currentStroke=null;aznyLiveStrokeId="";localBoardEditing=false;scheduleSave();publishLiveBoardState()}
 
 
@@ -2046,46 +2046,47 @@ async function startRecording(forStudent=isStudent){
  }).catch(e=>{console.warn("AZNY start recording:",e);toast(e.name==="NotAllowedError"?"Gravação cancelada.":"Não foi possível iniciar a gravação. Verifique as permissões do navegador.")});
 }
 async function startBoardFallbackRecording(forStudent,button,boxId){
- const target=document.getElementById("board"),draw=document.getElementById("drawLayer");
+ const target=document.getElementById("board");
  if(!target||!window.MediaRecorder){toast("Não foi possível preparar a gravação neste navegador.");return}
+ const loadHtml2Canvas=async()=>{
+  if(window.html2canvas)return window.html2canvas;
+  await new Promise((resolve,reject)=>{const script=document.createElement("script");script.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";script.onload=resolve;script.onerror=()=>reject(new Error("Motor de captura indisponível"));document.head.appendChild(script)});
+  if(!window.html2canvas)throw new Error("Motor de captura indisponível");return window.html2canvas;
+ };
+ let html2canvas;
+ try{toast("A preparar a gravação…");html2canvas=await loadHtml2Canvas()}catch(e){console.error("AZNY recording setup:",e);toast("Não foi possível iniciar a gravação neste telefone. Verifique a ligação à Internet e tente novamente.");return}
  const width=Math.max(320,Math.min(1920,target.clientWidth||800)),height=Math.max(240,Math.min(1080,target.clientHeight||450));
  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
  const ctx=canvas.getContext("2d");if(!ctx){toast("O navegador não permite preparar a gravação.");return}
- let busy=false,stopped=false,frame=0;
+ let busy=false,stopped=false,frame=0,lastCapture=0,stream=null;
  const render=async()=>{
-  if(stopped||busy)return;busy=true;
+  if(stopped||busy||!target.isConnected)return;busy=true;
   try{
-   const clone=target.cloneNode(true);clone.setAttribute("xmlns","http://www.w3.org/1999/xhtml");
-   clone.style.width=width+"px";clone.style.height=height+"px";clone.style.transform="none";clone.style.position="relative";clone.style.left="0";clone.style.top="0";
-   const clonedCanvas=clone.querySelector("#drawLayer");
-   if(clonedCanvas&&draw){const img=document.createElement("img");img.src=draw.toDataURL("image/png");img.style.cssText="position:absolute;inset:0;width:100%;height:100%;pointer-events:none";clonedCanvas.replaceWith(img)}
-   const styles=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n");
-   const html='<div xmlns="http://www.w3.org/1999/xhtml"><style>'+styles+'</style>'+clone.outerHTML+'</div>';
-   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'"><foreignObject width="100%" height="100%">'+html+'</foreignObject></svg>';
-   const url=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml;charset=utf-8"}));
-   const img=new Image();
-   await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url});
-   ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);ctx.drawImage(img,0,0,width,height);URL.revokeObjectURL(url);
-   const cam=document.getElementById("teacherVideo");
-   if(cam&&cam.readyState>=2&&cam.videoWidth){const cw=Math.min(width*.24,220),ch=cw*cam.videoHeight/cam.videoWidth;ctx.save();ctx.fillStyle="#071b33";ctx.fillRect(width-cw-12,12,cw,ch);ctx.drawImage(cam,width-cw-10,14,cw-4,ch-4);ctx.restore()}
-  }catch(e){console.warn("AZNY board recording frame:",e)}
+   const shot=await html2canvas(target,{backgroundColor:"#ffffff",scale:Math.min(1.5,Math.max(1,width/(target.clientWidth||width))),useCORS:true,allowTaint:false,logging:false,removeContainer:true,ignoreElements:el=>el.classList?.contains("resize")||el.classList?.contains("docpdf-toolbar")});
+   if(stopped){busy=false;return}
+   ctx.fillStyle="#fff";ctx.fillRect(0,0,width,height);ctx.drawImage(shot,0,0,width,height);
+   const cam=document.getElementById(forStudent?"studentSelfVideo":"teacherVideo");
+   if(cam&&cam.readyState>=2&&cam.videoWidth){const cw=Math.min(width*.24,220),ch=cw*cam.videoHeight/cam.videoWidth;ctx.fillStyle="#071b33";ctx.fillRect(width-cw-12,12,cw+4,ch+4);ctx.drawImage(cam,width-cw-10,14,cw,ch)}
+   lastCapture=Date.now();
+  }catch(e){console.warn("AZNY recording frame:",e)}
   busy=false;
  };
- await render();
- const stream=canvas.captureStream(10);
- let audioStream=null;
- try{if(teacherAudioStream?.getAudioTracks?.().length){audioStream=teacherAudioStream;audioStream.getAudioTracks().forEach(t=>{try{stream.addTrack(t.clone())}catch(_){}})}}catch(_){}
- recordedChunks=[];recordingStartedAt=Date.now();
- const types=["video/webm;codecs=vp8,opus","video/webm;codecs=vp8","video/webm"],mimeType=types.find(t=>MediaRecorder.isTypeSupported?.(t));
- screenRecorder=mimeType?new MediaRecorder(stream,{mimeType}):new MediaRecorder(stream);
- screenRecorder._aznyForStudent=!!forStudent;screenRecorder._aznyBoxId=boxId;screenRecorder._aznyButtonId=forStudent?"studentRecordBtn":"recordClassBtn";
- screenRecorder.ondataavailable=e=>{if(e.data?.size)recordedChunks.push(e.data)};
- screenRecorder.onerror=e=>{console.error("AZNY fallback recording:",e.error||e);toast("Ocorreu um erro durante a gravação.")};
- screenRecorder.onstop=()=>{stopped=true;clearInterval(frame);saveRecording()};
- frame=setInterval(render,100);
- screenRecorder.start(1000);
- if(button){button.textContent="⏹ Parar e guardar";button.classList.add("recording")}
- toast("Gravação do quadro iniciada. A gravação inclui o quadro e, se estiver ligada, a imagem da câmara. O navegador Android não permite capturar todo o ecrã nesta versão.");
+ try{
+  await render();if(!lastCapture)throw new Error("Não foi possível capturar o quadro");
+  stream=canvas.captureStream(10);
+  const local=forStudent?studentLocalStream:teacherAudioStream;
+  try{if(local?.getAudioTracks?.().length)local.getAudioTracks().forEach(t=>{try{stream.addTrack(t.clone())}catch(_){}})}catch(_){}
+  recordedChunks=[];recordingStartedAt=Date.now();
+  const types=["video/webm;codecs=vp8,opus","video/webm;codecs=vp8","video/webm"],mimeType=types.find(t=>MediaRecorder.isTypeSupported?.(t));
+  screenRecorder=mimeType?new MediaRecorder(stream,{mimeType}):new MediaRecorder(stream);
+  screenRecorder._aznyForStudent=!!forStudent;screenRecorder._aznyBoxId=boxId;screenRecorder._aznyButtonId=forStudent?"studentRecordBtn":"recordClassBtn";
+  screenRecorder.ondataavailable=e=>{if(e.data&&e.data.size)recordedChunks.push(e.data)};
+  screenRecorder.onerror=e=>{console.error("AZNY recording:",e.error||e);toast("Ocorreu um erro durante a gravação.")};
+  screenRecorder.onstop=()=>{stopped=true;clearInterval(frame);saveRecording()};
+  screenRecorder.start(1000);frame=setInterval(render,350);
+  if(button){button.textContent="⏹ Parar e guardar";button.classList.add("recording")}
+  toast("Gravação iniciada. Clique novamente para parar e guardar o vídeo.");
+ }catch(e){stopped=true;clearInterval(frame);console.error("AZNY recording start:",e);toast("Não foi possível iniciar a gravação. Tente novamente.");try{stream?.getTracks?.().forEach(t=>t.stop())}catch(_){}}
 }
 function stopRecording(){if(screenRecorder&&screenRecorder.state==="recording"){try{screenRecorder.requestData()}catch(_){}screenRecorder.stop()}}
 function saveRecording(){
