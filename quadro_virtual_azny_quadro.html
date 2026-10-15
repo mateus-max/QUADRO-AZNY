@@ -1403,7 +1403,7 @@ function updateLivePointer(e){
  if(!board.contains(e.target)&&!pointerMode)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
  const p=document.getElementById("livePointer");
- if(pointerMode){p.style.transform=`translate(${x-5}px,${y-5}px)`;p.classList.add("active")}
+ if(pointerMode){const touchOffset=e.pointerType==="touch";p.style.transform=`translate(${x+(touchOffset?22:-5)}px,${y+(touchOffset?-46:-5)}px)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
  {
   const now=performance.now();
   if(now-lastPointerPacketAt>=16){
@@ -1433,7 +1433,7 @@ let aznyPointerDragId=null,lastStudentPointerSend=0;
 function moveStudentPointer(e){
  if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
- const p=document.getElementById("livePointer");p.style.transform="translate("+(x-5)+"px,"+(y-5)+"px)";p.classList.add("active");
+ const p=document.getElementById("livePointer");p.style.transform="translate("+(x+22)+"px,"+(y-46)+"px)";p.classList.add("touch-pointer","active");
  const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
  const packet=JSON.stringify({type:"live-pointer",x:x-5,y:y-5,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
  const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
