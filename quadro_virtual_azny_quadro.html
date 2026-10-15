@@ -1578,7 +1578,6 @@ function makeInteractive(el){
   if(e.target.closest?.(".resize"))return;
   if(el.classList.contains("textobj")&&tool==="text")return;
   if(tool==="select"&&(!isStudent||studentApproved)&&!e.target.closest?.("button,input,select,textarea,.docpdf")){
-   if(isStudent&&!el.dataset.createdBy){toast("Só pode mover os objetos que selecionar e que lhe pertencem.");return}
    selectObject(el);dragStart(e,el);
   }
  },{passive:false});
@@ -1593,7 +1592,7 @@ function dragStart(e,el){
  addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up)
 }
 function resizeStart(e){
- const el=e.currentTarget.parentElement;if(isStudent&&tool!=="select")return;if(isStudent&&!el.dataset.createdBy){toast("Só pode redimensionar os objetos que lhe pertencem.");return}
+ const el=e.currentTarget.parentElement;if(isStudent&&tool!=="select")return;
  e.preventDefault();e.stopPropagation();selectObject(el);localBoardEditing=true;pushHistory();const p=localPoint(e),sw=el.offsetWidth,sh=el.offsetHeight,pointerId=e.pointerId;
  try{e.currentTarget.setPointerCapture(pointerId)}catch(_){}
  function move(ev){if(ev.pointerId!==pointerId)return;const q=localPoint(ev);el.style.width=Math.max(40,sw+q.x-p.x)+"px";el.style.height=Math.max(28,sh+q.y-p.y)+"px";updateAnchoredTextsFor(el);redraw();publishLiveBoardState()}
