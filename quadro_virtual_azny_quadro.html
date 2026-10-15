@@ -80,9 +80,9 @@ body:not(.student-mode) #board .musicobj svg{
 .docpdf{width:100%;height:100%;border:0}.docpdf-viewer{flex:1;min-height:0;display:flex;flex-direction:column;background:#eef2f6;overflow:hidden;color:#17212b}.docpdf-toolbar{height:34px;min-height:34px;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 6px;background:#f8fafc;border-bottom:1px solid #d5dde6;font:11px Arial;color:#17212b}.docpdf-toolbar button{border:1px solid #c6d0db;background:#fff;border-radius:4px;padding:3px 8px;cursor:pointer;color:#17212b}.docpdf-toolbar button:disabled{opacity:.45;cursor:default}.docpdf-pages{flex:1;min-height:0;min-width:0;overflow:auto;display:block;position:relative;overscroll-behavior:contain;touch-action:pan-x pan-y;padding:12px;box-sizing:border-box;background:#e9edf2}.docpdf-pages .docpdf-page{display:block;margin:0 0 12px 0;max-width:none}.docpdf-page{display:block;max-width:none;background:#fff;box-shadow:0 2px 8px #0002}.docpdf-loading{margin:auto;color:#5b6878;font:12px Arial;text-align:center;padding:18px}.resize{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;background:#1677ff;border-radius:3px;display:none;cursor:nwse-resize}.selected .resize{display:block}
 .hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:#8492a2;pointer-events:none;z-index:3}
 .hint strong{display:block;color:#637386;font-size:21px;margin-bottom:8px}
-#livePointer{position:absolute;left:0;top:0;width:34px;height:42px;z-index:40;pointer-events:none;display:none;transform:translate(-2px,-2px);filter:drop-shadow(0 2px 2px #0005);will-change:transform}
-#livePointer .pointerIcon{display:block;width:34px;height:42px;overflow:visible}
-#livePointer .pointerIcon svg{display:block;width:34px;height:42px;overflow:visible}
+#livePointer{position:absolute;left:0;top:0;width:48px;height:56px;z-index:40;pointer-events:none;display:none;transform:translate(-2px,-2px);filter:drop-shadow(0 2px 2px #0005);will-change:transform}
+#livePointer .pointerIcon{display:block;width:48px;height:56px;overflow:visible}
+#livePointer .pointerIcon svg{display:block;width:48px;height:56px;overflow:visible}
 #livePointer .pointerIcon .arrow{fill:#e11;stroke:#fff;stroke-width:1.4;stroke-linejoin:round}
 #livePointer .pointerIcon .glass{fill:#e11;stroke:#fff;stroke-width:1.4}
 #livePointer .pointerIcon .glassHole{fill:#fff}
@@ -1012,10 +1012,9 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
   </div>
   <div class="canvas-wrap" id="canvasWrap">
     <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
-<svg viewBox="0 0 34 42" aria-hidden="true">
-  <path class="arrow" d="M3 2 L3 27 L10 20 L15 35 L20 33 L15 18 L25 18 Z"/>
-  <circle class="glass" cx="24.5" cy="30.5" r="7"/>
-  <circle class="glassHole" cx="24.5" cy="30.5" r="4.2"/>
+<svg viewBox="0 0 48 56" aria-hidden="true">
+  <path class="arrow" d="M44 2 L25 9 L34 18 L12 40 L18 46 L40 24 L47 33 Z"/>
+  <path d="M15 37 L5 49" fill="none" stroke="#e11" stroke-width="5" stroke-linecap="round"/>
 </svg>
 </span></div></div></div>
   </div>
@@ -1403,12 +1402,12 @@ function updateLivePointer(e){
  if(!board.contains(e.target)&&!pointerMode)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
  const p=document.getElementById("livePointer");
- if(pointerMode){const touchOffset=e.pointerType==="touch";p.style.transform=`translate(${x+(touchOffset?22:-5)}px,${y+(touchOffset?-46:-5)}px)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
+ if(pointerMode){const touchOffset=e.pointerType==="touch";p.style.transform=`translate(${x+(touchOffset?-44:-5)}px,${y+(touchOffset?-2:-5)}px)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
  {
   const now=performance.now();
   if(now-lastPointerPacketAt>=16){
    lastPointerPacketAt=now;
-   const packet=JSON.stringify({type:"live-pointer",x:x-5,y:y-5,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode});
+   const touchOffset=e.pointerType==="touch";const packet=JSON.stringify({type:"live-pointer",x:x+(touchOffset?-44:-5),y:y+(touchOffset?-2:-5),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode});
    if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}
    else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});
   }
@@ -1433,9 +1432,9 @@ let aznyPointerDragId=null,lastStudentPointerSend=0;
 function moveStudentPointer(e){
  if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
- const p=document.getElementById("livePointer");p.style.transform="translate("+(x+22)+"px,"+(y-46)+"px)";p.classList.add("touch-pointer","active");
+ const p=document.getElementById("livePointer");p.style.transform="translate("+(x-44)+"px,"+(y-2)+"px)";p.classList.add("touch-pointer","active");
  const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
- const packet=JSON.stringify({type:"live-pointer",x:x-5,y:y-5,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
+ const packet=JSON.stringify({type:"live-pointer",x:x-44,y:y-2,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
  const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
 }
 stage.addEventListener("pointerdown",function(e){if(!isStudent||!pointerMode||!board.contains(e.target))return;aznyPointerDragId=e.pointerId;try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();moveStudentPointer(e)},{passive:false});
