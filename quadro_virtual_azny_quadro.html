@@ -1300,7 +1300,7 @@ function handleBoardChannelMessage(raw){
   if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}return;}
   if(m.type==="live-pointer"){
    const p=document.getElementById("livePointer");
-   if(p){const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);p.style.transform="translate("+(Number(m.x)*sx||0)+"px,"+(Number(m.y)*sy||0)+"px)";p.classList.toggle("active",!!m.visible)}
+   if(p){const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);const px=Number(m.x)*sx,py=Number(m.y)*sy;p.style.transform="translate("+(px-44)+"px,"+(py-2)+"px)";p.classList.toggle("active",!!m.visible)}
    return;
   }
   if(m.type==="text-live"){
@@ -1402,12 +1402,12 @@ function updateLivePointer(e){
  if(!board.contains(e.target)&&!pointerMode)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
  const p=document.getElementById("livePointer");
- if(pointerMode){const touchOffset=e.pointerType==="touch";p.style.transform=`translate(${x+(touchOffset?-44:-5)}px,${y+(touchOffset?-2:-5)}px)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
+ if(pointerMode){const touchOffset=e.pointerType==="touch";const tipX=x+(touchOffset?39:0),tipY=y+(touchOffset?-47:0);p.style.transform=`translate(${tipX-44}px,${tipY-2}px)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
  {
   const now=performance.now();
   if(now-lastPointerPacketAt>=16){
    lastPointerPacketAt=now;
-   const touchOffset=e.pointerType==="touch";const packet=JSON.stringify({type:"live-pointer",x:x+(touchOffset?-44:-5),y:y+(touchOffset?-2:-5),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode});
+   const touchOffset=e.pointerType==="touch";const packet=JSON.stringify({type:"live-pointer",x:x+(touchOffset?39:0),y:y+(touchOffset?-47:0),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode});
    if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}
    else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});
   }
@@ -1432,9 +1432,9 @@ let aznyPointerDragId=null,lastStudentPointerSend=0;
 function moveStudentPointer(e){
  if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
- const p=document.getElementById("livePointer");p.style.transform="translate("+(x-44)+"px,"+(y-2)+"px)";p.classList.add("touch-pointer","active");
+ const p=document.getElementById("livePointer");const tipX=x+39,tipY=y-47;p.style.transform="translate("+(tipX-44)+"px,"+(tipY-2)+"px)";p.classList.add("touch-pointer","active");
  const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
- const packet=JSON.stringify({type:"live-pointer",x:x-44,y:y-2,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
+ const packet=JSON.stringify({type:"live-pointer",x:x+39,y:y-47,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
  const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
 }
 stage.addEventListener("pointerdown",function(e){if(!isStudent||!pointerMode||!board.contains(e.target))return;aznyPointerDragId=e.pointerId;try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();moveStudentPointer(e)},{passive:false});
