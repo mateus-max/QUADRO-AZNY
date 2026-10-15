@@ -1092,6 +1092,10 @@ let tool="select",selected=null,zoom=1,strokes=[],undoStack=[],redoStack=[],obje
 let currentPage=1;
 let aznyLiveStrokeId="",aznyRemoteLiveStrokes=new Map();
 let pageStates=Array(5).fill(null);
+/* Tombstones prevent deleted board objects from returning through stale Firebase/WebRTC snapshots. */
+let deletedObjectIds=new Set();
+function aznyObjectKey(o){return String(o?.id||o?.dataset?.id||"")+"::"+String(o?.createdBy||o?.dataset?.createdBy||"teacher")}
+function aznyFilterDeletedPages(pages){return pages.map(page=>{if(!page)return page;const out=JSON.parse(JSON.stringify(page));out.objects=(out.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o)));return out})}
 let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0,aznyTeacherScreenTrack=null,aznyStudentScreenTrack=null;
 let isStudent=new URLSearchParams(location.search).get("aluno")==="1";
@@ -1186,9 +1190,9 @@ function bindStudentNetworkQuality(pc,requestId){
 
 function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove("show"),1900)}
 function localPoint(e){const r=board.getBoundingClientRect();return{x:(e.clientX-r.left)/zoom,y:(e.clientY-r.top)/zoom}}
-function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),objects:[...board.querySelectorAll(".object")].map(serializeObject),title:document.getElementById("boardTitle").value}}
+function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds]}}
 function serializeObject(el){
- const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:parseFloat(el.style.width)||el.offsetWidth,height:parseFloat(el.style.height)||el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null};
+ const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:parseFloat(el.style.width)||el.offsetWidth,height:parseFloat(el.style.height)||el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null};
  if(el.classList.contains("textobj"))return{kind:"text",...b,html:el.innerHTML,anchorId:el.dataset.anchorId||null,anchorX:el.dataset.anchorX==null?null:+el.dataset.anchorX,anchorY:el.dataset.anchorY==null?null:+el.dataset.anchorY,anchorW:el.dataset.anchorW==null?null:+el.dataset.anchorW,anchorH:el.dataset.anchorH==null?null:+el.dataset.anchorH,anchorFontSize:el.dataset.anchorFontSize==null?null:+el.dataset.anchorFontSize,style:{fontSize:el.style.fontSize,fontFamily:el.style.fontFamily,fontWeight:el.style.fontWeight,fontStyle:el.style.fontStyle,textDecoration:el.style.textDecoration,color:el.style.color,textAlign:el.style.textAlign}};
  if(el.classList.contains("mediaobj"))return{kind:"image",...b,src:el.querySelector("img").src};
  if(el.classList.contains("chartobj"))return{kind:"chart",...b,chartType:el.dataset.chartType||"bar",title:el.dataset.title||"Gráfico",values:el.dataset.values||"12,19,8,15,10"};
@@ -1201,7 +1205,7 @@ function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restore(u
 function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(redoStack.pop());scheduleSave()}
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!isStudent&&!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,8)}}
 function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage,pages:pageStates}));document.getElementById("storageState").textContent="● Guardado"}catch(e){toast("Limite do Local Storage atingido")}}
-function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:pageStates}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
+function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds]}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
 function sendBoardSnapshotToChannel(ch){
  if(!ch||ch.readyState!=="open")return false;
  if(ch.bufferedAmount>2097152)return false;
@@ -1209,7 +1213,7 @@ function sendBoardSnapshotToChannel(ch){
   /* Always serialize the visible page immediately before sending: this includes
      images/data URLs, documents, charts, music objects and fresh text edits. */
   pageStates[currentPage-1]=snapshot();
-  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates};
+  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,deletedObjectIds:[...deletedObjectIds]};
   const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=12000,total=Math.ceil(raw.length/size);
   for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
   return true;
@@ -1263,9 +1267,10 @@ function aznySameBoardPage(a,b){
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
  try{
+  if(Array.isArray(d.deletedObjectIds))d.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
   if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
   if(Array.isArray(d.pages)){
-   const incomingPages=normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize);
+   const incomingPages=aznyFilterDeletedPages(normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize));
    const incomingPage=Math.max(1,Math.min(5,+d.currentPage||1));
    const localPage=snapshot();
    /* Never tear down and recreate objects just because a Firebase/WebRTC echo
@@ -1338,7 +1343,7 @@ function publishLiveBoardState(){
    clearTimeout(firebaseBoardWriteTimer);
    firebaseBoardWriteTimer=setTimeout(()=>{
     const ref=aznyRoomRef().child("board");
-    ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e));
+    ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e));
    },700);
   }
  },30)
@@ -1349,7 +1354,8 @@ function setupBoardRealtime(){
  const ref=aznyRoomRef().child("board");
  ref.on("value",snap=>{
   const d=snap.val();
-  if(!d||remoteBoardApplying)return;
+  if(remoteBoardApplying)return;
+  if(!d){if(!isStudent)setTimeout(publishBoardState,150);return;}
   if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
   const activeText=document.activeElement?.closest?.(".textobj");
   if(localBoardEditing||(activeText&&board.contains(activeText)))return;
@@ -1363,13 +1369,14 @@ function setupBoardRealtime(){
   }catch(_){}
   applyRemoteBoardState(d);
  });
- if(!isStudent)setTimeout(publishBoardState,150);
+ /* Do not publish local state on startup: it could overwrite the last saved board before Firebase delivers it. */
 }
 function restore(s){
+ if(Array.isArray(s?.deletedObjectIds))s.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
  const selectedId=selected?.dataset?.id||"";
  board.querySelectorAll(".object").forEach(e=>e.remove());
  selected=null;strokes=s?.strokes||[];let maxId=0;
- (s?.objects||[]).forEach((o,i)=>{
+ (s?.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))).forEach((o,i)=>{
   createFromData(o);
   const el=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===String(o.id||""));
   if(el)el.style.zIndex=String(5+i);
@@ -1514,7 +1521,7 @@ function minimizeSelectedObject(){if(!selected)return;pushHistory();if(selected.
 function duplicateSelectedObject(){if(!selected)return;const d=serializeObject(selected);pushHistory();d.id="o"+(++objectId);d.left=(Number(d.left)||0)+24;d.top=(Number(d.top)||0)+24;if(d.anchorId){d.anchorId=null;d.anchorX=null;d.anchorY=null;d.anchorW=null;d.anchorH=null}const el=createFromData(d);if(!el)return;if(!el.isConnected)board.appendChild(el);if(!el.classList.contains("object"))el.classList.add("object");makeInteractive(el);selectObject(el);commitObjectAction("Objeto duplicado")}
 function changeSelectedLayer(dir){if(!selected||!selected.isConnected)return;pushHistory();const objects=[...board.children].filter(el=>el.classList.contains("object"));const i=objects.indexOf(selected);if(i<0)return;const target=Math.max(0,Math.min(objects.length-1,i+(dir<0?-1:1)));if(target===i){toast(dir<0?"O objeto já está atrás dos outros.":"O objeto já está à frente dos outros.");return}objects.splice(i,1);objects.splice(target,0,selected);objects.forEach((el,index)=>{el.style.zIndex=String(5+index);board.appendChild(el)});commitObjectAction(dir<0?"Objeto enviado para trás":"Objeto trazido para a frente")}
 
-function deleteSelected(){if(!selected)return;if(isStudent&&(!selected.dataset.createdBy||selected.dataset.createdBy!==studentRequestId)){toast("Só pode eliminar a imagem ou o documento que carregou.");return}pushHistory();const id=selected.dataset.id;board.querySelectorAll('.textobj[data-anchor-id="'+id+'"]').forEach(t=>t.remove());selected.remove();strokes=strokes.filter(s=>s.anchorId!==id);selected=null;redraw();updateHint();scheduleSave();publishLiveBoardState();toast("Objeto eliminado") }
+function deleteSelected(){if(!selected)return;if(isStudent&&(!selected.dataset.createdBy||selected.dataset.createdBy!==studentRequestId)){toast("Só pode eliminar a imagem ou o documento que carregou.");return}pushHistory();const id=selected.dataset.id;deletedObjectIds.add(aznyObjectKey(selected));board.querySelectorAll('.textobj[data-anchor-id="'+id+'"]').forEach(t=>t.remove());selected.remove();strokes=strokes.filter(s=>s.anchorId!==id);selected=null;redraw();updateHint();scheduleSave();publishLiveBoardState();toast("Objeto eliminado definitivamente") }
 function createFromData(o){
  let el;
  if(o.kind==="text"){
@@ -1532,7 +1539,7 @@ function createFromData(o){
   if(o.pdf){el.appendChild(createAZNYPdfViewer(o.pdf,+o.pdfPage||1,+o.pdfScale||1))}else{const body=document.createElement("div");body.className="docbody";body.textContent=o.content||"";el.appendChild(body)}
   Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});
  }
- el.dataset.id=o.id||"o"+(++objectId);if(o.createdBy)el.dataset.createdBy=String(o.createdBy);board.appendChild(el);makeInteractive(el);
+ el.dataset.id=o.id||"o"+(++objectId);if(o.createdBy)el.dataset.createdBy=String(o.createdBy);if(o.aznyMinimized){el.dataset.aznyMinimized="1";el.dataset.aznyOldWidth=o.aznyOldWidth||"360px";el.dataset.aznyOldHeight=o.aznyOldHeight||"260px"}board.appendChild(el);makeInteractive(el);
 }
 function createResourceObject(type,lang){
  const el=document.createElement("div");el.className="object resourceobj";el.dataset.id="o"+(++objectId);el.dataset.resourceType=type;el.dataset.language=lang;el.dataset.title=type==="bible"?"Bíblia Sagrada":"Gramática";
