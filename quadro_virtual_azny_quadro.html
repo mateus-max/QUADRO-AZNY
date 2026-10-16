@@ -2988,6 +2988,7 @@ function setupAznyContextMenu(){if(document.getElementById("aznyContextMenu"))re
 setupAznyContextMenu();
 async function forceRefreshBoard(forStudent){
  const btn=document.getElementById(forStudent?"studentRefreshBoardBtn":"refreshBoardBtn");
+ const originalLabel=btn?.textContent||"⟳";
  if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");btn.textContent=document.documentElement.lang==="en"?"Refreshing app…":"A atualizar a aplicação…"}
  const en=document.documentElement.lang==="en";
  try{
@@ -3015,7 +3016,7 @@ async function forceRefreshBoard(forStudent){
   setTimeout(()=>window.location.reload(),150);
  }catch(e){
   console.warn("AZNY app refresh:",e);
-  if(btn){btn.disabled=false;btn.removeAttribute("aria-busy");btn.textContent="⟳"}
+  if(btn){btn.disabled=false;btn.removeAttribute("aria-busy");btn.textContent=originalLabel}
   toast(en?"Could not refresh the app. Check your connection and try again.":"Não foi possível atualizar a aplicação. Verifique a ligação e tente novamente.");
  }
 }
