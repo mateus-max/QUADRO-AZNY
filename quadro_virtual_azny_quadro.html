@@ -2846,12 +2846,10 @@ function showAznyLandscapePrompt(){
  overlay.querySelector("#aznyLandscapeContinue").addEventListener("click",async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(_){}overlay.remove();if(isStudent)syncStudentAutoOrientation();setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},180)});
 }
 function showTeacherReloadNotice(){
- if(!isStudent||!studentApproved||document.getElementById("aznyTeacherReloadOverlay"))return;
- const en=document.documentElement.lang==="en",overlay=document.createElement("div");overlay.id="aznyTeacherReloadOverlay";overlay.className="azny-teacher-reload-overlay";overlay.setAttribute("role","alertdialog");overlay.setAttribute("aria-modal","true");
- overlay.innerHTML='<div class="azny-teacher-reload-card"><h2>'+(en?"The teacher refreshed the browser":"O professor atualizou o navegador")+'</h2><p>'+(en?"To restore the connection with the teacher, leave this class and then use “Return to class” on the entry screen. Your previous approval will be kept.":"Para recuperar a ligação com o professor, saia desta aula e depois use “Voltar à aula” no ecrã de entrada. A sua aprovação anterior será mantida.")+'</p><div class="azny-teacher-reload-actions"><button class="primary" id="aznyReloadLeaveBtn">'+(en?"Leave and reconnect":"Sair e voltar a entrar")+'</button><button id="aznyReloadLaterBtn">'+(en?"Continue for now":"Continuar por agora")+'</button></div></div>';
- document.body.appendChild(overlay);
- overlay.querySelector("#aznyReloadLaterBtn").addEventListener("click",()=>overlay.remove());
- overlay.querySelector("#aznyReloadLeaveBtn").addEventListener("click",async()=>{overlay.remove();await leaveStudentClass();await refreshStudentResumeAvailability();const waiting=document.getElementById("studentWaiting");if(waiting)waiting.textContent=en?"You have left the class. Tap “Return to class” to reconnect without a new approval.":"Saiu da aula. Toque em “Voltar à aula” para recuperar a ligação sem nova aprovação.";toast(en?"Now tap “Return to class” to reconnect.":"Agora toque em “Voltar à aula” para recuperar a ligação.")});
+ if(!isStudent||!studentApproved)return;
+ const en=document.documentElement.lang==="en";
+ showNetworkNotice(en?"The teacher's class is back. Reconnecting automatically…":"O professor recuperou a aula. A restabelecer a ligação automaticamente…","good");
+ aznyScheduleStudentReconnect("teacher-page-restored",300);
 }
 setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(async ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}if(ready&&!isStudent)await restoreActiveTeacherSession()}).catch(e=>console.error(e));
 window.addEventListener("beforeunload",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Atualizar/fechar o separador não encerra a sessão da aula. */});
