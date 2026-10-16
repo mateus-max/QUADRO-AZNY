@@ -2804,65 +2804,65 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
 </script>
 
 <script>
-/* AZNY mobile text-entry layout: use the normal Android keyboard (never create/split a custom keyboard). */
+/* AZNY mobile text-entry layout: keep the Android keyboard and editing focus until the student taps Finish writing. */
 (function(){
  "use strict";
  const body=document.body;
- let blurTimer=null;
- function activeText(){
-  const el=document.activeElement;
-  return !!(el && el.matches && el.matches(".student-mode .textobj[contenteditable='true']"));
+ let blurTimer=null,studentTextEditTarget=null,studentTextFinishClick=false,studentSavedRange=null,doneButton=null;
+ function mobileStudent(){return body.classList.contains("student-mode")&&matchMedia("(max-width:700px) and (pointer:coarse)").matches}
+ function activeText(){const el=document.activeElement;return !!(el&&el.matches&&el.matches(".student-mode .textobj[contenteditable='true']"))}
+ function ensureDoneButton(){
+  if(!mobileStudent())return;
+  if(!doneButton){
+   doneButton=document.createElement("button");doneButton.type="button";doneButton.className="azny-student-text-done";
+   doneButton.addEventListener("pointerdown",e=>e.preventDefault());
+   doneButton.addEventListener("click",()=>{
+    studentTextFinishClick=true;const target=studentTextEditTarget;studentTextEditTarget=null;studentSavedRange=null;
+    body.classList.remove("text-entry-active");body.style.removeProperty("--azny-visible-height");
+    if(doneButton)doneButton.style.display="none";if(target)target.blur();
+    setTimeout(()=>{studentTextFinishClick=false},350);
+   });
+   document.body.appendChild(doneButton);
+  }
+  doneButton.textContent=document.documentElement.lang==="en"?"✓ Finish writing":"✓ Concluir escrita";
+  doneButton.style.display=studentTextEditTarget?"block":"none";
  }
- function viewportHeight(){
-  return window.visualViewport ? window.visualViewport.height : window.innerHeight;
- }
+ function viewportHeight(){return window.visualViewport?window.visualViewport.height:window.innerHeight}
  function syncTextEntryLayout(){
-  if(!body.classList.contains("student-mode")) {
-   body.classList.remove("text-entry-active");
-   return;
-  }
-  const vv=window.visualViewport;
-  const keyboardLikely=!!vv && (window.innerHeight-vv.height)>120;
-  const shouldStay=activeText() || (body.classList.contains("text-entry-active") && keyboardLikely);
+  if(!body.classList.contains("student-mode")){body.classList.remove("text-entry-active");return}
+  const vv=window.visualViewport,keyboardLikely=!!vv&&(window.innerHeight-vv.height)>120;
+  const shouldStay=activeText()||(!!studentTextEditTarget&&studentTextEditTarget.isConnected&&!studentTextFinishClick)||(body.classList.contains("text-entry-active")&&keyboardLikely);
   body.classList.toggle("text-entry-active",shouldStay);
-  if(shouldStay){
-   const h=Math.max(180,Math.round(viewportHeight()));
-   body.style.setProperty("--azny-visible-height",h+"px");
-  }else{
-   body.style.removeProperty("--azny-visible-height");
-  }
+  if(shouldStay)body.style.setProperty("--azny-visible-height",Math.max(180,Math.round(viewportHeight()))+"px");
+  else body.style.removeProperty("--azny-visible-height");
  }
  document.addEventListener("focusin",function(e){
-  if(!body.classList.contains("student-mode"))return;
-  const target=e.target;
-  if(target && target.matches && target.matches(".textobj[contenteditable='true']")){
-   clearTimeout(blurTimer);
-   body.classList.add("text-entry-active");
-   requestAnimationFrame(syncTextEntryLayout);
+  if(!mobileStudent())return;const target=e.target;
+  if(target&&target.matches&&target.matches(".textobj[contenteditable='true']")){
+   clearTimeout(blurTimer);studentTextEditTarget=target;studentTextFinishClick=false;
+   try{const sel=window.getSelection();if(sel&&sel.rangeCount)studentSavedRange=sel.getRangeAt(0).cloneRange()}catch(_){}
+   ensureDoneButton();body.classList.add("text-entry-active");requestAnimationFrame(syncTextEntryLayout);
   }
  },true);
  document.addEventListener("focusout",function(e){
-  if(!body.classList.contains("student-mode"))return;
-  if(e.target && e.target.matches && e.target.matches(".textobj[contenteditable='true']")){
-   clearTimeout(blurTimer);
-   blurTimer=setTimeout(function(){
-    if(!activeText()) {
-     body.classList.remove("text-entry-active");
-     body.style.removeProperty("--azny-visible-height");
-    }
-   },250);
-  }
+  if(!mobileStudent()||!e.target?.matches?.(".textobj[contenteditable='true']"))return;
+  clearTimeout(blurTimer);
+  blurTimer=setTimeout(function(){
+   if(studentTextFinishClick){body.classList.remove("text-entry-active");body.style.removeProperty("--azny-visible-height");return}
+   if(studentTextEditTarget===e.target&&studentTextEditTarget?.isConnected){
+    try{
+     studentTextEditTarget.focus({preventScroll:true});
+     if(studentSavedRange){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(studentSavedRange)}
+    }catch(_){}
+    body.classList.add("text-entry-active");ensureDoneButton();requestAnimationFrame(syncTextEntryLayout);return;
+   }
+   if(!activeText()){body.classList.remove("text-entry-active");body.style.removeProperty("--azny-visible-height");studentTextEditTarget=null;studentSavedRange=null;ensureDoneButton()}
+  },120);
  },true);
- if(window.visualViewport){
-  window.visualViewport.addEventListener("resize",syncTextEntryLayout,{passive:true});
-  window.visualViewport.addEventListener("scroll",syncTextEntryLayout,{passive:true});
- }
+ document.addEventListener("selectionchange",()=>{if(mobileStudent()&&activeText()){try{const sel=window.getSelection();if(sel&&sel.rangeCount)studentSavedRange=sel.getRangeAt(0).cloneRange()}catch(_){}}});
+ if(window.visualViewport){window.visualViewport.addEventListener("resize",syncTextEntryLayout,{passive:true});window.visualViewport.addEventListener("scroll",syncTextEntryLayout,{passive:true})}
  window.addEventListener("resize",syncTextEntryLayout,{passive:true});
- document.addEventListener("selectionchange",function(){
-  if(body.classList.contains("student-mode") && activeText()) syncTextEntryLayout();
- });
-})();
-</script>
+})();</script>
 
 <script>
 /* AZNY: barra de ferramentas do aluno arrastável para cima/baixo em ecrãs táteis. */
