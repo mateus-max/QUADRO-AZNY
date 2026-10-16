@@ -2475,12 +2475,12 @@ async function refreshStudentResumeAvailability(){
  const btn=document.getElementById("studentResumeBtn");if(!btn)return false;
  try{
   const statusSnap=await aznySessionRef().child("status").once("value");
-  if(statusSnap.val()!=="active"){btn.title="A aula ainda não está ativa.";return false}
+  if(statusSnap.val()!=="active"){btn.title=document.documentElement.lang==="en"?"The class is not active yet.":"A aula ainda não está ativa.";return false}
   let found=null;
   try{const saved=JSON.parse(localStorage.getItem(aznyStudentSessionStorageKey())||"null");if(saved?.id){const snap=await studentRequestRef(saved.id)?.once("value");const d=snap?.val();if(d?.status==="approved")found={id:saved.id,data:d}}}catch(_){}
   if(!found&&aznyUid){const previous=await aznySessionRef().child("joinRequests").orderByChild("studentUid").equalTo(aznyUid).once("value");previous.forEach(item=>{const d=item.val()||{};if(d.status==="approved")found={id:item.key,data:d}})}
-  if(found){try{localStorage.setItem(aznyStudentSessionStorageKey(),JSON.stringify({id:found.id,name:found.data.name||""}))}catch(_){}btn.dataset.resumeAvailable="1";btn.title="Sessão anterior reconhecida. Pode voltar sem nova aprovação.";btn.textContent="↩ Voltar à aula";return true}
-  btn.dataset.resumeAvailable="0";btn.title="Ainda não foi encontrada uma entrada aprovada nesta aula.";return false;
+  if(found){try{localStorage.setItem(aznyStudentSessionStorageKey(),JSON.stringify({id:found.id,name:found.data.name||""}))}catch(_){}const en=document.documentElement.lang==="en";btn.dataset.resumeAvailable="1";btn.title=en?"Previous approval found. You can return without another request.":"Sessão anterior reconhecida. Pode voltar sem nova aprovação.";btn.textContent=en?"↩ Return to class":"↩ Voltar à aula";return true}
+  btn.dataset.resumeAvailable="0";btn.title=document.documentElement.lang==="en"?"No approved entry has been found for this class yet.":"Ainda não foi encontrada uma entrada aprovada nesta aula.";return false;
  }catch(e){console.warn("AZNY check resume availability:",e);return false}
 }
 async function restoreStudentSessionIfApproved(){
@@ -2707,6 +2707,15 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
   const secondHead=document.querySelectorAll(".sidehead")[2];if(secondHead)secondHead.textContent=en?"Students in class":"Alunos na aula";
   const pageLabel=document.getElementById("pageLabel");if(pageLabel)pageLabel.textContent=(en?"Page ":"Página ")+currentPage+"/5";
   const done=document.querySelector(".azny-student-text-done");if(done)done.textContent=en?"✓ Finish writing":"✓ Concluir escrita";
+  const cameraBtn=document.getElementById("cameraBtn"),cameraStop=document.getElementById("cameraStopBtn"),micBtn=document.getElementById("micBtn"),micStop=document.getElementById("micStopBtn");
+  if(cameraBtn)cameraBtn.textContent=teacherStream?(en?"🎥 Camera on":"🎥 Câmera ligada"):(en?"🎥 Turn on camera":"🎥 Ligar câmera");
+  if(cameraStop)cameraStop.textContent=en?"⏹ Turn off":"⏹ Desligar";
+  if(micBtn)micBtn.textContent=teacherAudioStream?(en?"🎙 Microphone on":"🎙 Microfone ligado"):(en?"🎙 Turn on microphone":"🎙 Ligar microfone");
+  if(micStop)micStop.textContent=en?"🔇 Turn off":"🔇 Desligar";
+  const camStatus=document.getElementById("camStatus");if(camStatus)camStatus.textContent=teacherStream?(en?"On":"Ligada"):(en?"Off":"Desligada");
+  const outputLabel=document.querySelector(".azny-audio-output-picker");if(outputLabel&&outputLabel.firstChild)outputLabel.firstChild.textContent=en?"🔊 Audio output ":"🔊 Saída de som ";
+  const outputOption=document.querySelector("#aznyAudioOutputSelect option[value='default']");if(outputOption)outputOption.textContent=en?"Automatic output":"Saída automática do dispositivo";
+  const outputStatus=document.getElementById("aznyAudioOutputStatus");if(outputStatus)outputStatus.textContent=en?"Automatic output":"Saída automática do dispositivo";
  }
  function setLanguage(lang){
   lang=lang==="en"?"en":"pt";try{localStorage.setItem(KEY,lang)}catch(e){}document.documentElement.lang=lang;
@@ -2717,6 +2726,28 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
   applyAdditionalLanguage(lang);
  }
  window.aznySetInterfaceLanguage=setLanguage;
+ const uiMessageTranslations={
+  "Ligação em tempo real ativa":"Real-time connection active",
+  "Aula iniciada. O link permanente já está disponível.":"Class started. The permanent link is now available.",
+  "Aula ativa restaurada após atualizar a página":"Active class restored after refreshing the page",
+  "Pedido enviado ao professor em tempo real.":"Request sent to the teacher in real time.",
+  "Pedido enviado. Aguarde a aprovação do professor.":"Request sent. Please wait for the teacher's approval.",
+  "Aula restaurada. Não precisa de fazer novo pedido de entrada.":"Class restored. You do not need to request access again.",
+  "Precisa de solicitar entrada ao professor primeiro.":"You need to request access from the teacher first.",
+  "A sua ligação à rede foi restabelecida.":"Your network connection has been restored.",
+  "A sua rede está instável ou sem ligação. A aula será mantida no quadro.":"Your network is unstable or disconnected. The class will remain open on the board.",
+  "Ligação do professor instável. A aguardar reconexão.":"Teacher connection is unstable. Waiting to reconnect.",
+  "O professor voltou. A aula está a sincronizar.":"The teacher is back. The class is syncing.",
+  "A ligação do professor está instável. Permaneça no quadro; a aula não foi encerrada.":"The teacher connection is unstable. Stay on the board; the class has not ended.",
+  "A ligação está fraca. O quadro permanece aberto enquanto tentamos recuperar.":"The connection is weak. The board will remain open while we try to recover.",
+  "Não foi possível ligar à aula em tempo real.":"Could not connect to the live class.",
+  "Digite o seu nome.":"Enter your name.",
+  "Imagem adicionada":"Image added",
+  "Gramática aberta no quadro":"Grammar opened on the board",
+  "Bíblia aberta no quadro":"Bible opened on the board"
+ };
+ const originalToast=toast;toast=function(message){if(document.documentElement.lang==="en")message=uiMessageTranslations[message]||message;return originalToast(message)};
+ const originalNetworkNotice=showNetworkNotice;showNetworkNotice=function(message,kind){if(document.documentElement.lang==="en")message=uiMessageTranslations[message]||message;return originalNetworkNotice(message,kind)};
  function toggle(){let current="pt";try{current=localStorage.getItem(KEY)||"pt"}catch(e){}setLanguage(current==="pt"?"en":"pt")}
  document.getElementById("teacherLanguageBtn")?.addEventListener("click",toggle);document.getElementById("studentLanguageBtn")?.addEventListener("click",toggle);
  document.getElementById("studentLanguageSelect")?.addEventListener("change",e=>setLanguage(e.target.value));
