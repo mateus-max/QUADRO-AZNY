@@ -2988,28 +2988,45 @@ function setupAznyContextMenu(){if(document.getElementById("aznyContextMenu"))re
 setupAznyContextMenu();
 async function forceRefreshBoard(forStudent){
  const btn=document.getElementById(forStudent?"studentRefreshBoardBtn":"refreshBoardBtn");
- const originalText=btn?.textContent||"↻";
- if(btn){btn.disabled=true;btn.textContent=document.documentElement.lang==="en"?"Restoring connection…":"A restabelecer ligação…"}
+ if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");btn.textContent=document.documentElement.lang==="en"?"Refreshing…":"A atualizar…"}
  try{
-  /* Never reload or restore a historical snapshot: deletions must remain deleted. */
-  resizeCanvas();
-  if(forStudent){
-   if(!AZNY_DB)throw new Error("Sem ligação ao serviço");
-   if(studentApproved){
-    if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected"){studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
-    else{await aznyReconnectStudentMedia();if(studentBoardChannel?.readyState==="open")studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
-   }
-   toast(document.documentElement.lang==="en"?"Connection checked. The class is still active; waiting for real-time sync.":"Ligação verificada. A aula continua; a aguardar a sincronização em tempo real.");
-  }else{
-   /* Do not overwrite the saved board when refreshing; request current live state from connected students. */
+  if(!AZNY_DB)throw new Error("Sem ligação ao serviço");
+  /* Signal every open student tab first, then reload this app in place.
+     The current board is already persisted through the existing save pipeline. */
+  if(!forStudent){
+   const stamp=Date.now();
+   await aznyRoomRef().child("board").child("teacherRefreshAt").set(stamp);
    Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(JSON.stringify({type:"board-request"}))}catch(_){}}});
-   if(AZNY_DB)await aznyRoomRef().child("board").child("teacherRefreshAt").set(firebase.database.ServerValue.TIMESTAMP);
-   toast(document.documentElement.lang==="en"?"Sync request sent. Current content has been preserved.":"Pedido de sincronização enviado. O conteúdo atual foi preservado.");
+  }else if(studentApproved){
+   if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected"){studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
+   else{await aznyReconnectStudentMedia();if(studentBoardChannel?.readyState==="open")studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
   }
-}catch(e){console.warn("AZNY force refresh:",e);toast(document.documentElement.lang==="en"?"The connection has not been restored yet. Try again when the network is available.":"A ligação ainda não foi restabelecida. Tente novamente quando houver rede.")}
- finally{if(btn){btn.disabled=false;btn.textContent=originalText}}
+  try{sessionStorage.setItem("azny-soft-refresh-in-progress","1")}catch(_){}
+  setTimeout(()=>location.reload(),forStudent?250:450);
+ }catch(e){
+  console.warn("AZNY app refresh:",e);
+  if(btn){btn.disabled=false;btn.removeAttribute("aria-busy");btn.textContent="⟳"}
+  toast(document.documentElement.lang==="en"?"Could not refresh the app. Check your connection and try again.":"Não foi possível atualizar o app. Verifique a ligação e tente novamente.");
+ }
 }
 document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(false)});
+/* When the teacher requests an app refresh, students refresh in place too.
+   Keep their session in Firebase/sessionStorage and avoid forcing them out of class. */
+(function(){
+ if(!isStudent||!AZNY_DB)return;
+ let initial=true,last=0;
+ const ref=()=>aznyRoomRef().child("board").child("teacherRefreshAt");
+ try{ref().on("value",snap=>{
+  const value=Number(snap.val()||0);
+  if(initial){initial=false;last=value;return}
+  if(value>last&&value-Date.now()<120000){
+   last=value;
+   try{sessionStorage.setItem("azny-soft-refresh-in-progress","1")}catch(_){}
+   showNetworkNotice(document.documentElement.lang==="en"?"The app is updating to the teacher's latest version…":"O app está a atualizar para a versão mais recente do professor…","good");
+   setTimeout(()=>location.reload(),650);
+  }
+ })}catch(e){console.warn("AZNY student app refresh listener:",e)}
+})();
 
 
 </script>
@@ -3401,16 +3418,23 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   saveSelection();
  }
  function insertText(value){
-  if(!active)return;
+  if(!active||!active.isConnected)return;
   restoreSelection();
-  if(!savedRange){active.append(document.createTextNode(value));return}
-  const range=savedRange;
+  const sel=getSelection();
+  let range=savedRange;
+  if(!range||!active.contains(range.startContainer)){
+   range=document.createRange();range.selectNodeContents(active);range.collapse(false);
+  }
   range.deleteContents();
   const node=document.createTextNode(value);
   range.insertNode(node);
-  range.setStartAfter(node);range.collapse(true);
-  const sel=getSelection();sel.removeAllRanges();sel.addRange(range);
-  savedRange=range.cloneRange();emitInput();
+  /* Merge adjacent text nodes so successive taps cannot replace the prior letter. */
+  const parent=node.parentNode;
+  if(parent&&parent.normalize)parent.normalize();
+  const nextRange=document.createRange();
+  nextRange.setStartAfter(node);nextRange.collapse(true);
+  sel.removeAllRanges();sel.addRange(nextRange);
+  savedRange=nextRange.cloneRange();emitInput();
  }
  function backspace(){
   if(!active)return;restoreSelection();
@@ -3497,8 +3521,16 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   },150);
  },true);
  document.addEventListener("selectionchange",()=>{if(active&&document.activeElement===active)saveSelection()});
- window.addEventListener("resize",()=>{if(active)openKeyboard(active)},{passive:true});
- window.addEventListener("orientationchange",()=>{if(active)closeKeyboard(false)},{passive:true});
+ window.addEventListener("resize",()=>{
+  if(!active||!active.isConnected)return;
+  /* Resize the keyboard in place; do not rebuild its keys/caret during typing. */
+  requestAnimationFrame(()=>{
+   const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();
+   keyboard.style.left=Math.max(0,r.left-w.left)+"px";
+   keyboard.style.width=Math.min(r.width,w.right-r.left)+"px";
+  });
+ },{passive:true});
+ window.addEventListener("orientationchange",()=>{if(active&&active.isConnected)requestAnimationFrame(()=>{const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();keyboard.style.left=Math.max(0,r.left-w.left)+"px";keyboard.style.width=Math.min(r.width,w.right-r.left)+"px"})},{passive:true});
 })();
 </script>
 </body>
