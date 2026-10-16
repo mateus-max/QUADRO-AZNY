@@ -1513,7 +1513,7 @@ function constrainTextToBoard(el){
 function createText(x,y,anchor){
  pushHistory();
  const el=document.createElement("div");el.className="object textobj";el.dataset.id="o"+(++objectId);el.contentEditable="true";el.spellcheck=true;
- if(!document.body.classList.contains("student-mode")&&matchMedia("(max-width:700px) and (pointer:coarse)").matches)el.setAttribute("inputmode","none");
+ if(!document.body.classList.contains("student-mode")&&matchMedia("(pointer:coarse)").matches)el.setAttribute("inputmode","none");
  el.style.left=x+"px";el.style.top=y+"px";el.style.fontSize=document.getElementById("fontSize").value+"px";el.style.fontFamily=document.getElementById("fontFamily").value;el.style.color="#ffffff";
  constrainTextToBoard(el);
  if(anchor)anchorTextToObject(el,anchor,x,y);
@@ -2756,7 +2756,7 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
 })();
 
 function showAznyLandscapePrompt(){
- if(!matchMedia("(max-width:700px) and (pointer:coarse)").matches||document.getElementById("aznyLandscapePrompt"))return;
+ if(!matchMedia("(pointer:coarse)").matches||document.getElementById("aznyLandscapePrompt"))return;
  const en=document.documentElement.lang==="en",overlay=document.createElement("div");overlay.id="aznyLandscapePrompt";overlay.className="azny-landscape-prompt";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");
  overlay.innerHTML='<div class="azny-landscape-prompt-card"><div class="azny-landscape-prompt-icon" aria-hidden="true">📱 ↻</div><h2>'+(en?"Turn your phone horizontally":"Vire o telefone para a horizontal")+'</h2><p>'+(en?"For better visibility and easier use of the board, keep your phone in landscape mode.":"Para ver melhor o quadro e navegar com facilidade, utilize o telefone na posição horizontal (modo paisagem).")+'</p><button type="button" id="aznyLandscapeContinue">'+(en?"Continue":"Entendi, continuar")+'</button></div>';
  document.body.appendChild(overlay);
@@ -2846,7 +2846,7 @@ document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{
  "use strict";
  const body=document.body;
  let blurTimer=null,studentTextEditTarget=null,studentTextFinishClick=false,studentSavedRange=null,doneButton=null;
- function mobileStudent(){return body.classList.contains("student-mode")&&matchMedia("(max-width:700px) and (pointer:coarse)").matches}
+ function mobileStudent(){return body.classList.contains("student-mode")&&matchMedia("(pointer:coarse)").matches}
  function activeText(){const el=document.activeElement;return !!(el&&el.matches&&el.matches(".student-mode .textobj[contenteditable='true']"))}
  function ensureDoneButton(){
   if(!mobileStudent())return;
@@ -3157,7 +3157,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
 #aznyBoardKeyboard button.azny-key-wide{flex:1.7;background:#dbe7f3}
 #aznyBoardKeyboard button.azny-key-space{flex:5}
 #aznyBoardKeyboard button.azny-key-done{background:#1677ff;color:white;border-color:#1677ff}
-@media (min-width:701px){#aznyBoardKeyboard{display:none!important}}
+@media (pointer:fine){#aznyBoardKeyboard{display:none!important}}
 
 /* AZNY_LAYER_FIX: keep the shared pointer/loupe and ink above every board object,
    including images, uploaded documents, PDFs, charts and music resources. */
@@ -3175,7 +3175,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  if(!board||!wrap)return;
  let active=null,shift=false;
  let savedRange=null;
- const mobile=()=>matchMedia("(max-width:700px) and (pointer:coarse)").matches;
+ const mobile=()=>matchMedia("(pointer:coarse)").matches;
  const keyboard=document.createElement("div");
  keyboard.id="aznyBoardKeyboard";
  keyboard.setAttribute("role","group");
