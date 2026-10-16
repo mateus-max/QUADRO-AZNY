@@ -1234,7 +1234,8 @@ function bindTeacherPresenceWatchForStudent(){
   const state=pc.connectionState||pc.iceConnectionState||"unknown";
   if(state===lastState)return;lastState=state;
   if(state==="failed"||state==="disconnected"){
-   showNetworkNotice(isStudent?"A ligação está fraca. O quadro permanece aberto enquanto tentamos recuperar.":"A ligação do aluno está instável ou caiu.","bad");
+   if(isStudent)aznyScheduleStudentReconnect("peer-"+state,2500);
+   showNetworkNotice(isStudent?(document.documentElement.lang==="en"?"Connection is unstable. The board will stay open while we reconnect automatically.":"A ligação está fraca. O quadro permanece aberto enquanto tentamos recuperar."):(document.documentElement.lang==="en"?"The student's connection is unstable or has dropped.":"A ligação do aluno está instável ou caiu."),"bad");
    toast(isStudent?"Ligação fraca. A tentar recuperar…":"A rede do aluno está instável.");
    if(isStudent&&AZNY_DB&&requestId)studentRequestRef(requestId)?.update({network:"poor",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});
    if(!isStudent&&AZNY_DB&&requestId)signalRef(requestId)?.update({network:"poor",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});
