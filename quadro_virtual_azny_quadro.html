@@ -2767,7 +2767,7 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
   if(cameraStop)cameraStop.textContent=en?"⏹ Turn off":"⏹ Desligar";
   if(micBtn)micBtn.textContent=teacherAudioStream?(en?"🎙 Microphone on":"🎙 Microfone ligado"):(en?"🎙 Turn on microphone":"🎙 Ligar microfone");
   if(micStop)micStop.textContent=en?"🔇 Turn off":"🔇 Desligar";
-  const camStatus=document.getElementById("camStatus");if(camStatus)camStatus.textContent=teacherStream?(en?"On":"Ligada"):(en?"Off":"Desligada");
+  const camStatus=document.getElementById("camStatus");if(camStatus)camStatus.textContent=teacherStream?(en?"On":"Ligada"):(en?"Off":"Desligada");const mediaStatus=document.getElementById("teacherMediaStatus");if(mediaStatus){const cam=teacherStream?(en?"on":"ligada"):(en?"off":"desligada"),mic=teacherAudioStream?(en?"on":"ligado"):(en?"off":"desligado");mediaStatus.textContent=en?"Camera: "+cam+" · Microphone: "+mic:"Câmera: "+cam+" · Microfone: "+mic}
   const outputLabel=document.querySelector(".azny-audio-output-picker");if(outputLabel&&outputLabel.firstChild)outputLabel.firstChild.textContent=en?"🔊 Audio output ":"🔊 Saída de som ";
   const outputOption=document.querySelector("#aznyAudioOutputSelect option[value='default']");if(outputOption)outputOption.textContent=en?"Automatic output":"Saída automática do dispositivo";
   const outputStatus=document.getElementById("aznyAudioOutputStatus");if(outputStatus)outputStatus.textContent=en?"Automatic output":"Saída automática do dispositivo";
