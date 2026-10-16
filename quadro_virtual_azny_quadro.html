@@ -2193,6 +2193,7 @@ async function startTeacherFullScreenRecording(button,boxId){
   console.warn("AZNY full-screen recording:",e);
   try{clearInterval(scanTimer)}catch(_){}
   try{display?.getTracks?.().forEach(t=>t.stop())}catch(_){}
+  try{recordingMicStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}
   try{await audioContext?.close?.()}catch(_){}
   const en=document.documentElement.lang==="en";
   toast(en?(e.name==="NotAllowedError"?"Screen recording was cancelled.":"Could not start full-screen recording. Check screen and microphone permissions."):(e.name==="NotAllowedError"?"A gravação do ecrã foi cancelada.":"Não foi possível iniciar a gravação do ecrã inteiro. Verifique as permissões do ecrã e do microfone."));
