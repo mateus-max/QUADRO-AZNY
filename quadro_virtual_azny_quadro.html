@@ -1937,8 +1937,11 @@ document.getElementById("helpBtn").onclick=()=>document.getElementById("helpModa
 document.getElementById("closeHelp").onclick=()=>document.getElementById("helpModal").classList.remove("show");
 
 function updateTeacherMediaStatus(){
- const cam=teacherStream?"ligada":"desligada",mic=teacherAudioStream?"ligado":"desligado";
- document.getElementById("teacherMediaStatus").textContent="Câmera: "+cam+" · Microfone: "+mic;
+ const en=document.documentElement.lang==="en",cam=teacherStream?(en?"on":"ligada"):(en?"off":"desligada"),mic=teacherAudioStream?(en?"on":"ligado"):(en?"off":"desligado");
+ const status=document.getElementById("teacherMediaStatus");if(status)status.textContent=en?"Camera: "+cam+" · Microphone: "+mic:"Câmera: "+cam+" · Microfone: "+mic;
+ const cameraBtn=document.getElementById("cameraBtn"),micBtn=document.getElementById("micBtn");
+ if(cameraBtn)cameraBtn.textContent=teacherStream?(en?"🎥 Camera on":"🎥 Câmera ligada"):(en?"🎥 Turn on camera":"🎥 Ligar câmera");
+ if(micBtn)micBtn.textContent=teacherAudioStream?(en?"🎙 Microphone on":"🎙 Microfone ligado"):(en?"🎙 Turn on microphone":"🎙 Ligar microfone");
 }
 async function startCamera(){
  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
@@ -1969,7 +1972,7 @@ async function startCamera(){
   if(!teacherStream)throw lastError||new Error("A câmara não devolveu uma transmissão.");
   if(v){v.srcObject=teacherStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.removeAttribute("hidden");v.hidden=false;v.style.cssText+=";display:block!important;visibility:visible!important;opacity:1!important;width:100%;height:100%;min-height:60px;object-fit:cover;background:#0b1828;position:absolute;inset:0;z-index:2";v.onloadedmetadata=()=>{v.play?.().catch(()=>{})};await new Promise(resolve=>{if(v.readyState>=2){resolve();return}const done=()=>resolve();v.addEventListener("loadeddata",done,{once:true});setTimeout(done,1200)});try{await v.play()}catch(playError){console.warn("AZNY camera play:",playError);toast("A câmara está ligada. Toque no vídeo para iniciar a imagem.");v.addEventListener("pointerdown",()=>v.play?.().catch(()=>{}),{once:true})}}
   document.querySelector("#teacherCamera .cam-off").style.display="none";
-  document.getElementById("camStatus").textContent="Ligada";
+  document.getElementById("camStatus").textContent=document.documentElement.lang==="en"?"On":"Ligada";
   if(btn)btn.disabled=true;
   document.getElementById("cameraStopBtn").disabled=false;
   syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
@@ -1987,7 +1990,7 @@ function stopCamera(){
  if(teacherStream){teacherStream.getTracks().forEach(t=>t.stop());teacherStream=null}
  const v=document.getElementById("teacherVideo");v.srcObject=null;v.hidden=true;
  document.querySelector("#teacherCamera .cam-off").style.display="flex";
- document.getElementById("camStatus").textContent="Desligada";
+ document.getElementById("camStatus").textContent=document.documentElement.lang==="en"?"Off":"Desligada";
  document.getElementById("cameraBtn").disabled=false;document.getElementById("cameraStopBtn").disabled=true;
  syncTeacherMediaToPeers();updateTeacherMediaStatus()
 }
@@ -2744,7 +2747,11 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
   "Digite o seu nome.":"Enter your name.",
   "Imagem adicionada":"Image added",
   "Gramática aberta no quadro":"Grammar opened on the board",
-  "Bíblia aberta no quadro":"Bible opened on the board"
+  "Bíblia aberta no quadro":"Bible opened on the board",
+  "Câmera do professor ligada e disponível em tempo real":"Teacher camera is on and available in real time",
+  "Microfone do professor ligado e disponível em tempo real":"Teacher microphone is on and available in real time",
+  "Microfone do professor desligado":"Teacher microphone is off",
+  "A câmera exige HTTPS ou localhost.":"Camera access requires HTTPS or localhost."
  };
  const originalToast=toast;toast=function(message){if(document.documentElement.lang==="en")message=uiMessageTranslations[message]||message;return originalToast(message)};
  const originalNetworkNotice=showNetworkNotice;showNetworkNotice=function(message,kind){if(document.documentElement.lang==="en")message=uiMessageTranslations[message]||message;return originalNetworkNotice(message,kind)};
