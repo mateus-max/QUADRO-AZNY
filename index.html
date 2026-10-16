@@ -106,10 +106,13 @@ body{overflow:auto;background:linear-gradient(135deg,#071b33,#0e2c4c)}
 <div class="register-pay-head"><div><small>TRANSFERÊNCIA BANCÁRIA</small><h4>Dados bancários</h4></div><span class="register-bank-icon">▤</span></div>
 <p>A transferência bancária estará disponível brevemente. Por enquanto, utilize o Express para efetuar o pagamento.</p>
 </div>
-<input class="azny-input" id="licenseName" placeholder="Nome completo do professor" autocomplete="name">
-<input class="azny-input" id="licenseEmail" type="email" placeholder="E-mail para criar a conta" autocomplete="email" required><input class="azny-input" id="licensePhone" placeholder="Telefone / WhatsApp para contacto" autocomplete="tel">
-<input class="azny-input" id="licensePassword" type="password" placeholder="Criar senha" autocomplete="new-password">
-<input class="azny-input" id="licensePasswordConfirm" type="password" placeholder="Confirmar senha" autocomplete="new-password"><button class="azny-btn" type="button" id="registerGoogle" style="width:100%;margin:8px 0">🌐 Criar/continuar com Google</button><div id="googleRegisterNote" class="azny-note" style="display:none">Conta Google selecionada. O acesso ao quadro continuará pendente até à aprovação da direção.</div>
+<input class="azny-input" id="licenseName" placeholder="Nome completo do professor" autocomplete="name" required>
+<input class="azny-input" id="licenseEmail" type="email" placeholder="E-mail para criar a conta" autocomplete="email" required>
+<input class="azny-input" id="licensePassword" type="password" placeholder="Criar senha (mínimo 6 caracteres)" autocomplete="new-password" required>
+<input class="azny-input" id="licensePasswordConfirm" type="password" placeholder="Confirmar senha" autocomplete="new-password" required>
+<input class="azny-input" id="licensePhone" placeholder="Número de telefone / WhatsApp" autocomplete="tel" required>
+<button class="azny-btn" type="button" id="registerGoogle" style="width:100%;margin:8px 0">🌐 Criar/continuar com Google</button>
+<div id="googleRegisterNote" class="azny-note" style="display:none">Conta Google selecionada. O acesso ao quadro continuará pendente até à aprovação da direção.</div>
 <div class="azny-row checkout-fields"><select class="azny-input" id="billingPeriod"><option value="monthly">Plano mensal</option><option value="annual">Plano anual</option></select><input class="azny-input" id="proofInput" type="file" accept="image/*,.pdf" aria-label="Anexar comprovativo"></div>
 <div id="selectedPlanInfo" class="azny-note"></div>
 <div class="azny-row checkout-actions"><button class="azny-btn" id="cancelCheckout">Cancelar</button><button class="azny-btn primary" id="submitPayment">Enviar comprovativo e solicitar ativação</button></div>
