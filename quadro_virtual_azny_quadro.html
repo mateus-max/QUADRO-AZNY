@@ -2988,25 +2988,35 @@ function setupAznyContextMenu(){if(document.getElementById("aznyContextMenu"))re
 setupAznyContextMenu();
 async function forceRefreshBoard(forStudent){
  const btn=document.getElementById(forStudent?"studentRefreshBoardBtn":"refreshBoardBtn");
- if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");btn.textContent=document.documentElement.lang==="en"?"Refreshing…":"A atualizar…"}
+ if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");btn.textContent=document.documentElement.lang==="en"?"Refreshing app…":"A atualizar a aplicação…"}
+ const en=document.documentElement.lang==="en";
  try{
-  if(!AZNY_DB)throw new Error("Sem ligação ao serviço");
-  /* Signal every open student tab first, then reload this app in place.
-     The current board is already persisted through the existing save pipeline. */
+  /* First notify students if Firebase is available, but never block the browser reload on it. */
   if(!forStudent){
-   const stamp=Date.now();
-   await aznyRoomRef().child("board").child("teacherRefreshAt").set(stamp);
-   Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(JSON.stringify({type:"board-request"}))}catch(_){}}});
+   try{
+    if(AZNY_DB)await aznyRoomRef().child("board").child("teacherRefreshAt").set(Date.now());
+    Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(JSON.stringify({type:"board-request"}))}catch(_){}}});
+   }catch(signalError){console.warn("AZNY refresh notification:",signalError)}
   }else if(studentApproved){
-   if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected"){studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
-   else{await aznyReconnectStudentMedia();if(studentBoardChannel?.readyState==="open")studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
+   try{
+    if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected")studentBoardChannel.send(JSON.stringify({type:"board-request"}));
+    else{await aznyReconnectStudentMedia();if(studentBoardChannel?.readyState==="open")studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
+   }catch(reconnectError){console.warn("AZNY refresh reconnect:",reconnectError)}
   }
   try{sessionStorage.setItem("azny-soft-refresh-in-progress","1")}catch(_){}
-  setTimeout(()=>location.reload(),forStudent?250:450);
+  /* Match the browser's refresh button: reload this exact page in-place.
+     Ask the PWA service worker to check for a newer deployed version first. */
+  try{
+   if("serviceWorker" in navigator){
+    const registrations=await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(reg=>reg.update().catch(()=>{})));
+   }
+  }catch(updateError){console.warn("AZNY service worker update check:",updateError)}
+  setTimeout(()=>window.location.reload(),150);
  }catch(e){
   console.warn("AZNY app refresh:",e);
   if(btn){btn.disabled=false;btn.removeAttribute("aria-busy");btn.textContent="⟳"}
-  toast(document.documentElement.lang==="en"?"Could not refresh the app. Check your connection and try again.":"Não foi possível atualizar o app. Verifique a ligação e tente novamente.");
+  toast(en?"Could not refresh the app. Check your connection and try again.":"Não foi possível atualizar a aplicação. Verifique a ligação e tente novamente.");
  }
 }
 document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(false)});
