@@ -2106,8 +2106,10 @@ async function startRecording(forStudent=isStudent){
  if(previousBox){previousBox.style.display="none";previousBox.replaceChildren()}
  const button=document.getElementById(forStudent?"studentRecordBtn":"recordClassBtn"),boxId=forStudent?"studentRecordDownload":"recordDownload";
  if(!window.MediaRecorder){toast("Este navegador não disponibiliza a gravação de vídeo.");return}
- /* Record the live AZNY board directly. This avoids the Android screen-picker
-    flow and makes the second press stop, finalize and expose the download. */
+ /* On a desktop teacher session, record the entire shared screen and mix the
+    teacher microphone with every participant's incoming WebRTC audio track. */
+ if(!forStudent&&!matchMedia("(pointer:coarse)").matches){startTeacherFullScreenRecording(button,boxId);return}
+ /* Keep the existing lightweight board capture for student/mobile recording. */
  startBoardFallbackRecording(forStudent,button,boxId);return;
  toast("Escolha o ecrã ou separador que pretende gravar.");
  navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:20,max:24}},audio:true}).then(display=>{
@@ -2127,6 +2129,75 @@ async function startRecording(forStudent=isStudent){
   };
   if(!display.getAudioTracks().length&&navigator.mediaDevices.getUserMedia){navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false}).then(m=>{micStream=m;tracks.push(...m.getAudioTracks());continueRecording()}).catch(e=>{console.info("AZNY recording microphone not added:",e?.message||e);continueRecording()})}else continueRecording();
  }).catch(e=>{console.warn("AZNY start recording:",e);toast(document.documentElement.lang==="en"?(e.name==="NotAllowedError"?"Recording cancelled.":"Could not start recording. Check your browser permissions."):(e.name==="NotAllowedError"?"Gravação cancelada.":"Não foi possível iniciar a gravação. Verifique as permissões do navegador."))});
+}
+async function startTeacherFullScreenRecording(button,boxId){
+ if(!navigator.mediaDevices?.getDisplayMedia){toast(document.documentElement.lang==="en"?"This browser cannot capture the desktop screen. Open the class in an up-to-date desktop Chrome or Edge.":"Este navegador não permite gravar o ecrã do computador. Abra a aula num Chrome ou Edge atualizado.");return}
+ let display=null,audioContext=null,scanTimer=null,recordingMicStream=null;
+ try{
+  toast(document.documentElement.lang==="en"?"Choose “Entire Screen” in the sharing window to record the full teacher screen.":"Na janela de partilha, escolha «Ecrã inteiro» para gravar todo o ecrã do professor.");
+  display=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:"monitor",frameRate:{ideal:20,max:30}},audio:false});
+  const videoTrack=display.getVideoTracks()[0];
+  if(!videoTrack)throw new Error("No screen video track");
+  const surface=videoTrack.getSettings?.().displaySurface;
+  if(surface&&surface!=="monitor"){
+   display.getTracks().forEach(t=>t.stop());
+   toast(document.documentElement.lang==="en"?"Please stop and start again, then select “Entire Screen”, not a tab or window.":"Pare e inicie novamente a gravação, escolhendo «Ecrã inteiro», e não um separador ou janela.");
+   return;
+  }
+  const hasTeacherMic=!!teacherAudioStream?.getAudioTracks?.().some(t=>t.readyState==="live"&&t.enabled);
+  if(!hasTeacherMic){
+   if(!navigator.mediaDevices?.getUserMedia)throw new Error("Microphone capture is not supported");
+   recordingMicStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1}},video:false});
+  }
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)throw new Error("Audio mixing is not supported by this browser");
+  audioContext=new AudioCtx();
+  if(audioContext.state==="suspended")await audioContext.resume();
+  const audioDestination=audioContext.createMediaStreamDestination(),seenTrackIds=new Set(),sourceNodes=[];
+  const addAudioStream=stream=>{
+   if(!stream?.getAudioTracks)return;
+   stream.getAudioTracks().forEach(track=>{
+    if(!track||track.readyState==="ended"||seenTrackIds.has(track.id))return;
+    seenTrackIds.add(track.id);
+    try{
+     const oneTrackStream=new MediaStream([track]),source=audioContext.createMediaStreamSource(oneTrackStream);
+     source.connect(audioDestination);sourceNodes.push(source);
+    }catch(e){console.warn("AZNY recording audio source:",e)}
+   });
+  };
+  const scanAudioSources=()=>{
+   addAudioStream(teacherAudioStream);
+   addAudioStream(recordingMicStream);
+   document.querySelectorAll("#students .student").forEach(card=>{
+    addAudioStream(card._aznyRemoteStream);
+    const audio=card.querySelector("audio.azny-student-audio");
+    if(audio?.srcObject)addAudioStream(audio.srcObject);
+   });
+  };
+  scanAudioSources();
+  scanTimer=setInterval(scanAudioSources,500);
+  const combined=new MediaStream([...display.getVideoTracks(),...audioDestination.stream.getAudioTracks()]);
+  combined._aznyDisplayStream=display;combined._aznyRecordingMicStream=recordingMicStream;combined._aznyAudioContext=audioContext;combined._aznyAudioScanTimer=scanTimer;combined._aznyAudioSources=sourceNodes;
+  recordedChunks=[];recordingStartedAt=Date.now();
+  const types=["video/webm;codecs=vp8,opus","video/webm;codecs=vp9,opus","video/webm"],mimeType=types.find(t=>MediaRecorder.isTypeSupported?.(t));
+  screenRecorder=mimeType?new MediaRecorder(combined,{mimeType}):new MediaRecorder(combined);
+  screenRecorder._aznyForStudent=false;screenRecorder._aznyBoxId=boxId;screenRecorder._aznyButtonId="recordClassBtn";
+  screenRecorder.ondataavailable=e=>{if(e.data&&e.data.size)recordedChunks.push(e.data)};
+  screenRecorder.onerror=e=>{console.error("AZNY full-screen recording:",e.error||e);toast(document.documentElement.lang==="en"?"An error occurred while recording.":"Ocorreu um erro durante a gravação.")};
+  screenRecorder.onstop=()=>saveRecording();
+  videoTrack.addEventListener("ended",()=>{if(screenRecorder?.state==="recording")stopRecording()},{once:true});
+  screenRecorder.start(1000);
+  if(button){button.textContent=document.documentElement.lang==="en"?"⏹ Stop and save":"⏹ Parar e guardar";button.classList.add("recording")}
+  toast(document.documentElement.lang==="en"?"Full-screen recording started: screen, teacher camera, participant videos, teacher microphone and participant audio. Click again to save.":"Gravação do ecrã inteiro iniciada: ecrã, câmera do professor, imagens dos participantes, microfone do professor e áudio dos alunos. Clique novamente para guardar.");
+ }catch(e){
+  console.warn("AZNY full-screen recording:",e);
+  try{clearInterval(scanTimer)}catch(_){}
+  try{display?.getTracks?.().forEach(t=>t.stop())}catch(_){}
+  try{recordingMicStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}
+  try{await audioContext?.close?.()}catch(_){}
+  const en=document.documentElement.lang==="en";
+  toast(en?(e.name==="NotAllowedError"?"Screen recording was cancelled.":"Could not start full-screen recording. Check screen and microphone permissions."):(e.name==="NotAllowedError"?"A gravação do ecrã foi cancelada.":"Não foi possível iniciar a gravação do ecrã inteiro. Verifique as permissões do ecrã e do microfone."));
+ }
 }
 async function startBoardFallbackRecording(forStudent,button,boxId){
  const target=document.getElementById("board");
@@ -2174,7 +2245,7 @@ async function startBoardFallbackRecording(forStudent,button,boxId){
 function stopRecording(){if(screenRecorder&&screenRecorder.state==="recording"){try{screenRecorder.requestData()}catch(_){}screenRecorder.stop()}}
 function saveRecording(){
  const recorder=screenRecorder,stream=recorder?.stream,chunks=recordedChunks.slice();
- if(stream){try{stream._aznyDisplayStream?.getTracks().forEach(t=>t.stop())}catch(_){}try{stream._aznyMicStream?.getTracks().forEach(t=>t.stop())}catch(_){}try{stream.getTracks().forEach(t=>t.stop())}catch(_){}}
+ if(stream){try{clearInterval(stream._aznyAudioScanTimer)}catch(_){}try{stream._aznyDisplayStream?.getTracks().forEach(t=>t.stop())}catch(_){}try{stream._aznyMicStream?.getTracks().forEach(t=>t.stop())}catch(_){}try{stream._aznyRecordingMicStream?.getTracks().forEach(t=>t.stop())}catch(_){}try{stream.getTracks().forEach(t=>t.stop())}catch(_){}try{stream._aznyAudioSources?.forEach(n=>n.disconnect())}catch(_){}try{stream._aznyAudioContext?.close?.()}catch(_){}}
  const blob=new Blob(chunks,{type:recorder?.mimeType||"video/webm"}),box=document.getElementById(recorder?._aznyBoxId||"recordDownload"),btn=document.getElementById(recorder?._aznyButtonId||"recordClassBtn");
  if(btn){btn.textContent="⏺ Gravar aula";btn.classList.remove("recording")}screenRecorder=null;recordedChunks=[];
  if(!blob.size){toast("A gravação ficou vazia. Tente novamente e permita a captura do ecrã.");return}
