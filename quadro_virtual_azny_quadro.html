@@ -946,12 +946,19 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
  @media(max-width:700px){.azny-language-btn{font-size:10px!important;padding:4px 6px!important}}
  
  .azny-entry-language{font:inherit!important;background:#fff;color:#10243b}
- .azny-landscape-prompt{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,12,25,.94);color:#fff;text-align:center}
- .azny-landscape-prompt-card{width:min(560px,100%);padding:clamp(24px,6vw,42px);border:2px solid #66aaff;border-radius:22px;background:#0d2745;box-shadow:0 16px 55px #0008}
- .azny-landscape-prompt-icon{font-size:clamp(54px,12vw,84px);line-height:1.1;margin-bottom:18px}
- .azny-landscape-prompt h2{font-size:clamp(24px,5vw,34px);line-height:1.2;margin:0 0 14px;color:#fff}
- .azny-landscape-prompt p{font-size:clamp(16px,3.8vw,20px);line-height:1.5;color:#e3eefc;margin:0 0 22px}
- .azny-landscape-prompt button{min-height:52px;width:100%;border:0;border-radius:12px;background:#1680ff;color:#fff;font-size:17px;font-weight:850;padding:12px}
+ .azny-landscape-prompt{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(3,12,25,.95);color:#fff;text-align:center;overflow-y:auto}
+ .azny-landscape-prompt-card{width:min(560px,100%);max-height:calc(100dvh - 28px);overflow-y:auto;padding:clamp(16px,4vw,30px);border:2px solid #66aaff;border-radius:22px;background:#0d2745;box-shadow:0 16px 55px #0008}
+ .azny-landscape-prompt-diagram{display:flex;align-items:stretch;justify-content:center;gap:clamp(12px,5vw,36px);margin:0 auto 18px;max-width:440px}
+ .azny-landscape-step{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;padding:10px 6px;border-radius:14px;background:#153657;border:1px solid #315879}
+ .azny-landscape-step svg{display:block;width:100%;max-width:150px;height:clamp(76px,20vw,112px)}
+ .azny-landscape-step strong{font-size:clamp(13px,3.4vw,16px);line-height:1.2;color:#fff}
+ .azny-landscape-step.bad{border-color:#ff6b78}
+ .azny-landscape-step.good{border-color:#55d99a}
+ .azny-landscape-prompt h2{font-size:clamp(22px,5vw,30px);line-height:1.2;margin:0 0 14px;color:#fff}
+ .azny-landscape-prompt .landscape-copy{font-size:clamp(14px,3.6vw,17px);line-height:1.45;color:#e3eefc;margin:0 0 18px}
+ .azny-landscape-prompt .landscape-copy p{margin:7px 0}
+ .azny-landscape-prompt .landscape-copy .lang-label{font-weight:900;color:#8fc7ff}
+ .azny-landscape-prompt button{min-height:50px;width:100%;border:0;border-radius:12px;background:#1680ff;color:#fff;font-size:17px;font-weight:850;padding:12px}
  .azny-teacher-reload-overlay{position:fixed;inset:0;z-index:20001;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,12,25,.88)}
  .azny-teacher-reload-card{width:min(520px,100%);padding:24px;border-radius:18px;border:2px solid #e7b64c;background:#fff;color:#10243b;box-shadow:0 14px 50px #0005}
  .azny-teacher-reload-card h2{margin:0 0 12px;font-size:clamp(21px,5vw,28px);line-height:1.2}
@@ -2878,8 +2885,8 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
 
 function showAznyLandscapePrompt(){
  if(!matchMedia("(pointer:coarse)").matches||document.getElementById("aznyLandscapePrompt"))return;
- const en=document.documentElement.lang==="en",overlay=document.createElement("div");overlay.id="aznyLandscapePrompt";overlay.className="azny-landscape-prompt";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");
- overlay.innerHTML='<div class="azny-landscape-prompt-card"><div class="azny-landscape-prompt-icon" aria-hidden="true">📱 ↻</div><h2>'+(en?"Turn your phone horizontally":"Vire o telefone para a horizontal")+'</h2><p>'+(en?"For better visibility and easier use of the board, keep your phone in landscape mode.":"Para ver melhor o quadro e navegar com facilidade, utilize o telefone na posição horizontal (modo paisagem).")+'</p><button type="button" id="aznyLandscapeContinue">'+(en?"Continue":"Entendi, continuar")+'</button></div>';
+ const overlay=document.createElement("div");overlay.id="aznyLandscapePrompt";overlay.className="azny-landscape-prompt";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");
+ overlay.innerHTML='<div class="azny-landscape-prompt-card"><h2>Antes de entrar na aula / Before joining the class</h2><div class="azny-landscape-prompt-diagram" role="img" aria-label="Telefone em pé com X; telefone na horizontal com sinal de certo / Portrait phone with X; landscape phone with check mark"><div class="azny-landscape-step bad"><svg viewBox="0 0 120 110" aria-hidden="true"><rect x="39" y="5" width="42" height="91" rx="8" fill="#101923" stroke="#d9e8f7" stroke-width="3"/><rect x="44" y="15" width="32" height="68" rx="3" fill="#d9efff"/><circle cx="60" cy="89" r="2.5" fill="#d9e8f7"/><path d="M48 31 L72 55 M72 31 L48 55" stroke="#e63946" stroke-width="7" stroke-linecap="round"/></svg><strong>Em pé / Portrait</strong><span aria-hidden="true" style="font-size:24px;font-weight:900;color:#ff6875">✕</span></div><div class="azny-landscape-step good"><svg viewBox="0 0 150 100" aria-hidden="true"><rect x="7" y="22" width="136" height="58" rx="9" fill="#101923" stroke="#d9e8f7" stroke-width="3"/><rect x="17" y="29" width="116" height="44" rx="3" fill="#d9efff"/><circle cx="137" cy="51" r="2.5" fill="#d9e8f7"/><path d="M43 51 L61 66 L91 36" stroke="#168c55" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><strong>Deitado / Landscape</strong><span aria-hidden="true" style="font-size:24px;font-weight:900;color:#55d99a">✓</span></div></div><div class="landscape-copy"><p><span class="lang-label">PORTUGUÊS:</span> Vire o telefone para a horizontal (deitado) para ver melhor o quadro e participar na aula.</p><p><span class="lang-label">ENGLISH:</span> Turn your phone sideways (landscape) to see the board clearly and join the class.</p></div><button type="button" id="aznyLandscapeContinue">Entendi / I understand — Continuar / Continue</button></div>';
  document.body.appendChild(overlay);
  overlay.querySelector("#aznyLandscapeContinue").addEventListener("click",async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(_){}overlay.remove();if(isStudent)syncStudentAutoOrientation();setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},180)});
 }
