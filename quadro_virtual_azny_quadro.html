@@ -1120,7 +1120,7 @@ let tool="select",selected=null,zoom=1,strokes=[],undoStack=[],redoStack=[],obje
 let currentPage=1;
 let aznyLiveStrokeId="",aznyRemoteLiveStrokes=new Map();
 let pageStates=Array(5).fill(null);
-/* Tombstones prevent deleted board objects from returning through stale Firebase/WebRTC snapshots. */
+/* Tombstones prevent deleted board objects from returning through stale sync snapshots. */
 let deletedObjectIds=new Set();
 function aznyObjectKey(o){return String(o?.id||o?.dataset?.id||"")+"::"+String(o?.createdBy||o?.dataset?.createdBy||"teacher")}
 function aznyFilterDeletedPages(pages){return pages.map(page=>{if(!page)return page;const out=JSON.parse(JSON.stringify(page));out.objects=(out.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o)));return out})}
@@ -1140,7 +1140,7 @@ const aznyRoomKey=()=>String(roomId).replace(/[.#$\[\]\/]/g,"_");
 const aznyRoomRef=()=>AZNY_DB?AZNY_DB.ref("aznyRooms/"+aznyRoomKey()):null;
 /* Uma sessão permanente por sala: o link antigo continua válido entre aulas. */
 if(!isStudent&&!classSessionId)classSessionId="ROOM-"+aznyRoomKey();
-async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Auth anónima indisponível; a tentar ligação direta ao Realtime Database.",authError)}if(AZNY_DB){return true}}catch(e){console.warn("AZNY Firebase:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
+async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Auth anónima indisponível; a tentar ligação direta ao Realtime Database.",authError)}if(AZNY_DB){return true}}catch(e){console.warn("AZNY ligação:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
 let aznyRealtimeBound=false;
 async function ensureAZNYRealtime(){if(AZNY_DB){if(!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}return true}const ok=await initAZNYRealtime();if(ok&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}return ok}
 function aznySessionRef(){return AZNY_DB&&classSessionId?aznyRoomRef().child("sessions").child(classSessionId):null}
@@ -1180,7 +1180,7 @@ function bindTeacherPresenceWatch(){
   window.addEventListener("online",()=>{const en=document.documentElement.lang==="en";showNetworkNotice(en?"Your network connection has been restored.":"A sua ligação à rede foi restabelecida.","good");const ref=studentRequestRef(studentRequestId);if(ref&&studentApproved)ref.update({studentOnline:true,network:"online",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});aznyScheduleStudentReconnect("browser-online",1500)});
   window.addEventListener("offline",()=>{showNetworkNotice("A sua rede está instável. O quadro continuará aberto enquanto a ligação regressa.","bad");const ref=studentRequestRef(studentRequestId);if(ref&&studentApproved)ref.update({studentOnline:false,network:"disconnected",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{})});
   if(AZNY_DB){
-   firebase.database().ref(".info/connected").on("value",snap=>{if(!studentApproved)return;const connected=snap.val()===true,en=document.documentElement.lang==="en";const ref=studentRequestRef(studentRequestId);if(ref)ref.update({studentOnline:connected&&navigator.onLine,network:connected&&navigator.onLine?"online":"disconnected",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});if(!connected)showNetworkNotice(en?"Connection interrupted. The board will stay open and retry automatically.":"A ligação está instável. O quadro fica aberto e tentará sincronizar automaticamente.","bad");else if(navigator.onLine)aznyScheduleStudentReconnect("firebase-reconnected",1500)});
+   firebase.database().ref(".info/connected").on("value",snap=>{if(!studentApproved)return;const connected=snap.val()===true,en=document.documentElement.lang==="en";const ref=studentRequestRef(studentRequestId);if(ref)ref.update({studentOnline:connected&&navigator.onLine,network:connected&&navigator.onLine?"online":"disconnected",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});if(!connected)showNetworkNotice(en?"Connection interrupted. The board will stay open and retry automatically.":"A ligação está instável. O quadro fica aberto e tentará sincronizar automaticamente.","bad");else if(navigator.onLine)aznyScheduleStudentReconnect("sync-reconnected",1500)});
    bindTeacherPresenceWatchForStudent();
   }
  }
@@ -1457,7 +1457,7 @@ function setupBoardRealtime(){
   }catch(_){}
   applyRemoteBoardState(d);
  });
- /* Do not publish local state on startup: it could overwrite the last saved board before Firebase delivers it. */
+ /* Do not publish local state on startup: it could overwrite the last saved board before the remote state arrives. */
 }
 function restore(s){
  if(Array.isArray(s?.deletedObjectIds))s.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
@@ -1803,7 +1803,7 @@ function eraseAt(p){const radius=18;strokes=strokes.filter(s=>!strokePoints(s).s
 function broadcastLiveStroke(done=false){if(!currentStroke||!aznyLiveStrokeId)return;const points=currentStroke.anchorId?strokePoints(currentStroke):currentStroke.points;const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,done});const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}};if(isStudent){send(studentBoardChannel);return}Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null))}
 function drawDown(e){if(tool!=="pen"&&tool!=="eraser")return;if(e.cancelable)e.preventDefault();clearTimeout(window.aznyDrawingReleaseTimer);drawing=true;localBoardEditing=true;pushHistory();const p=localPoint(e);if(tool==="pen"){const anchor=objectAtPoint(p);currentStroke={color:document.getElementById("textColor").value||"#111111",width:3,points:[],anchorId:anchor?.dataset?.id||null};aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}else currentStroke.points.push(p);strokes.push(currentStroke);broadcastLiveStroke()}else eraseAt(p);redraw();publishLiveBoardState()}
 function drawMove(e){if(!drawing)return;const p=localPoint(e);if(tool==="pen"){if(currentStroke?.anchorId){const anchor=document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]');if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}}else if(currentStroke)currentStroke.points.push(p);redraw();broadcastLiveStroke()}else{eraseAt(p);redraw()}publishLiveBoardState()}
-function drawUp(){if(!drawing)return;if(currentStroke)broadcastLiveStroke(true);drawing=false;currentStroke=null;aznyLiveStrokeId="";/* Keep remote snapshots from replacing the finished stroke before its save reaches Firebase. */scheduleSave();publishLiveBoardState();clearTimeout(window.aznyDrawingReleaseTimer);window.aznyDrawingReleaseTimer=setTimeout(()=>{localBoardEditing=false},900)}
+function drawUp(){if(!drawing)return;if(currentStroke)broadcastLiveStroke(true);drawing=false;currentStroke=null;aznyLiveStrokeId="";/* Keep remote snapshots from replacing the finished stroke before its save is complete. */scheduleSave();publishLiveBoardState();clearTimeout(window.aznyDrawingReleaseTimer);window.aznyDrawingReleaseTimer=setTimeout(()=>{localBoardEditing=false},900)}
 
 
 let textPointerTarget=null,textPointerX=0,textPointerY=0,textPointerMoved=false;
@@ -3041,7 +3041,7 @@ async function forceRefreshBoard(forStudent){
  if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");btn.textContent=document.documentElement.lang==="en"?"Refreshing app…":"A atualizar a aplicação…"}
  const en=document.documentElement.lang==="en";
  try{
-  /* First notify students if Firebase is available, but never block the browser reload on it. */
+  /* Notify students when synchronization is available, but never block the browser reload on it. */
   if(!forStudent){
    try{
     if(AZNY_DB)await aznyRoomRef().child("board").child("teacherRefreshAt").set(Date.now());
