@@ -2395,9 +2395,9 @@ async function connectStudentPeer(id,d){
   }
   if(online===lastStudentOnline){if(!online)removeStudentVideoCard(id);return}
   lastStudentOnline=online;
-  const studentLabel=d.name||"O aluno";
-  if(online){toast(studentLabel+" voltou à aula.");showNetworkNotice(studentLabel+" voltou à aula.","good")}
-  else{ref.once("value").then(current=>{const currentData=current.val()||{};const network=currentData.network||"unknown";if(network==="poor"||network==="disconnected"){toast("A rede de "+studentLabel+" está instável. A ligação foi perdida.");showNetworkNotice("A rede de "+studentLabel+" está instável ou sem ligação.","bad")}else{toast(studentLabel+" saiu da aula.");showNetworkNotice(studentLabel+" saiu da aula.","bad")}}).catch(()=>{toast(studentLabel+" saiu da aula.")})}
+  const en=document.documentElement.lang==="en",studentLabel=d.name||(en?"The student":"O aluno");
+  if(online){toast(en?studentLabel+" returned to the class.":studentLabel+" voltou à aula.");showNetworkNotice(en?studentLabel+" returned to the class.":studentLabel+" voltou à aula.","good")}
+  else{ref.once("value").then(current=>{const currentData=current.val()||{},network=currentData.network||"unknown";if(network==="poor"||network==="disconnected"){toast(en?studentLabel+"'s network is unstable. The connection was lost.":"A rede de "+studentLabel+" está instável. A ligação foi perdida.");showNetworkNotice(en?studentLabel+"'s network is unstable or disconnected.":"A rede de "+studentLabel+" está instável ou sem ligação.","bad")}else{toast(en?studentLabel+" left the class.":studentLabel+" saiu da aula.");showNetworkNotice(en?studentLabel+" left the class.":studentLabel+" saiu da aula.","bad")}}).catch(()=>{toast(en?studentLabel+" left the class.":studentLabel+" saiu da aula.")})}
   if(!online){
    const departedPeer=window.aznyTeacherPeers?.[id];
    if(departedPeer){try{departedPeer.close()}catch(_){};delete window.aznyTeacherPeers[id]}
@@ -2405,7 +2405,7 @@ async function connectStudentPeer(id,d){
   }
   const notice=document.createElement("div");
   notice.className="azny-student-presence-notice";
-  notice.textContent=online?"↩ "+studentLabel+" voltou à aula":"↗ "+studentLabel+" saiu da aula";
+  notice.textContent=online?(en?"↩ "+studentLabel+" returned to the class":"↩ "+studentLabel+" voltou à aula"):(en?"↗ "+studentLabel+" left the class":"↗ "+studentLabel+" saiu da aula");
   Object.assign(notice.style,{position:"fixed",right:"18px",top:"76px",zIndex:"9999",padding:"12px 16px",borderRadius:"10px",background:online?"#e4f8eb":"#fff0e6",color:"#10243a",border:"1px solid "+(online?"#6bc58a":"#e8a36e"),boxShadow:"0 6px 20px #0002",fontWeight:"700",fontSize:"13px"});
   document.body.appendChild(notice);setTimeout(()=>notice.remove(),5000);
  });
@@ -2439,8 +2439,8 @@ async function connectStudentPeer(id,d){
  pc.onicecandidate=e=>{if(e.candidate)ref.child("teacherCandidates").push(e.candidate.toJSON())};
  let aznyPeerWasConnected=false;
  pc.onconnectionstatechange=()=>{
-  if(pc.connectionState==="connected"){aznyPeerWasConnected=true;sendBoardSnapshotToPeer(pc);toast("Videochamada ligada com "+(d.name||"o aluno"))}
-  if(pc.connectionState==="failed"){if(aznyPeerWasConnected){toast("A ligação do aluno "+(d.name||"participante")+" está instável; a tentar recuperar.");}try{pc.restartIce()}catch(_){} }
+  if(pc.connectionState==="connected"){aznyPeerWasConnected=true;sendBoardSnapshotToPeer(pc);toast(document.documentElement.lang==="en"?"Video call connected with "+(d.name||"the student"):"Videochamada ligada com "+(d.name||"o aluno"))}
+  if(pc.connectionState==="failed"){if(aznyPeerWasConnected){toast(document.documentElement.lang==="en"?"The connection to "+(d.name||"the student")+" is unstable; trying to recover.":"A ligação do aluno "+(d.name||"participante")+" está instável; a tentar recuperar.");}try{pc.restartIce()}catch(_){} }
   if(pc.connectionState==="closed"&&aznySessionRef()){aznySessionRef().child("status").once("value",s=>{if(s.val()==="ended"){removeStudentVideoCard(id);delete window.aznyTeacherPeers[id]}})}
  };
  pc.oniceconnectionstatechange=()=>{if(pc.iceConnectionState==="failed"){try{pc.restartIce()}catch(_){}}};
