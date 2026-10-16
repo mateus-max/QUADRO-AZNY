@@ -940,6 +940,10 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 .student-mode .student-video-pair .student-video-card{min-width:0}
 
 .azny-audio-output-picker{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12px;color:inherit;flex-wrap:wrap}.azny-audio-output-picker select{max-width:100%;min-width:0;flex:1;padding:7px;border:1px solid #8a9aab;border-radius:7px;background:#fff;color:#15263a}
+ .azny-language-btn{font-weight:800!important;white-space:nowrap!important;border:1px solid #7fa7d8!important;background:#eaf3ff!important;color:#10365d!important;border-radius:7px!important;padding:5px 8px!important;min-width:max-content!important}
+ .student-mode .azny-language-btn{background:#eaf3ff!important;color:#10365d!important;border:1px solid #7fa7d8!important}
+ .azny-language-group{margin-left:auto!important}
+ @media(max-width:700px){.azny-language-btn{font-size:10px!important;padding:4px 6px!important}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -1007,8 +1011,9 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
       <button class="mini" id="alignLeft">≡</button><button class="mini" id="alignCenter">≡</button><button class="mini" id="alignRight">≡</button>
     </div>
     <div class="group">
-      <button class="mini" id="zoomOut">−</button><span class="zoomlabel" id="zoomLabel">100%</span><button class="mini" id="zoomIn">＋</button><button class="mini" id="zoomReset">100%</button>
+      <button class="mini" id="zoomOut" title="Diminuir zoom">−</button><span class="zoomlabel" id="zoomLabel">100%</span><button class="mini" id="zoomIn" title="Aumentar zoom">＋</button><button class="mini" id="zoomReset" title="Repor zoom">100%</button>
     </div>
+    <div class="group azny-language-group"><button class="mini azny-language-btn" id="teacherLanguageBtn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button></div>
   </div>
   <div class="canvas-wrap" id="canvasWrap">
     <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
@@ -1050,7 +1055,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 </div>
 
 <div class="student-controls" id="studentControls">
-    <button id="studentPointerBtn">🔎 Lupa</button><button id="studentSelectBtn" type="button" title="Ativar seleção para mover, redimensionar ou eliminar os seus objetos">↖ Selecionar</button><button id="studentDeleteBtn" type="button" title="Eliminar o objeto selecionado">🗑 Eliminar</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentUploadImageBtn" type="button" title="Partilhar uma imagem no quadro">🖼 Imagem</button><button id="studentUploadDocBtn" type="button" title="Partilhar um documento no quadro">📄 Documento</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentScreenShareBtn" type="button" title="Partilhar o ecrã com o professor">▣ Partilhar ecrã</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button><button id="studentRaiseHandBtn" type="button" aria-pressed="false">✋ Levantar mão</button><button id="studentRefreshBoardBtn" type="button" title="Atualizar e reconectar ao quadro">⟳ Atualizar</button><button id="studentLeaveClassBtn" type="button" title="Sair da aula">↩ Sair da aula</button>
+    <button id="studentPointerBtn">🔎 Lupa</button><button id="studentSelectBtn" type="button" title="Ativar seleção para mover, redimensionar ou eliminar os seus objetos">↖ Selecionar</button><button id="studentDeleteBtn" type="button" title="Eliminar o objeto selecionado">🗑 Eliminar</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentUploadImageBtn" type="button" title="Partilhar uma imagem no quadro">🖼 Imagem</button><button id="studentUploadDocBtn" type="button" title="Partilhar um documento no quadro">📄 Documento</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentScreenShareBtn" type="button" title="Partilhar o ecrã com o professor">▣ Partilhar ecrã</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button><button id="studentRaiseHandBtn" type="button" aria-pressed="false">✋ Levantar mão</button><button id="studentRefreshBoardBtn" type="button" title="Atualizar e reconectar ao quadro">⟳ Atualizar</button><button id="studentLeaveClassBtn" type="button" title="Sair da aula">↩ Sair da aula</button><button id="studentLanguageBtn" class="azny-language-btn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button>
 </div>
 <div class="student-live" id="studentLive"><div class="student-video-pair"><div class="student-video-card"><video id="studentTeacherVideo" autoplay playsinline></video><span>Professor</span></div><div class="student-video-card azny-self-video-card"><video id="studentSelfVideo" autoplay muted playsinline></video><span>Você</span><b id="studentSelfRaisedHand" class="azny-self-raised-hand" aria-live="polite" hidden>✋</b></div></div></div>
 <div class="modal student-name-modal" id="studentNameModal"><div class="card">
@@ -2641,6 +2646,25 @@ document.getElementById("closeMusic").onclick=()=>document.getElementById("music
 document.querySelectorAll("[data-music]").forEach(b=>b.onclick=()=>addMusic(b.dataset.music));
 // Bíblia e Gramática — abrir e fechar os respetivos menus e inserir o recurso no quadro.
 document.getElementById("startClassBtn").onclick=startClass;document.getElementById("endClassBtn").onclick=endClass;document.getElementById("recordClassBtn").onclick=()=>screenRecorder?.state==="recording"?stopRecording():startRecording(false);
+
+/* AZNY bilingual toolbar: Portuguese / English, available to teacher and student. */
+(function setupAZNYLanguageSwitcher(){
+ const KEY="azny-quadro-ui-language";
+ const pt={undo:"↶ Desfazer",redo:"↷ Refazer",pagePrev:"◀ Página anterior",pageNext:"Página seguinte ▶",deleteTool:"✕ Apagar",pointerTool:"🔎 Cursor / Lupa",undoSide:"↶ Desfazer",redoSide:"↷ Refazer",imageBtn:"🖼 Carregar imagem",docBtn:"📄 Carregar documento",chartsBtn:"📊 Gráficos",musicBtn:"🎵 Música",pagesBtn:"📑 Páginas do quadro",shareWhatsApp:"🟢 Partilhar no WhatsApp",copyClassLink:"🔗 Copiar link da aula",shareFacebook:"🔵 Partilhar no Facebook",startClassBtn:"▶ Iniciar aula",endClassBtn:"⏹ Encerrar aula",recordClassBtn:"⏺ Gravar aula",teacherScreenShareBtn:"▣ Partilhar ecrã",studentPointerBtn:"🔎 Lupa",studentSelectBtn:"↖ Selecionar",studentDeleteBtn:"🗑 Eliminar",studentTextBtn:"T Texto",studentEraseBtn:"⌫ Apagar",studentUploadImageBtn:"🖼 Imagem",studentUploadDocBtn:"📄 Documento",studentScreenShareBtn:"▣ Partilhar ecrã",studentRaiseHandBtn:"✋ Levantar mão",studentRefreshBoardBtn:"⟳ Atualizar",studentLeaveClassBtn:"↩ Sair da aula"};
+ const en={undo:"↶ Undo",redo:"↷ Redo",pagePrev:"◀ Previous page",pageNext:"Next page ▶",deleteTool:"✕ Delete",pointerTool:"🔎 Pointer / Magnifier",undoSide:"↶ Undo",redoSide:"↷ Redo",imageBtn:"🖼 Upload image",docBtn:"📄 Upload document",chartsBtn:"📊 Charts",musicBtn:"🎵 Music",pagesBtn:"📑 Board pages",shareWhatsApp:"🟢 Share on WhatsApp",copyClassLink:"🔗 Copy class link",shareFacebook:"🔵 Share on Facebook",startClassBtn:"▶ Start class",endClassBtn:"⏹ End class",recordClassBtn:"⏺ Record class",teacherScreenShareBtn:"▣ Share screen",studentPointerBtn:"🔎 Magnifier",studentSelectBtn:"↖ Select",studentDeleteBtn:"🗑 Delete",studentTextBtn:"T Text",studentEraseBtn:"⌫ Eraser",studentUploadImageBtn:"🖼 Image",studentUploadDocBtn:"📄 Document",studentScreenShareBtn:"▣ Share screen",studentRaiseHandBtn:"✋ Raise hand",studentRefreshBoardBtn:"⟳ Refresh",studentLeaveClassBtn:"↩ Leave class"};
+ const toolPt={select:"↖ Selecionar",text:"T Texto",pen:"✎ Caneta",eraser:"⌫ Borracha"},toolEn={select:"↖ Select",text:"T Text",pen:"✎ Pen",eraser:"⌫ Eraser"};
+ function setLanguage(lang){
+  lang=lang==="en"?"en":"pt";try{localStorage.setItem(KEY,lang)}catch(e){}document.documentElement.lang=lang;
+  const labels=lang==="en"?en:pt;Object.keys(labels).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=labels[id]});
+  document.querySelectorAll(".leftbar .tool[data-tool]").forEach(el=>{const key=el.dataset.tool;el.textContent=(lang==="en"?toolEn:toolPt)[key]||el.textContent});
+  [document.getElementById("teacherLanguageBtn"),document.getElementById("studentLanguageBtn")].forEach(b=>{if(b){b.textContent=lang==="en"?"🌐 EN / PT":"🌐 PT / EN";b.title=lang==="en"?"Switch interface language":"Trocar idioma da interface";b.setAttribute("aria-label",b.title);b.setAttribute("aria-pressed",lang==="en"?"true":"false")}});
+  [["textColor",lang==="en"?"Change selected text color":"Mudar a cor do texto selecionado"],["fontSize",lang==="en"?"Font size":"Tamanho da fonte"],["fontFamily",lang==="en"?"Font family":"Tipo de letra"],["zoomOut",lang==="en"?"Zoom out":"Diminuir zoom"],["zoomIn",lang==="en"?"Zoom in":"Aumentar zoom"],["zoomReset",lang==="en"?"Reset zoom":"Repor zoom"]].forEach(([id,title])=>{const el=document.getElementById(id);if(el)el.title=title});
+ }
+ function toggle(){let current="pt";try{current=localStorage.getItem(KEY)||"pt"}catch(e){}setLanguage(current==="pt"?"en":"pt")}
+ document.getElementById("teacherLanguageBtn")?.addEventListener("click",toggle);document.getElementById("studentLanguageBtn")?.addEventListener("click",toggle);
+ let saved="pt";try{saved=localStorage.getItem(KEY)||"pt"}catch(e){}setLanguage(saved);
+})();
+
 setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(async ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}if(ready&&!isStudent)await restoreActiveTeacherSession()}).catch(e=>console.error(e));
 window.addEventListener("beforeunload",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Atualizar/fechar o separador não encerra a sessão da aula. */});
 window.addEventListener("resize",resizeCanvas);
