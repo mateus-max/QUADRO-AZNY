@@ -3428,9 +3428,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   range.deleteContents();
   const node=document.createTextNode(value);
   range.insertNode(node);
-  /* Merge adjacent text nodes so successive taps cannot replace the prior letter. */
-  const parent=node.parentNode;
-  if(parent&&parent.normalize)parent.normalize();
+  /* Keep the inserted text node intact so the caret can advance after every tap. */
   const nextRange=document.createRange();
   nextRange.setStartAfter(node);nextRange.collapse(true);
   sel.removeAllRanges();sel.addRange(nextRange);
