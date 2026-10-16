@@ -2699,6 +2699,12 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
   if(input)input.placeholder=en?"Enter your name":"Digite o seu nome";
   const languageLabel=document.getElementById("studentLanguageLabel");if(languageLabel)languageLabel.textContent=en?"Choose board language":"Idioma do quadro";
   const langSelect=document.getElementById("studentLanguageSelect");if(langSelect)langSelect.value=lang;
+  const modalTitle=document.querySelector("#studentNameModal h3"),modalDesc=document.querySelector("#studentNameModal .card p");
+  if(modalTitle&&!studentApproved)modalTitle.textContent=en?"Join the class":"Entrar na aula";
+  if(modalDesc&&!studentApproved)modalDesc.textContent=en?"Enter your name. The teacher must approve your entry.":"Identifique-se com o seu nome. O professor terá de aprovar a sua entrada.";
+  const wait=document.getElementById("studentWaiting");if(wait&&(!wait.textContent||/Pode solicitar entrada por este link permanente|You can request access using this permanent link/.test(wait.textContent)))wait.textContent=en?"You can request access using this permanent link.":"Pode solicitar entrada por este link permanente.";
+  const liveLabels=document.querySelectorAll("#studentLive .student-video-card span");if(liveLabels[0])liveLabels[0].textContent=en?"Teacher":"Professor";if(liveLabels[1])liveLabels[1].textContent=en?"You":"Você";
+  const secondHead=document.querySelectorAll(".sidehead")[2];if(secondHead)secondHead.textContent=en?"Students in class":"Alunos na aula";
   const pageLabel=document.getElementById("pageLabel");if(pageLabel)pageLabel.textContent=(en?"Page ":"Página ")+currentPage+"/5";
   const done=document.querySelector(".azny-student-text-done");if(done)done.textContent=en?"✓ Finish writing":"✓ Concluir escrita";
  }
