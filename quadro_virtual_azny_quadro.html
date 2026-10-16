@@ -1186,13 +1186,26 @@ function bindTeacherPresenceWatchForStudent(){
   if(!online){showNetworkNotice("A ligação do professor está instável. Permaneça no quadro; a aula não foi encerrada.","bad");toast("Rede do professor instável. A aguardar reconexão.");return}
   if(!wasOnline||network==="online"){showNetworkNotice("O professor voltou à ligação. A sincronizar o quadro automaticamente.","good");toast("O professor voltou. A aula está a sincronizar.");}
  });
+ let lastHandledTeacherRestoreId="";
  const reloadRef=aznySessionRef()?.child("teacherReloadNotice");
  if(reloadRef)reloadRef.on("value",snap=>{
-  const notice=snap.val()||{};if(!notice.id||!studentApproved)return;
-  const at=Number(notice.at)||0;if(at&&Date.now()-at>120000)return;
-  const seenKey="azny-seen-teacher-reload-"+String(roomId)+"-"+String(classSessionId);
-  try{if(sessionStorage.getItem(seenKey)===String(notice.id))return;sessionStorage.setItem(seenKey,String(notice.id))}catch(_){}
-  showTeacherReloadNotice();
+  const notice=snap.val()||{};
+  if(!notice.id||!studentApproved||notice.id===lastHandledTeacherRestoreId)return;
+  const at=Number(notice.at)||0;
+  if(at&&Date.now()-at>180000)return;
+  lastHandledTeacherRestoreId=String(notice.id);
+  /* Não obrigar o aluno a sair nem a clicar em voltar: renovar a ligação WebRTC
+     usando o mesmo pedido aprovado, para que o professor receba uma nova oferta. */
+  showNetworkNotice(document.documentElement.lang==="en"?"The teacher's class is back. Reconnecting automatically…":"O professor recuperou a aula. A restabelecer a ligação automaticamente…","good");
+  toast(document.documentElement.lang==="en"?"Reconnecting to the ongoing class…":"A recuperar automaticamente a aula em andamento…");
+  aznyReconnectStudentMedia().then(ok=>{
+   if(ok){
+    showNetworkNotice(document.documentElement.lang==="en"?"Connection restored to the ongoing class.":"Ligação recuperada à aula em andamento.","good");
+    toast(document.documentElement.lang==="en"?"Class connection restored.":"Ligação à aula recuperada.");
+   }else{
+    showNetworkNotice(document.documentElement.lang==="en"?"Automatic reconnection failed. Check camera/microphone permissions and network.":"A recuperação automática falhou. Verifique as permissões da câmera/microfone e a rede.","bad");
+   }
+  }).catch(err=>{console.warn("AZNY automatic reconnect after teacher refresh:",err)});
  });
 }
 function bindStudentNetworkQuality(pc,requestId){
@@ -2016,7 +2029,7 @@ function updateClassTimer(){document.getElementById("classTimer").textContent=fo
 async function startClass(){if(classStarted)return;if(!await ensureAZNYRealtime()){toast("Não foi possível ligar à aula em tempo real.");return}if(!classSessionId)classSessionId="ROOM-"+aznyRoomKey();sessionRealtimeBound=false;classStarted=true;classStartTime=Date.now();document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();if(AZNY_DB){await aznyRoomRef().child("activeSessionId").set(classSessionId);await aznySessionRef().set({status:"active",startedAt:firebase.database.ServerValue.TIMESTAMP,title:document.getElementById("boardTitle").value,teacherUid:aznyUid||"",teacherPresence:{online:true,network:"online",updatedAt:firebase.database.ServerValue.TIMESTAMP}});try{aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}}try{localStorage.setItem("azny-active-session-"+String(roomId),classSessionId)}catch(_){}bindClassSessionRealtime();bindTeacherPresenceWatch();loadTeacherDisplayName();roomChannel?.postMessage({type:"class-started",title:document.getElementById("boardTitle").value,session:classSessionId});toast("Aula iniciada. O link permanente já está disponível.")}
 
 
-async function restoreActiveTeacherSession(){if(isStudent||!classSessionId||!AZNY_DB)return;try{const snap=await aznySessionRef()?.once("value");const session=snap?.val();if(!session||session.status!=="active"){return}const navType=performance.getEntriesByType?.("navigation")?.[0]?.type||"";if(navType==="reload"){try{await aznySessionRef().child("teacherReloadNotice").set({id:"reload-"+Date.now()+"-"+Math.random().toString(36).slice(2,9),at:firebase.database.ServerValue.TIMESTAMP,reason:"teacher-page-reload"})}catch(reloadSignalError){console.warn("AZNY teacher reload notice:",reloadSignalError)}}classStarted=true;classStartTime=Number(session.startedAt)||Date.now();document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();try{await aznySessionRef().child("teacherPresence").update({online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP});aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}roomChannel?.postMessage({type:"class-started",title:session.title||document.getElementById("boardTitle").value,session:classSessionId});toast("Aula ativa restaurada após atualizar a página")}catch(e){console.warn("AZNY session restore:",e)}}
+async function restoreActiveTeacherSession(){if(isStudent||!classSessionId||!AZNY_DB)return;try{const snap=await aznySessionRef()?.once("value");const session=snap?.val();if(!session||session.status!=="active"){return}try{await aznySessionRef().child("teacherReloadNotice").set({id:"restore-"+Date.now()+"-"+Math.random().toString(36).slice(2,9),at:firebase.database.ServerValue.TIMESTAMP,reason:"teacher-session-restored"})}catch(reloadSignalError){console.warn("AZNY teacher reload notice:",reloadSignalError)}classStarted=true;classStartTime=Number(session.startedAt)||Date.now();document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();try{await aznySessionRef().child("teacherPresence").update({online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP});aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}roomChannel?.postMessage({type:"class-started",title:session.title||document.getElementById("boardTitle").value,session:classSessionId});toast("Aula ativa restaurada após atualizar a página")}catch(e){console.warn("AZNY session restore:",e)}}
 async function endClass(){if(!classStarted)return;classStarted=false;aznyObservedClassStatus="ended";clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;document.getElementById("classTimer").textContent="00:00:00";document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;try{stopCamera()}catch(e){console.warn("AZNY camera cleanup:",e)}try{stopMic()}catch(e){console.warn("AZNY microphone cleanup:",e)}try{if(AZNY_DB&&classSessionId)await aznySessionRef().update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP})}catch(e){console.warn("AZNY class end status:",e)}try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){}clearTeacherStudentCameras();Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}removeStudentVideoCard(id)});window.aznyTeacherPeers={};roomChannel?.postMessage({type:"class-ended",session:classSessionId});if(isStudent)showClassEnded();toast("Aula encerrada. As câmeras dos alunos foram removidas.")}
 
 async function aznyToggleScreenShare(forStudent){
@@ -2420,6 +2433,7 @@ async function connectStudentPeer(id,d){
  });
  try{
   await pc.setRemoteDescription(new RTCSessionDescription(d.offer));
+  if(window.aznyTeacherPeers[id]!==pc)return; /* Ignorar uma oferta antiga se o aluno já reconectou. */
   remoteDescriptionReady=true;
   const queued=pendingStudentCandidates.splice(0);
   for(const c of queued){try{await pc.addIceCandidate(new RTCIceCandidate(c))}catch(_){}}
@@ -2435,6 +2449,7 @@ async function connectStudentPeer(id,d){
   if(at){at.direction="sendrecv";await at.sender.replaceTrack(mic);if(mic&&typeof at.sender.setStreams==="function")at.sender.setStreams(combined)}
   const answer=await pc.createAnswer();
   await pc.setLocalDescription(answer);
+  if(window.aznyTeacherPeers[id]!==pc)return; /* Uma ligação antiga não pode substituir a resposta da nova ligação. */
   await ref.update({answer:{type:answer.type,sdp:answer.sdp},teacherOnline:true,teacherHasCamera:!!cam,teacherHasMic:!!mic,updatedAt:firebase.database.ServerValue.TIMESTAMP});
  }catch(e){
   console.error("AZNY peer:",e);
