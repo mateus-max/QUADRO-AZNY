@@ -1636,7 +1636,7 @@ function createResourceObject(type,lang){
  }
  return el;
 }
-function addResource(type,lang){pushHistory();const el=createResourceObject(type,lang);board.appendChild(el);makeInteractive(el);selectObject(el);updateHint();scheduleSave();toast(document.documentElement.lang==="en"?(type==="bible"?"Bible opened on the board":"Grammar opened on the board"):(type==="bible"?"Bíblia aberta no quadro":"Gramática aberta no quadro")')}
+function addResource(type,lang){pushHistory();const el=createResourceObject(type,lang);board.appendChild(el);makeInteractive(el);selectObject(el);updateHint();scheduleSave();toast(document.documentElement.lang==="en"?(type==="bible"?"Bible opened on the board":"Grammar opened on the board"):(type==="bible"?"Bíblia aberta no quadro":"Gramática aberta no quadro"))}
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function makeInteractive(el){
