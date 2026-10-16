@@ -3513,23 +3513,23 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    if(["⇧","⌫","?123"].includes(key))b.classList.add("azny-key-wide");
    if(key==="ESPAÇO")b.classList.add("azny-key-space");
    if(key==="OK")b.classList.add("azny-key-done");
-   let held=false,delay=null,repeat=null;
+   let held=false,pointerHandled=false,delay=null,repeat=null;
    const stopRepeat=()=>{held=false;clearTimeout(delay);clearInterval(repeat);delay=repeat=null};
    b.addEventListener("pointerdown",e=>{
     e.preventDefault();saveSelection();
-    if(key==="⌫"){held=true;backspace();delay=setTimeout(()=>{if(held)repeat=setInterval(()=>{if(held)backspace();else stopRepeat()},65)},380)}
+    if(key==="⌫"){held=true;pointerHandled=true;backspace();delay=setTimeout(()=>{if(held)repeat=setInterval(()=>{if(held)backspace();else stopRepeat()},65)},380)}
    });
    ["pointerup","pointercancel","pointerleave"].forEach(type=>b.addEventListener(type,stopRepeat));
    b.addEventListener("click",()=>{
     if(key==="OK"){stopRepeat();closeKeyboard(true);return}
     if(key==="ABC"){keyboard.dataset.symbols="0";build();return}
     if(key==="⇧"){shift=!shift;renderCase();return}
-    if(key==="⌫"){if(!held)backspace();stopRepeat();return}
+    if(key==="⌫"){if(!pointerHandled)backspace();pointerHandled=false;stopRepeat();return}
     if(key==="?123"){keyboard.dataset.symbols=keyboard.dataset.symbols==="1"?"0":"1";build();return}
     if(key==="ESPAÇO"){insertText(" ");return}
     if(key===" , "){insertText(",");return}
     if(key===" . "){insertText(".");return}
-    const value=keyboard.dataset.symbols==="1"?({"q":"@","w":"#","e":"$","r":"%","t":"&","y":"-","u":"+","i":"(","o":")","p":"/","a":"*","s":"\\"","d":"'","f":":","g":";","h":"!","j":"?","k":"_","l":"=","z":"[","x":"]","c":"{","v":"}","b":"€","n":"£","m":"@"}[key]||key):key;
+    const value=keyboard.dataset.symbols==="1"?({"q":"@","w":"#","e":"$","r":"%","t":"&","y":"-","u":"+","i":"(","o":")","p":"/","a":"*","s":"\\u0022","d":"'","f":":","g":";","h":"!","j":"?","k":"_","l":"=","z":"[","x":"]","c":"{","v":"}","b":"€","n":"£","m":"@"}[key]||key):key;
     insertText(shift?value.toUpperCase():value);if(shift){shift=false;renderCase()}
    });
    row.appendChild(b);
