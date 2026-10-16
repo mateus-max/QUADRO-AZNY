@@ -804,7 +804,7 @@ body:not(.student-mode) .camera-panel>.cam-buttons button:disabled{opacity:.45!i
   body:not(.student-mode) .canvas-wrap { height:55vh!important; min-height:300px!important; flex:none!important; }
 }
 
-\n#aznyContextMenu{position:fixed;z-index:99999;display:none;min-width:210px;max-width:min(300px,90vw);max-height:75vh;overflow:auto;background:#fff;border:1px solid #b9c8d8;border-radius:10px;box-shadow:0 12px 35px #0004;padding:6px;color:#172536}#aznyContextMenu.open{display:block}#aznyContextMenu .ctx-title{font-size:11px;font-weight:800;color:#64748b;padding:7px 9px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}#aznyContextMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;cursor:pointer}#aznyContextMenu button:hover{background:#edf5ff}#aznyContextMenu button:disabled{opacity:.4}\n#refreshBoardBtn{font-size:22px;font-weight:800}#refreshBoardBtn:active{transform:rotate(25deg)}\n#studentRefreshBoardBtn{font-weight:800;background:#e8f2ff;border:1px solid #93b8e8;border-radius:8px;padding:7px 10px;color:#12345a;cursor:pointer}#studentRefreshBoardBtn:disabled{opacity:.6}\n.bottom-status{display:flex;justify-content:center;align-items:center;gap:12px;text-align:center;width:100%;font-weight:800}.bottom-status .azny-realtime-label{font-size:12px;font-weight:900;letter-spacing:.08em;text-align:center}.bottom-status #storageState{font-weight:800}
+\n#aznyContextMenu{position:fixed;z-index:99999;display:none;min-width:210px;max-width:min(300px,90vw);max-height:75vh;overflow:auto;background:#fff;border:1px solid #b9c8d8;border-radius:10px;box-shadow:0 12px 35px #0004;padding:6px;color:#172536}#aznyContextMenu.open{display:block}#aznyContextMenu .ctx-title{font-size:11px;font-weight:800;color:#64748b;padding:7px 9px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}#aznyContextMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;cursor:pointer}#aznyContextMenu button:hover{background:#edf5ff}#aznyContextMenu button:disabled{opacity:.4}\n#refreshBoardBtn{font-size:22px;font-weight:800}#refreshBoardBtn:active{transform:rotate(25deg)}\n.bottom-status{display:flex;justify-content:center;align-items:center;gap:12px;text-align:center;width:100%;font-weight:800}.bottom-status .azny-realtime-label{font-size:12px;font-weight:900;letter-spacing:.08em;text-align:center}.bottom-status #storageState{font-weight:800}
 /* Mobile text entry: keep the Android keyboard native and unified; give it room by adapting the student board. */
 body.student-mode.text-entry-active{height:100dvh!important}
 body.student-mode.text-entry-active .student-live{display:none!important}
@@ -1072,7 +1072,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 </div>
 
 <div class="student-controls" id="studentControls">
-    <button id="studentPointerBtn">🔎 Lupa</button><button id="studentSelectBtn" type="button" title="Ativar seleção para mover, redimensionar ou eliminar os seus objetos">↖ Selecionar</button><button id="studentDeleteBtn" type="button" title="Eliminar o objeto selecionado">🗑 Eliminar</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentUploadImageBtn" type="button" title="Partilhar uma imagem no quadro">🖼 Imagem</button><button id="studentUploadDocBtn" type="button" title="Partilhar um documento no quadro">📄 Documento</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentScreenShareBtn" type="button" title="Partilhar o ecrã com o professor">▣ Partilhar ecrã</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button><button id="studentRaiseHandBtn" type="button" aria-pressed="false">✋ Levantar mão</button><button id="studentRefreshBoardBtn" type="button" title="Atualizar e reconectar ao quadro">⟳ Atualizar</button><button id="studentLeaveClassBtn" type="button" title="Sair da aula">↩ Sair da aula</button><button id="studentLanguageBtn" class="azny-language-btn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button>
+    <button id="studentPointerBtn">🔎 Lupa</button><button id="studentSelectBtn" type="button" title="Ativar seleção para mover, redimensionar ou eliminar os seus objetos">↖ Selecionar</button><button id="studentDeleteBtn" type="button" title="Eliminar o objeto selecionado">🗑 Eliminar</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentUploadImageBtn" type="button" title="Partilhar uma imagem no quadro">🖼 Imagem</button><button id="studentUploadDocBtn" type="button" title="Partilhar um documento no quadro">📄 Documento</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentScreenShareBtn" type="button" title="Partilhar o ecrã com o professor">▣ Partilhar ecrã</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button><button id="studentRaiseHandBtn" type="button" aria-pressed="false">✋ Levantar mão</button><button id="studentLeaveClassBtn" type="button" title="Sair da aula">↩ Sair da aula</button><button id="studentLanguageBtn" class="azny-language-btn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button>
 </div>
 <div class="student-live" id="studentLive"><div class="student-video-pair"><div class="student-video-card"><video id="studentTeacherVideo" autoplay playsinline></video><span>Professor</span></div><div class="student-video-card azny-self-video-card"><video id="studentSelfVideo" autoplay muted playsinline></video><span>Você</span><b id="studentSelfRaisedHand" class="azny-self-raised-hand" aria-live="polite" hidden>✋</b></div></div></div>
 <div class="modal student-name-modal" id="studentNameModal"><div class="card">
@@ -1170,45 +1170,63 @@ function bindTeacherPresenceWatch(){
   window.addEventListener("offline",()=>{publishTeacherPresence(false,"disconnected");showNetworkNotice("A sua rede está instável ou sem ligação. A aula será mantida no quadro.","bad")});
   if(AZNY_DB)firebase.database().ref(".info/connected").on("value",snap=>{if(!classStarted)return;const connected=snap.val()===true;publishTeacherPresence(connected&&navigator.onLine,connected&&navigator.onLine?"online":"disconnected");if(!connected)showNetworkNotice("Ligação do professor instável. Os alunos permanecerão no quadro.","bad")});
  }else{
-  window.addEventListener("online",()=>{showNetworkNotice("A sua ligação à rede foi restabelecida.","good");const ref=studentRequestRef(studentRequestId);if(ref&&studentApproved)ref.update({studentOnline:true,network:"online",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{})});
+  window.addEventListener("online",()=>{const en=document.documentElement.lang==="en";showNetworkNotice(en?"Your network connection has been restored.":"A sua ligação à rede foi restabelecida.","good");const ref=studentRequestRef(studentRequestId);if(ref&&studentApproved)ref.update({studentOnline:true,network:"online",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});aznyScheduleStudentReconnect("browser-online",1500)});
   window.addEventListener("offline",()=>{showNetworkNotice("A sua rede está instável. O quadro continuará aberto enquanto a ligação regressa.","bad");const ref=studentRequestRef(studentRequestId);if(ref&&studentApproved)ref.update({studentOnline:false,network:"disconnected",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{})});
   if(AZNY_DB){
-   firebase.database().ref(".info/connected").on("value",snap=>{if(!studentApproved)return;const connected=snap.val()===true;const ref=studentRequestRef(studentRequestId);if(ref)ref.update({studentOnline:connected&&navigator.onLine,network:connected&&navigator.onLine?"online":"disconnected",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});if(!connected)showNetworkNotice("A ligação está instável. O quadro fica aberto e tentará sincronizar automaticamente.","bad")});
+   firebase.database().ref(".info/connected").on("value",snap=>{if(!studentApproved)return;const connected=snap.val()===true,en=document.documentElement.lang==="en";const ref=studentRequestRef(studentRequestId);if(ref)ref.update({studentOnline:connected&&navigator.onLine,network:connected&&navigator.onLine?"online":"disconnected",networkUpdatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});if(!connected)showNetworkNotice(en?"Connection interrupted. The board will stay open and retry automatically.":"A ligação está instável. O quadro fica aberto e tentará sincronizar automaticamente.","bad");else if(navigator.onLine)aznyScheduleStudentReconnect("firebase-reconnected",1500)});
    bindTeacherPresenceWatchForStudent();
   }
  }
+}
+let aznyStudentReconnectTimer=null,aznyStudentReconnectInFlight=false,aznyStudentReconnectLastAt=0;
+function aznyScheduleStudentReconnect(reason,delay=2200){
+ if(!isStudent||!studentApproved||!studentRequestId||!AZNY_DB||!navigator.onLine)return;
+ clearTimeout(aznyStudentReconnectTimer);
+ aznyStudentReconnectTimer=setTimeout(async()=>{
+  if(aznyStudentReconnectInFlight||!isStudent||!studentApproved||!studentRequestId||!navigator.onLine)return;
+  const state=studentPeer?.connectionState||"closed",ice=studentPeer?.iceConnectionState||"closed";
+  if(state==="connected"&&ice==="connected")return;
+  if(state==="connecting"||state==="new"||ice==="checking")return;
+  if(Date.now()-aznyStudentReconnectLastAt<3500){aznyScheduleStudentReconnect(reason,3500);return}
+  try{
+   const statusSnap=await aznySessionRef()?.child("status").once("value");
+   if(statusSnap?.val()!=="active")return;
+   const teacherSnap=await aznySessionRef()?.child("teacherPresence").once("value");
+   const teacher=teacherSnap?.val()||{};
+   if(teacher.online!==true)return;
+  }catch(e){console.warn("AZNY network recovery check:",e);return}
+  aznyStudentReconnectInFlight=true;aznyStudentReconnectLastAt=Date.now();
+  const en=document.documentElement.lang==="en";
+  showNetworkNotice(en?"Network restored. Reconnecting to the class…":"Rede restabelecida. A recuperar a aula…","good");
+  try{await aznyReconnectStudentMedia()}catch(e){console.warn("AZNY automatic network recovery:",e)}
+  setTimeout(()=>{
+   aznyStudentReconnectInFlight=false;
+   const current=studentPeer?.connectionState||"closed",currentIce=studentPeer?.iceConnectionState||"closed";
+   if(studentApproved&&navigator.onLine&&!(current==="connected"&&currentIce==="connected"))aznyScheduleStudentReconnect("retry-after-"+reason,5000);
+  },4000);
+ },Math.max(0,delay));
 }
 function bindTeacherPresenceWatchForStudent(){
  if(!isStudent||!AZNY_DB||!classSessionId)return;
  const ref=aznySessionRef()?.child("teacherPresence");if(!ref)return;
  let first=true,lastOnline=null,lastNetwork=null;
- ref.on("value",snap=>{const d=snap.val()||{},online=d.online===true,network=d.network||"unknown";if(first){first=false;lastOnline=online;lastNetwork=network;return}if(online===lastOnline&&network===lastNetwork)return;const wasOnline=lastOnline;lastOnline=online;lastNetwork=network;
-  if(!online){showNetworkNotice("A ligação do professor está instável. Permaneça no quadro; a aula não foi encerrada.","bad");toast("Rede do professor instável. A aguardar reconexão.");return}
-  if(!wasOnline||network==="online"){showNetworkNotice("O professor voltou à ligação. A sincronizar o quadro automaticamente.","good");toast("O professor voltou. A aula está a sincronizar.");}
+ ref.on("value",snap=>{const d=snap.val()||{},online=d.online===true,network=d.network||"unknown";if(first){first=false;lastOnline=online;lastNetwork=network;return}if(online===lastOnline&&network===lastNetwork)return;const wasOnline=lastOnline;lastOnline=online;lastNetwork=network;const en=document.documentElement.lang==="en";
+  if(!online){showNetworkNotice(en?"The teacher's connection is unstable. Stay on the board; the class is still active.":"A ligação do professor está instável. Permaneça no quadro; a aula não foi encerrada.","bad");toast(en?"Teacher connection unstable. Waiting to reconnect.":"Rede do professor instável. A aguardar reconexão.");return}
+  if(!wasOnline||network==="online"){showNetworkNotice(en?"The teacher is back online. Syncing the board…":"O professor voltou à ligação. A sincronizar o quadro automaticamente…","good");toast(en?"Teacher reconnected. The class is syncing.":"O professor voltou. A aula está a sincronizar.");aznyScheduleStudentReconnect("teacher-online",1200)}
  });
  let lastHandledTeacherRestoreId="";
  const reloadRef=aznySessionRef()?.child("teacherReloadNotice");
  if(reloadRef)reloadRef.on("value",snap=>{
   const notice=snap.val()||{};
   if(!notice.id||!studentApproved||notice.id===lastHandledTeacherRestoreId)return;
-  const at=Number(notice.at)||0;
-  if(at&&Date.now()-at>180000)return;
+  const at=Number(notice.at)||0;if(at&&Date.now()-at>180000)return;
   lastHandledTeacherRestoreId=String(notice.id);
-  /* Não obrigar o aluno a sair nem a clicar em voltar: renovar a ligação WebRTC
-     usando o mesmo pedido aprovado, para que o professor receba uma nova oferta. */
-  showNetworkNotice(document.documentElement.lang==="en"?"The teacher's class is back. Reconnecting automatically…":"O professor recuperou a aula. A restabelecer a ligação automaticamente…","good");
-  toast(document.documentElement.lang==="en"?"Reconnecting to the ongoing class…":"A recuperar automaticamente a aula em andamento…");
-  aznyReconnectStudentMedia().then(ok=>{
-   if(ok){
-    showNetworkNotice(document.documentElement.lang==="en"?"Connection restored to the ongoing class.":"Ligação recuperada à aula em andamento.","good");
-    toast(document.documentElement.lang==="en"?"Class connection restored.":"Ligação à aula recuperada.");
-   }else{
-    showNetworkNotice(document.documentElement.lang==="en"?"Automatic reconnection failed. Check camera/microphone permissions and network.":"A recuperação automática falhou. Verifique as permissões da câmera/microfone e a rede.","bad");
-   }
-  }).catch(err=>{console.warn("AZNY automatic reconnect after teacher refresh:",err)});
+  const en=document.documentElement.lang==="en";
+  showNetworkNotice(en?"The teacher's class is back. Reconnecting automatically…":"O professor recuperou a aula. A restabelecer a ligação automaticamente…","good");
+  toast(en?"Reconnecting to the ongoing class…":"A recuperar automaticamente a aula em andamento…");
+  aznyScheduleStudentReconnect("teacher-page-restored",300);
  });
-}
-function bindStudentNetworkQuality(pc,requestId){
+}function bindStudentNetworkQuality(pc,requestId){
  if(!pc||pc._aznyNetworkWatchBound)return;pc._aznyNetworkWatchBound=true;
  let lastState="",qualityTimer=null;
  const check=()=>{
@@ -2695,8 +2713,8 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
 /* AZNY bilingual toolbar: Portuguese / English, available to teacher and student. */
 (function setupAZNYLanguageSwitcher(){
  const KEY="azny-quadro-ui-language";
- const pt={undo:"↶ Desfazer",redo:"↷ Refazer",pagePrev:"◀ Página anterior",pageNext:"Página seguinte ▶",deleteTool:"✕ Apagar",pointerTool:"🔎 Cursor / Lupa",undoSide:"↶ Desfazer",redoSide:"↷ Refazer",imageBtn:"🖼 Carregar imagem",docBtn:"📄 Carregar documento",chartsBtn:"📊 Gráficos",musicBtn:"🎵 Música",pagesBtn:"📑 Páginas do quadro",shareWhatsApp:"🟢 Partilhar no WhatsApp",copyClassLink:"🔗 Copiar link da aula",shareFacebook:"🔵 Partilhar no Facebook",startClassBtn:"▶ Iniciar aula",endClassBtn:"⏹ Encerrar aula",recordClassBtn:"⏺ Gravar aula",teacherScreenShareBtn:"▣ Partilhar ecrã",studentPointerBtn:"🔎 Lupa",studentSelectBtn:"↖ Selecionar",studentDeleteBtn:"🗑 Eliminar",studentTextBtn:"T Texto",studentEraseBtn:"⌫ Apagar",studentUploadImageBtn:"🖼 Imagem",studentUploadDocBtn:"📄 Documento",studentRecordBtn:"⏺ Gravar",studentScreenShareBtn:"▣ Partilhar ecrã",studentRaiseHandBtn:"✋ Levantar mão",studentRefreshBoardBtn:"⟳ Atualizar",studentLeaveClassBtn:"↩ Sair da aula"};
- const en={undo:"↶ Undo",redo:"↷ Redo",pagePrev:"◀ Previous page",pageNext:"Next page ▶",deleteTool:"✕ Delete",pointerTool:"🔎 Pointer / Magnifier",undoSide:"↶ Undo",redoSide:"↷ Redo",imageBtn:"🖼 Upload image",docBtn:"📄 Upload document",chartsBtn:"📊 Charts",musicBtn:"🎵 Music",pagesBtn:"📑 Board pages",shareWhatsApp:"🟢 Share on WhatsApp",copyClassLink:"🔗 Copy class link",shareFacebook:"🔵 Share on Facebook",startClassBtn:"▶ Start class",endClassBtn:"⏹ End class",recordClassBtn:"⏺ Record class",teacherScreenShareBtn:"▣ Share screen",studentPointerBtn:"🔎 Magnifier",studentSelectBtn:"↖ Select",studentDeleteBtn:"🗑 Delete",studentTextBtn:"T Text",studentEraseBtn:"⌫ Eraser",studentUploadImageBtn:"🖼 Image",studentUploadDocBtn:"📄 Document",studentRecordBtn:"⏺ Record",studentScreenShareBtn:"▣ Share screen",studentRaiseHandBtn:"✋ Raise hand",studentRefreshBoardBtn:"⟳ Refresh",studentLeaveClassBtn:"↩ Leave class"};
+ const pt={undo:"↶ Desfazer",redo:"↷ Refazer",pagePrev:"◀ Página anterior",pageNext:"Página seguinte ▶",deleteTool:"✕ Apagar",pointerTool:"🔎 Cursor / Lupa",undoSide:"↶ Desfazer",redoSide:"↷ Refazer",imageBtn:"🖼 Carregar imagem",docBtn:"📄 Carregar documento",chartsBtn:"📊 Gráficos",musicBtn:"🎵 Música",pagesBtn:"📑 Páginas do quadro",shareWhatsApp:"🟢 Partilhar no WhatsApp",copyClassLink:"🔗 Copiar link da aula",shareFacebook:"🔵 Partilhar no Facebook",startClassBtn:"▶ Iniciar aula",endClassBtn:"⏹ Encerrar aula",recordClassBtn:"⏺ Gravar aula",teacherScreenShareBtn:"▣ Partilhar ecrã",studentPointerBtn:"🔎 Lupa",studentSelectBtn:"↖ Selecionar",studentDeleteBtn:"🗑 Eliminar",studentTextBtn:"T Texto",studentEraseBtn:"⌫ Apagar",studentUploadImageBtn:"🖼 Imagem",studentUploadDocBtn:"📄 Documento",studentRecordBtn:"⏺ Gravar",studentScreenShareBtn:"▣ Partilhar ecrã",studentRaiseHandBtn:"✋ Levantar mão",studentLeaveClassBtn:"↩ Sair da aula"};
+ const en={undo:"↶ Undo",redo:"↷ Redo",pagePrev:"◀ Previous page",pageNext:"Next page ▶",deleteTool:"✕ Delete",pointerTool:"🔎 Pointer / Magnifier",undoSide:"↶ Undo",redoSide:"↷ Redo",imageBtn:"🖼 Upload image",docBtn:"📄 Upload document",chartsBtn:"📊 Charts",musicBtn:"🎵 Music",pagesBtn:"📑 Board pages",shareWhatsApp:"🟢 Share on WhatsApp",copyClassLink:"🔗 Copy class link",shareFacebook:"🔵 Share on Facebook",startClassBtn:"▶ Start class",endClassBtn:"⏹ End class",recordClassBtn:"⏺ Record class",teacherScreenShareBtn:"▣ Share screen",studentPointerBtn:"🔎 Magnifier",studentSelectBtn:"↖ Select",studentDeleteBtn:"🗑 Delete",studentTextBtn:"T Text",studentEraseBtn:"⌫ Eraser",studentUploadImageBtn:"🖼 Image",studentUploadDocBtn:"📄 Document",studentRecordBtn:"⏺ Record",studentScreenShareBtn:"▣ Share screen",studentRaiseHandBtn:"✋ Raise hand",studentLeaveClassBtn:"↩ Leave class"};
  const toolPt={select:"↖ Selecionar",text:"T Texto",pen:"✎ Caneta",eraser:"⌫ Borracha"},toolEn={select:"↖ Select",text:"T Text",pen:"✎ Pen",eraser:"⌫ Eraser"};
  function applyAdditionalLanguage(lang){
   const en=lang==="en",heads=document.querySelectorAll(".sidehead");
@@ -2853,7 +2871,7 @@ async function forceRefreshBoard(forStudent){
  finally{if(btn){btn.disabled=false;btn.textContent=originalText}}
 }
 document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(false)});
-document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(true)});
+
 
 </script>
 
