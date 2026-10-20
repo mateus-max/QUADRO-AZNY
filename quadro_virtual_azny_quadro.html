@@ -1354,6 +1354,8 @@ function aznySameBoardPage(a,b){
 }
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
+ /* Do not rebuild the board from an older remote snapshot while the user is interacting with a document/PDF. */
+ if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer"))return;
  try{
   if(Array.isArray(d.deletedObjectIds))d.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
   if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
@@ -1667,6 +1669,8 @@ function addResource(type,lang){pushHistory();const el=createResourceObject(type
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function makeInteractive(el){
+ /* Protect document/PDF interactions from remote board refreshes. */
+ if(el.classList.contains("docobj")&&!el.dataset.aznyDocGuard){el.dataset.aznyDocGuard="1";let guardTimer=0;const hold=()=>{localBoardEditing=true;clearTimeout(guardTimer)};const release=()=>{clearTimeout(guardTimer);guardTimer=setTimeout(()=>{localBoardEditing=false;scheduleSave();publishLiveBoardState()},900)};el.addEventListener("pointerdown",hold,{capture:true,passive:true});el.addEventListener("pointerup",release,{capture:true,passive:true});el.addEventListener("pointercancel",release,{capture:true,passive:true});el.addEventListener("scroll",()=>{hold();release()},{capture:true,passive:true});el.addEventListener("wheel",()=>{hold();release()},{capture:true,passive:true});}
  if(!el.querySelector(".resize")){const h=document.createElement("div");h.className="resize";el.appendChild(h);h.addEventListener("pointerdown",resizeStart)}
  /* Mobile pinch-to-zoom: two fingers on the same object resize it without changing the selected tool. */
  if(!el.dataset.aznyPinchBound){el.dataset.aznyPinchBound="1";const touches=new Map();let pinch=null;el.addEventListener("pointerdown",e=>{if(e.pointerType!=="touch"||tool!=="select"||e.target.closest?.("button,input,select,textarea,.docpdf-toolbar,.resize"))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){const pts=[...touches.values()];pinch={distance:Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),width:el.offsetWidth,height:el.offsetHeight,left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0};el.dataset.aznyPinching="1";try{pushHistory();el.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();e.stopImmediatePropagation()}},{passive:false});el.addEventListener("pointermove",e=>{if(!pinch||!touches.has(e.pointerId))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size<2)return;const pts=[...touches.values()],dist=Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),scale=Math.max(.2,Math.min(5,dist/pinch.distance));el.style.width=Math.max(40,pinch.width*scale)+"px";el.style.height=Math.max(28,pinch.height*scale)+"px";updateAnchoredTextsFor(el);publishLiveBoardState();e.preventDefault();e.stopPropagation()},{passive:false});const endPinch=e=>{touches.delete(e.pointerId);if(touches.size<2&&pinch){pinch=null;delete el.dataset.aznyPinching;scheduleSave();publishLiveBoardState()}};el.addEventListener("pointerup",endPinch);el.addEventListener("pointercancel",endPinch)}
