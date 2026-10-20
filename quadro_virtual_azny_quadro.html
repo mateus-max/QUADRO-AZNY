@@ -3547,6 +3547,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
     if(key==="⌫"){if(!pointerHandled)backspace();pointerHandled=false;stopRepeat();return}
     if(key==="?123"){keyboard.dataset.symbols=keyboard.dataset.symbols==="1"?"0":"1";build();return}
     if(key==="ESPAÇO"){insertText(" ");return}
+    if(key==="↵"){insertText("\n");return}
     if(key===" , "){insertText(",");return}
     if(key===" . "){insertText(".");return}
     const value=keyboard.dataset.symbols==="1"?({"q":"@","w":"#","e":"$","r":"%","t":"&","y":"-","u":"+","i":"(","o":")","p":"/","a":"*","s":"\\u0022","d":"'","f":":","g":";","h":"!","j":"?","k":"_","l":"=","z":"[","x":"]","c":"{","v":"}","b":"€","n":"£","m":"@"}[key]||key):key;
