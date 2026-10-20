@@ -1669,7 +1669,7 @@ function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":
 function makeInteractive(el){
  if(!el.querySelector(".resize")){const h=document.createElement("div");h.className="resize";el.appendChild(h);h.addEventListener("pointerdown",resizeStart)}
  /* Mobile pinch-to-zoom: two fingers on the same object resize it without changing the selected tool. */
- if(!el.dataset.aznyPinchBound){el.dataset.aznyPinchBound="1";const touches=new Map();let pinch=null;el.addEventListener("pointerdown",e=>{if(!isStudent||e.pointerType!=="touch"||tool!=="select"||e.target.closest?.("button,input,select,textarea,.docpdf,.resize"))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){const pts=[...touches.values()];pinch={distance:Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),width:el.offsetWidth,height:el.offsetHeight,left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0};try{pushHistory();el.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();e.stopPropagation()}},{passive:false});el.addEventListener("pointermove",e=>{if(!pinch||!touches.has(e.pointerId))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size<2)return;const pts=[...touches.values()],dist=Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),scale=Math.max(.2,Math.min(5,dist/pinch.distance));el.style.width=Math.max(40,pinch.width*scale)+"px";el.style.height=Math.max(28,pinch.height*scale)+"px";updateAnchoredTextsFor(el);publishLiveBoardState();e.preventDefault();e.stopPropagation()},{passive:false});const endPinch=e=>{touches.delete(e.pointerId);if(touches.size<2&&pinch){pinch=null;scheduleSave();publishLiveBoardState()}};el.addEventListener("pointerup",endPinch);el.addEventListener("pointercancel",endPinch)}
+ if(!el.dataset.aznyPinchBound){el.dataset.aznyPinchBound="1";const touches=new Map();let pinch=null;el.addEventListener("pointerdown",e=>{if(e.pointerType!=="touch"||tool!=="select"||e.target.closest?.("button,input,select,textarea,.docpdf-toolbar,.resize"))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){const pts=[...touches.values()];pinch={distance:Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),width:el.offsetWidth,height:el.offsetHeight,left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0};try{pushHistory();el.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();e.stopPropagation()}},{passive:false});el.addEventListener("pointermove",e=>{if(!pinch||!touches.has(e.pointerId))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size<2)return;const pts=[...touches.values()],dist=Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),scale=Math.max(.2,Math.min(5,dist/pinch.distance));el.style.width=Math.max(40,pinch.width*scale)+"px";el.style.height=Math.max(28,pinch.height*scale)+"px";updateAnchoredTextsFor(el);publishLiveBoardState();e.preventDefault();e.stopPropagation()},{passive:false});const endPinch=e=>{touches.delete(e.pointerId);if(touches.size<2&&pinch){pinch=null;scheduleSave();publishLiveBoardState()}};el.addEventListener("pointerup",endPinch);el.addEventListener("pointercancel",endPinch)}
  /* Pointer Events support mouse, pen and Android touch with one interaction path. */
  el.addEventListener("pointerdown",e=>{
   if(e.target.closest?.(".resize"))return;
@@ -3458,7 +3458,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   ["1","2","3","4","5","6","7","8","9","0"],
   ["q","w","e","r","t","y","u","i","o","p"],
   ["a","s","d","f","g","h","j","k","l"],
-  ["⇧","z","x","c","v","b","n","m","⌫"],
+  ["⇧","z","x","c","v","b","n","m","↵","⌫"],
   ["?123"," , ","ESPAÇO"," . ","OK"]
  ];
  function saveSelection(){
@@ -3530,7 +3530,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   keys.forEach(key=>{
    const b=document.createElement("button");b.type="button";
    b.textContent=key==="ESPAÇO"?"Espaço":key;
-   if(["⇧","⌫","?123"].includes(key))b.classList.add("azny-key-wide");
+   if(["⇧","⌫","?123","↵"].includes(key))b.classList.add("azny-key-wide");
    if(key==="ESPAÇO")b.classList.add("azny-key-space");
    if(key==="OK")b.classList.add("azny-key-done");
    let held=false,pointerHandled=false,delay=null,repeat=null;
