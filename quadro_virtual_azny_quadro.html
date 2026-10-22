@@ -1361,13 +1361,13 @@ function applyRemoteBoardState(d){
   if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
   if(Array.isArray(d.pages)){
    const incomingPages=aznyFilterDeletedPages(normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize));
-   /* Protect documents from stale/partial remote snapshots: a document is removed only when its explicit delete marker is present. */
+   /* Protect locally uploaded objects from stale/partial snapshots. Images and documents are both preserved unless an explicit delete marker exists. */
    const localPages=pageStates;
    incomingPages.forEach((page,index)=>{
     if(!page)return;
     const localObjects=(index===currentPage-1?snapshot().objects:(localPages[index]?.objects||[]));
     const present=new Set((page.objects||[]).map(o=>String(o.id||"")));
-    const preserved=(localObjects||[]).filter(o=>o.kind==="doc"&&o.id&&!present.has(String(o.id))&&!deletedObjectIds.has(aznyObjectKey(o)));
+    const preserved=(localObjects||[]).filter(o=>o&&o.id&&!present.has(String(o.id))&&!deletedObjectIds.has(aznyObjectKey(o)));
     if(preserved.length)page.objects=(page.objects||[]).concat(preserved);
    });
    const incomingPage=Math.max(1,Math.min(5,+d.currentPage||1));
