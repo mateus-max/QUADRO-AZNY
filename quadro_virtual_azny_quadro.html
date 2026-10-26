@@ -3136,8 +3136,8 @@ document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preve
  function mobileStudent(){return body.classList.contains("student-mode")&&matchMedia("(pointer:coarse)").matches}
  function activeText(){const el=document.activeElement;return !!(el&&el.matches&&el.matches(".student-mode .textobj[contenteditable='true']"))}
  function ensureDoneButton(){
-  /* Não sobrepor o teclado nativo com uma barra extra “Concluir escrita”.
-     A edição termina quando o utilizador toca fora do texto ou muda de ferramenta. */
+  /* A versão móvel do aluno usa o teclado fixo do próprio quadro; não mostra
+     uma barra extra nem tenta controlar o foco letra a letra. */
   if(doneButton)doneButton.style.display="none";
  }
  function viewportHeight(){return window.visualViewport?window.visualViewport.height:window.innerHeight}
@@ -3608,12 +3608,11 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
     Alguns navegadores Android enviam focusout com relatedTarget=null ao tocar em botões. */
  keyboard.addEventListener("pointerdown",e=>{if(e.target.closest("button"))e.preventDefault()},true);
  document.addEventListener("focusout",e=>{
+  if(body.classList.contains("student-mode"))return;
   if(!e.target?.classList?.contains("textobj"))return;
   setTimeout(()=>{
    if(!active||!active.isConnected){closeKeyboard(false);return}
    if(body.classList.contains("azny-custom-keyboard")){
-    /* Manter o teclado visível enquanto o texto editado continuar ativo.
-       Só o botão OK deve fechar explicitamente o teclado. */
     if(document.activeElement!==active)restoreSelection();
     return;
    }
