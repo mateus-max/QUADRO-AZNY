@@ -1048,6 +1048,14 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
  #aznyExcelGrid td.azny-cell-selected,#aznyExcelGrid td.azny-cell-anchor { outline:none!important; background-color:transparent!important; }
  #aznyExcelGrid td.azny-cell-merged { display:none!important; }
 }
+
+/* Shared magnifier pointer for the spreadsheet and Word workspaces. */
+#aznyExcelWorkspace,#aznyWebWorkspace{position:absolute}
+.azny-live-surface-pointer{position:absolute;left:0;top:0;z-index:9999;display:none;width:44px;height:48px;pointer-events:none;transform:translate(-2px,-2px);filter:drop-shadow(0 2px 2px #0005)}
+.azny-live-surface-pointer.active{display:block}
+.azny-live-surface-pointer svg{width:44px;height:48px;overflow:visible}
+.azny-live-surface-pointer .azny-pointer-arrow{fill:#e11;stroke:#fff;stroke-width:1.4;stroke-linejoin:round}
+.azny-live-surface-pointer .azny-pointer-glass{fill:#e11;stroke:#fff;stroke-width:1.4}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -1091,6 +1099,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
     <button class="tool" id="chartsBtn">📊 Gráficos</button>
     <button class="tool" id="musicBtn">🎵 Música</button>
     <button class="tool" id="pagesBtn">📑 Páginas do quadro</button>
+    <button class="tool wide" id="teacherGreenBoardBtn" type="button" title="Voltar ao quadro verde"><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true"><rect x="2" y="4" width="28" height="22" rx="2" fill="#7b4f2b"/><rect x="5" y="7" width="22" height="16" rx="1" fill="#16834a"/><path d="M10 12h12M10 16h8" stroke="#eaf7ee" stroke-width="1.6" stroke-linecap="round"/><path d="M13 27h6" stroke="#7b4f2b" stroke-width="2" stroke-linecap="round"/></svg><span>Quadro verde</span></button>
     <button class="tool" id="teacherExcelBtn" type="button" title="Excel AZNY — folha de cálculo"><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true"><rect x="11" y="3" width="18" height="26" rx="2" fill="#21A366"/><path d="M18 9h8v3h-8zm0 6h8v3h-8zm0 6h8v3h-8z" fill="#fff"/><rect x="3" y="6" width="16" height="20" rx="2" fill="#107C41"/><path d="m7 11 3 5-3 5h3l2-3.5 2 3.5h3l-3-5 3-5h-3l-2 3.5-2-3.5z" fill="#fff"/></svg><span>Excel</span></button>
     <button class="tool" id="teacherWebBtn" type="button" title="Word AZNY — editor colaborativo"><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true"><rect x="10" y="3" width="19" height="26" rx="2" fill="#2B7CD3"/><path d="M17 9h8v3h-8zm0 6h8v3h-8zm0 6h8v3h-8z" fill="#fff"/><rect x="3" y="6" width="16" height="20" rx="2" fill="#185ABD"/><path d="m6 11 2 10h3l2-6 2 6h3l2-10h-3l-1 7-2-7h-2l-2 7-1-7z" fill="#fff"/></svg><span>Word</span></button>
   </div>
@@ -1122,7 +1131,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
     <div class="group azny-language-group"><button class="mini azny-language-btn" id="teacherLanguageBtn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button></div>
   </div>
   <div class="canvas-wrap" id="canvasWrap">
-    <section id="aznyExcelWorkspace" aria-label="Folha de cálculo partilhada">
+    <section id="aznyExcelWorkspace" aria-label="Folha de cálculo partilhada"><div id="aznyExcelLivePointer" class="azny-live-surface-pointer" aria-hidden="true"><svg viewBox="0 0 44 48"><path class="azny-pointer-arrow" d="M3 2 L3 35 L12 27 L18 41 L24 38 L18 24 L31 24 Z"/></svg></div>
       <div class="azny-excel-head"><strong>📊 Excel AZNY</strong><button id="aznyExcelNew">＋ Nova folha</button><button id="aznyExcelMerge">⇔ Mesclar células</button><button id="aznyExcelUnmerge">⇤ Desmesclar</button><button id="aznyExcelDownload">⬇ Exportar CSV</button><button id="aznyExcelPDF">📄 Exportar PDF</button><button id="aznyExcelClose">✕ Voltar ao quadro</button></div>
       <nav id="aznyExcelRibbonTabs" aria-label="Ferramentas Excel AZNY"><button class="active" data-ribbon="home">Página Inicial</button><button data-ribbon="insert">Inserir</button><button data-ribbon="layout">Layout da Página</button><button data-ribbon="formulas">Fórmulas</button><button data-ribbon="data">Dados</button><button data-ribbon="review">Revisão</button><button data-ribbon="view">Exibir</button></nav>
       <div id="aznyExcelRibbonTools"><button data-cmd="bold"><b>B</b></button><button data-cmd="italic"><i>I</i></button><button data-cmd="underline"><u>U</u></button><button data-cmd="align-left">Alinhar à esquerda</button><button data-cmd="align-center">Centrar</button><button data-cmd="align-right">Alinhar à direita</button><button data-cmd="sum">Σ Soma</button><button data-cmd="filter">Filtro</button><button data-cmd="chart">Inserir gráfico</button></div>
@@ -1131,7 +1140,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
       <div class="azny-excel-tabs" id="aznyExcelTabs"></div><div class="azny-excel-status" id="aznyExcelStatus">Folha partilhada em tempo real durante a aula.</div>
     </section>
     <div id="aznyExcelContext" role="menu"><button data-action="copy">Copiar células</button><button data-action="paste">Colar células</button><button data-action="clear">Limpar conteúdo</button><div class="separator"></div><button data-action="merge">Mesclar células</button><button data-action="unmerge">Desmesclar células</button><div class="separator"></div><button data-action="bold">Negrito</button><button data-action="italic">Itálico</button><button data-action="align">Alternar alinhamento</button></div>
-    <section id="aznyWebWorkspace" aria-label="Word AZNY — Documento colaborativo" style="display:none;position:absolute;inset:0;z-index:81;background:#fff;flex-direction:column;color:#182433">
+    <section id="aznyWebWorkspace" aria-label="Word AZNY — Documento colaborativo" style="display:none;position:absolute;inset:0;z-index:81;background:#fff;flex-direction:column;color:#182433"><div id="aznyWordLivePointer" class="azny-live-surface-pointer" aria-hidden="true"><svg viewBox="0 0 44 48"><path class="azny-pointer-arrow" d="M3 2 L3 35 L12 27 L18 41 L24 38 L18 24 L31 24 Z"/></svg></div>
       <div class="azny-excel-head" style="background:#185abd"><strong><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true"><rect x="10" y="3" width="19" height="26" rx="2" fill="#2B7CD3"/><path d="M17 9h8v3h-8zm0 6h8v3h-8zm0 6h8v3h-8z" fill="#fff"/><rect x="3" y="6" width="16" height="20" rx="2" fill="#185ABD"/><path d="m6 11 2 10h3l2-6 2 6h3l2-10h-3l-1 7-2-7h-2l-2 7-1-7z" fill="#fff"/></svg> Word AZNY — Documento colaborativo</strong><button id="aznyWebBold"><b>B</b></button><button id="aznyWebItalic"><i>I</i></button><button id="aznyWebUnderline"><u>U</u></button><button id="aznyWebDownload">⬇ Exportar TXT</button><button id="aznyWebClose">✕ Voltar ao quadro</button></div>
       <div contenteditable="true" id="aznyWebEditor" spellcheck="true" style="flex:1;overflow:auto;padding:24px;outline:none;line-height:1.6;min-height:0" data-placeholder="Escrevam aqui em conjunto. As alterações serão sincronizadas com os participantes."></div>
       <div class="azny-excel-status" id="aznyWebStatus">Documento colaborativo: alterações sincronizadas em tempo real durante a aula.</div>
@@ -1495,6 +1504,12 @@ function handleBoardChannelMessage(raw){
   const m=JSON.parse(raw);
   if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}return;}
   if(m.type==="live-pointer"){
+   if(m.surface==="excel"||m.surface==="word"){
+    const p=document.getElementById(m.surface==="excel"?"aznyExcelLivePointer":"aznyWordLivePointer");
+    const host=document.getElementById(m.surface==="excel"?"aznyExcelWorkspace":"aznyWebWorkspace");
+    if(p&&host){const x=Math.max(0,Math.min(host.clientWidth,Number(m.x)||0)),y=Math.max(0,Math.min(host.clientHeight,Number(m.y)||0));p.style.transform="translate("+(x-3)+"px,"+(y-2)+"px)";p.classList.toggle("active",!!m.visible)}
+    return;
+   }
    const p=document.getElementById("livePointer");
    if(p){const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);const px=Number(m.x)*sx,py=Number(m.y)*sy;p.style.transform="translate("+(px-44)+"px,"+(py-2)+"px)";p.classList.toggle("active",!!m.visible)}
    return;
@@ -1595,6 +1610,7 @@ function setPointerMode(on){
 }
 let lastPointerPacketAt=0;
 function updateLivePointer(e){
+ if(e.target?.closest?.("#aznyExcelWorkspace,#aznyWebWorkspace"))return;
  if(!board.contains(e.target)&&!pointerMode)return;
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
  const p=document.getElementById("livePointer");
@@ -1639,6 +1655,18 @@ function endStudentPointerDrag(e){if(aznyPointerDragId===null||(e.pointerId!==un
 stage.addEventListener("pointerup",endStudentPointerDrag);
 stage.addEventListener("pointercancel",endStudentPointerDrag);
 stage.addEventListener("pointermove",updateLivePointer,{passive:true});
+function sendAZNYSurfacePointer(e){
+ if(!pointerMode)return;
+ const excel=e.target?.closest?.("#aznyExcelWorkspace"),word=e.target?.closest?.("#aznyWebWorkspace");
+ const host=excel||word;if(!host)return;
+ const surface=excel?"excel":"word",r=host.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+ const packet=JSON.stringify({type:"live-pointer",surface,x,y,boardWidth:host.clientWidth,boardHeight:host.clientHeight,visible:true});
+ const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}};
+ if(isStudent)send(studentBoardChannel);else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null));
+ const p=document.getElementById(surface==="excel"?"aznyExcelLivePointer":"aznyWordLivePointer");
+ if(p){p.style.transform="translate("+(x-3)+"px,"+(y-2)+"px)";p.classList.add("active")}
+}
+document.addEventListener("pointermove",sendAZNYSurfacePointer,{passive:true});
 stage.addEventListener("pointerenter",e=>{if(pointerMode)document.getElementById("livePointer").classList.add("active")});
 stage.addEventListener("pointerleave",()=>{if(aznyPointerDragId===null)document.getElementById("livePointer").classList.remove("active")});
 
@@ -3824,6 +3852,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
     function bindRealtime(){if(!AZNY_DB||!aznyRoomRef)return;remoteRef=aznyRoomRef().child("spreadsheet");remoteRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible){panel.classList.add("azny-excel-open");webPanel?.classList.remove("azny-web-open")}else if(isStudent)panel.classList.remove("azny-excel-open");if(applying)return;applying=true;if(v.cellFormats&&window.aznyExcelRibbonFormats){Object.keys(window.aznyExcelRibbonFormats).forEach(k=>delete window.aznyExcelRibbonFormats[k]);Object.assign(window.aznyExcelRibbonFormats,v.cellFormats)}if(Array.isArray(v.sheets)&&v.sheets.length){sheets=v.sheets.map((s,i)=>({name:String(s.name||"Folha"+(i+1)),cells:s.cells||{},merges:s.merges||[]}));active=Math.min(Number(v.active)||0,sheets.length-1);render();status.textContent="Folha sincronizada com os participantes."}applying=false})}
     function open(){webPanel?.classList.remove("azny-web-open");panel.classList.add("azny-excel-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{bindRealtime();if(!isStudent&&remoteRef)remoteRef.update({visible:true}).catch(()=>{})});else bindRealtime();render()}
     document.getElementById("teacherExcelBtn")?.addEventListener("click",open);
+    document.getElementById("teacherGreenBoardBtn")?.addEventListener("click",()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.remove("azny-web-open");const live=document.getElementById("livePointer");if(live)live.classList.toggle("active",!!pointerMode);if(!isStudent&&remoteRef)remoteRef.update({visible:false}).catch(()=>{});if(typeof window.aznyPublishBoardState==="function")window.aznyPublishBoardState();});
     document.getElementById("aznyExcelClose")?.addEventListener("click",()=>{panel.classList.remove("azny-excel-open");if(!isStudent&&remoteRef)remoteRef.update({visible:false}).catch(()=>{})});
     document.getElementById("aznyExcelNew")?.addEventListener("click",()=>{sheets.push({name:"Folha"+(sheets.length+1),cells:{},merges:[]});active=sheets.length-1;selected=selectionStart=selectionEnd="A1";render();schedulePublish()});
     tabs.addEventListener("click",e=>{const b=e.target.closest("[data-sheet]");if(!b)return;active=Number(b.dataset.sheet);selected=selectionStart=selectionEnd="A1";render()});
