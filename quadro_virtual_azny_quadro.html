@@ -4122,3 +4122,56 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  closeWord?.addEventListener("click",()=>remember("board"),true);
 })();
 </script>
+
+
+<script>
+/* AZNY workspace recovery: guarantee Excel/Word buttons open a usable workspace even if a prior script fails. */
+(function(){
+  const excelBtn=document.getElementById("teacherExcelBtn");
+  const wordBtn=document.getElementById("teacherWebBtn");
+  const excel=document.getElementById("aznyExcelWorkspace");
+  const word=document.getElementById("aznyWebWorkspace");
+  const grid=document.getElementById("aznyExcelGrid");
+  const tabs=document.getElementById("aznyExcelTabs");
+  const cellName=document.getElementById("aznyExcelCellName");
+  const formula=document.getElementById("aznyExcelFormulaInput");
+  const context=document.getElementById("aznyExcelContext");
+  if(!excel||!word||!grid)return;
+  let fallbackStart=null,fallbackEnd=null,fallbackSelected="A1";
+  const colName=n=>{let out="";for(n++;n;n=Math.floor((n-1)/26))out=String.fromCharCode(65+(n-1)%26)+out;return out};
+  const coords=k=>{const m=String(k||"A1").match(/^([A-Z]+)(\d+)$/);if(!m)return[0,0];let c=0;for(const x of m[1])c=c*26+x.charCodeAt(0)-64;return[+m[2]-1,c-1]};
+  const key=(r,c)=>colName(c)+(r+1);
+  function fallbackRender(){
+    if(grid.querySelectorAll("td[data-cell]").length)return;
+    grid.classList.add("azny-excel-grid");
+    let html="<colgroup><col style='width:38px'>";
+    for(let c=0;c<12;c++)html+="<col style='width:116px'>";
+    html+="</colgroup><thead><tr><th></th>";
+    for(let c=0;c<12;c++)html+="<th>"+colName(c)+"</th>";
+    html+="</tr></thead><tbody>";
+    for(let r=0;r<30;r++){html+="<tr><th>"+(r+1)+"</th>";for(let c=0;c<12;c++){const k=key(r,c);html+='<td data-cell="'+k+'"><input data-input="'+k+'" aria-label="'+k+'" value="" /></td>'}html+="</tr>"}
+    grid.innerHTML=html+"</tbody>";
+    if(tabs&&!tabs.children.length)tabs.innerHTML='<button type="button" class="active" data-sheet="0">Folha1</button>';
+    const styleId="aznyExcelFallbackGridStyle";
+    if(!document.getElementById(styleId)){const st=document.createElement("style");st.id=styleId;st.textContent='#aznyExcelGrid{border-collapse:collapse;table-layout:fixed;width:max-content;min-width:100%}#aznyExcelGrid th{height:28px;background:#e9edf0;border:1px solid #d5dce3;color:#263445;text-align:center}#aznyExcelGrid td{height:34px;min-width:90px;border:1px solid #d5dce3;padding:0;background:#fff}#aznyExcelGrid td input{display:block;width:100%;height:100%;min-height:32px;border:0;background:transparent;padding:4px 6px;outline:none;box-sizing:border-box;color:#17212f}#aznyExcelGrid td.azny-cell-selected{background:#dff0ff}#aznyExcelGrid td.azny-cell-anchor{outline:2px solid #107c41;outline-offset:-2px}';document.head.appendChild(st)}
+    fallbackStart=fallbackEnd=fallbackSelected;
+    function paint(){const [r1,c1]=coords(fallbackStart),[r2,c2]=coords(fallbackEnd);grid.querySelectorAll("td[data-cell]").forEach(td=>{const [r,c]=coords(td.dataset.cell);td.classList.toggle("azny-cell-selected",r>=Math.min(r1,r2)&&r<=Math.max(r1,r2)&&c>=Math.min(c1,c2)&&c<=Math.max(c1,c2));td.classList.toggle("azny-cell-anchor",td.dataset.cell===fallbackSelected)})}
+    grid.querySelectorAll("td[data-cell]").forEach(td=>{
+      td.addEventListener("pointerdown",e=>{if(e.button!==0)return;fallbackStart=fallbackEnd=fallbackSelected=td.dataset.cell;paint()});
+      td.addEventListener("pointerenter",e=>{if(e.buttons===1){fallbackEnd=td.dataset.cell;paint()}});
+      td.addEventListener("contextmenu",e=>{e.preventDefault();e.stopPropagation();if(!grid.querySelector("td.azny-cell-selected"))fallbackStart=fallbackEnd=fallbackSelected=td.dataset.cell;paint();if(cellName)cellName.value=fallbackSelected;if(formula)formula.value=grid.querySelector('input[data-input="'+fallbackSelected+'"]')?.value||"";if(context){context.style.left=Math.max(4,Math.min(e.clientX,innerWidth-250))+"px";context.style.top=Math.max(4,Math.min(e.clientY,innerHeight-440))+"px";context.classList.add("open")}});
+    });
+    grid.querySelectorAll("input[data-input]").forEach(inp=>{inp.addEventListener("focus",()=>{fallbackSelected=inp.dataset.input;if(cellName)cellName.value=fallbackSelected;if(formula)formula.value=inp.value;paint()});inp.addEventListener("input",()=>{if(formula&&document.activeElement===inp)formula.value=inp.value})});
+    if(formula)formula.addEventListener("change",()=>{const inp=grid.querySelector('input[data-input="'+fallbackSelected+'"]');if(inp)inp.value=formula.value});
+    document.addEventListener("pointerdown",e=>{if(context?.classList.contains("open")&&!context.contains(e.target))context.classList.remove("open")},true);
+    paint();
+    const status=document.getElementById("aznyExcelStatus");if(status)status.textContent="Folha de cálculo pronta.";
+  }
+  function openExcel(){word.classList.remove("azny-web-open");word.style.display="none";excel.style.display="flex";excel.classList.add("azny-excel-open");setTimeout(fallbackRender,180)}
+  function openWord(){excel.classList.remove("azny-excel-open");excel.style.display="none";word.style.display="flex";word.classList.add("azny-web-open");const editor=document.getElementById("aznyWebEditor");if(editor)editor.setAttribute("contenteditable","true")}
+  excelBtn?.addEventListener("click",openExcel,true);
+  wordBtn?.addEventListener("click",openWord,true);
+  document.getElementById("aznyExcelClose")?.addEventListener("click",()=>{excel.classList.remove("azny-excel-open");excel.style.display="none"},true);
+  document.getElementById("aznyWebClose")?.addEventListener("click",()=>{word.classList.remove("azny-web-open");word.style.display="none"},true);
+})();
+</script>
