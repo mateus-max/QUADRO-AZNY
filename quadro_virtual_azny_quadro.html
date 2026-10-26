@@ -44,6 +44,28 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
 .color{width:35px;height:34px;padding:2px;border:1px solid var(--line);border-radius:7px;background:#fff}
 .zoomlabel{font-size:12px;min-width:45px;text-align:center}
 .canvas-wrap{flex:1;position:relative;overflow:hidden;background:#cbd4df}
+ #aznyExcelWorkspace{position:absolute;inset:0;z-index:80;display:none;flex-direction:column;background:#fff;color:#1f2937;font:13px "Segoe UI",Arial,sans-serif;min-width:0;min-height:0}
+ #aznyExcelWorkspace.azny-excel-open{display:flex}
+ .azny-excel-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px;background:#107c41;color:#fff}
+ .azny-excel-head strong{font-size:15px;margin-right:8px}
+ .azny-excel-head button{border:1px solid #ffffff66;border-radius:5px;background:#ffffff18;color:#fff;padding:6px 9px;cursor:pointer}
+ .azny-excel-formula{display:flex;gap:6px;align-items:center;padding:6px;background:#f3f5f7;border-bottom:1px solid #d1d5db}
+ .azny-excel-formula input{min-width:0;padding:6px;border:1px solid #cbd5e1;border-radius:4px}
+ #aznyExcelCellName{width:68px;background:#fff}
+ #aznyExcelFormulaInput{flex:1}
+ .azny-excel-gridwrap{flex:1;min-height:0;overflow:auto}
+ .azny-excel-grid{border-collapse:collapse;table-layout:fixed;min-width:100%}
+ .azny-excel-grid th{position:sticky;top:0;z-index:2;background:#e9edef;font-weight:600}
+ .azny-excel-grid th,.azny-excel-grid td{border:1px solid #d7dde2;height:27px;min-width:90px;padding:0;text-align:left}
+ .azny-excel-grid th:first-child{left:0;z-index:3;position:sticky;min-width:38px;width:38px;text-align:center}
+ .azny-excel-grid td input{width:100%;height:26px;border:0;padding:3px 5px;outline:none;background:transparent;font:inherit}
+ .azny-excel-grid td input:focus{outline:2px solid #107c41;outline-offset:-2px;background:#f3fff6}
+ .azny-excel-tabs{display:flex;gap:4px;align-items:center;background:#f3f5f7;border-top:1px solid #d1d5db;padding:5px;overflow:auto}
+ .azny-excel-tabs button{border:0;border-radius:4px;padding:6px 12px;background:#e1e6e9;white-space:nowrap}
+ .azny-excel-tabs button.active{background:#d8f0df;color:#075b2d;font-weight:700}
+ .azny-excel-status{padding:4px 8px;color:#5b6470;font-size:11px;border-top:1px solid #e5e7eb}
+ body.student-mode #aznyExcelWorkspace{z-index:100}
+
  #stage{position:absolute;left:0;top:0;width:100%;height:100%;overflow:auto;overflow-x:auto;overflow-y:auto;background:#d6dee7;overscroll-behavior:contain;touch-action:pan-x pan-y}#zoomExtent{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;visibility:hidden}
 #board{position:absolute;left:0;top:0;width:100%;height:100%;min-width:0;min-height:0;background:#4f7f4f;transform-origin:0 0;overflow:hidden;border:8px solid #8b5a2b;box-shadow:inset 0 0 0 1px #6f431f,0 0 0 1px #6f431f}
 body.teacher-text-entry-active .app{height:var(--azny-frozen-app-height,100vh)!important;min-height:0!important}
@@ -1041,6 +1063,12 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
     <div class="group azny-language-group"><button class="mini azny-language-btn" id="teacherLanguageBtn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button></div>
   </div>
   <div class="canvas-wrap" id="canvasWrap">
+    <section id="aznyExcelWorkspace" aria-label="Folha de cálculo partilhada">
+      <div class="azny-excel-head"><strong>📊 Folha de cálculo AZNY</strong><button id="aznyExcelNew">＋ Nova folha</button><button id="aznyExcelDownload">⬇ Exportar CSV</button><button id="aznyExcelClose">✕ Voltar ao quadro</button></div>
+      <div class="azny-excel-formula"><input id="aznyExcelCellName" readonly aria-label="Célula selecionada"><span>fx</span><input id="aznyExcelFormulaInput" aria-label="Valor ou fórmula da célula" placeholder="Introduza um valor ou fórmula, por exemplo =SUM(A1:A5)"></div>
+      <div class="azny-excel-gridwrap"><table class="azny-excel-grid" id="aznyExcelGrid"></table></div>
+      <div class="azny-excel-tabs" id="aznyExcelTabs"></div><div class="azny-excel-status" id="aznyExcelStatus">Folha partilhada em tempo real durante a aula.</div>
+    </section>
     <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
 <svg viewBox="0 0 48 56" aria-hidden="true">
   <path class="arrow" d="M44 2 L25 9 L34 18 L12 40 L18 46 L40 24 L47 33 Z"/>
@@ -3707,11 +3735,40 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  window.addEventListener("orientationchange",()=>{if(active&&active.isConnected)requestAnimationFrame(()=>{const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();keyboard.style.left=Math.max(0,r.left-w.left)+"px";keyboard.style.width=Math.min(r.width,w.right-r.left)+"px"})},{passive:true});
 })();
   /* AZNY: launch the real Microsoft Excel web app from the teacher toolbar. */
-  const teacherExcelBtn=document.getElementById("teacherExcelBtn");
-  if(teacherExcelBtn)teacherExcelBtn.addEventListener("click",()=>{
-    const excelWindow=window.open("https://www.microsoft365.com/launch/excel","_blank","noopener,noreferrer");
-    if(!excelWindow&&typeof toast==="function")toast(document.documentElement.lang==="en"?"Allow pop-ups to open Microsoft Excel.":"Permita janelas pop-up para abrir o Microsoft Excel.");
-  });
+  /* AZNY embedded spreadsheet: teacher edits are shared with students through Firebase. */
+  (()=> {
+    const panel=document.getElementById("aznyExcelWorkspace"),grid=document.getElementById("aznyExcelGrid"),tabs=document.getElementById("aznyExcelTabs"),formula=document.getElementById("aznyExcelFormulaInput"),cellName=document.getElementById("aznyExcelCellName"),status=document.getElementById("aznyExcelStatus");
+    if(!panel||!grid)return;
+    const ROWS=30,COLS=12,letters=n=>{let s="";for(n++;n;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s};
+    let sheets=[{name:"Folha1",cells:{}}],active=0,selected="A1",applying=false,pushTimer=null,remoteRef=null,remoteReady=false;
+    const current=()=>sheets[active],key=(r,col)=>letters(col)+(r+1);
+    function esc(s){return String(s??"").replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]))}
+    function cellRaw(ref,seen=new Set()){const raw=current().cells[ref]??"";if(typeof raw!=="string"||raw[0]!=="=")return raw;if(seen.has(ref))return "#CYCLE!";seen.add(ref);try{return calc(raw.slice(1),seen)}catch(_){return "#ERROR!"}}
+    function calc(expr,seen){
+      const rangeValues=(a,b)=>{const parse=x=>{const m=x.match(/^([A-Z]+)(\d+)$/i);if(!m)throw 0;let col=0;for(const ch of m[1].toUpperCase())col=col*26+ch.charCodeAt(0)-64;return [+m[2]-1,col-1]};const [r1,c1]=parse(a),[r2,c2]=parse(b),v=[];for(let r=Math.min(r1,r2);r<=Math.max(r1,r2);r++)for(let c=Math.min(c1,c2);c<=Math.max(c1,c2);c++)v.push(cellRaw(key(r,c),new Set(seen)));return v};
+      let x=expr.trim().replace(/(SUM|AVERAGE|MIN|MAX|COUNT)\(([^()]*)\)/gi,(_,fn,args)=>{let v=[];args.split(",").forEach(part=>{part=part.trim();if(part.includes(":"))v.push(...rangeValues(...part.split(":")));else if(/^[A-Z]+\d+$/i.test(part))v.push(cellRaw(part.toUpperCase(),new Set(seen)));else if(part!=="")v.push(part)});const nums=v.map(Number).filter(n=>Number.isFinite(n)&&String(n)!=="");switch(fn.toUpperCase()){case"SUM":return nums.reduce((a,b)=>a+b,0);case"AVERAGE":return nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;case"MIN":return nums.length?Math.min(...nums):0;case"MAX":return nums.length?Math.max(...nums):0;default:return nums.length}});
+      x=x.replace(/\b([A-Z]+\d+)\b/gi,ref=>{const v=cellRaw(ref.toUpperCase(),new Set(seen));return v===""?"0":String(Number.isFinite(Number(v))?Number(v):JSON.stringify(String(v)))});
+      if(!/^[\d\s.+\-*/()%<>=!&|?:,"]+$/.test(x))throw 0;
+      return Function('"use strict";return ('+x+')')();
+    }
+    function display(v){if(typeof v==="string"&&v.startsWith("=")){try{return String(calc(v.slice(1),new Set())??"")}catch(_){return "#ERROR!"}}return String(v??"")}
+    function render(){
+      grid.innerHTML="<thead><tr><th></th>"+Array.from({length:COLS},(_,c)=>"<th>"+letters(c)+"</th>").join("")+"</tr></thead><tbody>"+Array.from({length:ROWS},(_,r)=>"<tr><th>"+(r+1)+"</th>"+Array.from({length:COLS},(_,col)=>{const k=key(r,col);return '<td><input data-cell="'+k+'" aria-label="'+k+'" value="'+esc(display(current().cells[k]??""))+'" /></td>'}).join("")+"</tr>").join("")+"</tbody>";
+      tabs.innerHTML=sheets.map((s,i)=>'<button type="button" data-sheet="'+i+'" class="'+(i===active?"active":"")+'">'+esc(s.name)+'</button>').join("");
+      grid.querySelectorAll("input[data-cell]").forEach(input=>{input.addEventListener("focus",()=>{selected=input.dataset.cell;cellName.value=selected;formula.value=current().cells[selected]??""});input.addEventListener("change",()=>{current().cells[input.dataset.cell]=input.value;selected=input.dataset.cell;formula.value=input.value;render();const next=grid.querySelector('[data-cell="'+selected+'"]');if(next)next.focus();schedulePublish()})});
+      const chosen=grid.querySelector('[data-cell="'+selected+'"]');if(chosen){cellName.value=selected;formula.value=current().cells[selected]??""}
+    }
+    function schedulePublish(){if(applying)return;clearTimeout(pushTimer);pushTimer=setTimeout(()=>{if(remoteRef)remoteRef.set({sheets,active,updatedAt:Date.now()}).catch(()=>{status.textContent="Não foi possível sincronizar a folha."})},180)}
+    function bindRealtime(){if(!window.AZNY_DB||!window.aznyRoomRef)return;remoteRef=window.aznyRoomRef().child("spreadsheet");remoteRef.on("value",snap=>{const v=snap.val();if(!v||applying)return;applying=true;if(Array.isArray(v.sheets)&&v.sheets.length){sheets=v.sheets.map((s,i)=>({name:String(s.name||"Folha"+(i+1)),cells:s.cells||{}}));active=Math.min(Number(v.active)||0,sheets.length-1);render();status.textContent="Folha sincronizada com os participantes."}applying=false});}
+    function open(){panel.classList.add("azny-excel-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(bindRealtime);else bindRealtime();render()}
+    document.getElementById("teacherExcelBtn")?.addEventListener("click",open);
+    document.getElementById("aznyExcelClose")?.addEventListener("click",()=>panel.classList.remove("azny-excel-open"));
+    document.getElementById("aznyExcelNew")?.addEventListener("click",()=>{sheets.push({name:"Folha"+(sheets.length+1),cells:{}});active=sheets.length-1;selected="A1";render();schedulePublish()});
+    tabs.addEventListener("click",e=>{const b=e.target.closest("[data-sheet]");if(!b)return;active=Number(b.dataset.sheet);selected="A1";render()});
+    formula.addEventListener("change",()=>{current().cells[selected]=formula.value;render();schedulePublish()});
+    document.getElementById("aznyExcelDownload")?.addEventListener("click",()=>{const csv=Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,col)=>{const v=display(current().cells[key(r,col)]??"");return '"'+v.replace(/"/g,'""')+'"'}).join(",")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=current().name+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+    render();
+  })();
 </script>
 </body>
 </html>
