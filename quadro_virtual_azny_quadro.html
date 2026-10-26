@@ -4149,3 +4149,78 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   window.addEventListener("pageshow",applyShareIcons);
 })();
 </script>
+
+
+<script>
+/* AZNY visible-grid recovery and official WhatsApp mark */
+(function(){
+  function repairWhatsApp(){
+    const wa=document.getElementById("shareWhatsApp");
+    if(!wa)return;
+    wa.innerHTML='<svg viewBox="0 0 32 32" width="26" height="26" role="img" aria-label="WhatsApp"><circle cx="16" cy="16" r="15" fill="#25D366"/><path fill="#fff" d="M16 4.2a11.2 11.2 0 0 0-9.6 17l-1.3 5 5.2-1.3A11.2 11.2 0 1 0 16 4.2zm0 2.1a9.1 9.1 0 0 1 0 18.2 9 9 0 0 1-4.6-1.3l-.4-.2-2.7.7.7-2.6-.3-.5A9.1 9.1 0 0 1 16 6.3z"/><path fill="#fff" d="M12.1 10.2c-.3-.6-.7-.6-1-.6h-.8c-.3 0-.7.1-1 .5-.4.4-1.3 1.3-1.3 3.1s1.3 3.5 1.5 3.7c.2.3 2.6 4.1 6.4 5.5 3.1 1.2 3.8.9 4.5.8.7-.1 2.2-.9 2.5-1.8.3-.9.3-1.6.2-1.8-.1-.2-.4-.3-.8-.5l-2.5-1.2c-.3-.1-.6-.2-.8.2l-1.1 1.4c-.2.3-.4.3-.8.1a10.1 10.1 0 0 1-3-1.9 11 11 0 0 1-2.1-2.6c-.2-.4 0-.6.2-.8l.6-.7.4-.6c.1-.2.1-.4 0-.6z"/></svg>';
+    wa.title="Partilhar no WhatsApp";wa.setAttribute("aria-label","Partilhar no WhatsApp");
+  }
+  function ensureGrid(){
+    const panel=document.getElementById("aznyExcelWorkspace");
+    const grid=document.getElementById("aznyExcelGrid");
+    if(!panel||!grid)return;
+    const hasCells=grid.querySelector("tbody td[data-cell]");
+    if(!hasCells){
+      const letters=n=>String.fromCharCode(65+n);
+      let html="<colgroup><col style='width:42px'>"+Array.from({length:12},()=>"<col style='width:90px'>").join("")+"</colgroup><thead><tr><th></th>"+Array.from({length:12},(_,i)=>"<th>"+letters(i)+"</th>").join("")+"</tr></thead><tbody>";
+      for(let r=1;r<=30;r++){
+        html+="<tr><th>"+r+"</th>";
+        for(let col=0;col<12;col++){
+          const ref=letters(col)+r;
+          html+='<td data-cell="'+ref+'"><input data-azny-fallback-cell="'+ref+'" aria-label="'+ref+'" /></td>';
+        }
+        html+="</tr>";
+      }
+      grid.innerHTML=html+"</tbody>";
+      grid.querySelectorAll("input[data-azny-fallback-cell]").forEach(input=>{
+        input.addEventListener("input",()=>{
+          try{
+            const key="azny-excel-fallback:"+location.pathname+location.search;
+            const data=JSON.parse(localStorage.getItem(key)||"{}");
+            data[input.dataset.aznyFallbackCell]=input.value;
+            localStorage.setItem(key,JSON.stringify(data));
+          }catch(_){}
+        });
+      });
+      try{
+        const data=JSON.parse(localStorage.getItem("azny-excel-fallback:"+location.pathname+location.search)||"{}");
+        grid.querySelectorAll("input[data-azny-fallback-cell]").forEach(input=>{input.value=data[input.dataset.aznyFallbackCell]||""});
+      }catch(_){}
+      const tabs=document.getElementById("aznyExcelTabs");
+      if(tabs&&!tabs.children.length)tabs.innerHTML='<button type="button" class="active">Folha1</button>';
+      const name=document.getElementById("aznyExcelCellName");if(name&&!name.value)name.value="A1";
+    }
+  }
+  function install(){
+    repairWhatsApp();
+    const grid=document.getElementById("aznyExcelGrid");
+    const button=document.getElementById("teacherExcelBtn");
+    if(button)button.addEventListener("click",()=>setTimeout(ensureGrid,0));
+    if(grid){
+      const observer=new MutationObserver(()=>{if(!grid.querySelector("tbody td[data-cell]"))ensureGrid()});
+      observer.observe(grid,{childList:true,subtree:true});
+    }
+    const panel=document.getElementById("aznyExcelWorkspace");
+    if(panel&&panel.classList.contains("azny-excel-open"))ensureGrid();
+  }
+  const style=document.createElement("style");
+  style.textContent=`
+    #aznyExcelWorkspace.azny-excel-open .azny-excel-gridwrap{display:block!important;flex:1 1 auto!important;min-height:220px!important;overflow:auto!important;background:#fff!important}
+    #aznyExcelWorkspace.azny-excel-open #aznyExcelGrid{display:table!important;visibility:visible!important;opacity:1!important;border-collapse:collapse!important;table-layout:fixed!important;width:max-content!important;min-width:100%!important;background:#fff!important}
+    #aznyExcelWorkspace.azny-excel-open #aznyExcelGrid thead{display:table-header-group!important}
+    #aznyExcelWorkspace.azny-excel-open #aznyExcelGrid tbody{display:table-row-group!important}
+    #aznyExcelWorkspace.azny-excel-open #aznyExcelGrid tr{display:table-row!important;height:27px!important}
+    #aznyExcelWorkspace.azny-excel-open #aznyExcelGrid th{display:table-cell!important;position:static!important;min-width:42px!important;height:27px!important;padding:3px!important;background:#e9edef!important;color:#243244!important;border:1px solid #cbd5e1!important;text-align:center!important}
+    #aznyExcelWorkspace.azny-excel-open #aznyExcelGrid td{display:table-cell!important;width:90px!important;min-width:90px!important;height:27px!important;padding:0!important;background:#fff!important;border:1px solid #d7dde2!important}
+    #aznyExcelWorkspace.azny-excel-open #aznyExcelGrid td input{display:block!important;width:100%!important;height:26px!important;box-sizing:border-box!important;padding:3px 5px!important;background:transparent!important;color:#1f2937!important;border:0!important;font:inherit!important}
+  `;
+  document.head.appendChild(style);
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
+  window.addEventListener("pageshow",install);
+})();
+</script>
