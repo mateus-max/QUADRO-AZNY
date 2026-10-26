@@ -3869,7 +3869,16 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
     function selectExcelObject(el){deselectExcelObject();selectedExcelObject=el;el.classList.add("azny-excel-object-selected");status.textContent="Objeto selecionado. Prima «Eliminar selecionado» ou a tecla Delete.";}
     function deleteExcelSelection(){
       if(selectedExcelObject&&panel.contains(selectedExcelObject)){selectedExcelObject.remove();selectedExcelObject=null;schedulePublish();status.textContent="Objeto eliminado.";return true;}
-      clearSelectedCells();return true;
+      const rg=selectedRange();
+      clearSelectedCells();
+      /* Images and formatting inserted from the Excel ribbon are stored separately from cell values. */
+      const formats=window.aznyExcelRibbonFormats;
+      if(formats){
+        for(let r=rg.r1;r<=rg.r2;r++)for(let c=rg.c1;c<=rg.c2;c++)delete formats[String(active)+":"+key(r,c)];
+        if(typeof window.aznyExcelPublish==="function")window.aznyExcelPublish();
+      }
+      status.textContent="Seleção eliminada, incluindo imagens e formatação.";
+      return true;
     }
     function resetCurrentSheet(){
       if(!confirm("Limpar TODAS as folhas e começar um Excel novo? Todos os dados, gráficos/objetos, mesclagens e formatações serão apagados. Esta ação não pode ser desfeita."))return;
@@ -3878,7 +3887,8 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
       sheets=[{name:"Folha1",cells:{},merges:[]}];active=0;selected=selectionStart=selectionEnd="A1";
       Object.keys(cellFormats).forEach(k=>delete cellFormats[k]);
       if(window.aznyExcelRibbonFormats)Object.keys(window.aznyExcelRibbonFormats).forEach(k=>delete window.aznyExcelRibbonFormats[k]);
-      render();schedulePublish();status.textContent="Excel limpo. Folha1 pronta para começar do zero.";
+      if(typeof window.aznyExcelPublish==="function")window.aznyExcelPublish();
+      render();schedulePublish();status.textContent="Excel limpo, incluindo imagens e formatações. Folha1 pronta para começar do zero.";
     }
     grid.addEventListener("click",e=>{
       const obj=e.target.closest(".azny-excel-user-object,.azny-excel-selectable,[data-azny-excel-object]");
@@ -3919,7 +3929,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
 
     function mergeSelection(){const rg=selectedRange();if(rg.r1===rg.r2&&rg.c1===rg.c2){status.textContent="Selecione duas ou mais células adjacentes para as mesclar.";return}const start=key(rg.r1,rg.c1),end=key(rg.r2,rg.c2);current().merges=current().merges||[];current().merges=current().merges.filter(m=>{const a=coord(m.start),b=coord(m.end),mr1=Math.min(a[0],b[0]),mr2=Math.max(a[0],b[0]),mc1=Math.min(a[1],b[1]),mc2=Math.max(a[1],b[1]);return !(mr1<=rg.r2&&mr2>=rg.r1&&mc1<=rg.c2&&mc2>=rg.c1)});current().merges.push({start,end});selected=selectionStart=start;selectionEnd=end;render();schedulePublish();status.textContent="Células "+start+":"+end+" mescladas. As restantes células mantêm a grelha e o espaçamento normal."}
     function unmergeSelection(){const rg=selectedRange();current().merges=(current().merges||[]).filter(m=>{const a=coord(m.start),b=coord(m.end);return !(a[0]<=rg.r2&&b[0]>=rg.r1&&a[1]<=rg.c2&&b[1]>=rg.c1)});render();schedulePublish()}
-    contextMenu?.addEventListener("click",e=>{const a=e.target.closest("button")?.dataset.action;if(!a)return;contextMenu.classList.remove("open");const rg=selectedRange();if(a==="merge"){mergeSelection();return}if(a==="unmerge"){unmergeSelection();return}if(a==="copy"){clipboardCells=[];for(let r=rg.r1;r<=rg.r2;r++){const row=[];for(let col=rg.c1;col<=rg.c2;col++)row.push(current().cells[key(r,col)]??"");clipboardCells.push(row)}status.textContent="Células copiadas.";return}if(a==="paste"){if(!clipboardCells)return;clipboardCells.forEach((row,ri)=>row.forEach((v,ci)=>{if(rg.r1+ri<ROWS&&rg.c1+ci<COLS)current().cells[key(rg.r1+ri,rg.c1+ci)]=v}));render();schedulePublish();return}if(a==="delete"){deleteExcelSelection();return}if(a==="clear"){for(let r=rg.r1;r<=rg.r2;r++)for(let col=rg.c1;col<=rg.c2;col++){delete current().cells[key(r,col)];delete cellFormats[key(r,col)]}render();schedulePublish();status.textContent="Conteúdo eliminado.";return}if(["bold","italic","align"].includes(a)){for(let r=rg.r1;r<=rg.r2;r++)for(let col=rg.c1;col<=rg.c2;col++){const k=key(r,col);cellFormats[k]=cellFormats[k]||{};if(a==="bold")cellFormats[k].bold=!cellFormats[k].bold;else if(a==="italic")cellFormats[k].italic=!cellFormats[k].italic;else cellFormats[k].align=cellFormats[k].align==="left"?"center":cellFormats[k].align==="center"?"right":"left"}render()}});
+    contextMenu?.addEventListener("click",e=>{const a=e.target.closest("button")?.dataset.action;if(!a)return;contextMenu.classList.remove("open");const rg=selectedRange();if(a==="merge"){mergeSelection();return}if(a==="unmerge"){unmergeSelection();return}if(a==="copy"){clipboardCells=[];for(let r=rg.r1;r<=rg.r2;r++){const row=[];for(let col=rg.c1;col<=rg.c2;col++)row.push(current().cells[key(r,col)]??"");clipboardCells.push(row)}status.textContent="Células copiadas.";return}if(a==="paste"){if(!clipboardCells)return;clipboardCells.forEach((row,ri)=>row.forEach((v,ci)=>{if(rg.r1+ri<ROWS&&rg.c1+ci<COLS)current().cells[key(rg.r1+ri,rg.c1+ci)]=v}));render();schedulePublish();return}if(a==="delete"){deleteExcelSelection();return}if(a==="clear"){for(let r=rg.r1;r<=rg.r2;r++)for(let col=rg.c1;col<=rg.c2;col++){const k=key(r,col);delete current().cells[k];delete cellFormats[k];if(window.aznyExcelRibbonFormats)delete window.aznyExcelRibbonFormats[String(active)+":"+k]}render();schedulePublish();if(typeof window.aznyExcelPublish==="function")window.aznyExcelPublish();status.textContent="Conteúdo, imagens e formatação da seleção eliminados.";return}if(["bold","italic","align"].includes(a)){for(let r=rg.r1;r<=rg.r2;r++)for(let col=rg.c1;col<=rg.c2;col++){const k=key(r,col);cellFormats[k]=cellFormats[k]||{};if(a==="bold")cellFormats[k].bold=!cellFormats[k].bold;else if(a==="italic")cellFormats[k].italic=!cellFormats[k].italic;else cellFormats[k].align=cellFormats[k].align==="left"?"center":cellFormats[k].align==="center"?"right":"left"}render()}});
     document.getElementById("aznyExcelMerge")?.addEventListener("click",mergeSelection);
     document.getElementById("aznyExcelUnmerge")?.addEventListener("click",()=>{const rg=selectedRange();current().merges=(current().merges||[]).filter(m=>{const a=coord(m.start),b=coord(m.end);return !(a[0]<=rg.r2&&b[0]>=rg.r1&&a[1]<=rg.c2&&b[1]>=rg.c1)});render();schedulePublish()});
     document.getElementById("aznyExcelDownload")?.addEventListener("click",()=>{const csv=Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,col)=>{const v=display(current().cells[key(r,col)]??"");return '"'+v.replace(/"/g,'""')+'"'}).join(",")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=current().name+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
