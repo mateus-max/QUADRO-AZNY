@@ -69,9 +69,12 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
 
  #aznyWebWorkspace.azny-web-open{display:flex!important}
 
- .azny-excel-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px;background:#107c41;color:#fff}
- .azny-excel-head strong{font-size:15px;margin-right:8px}
- .azny-excel-head button{border:1px solid #ffffff66;border-radius:5px;background:#ffffff18;color:#fff;padding:6px 9px;cursor:pointer}
+ .azny-excel-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:8px;background:#107c41;color:#fff;min-width:0;box-sizing:border-box}
+ .azny-excel-head strong{font-size:15px;margin:0 8px 0 0;flex:0 0 auto;white-space:nowrap}
+ .azny-excel-head button{border:1px solid #ffffff66;border-radius:5px;background:#ffffff18;color:#fff;padding:8px 10px;cursor:pointer;flex:0 0 auto;white-space:nowrap;min-height:36px;line-height:1.2;font-size:13px}
+ .azny-excel-head button:hover{background:#ffffff30}
+ @media(max-width:1050px){.azny-excel-head{gap:6px;padding:7px}.azny-excel-head strong{flex:1 0 100%;margin:0 0 2px}.azny-excel-head button{flex:1 1 auto;padding:8px 9px}}
+ @media(max-width:650px){.azny-excel-head{gap:5px;padding:6px}.azny-excel-head button{font-size:12px;padding:8px 7px;min-height:34px}}
  .azny-excel-formula{display:flex;gap:6px;align-items:center;padding:6px;background:#f3f5f7;border-bottom:1px solid #d1d5db}
  .azny-excel-formula input{min-width:0;padding:6px;border:1px solid #cbd5e1;border-radius:4px}
  #aznyExcelCellName{width:68px;background:#fff}
