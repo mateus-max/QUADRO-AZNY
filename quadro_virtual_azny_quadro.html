@@ -3876,6 +3876,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   if(action==="gridlines"){grid.classList.toggle("azny-hide-grid");let style=document.getElementById("aznyExcelGridToggleStyle");if(!style){style=document.createElement("style");style.id="aznyExcelGridToggleStyle";style.textContent=".azny-excel-grid.azny-hide-grid td,.azny-excel-grid.azny-hide-grid th{border-color:transparent!important}";document.head.appendChild(style)}return}
   if(action==="freeze"){grid.querySelectorAll("th").forEach(th=>th.style.position="sticky");return}
  });
+ tabs.querySelector('[data-ribbon="home"]')?.click();
  applyFormats();
 })();
 </script>
