@@ -2231,7 +2231,7 @@ async function startTeacherFullScreenRecording(button,boxId){
  }
 }
 async function startBoardFallbackRecording(forStudent,button,boxId){
- const target=document.getElementById("board");
+ const target=document.querySelector(".app");
  if(!target||!window.MediaRecorder){toast(document.documentElement.lang==="en"?"Could not prepare recording in this browser.":"Não foi possível preparar a gravação neste navegador.");return}
  const loadHtml2Canvas=async()=>{
   if(window.html2canvas)return window.html2canvas;
@@ -2240,8 +2240,9 @@ async function startBoardFallbackRecording(forStudent,button,boxId){
  };
  let html2canvas;
  try{toast(document.documentElement.lang==="en"?"Preparing high-quality board recording…":"A preparar a gravação do quadro em alta qualidade…");html2canvas=await loadHtml2Canvas()}catch(e){console.error("AZNY recording setup:",e);toast(document.documentElement.lang==="en"?"Could not start recording. Check your internet connection and try again.":"Não foi possível iniciar a gravação. Verifique a ligação à Internet e tente novamente.");return}
- const width=Math.max(320,Math.min(1920,Math.round(target.clientWidth||target.getBoundingClientRect().width||800)));
- const height=Math.max(240,Math.min(1080,Math.round(target.clientHeight||target.getBoundingClientRect().height||450)));
+ const bounds=target.getBoundingClientRect();
+ const width=Math.max(320,Math.min(1920,Math.round(bounds.width||target.clientWidth||800)));
+ const height=Math.max(240,Math.min(1440,Math.round(bounds.height||target.clientHeight||450)));
  const pixelRatio=Math.min(2.5,Math.max(2,window.devicePixelRatio||1));
  const canvas=document.createElement("canvas");canvas.width=Math.round(width*pixelRatio);canvas.height=Math.round(height*pixelRatio);
  const ctx=canvas.getContext("2d",{alpha:false});if(!ctx){toast("O navegador não permite preparar a gravação.");return}
@@ -2252,7 +2253,7 @@ async function startBoardFallbackRecording(forStudent,button,boxId){
   try{
    const bg=getComputedStyle(target).backgroundColor||"rgb(79, 127, 79)";
    const shot=await html2canvas(target,{
-    backgroundColor:bg,scale:pixelRatio,width:target.clientWidth,height:target.clientHeight,
+    backgroundColor:bg,scale:pixelRatio,width:Math.round(bounds.width||target.clientWidth),height:Math.round(bounds.height||target.clientHeight),
     windowWidth:Math.max(document.documentElement.clientWidth,window.innerWidth),
     windowHeight:Math.max(document.documentElement.clientHeight,window.innerHeight),
     scrollX:0,scrollY:0,useCORS:true,allowTaint:false,logging:false,removeContainer:true,
@@ -2260,7 +2261,7 @@ async function startBoardFallbackRecording(forStudent,button,boxId){
    });
    if(!stopped){
     ctx.save();ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0);ctx.fillStyle=bg;ctx.fillRect(0,0,width,height);
-    /* Draw the entire captured board to a matching aspect ratio: no half-board crop or color fill. */
+    /* Captura a interface da aula inteira (quadro, ferramentas e controlos), sem a interface do navegador. */
     ctx.drawImage(shot,0,0,width,height);
     const video= document.getElementById(forStudent?"studentSelfVideo":"teacherVideo");
     if(video&&video.readyState>=2&&video.videoWidth){
@@ -2312,7 +2313,7 @@ function saveRecording(){
  if(btn){btn.textContent="⏺ Gravar aula";btn.classList.remove("recording")}screenRecorder=null;recordedChunks=[];
  if(!blob.size){toast("A gravação ficou vazia. Tente novamente e permita a captura do ecrã.");return}
  const url=URL.createObjectURL(blob),name="quadro-azny-"+(recorder?._aznyForStudent?"aluno-":"aula-")+new Date().toISOString().slice(0,10)+"-"+new Date().toTimeString().slice(0,8).replace(/:/g,"-")+".webm";
- if(box){box.style.display="block";box.innerHTML="";const label=document.createElement("div");label.textContent="Gravação pronta ("+Math.round(blob.size/1024/1024*10)/10+" MB).";box.appendChild(label);const link=document.createElement("a");link.href=url;link.download=name;link.textContent="⬇ Baixar gravação para o dispositivo";link.style.cssText="display:inline-block;padding:8px 10px;margin-top:6px;background:#e8f2ff;border-radius:7px;color:#075ecf;font-weight:800;text-decoration:none";box.appendChild(link);const open=document.createElement("button");open.type="button";open.textContent="Abrir vídeo";open.style.marginLeft="6px";open.onclick=()=>window.open(url,"_blank","noopener");box.appendChild(open);box.scrollIntoView?.({block:"nearest",behavior:"smooth"})}
+ if(box){box.style.display="block";box.innerHTML="";const label=document.createElement("div");label.textContent="Gravação pronta ("+Math.round(blob.size/1024/1024*10)/10+" MB).";box.appendChild(label);const link=document.createElement("a");link.href=url;link.download=name;link.textContent="⬇ Baixar gravação para o dispositivo";link.style.cssText="display:inline-block;padding:8px 10px;margin-top:6px;background:#e8f2ff;border-radius:7px;color:#075ecf;font-weight:800;text-decoration:none";link.addEventListener("click",()=>{link.textContent="✓ Download iniciado";link.style.pointerEvents="none";setTimeout(()=>{box.style.display="none";box.replaceChildren();URL.revokeObjectURL(url)},1800)},{once:true});box.appendChild(link);const open=document.createElement("button");open.type="button";open.textContent="Abrir vídeo";open.style.marginLeft="6px";open.onclick=()=>window.open(url,"_blank","noopener");box.appendChild(open);box.scrollIntoView?.({block:"nearest",behavior:"smooth"})}
  toast("Gravação guardada. Use «Baixar gravação para o dispositivo» para a guardar no telefone ou computador.");
 }
 function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]))}
