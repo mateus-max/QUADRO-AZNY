@@ -3612,10 +3612,21 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  document.addEventListener("focusin",e=>{
   if(e.target?.classList?.contains("textobj")&&!body.classList.contains("student-mode"))openKeyboard(e.target);
  },true);
+ /* Em ecrãs táteis, tocar numa tecla não deve retirar o foco do texto.
+    Alguns navegadores Android enviam focusout com relatedTarget=null ao tocar em botões. */
+ keyboard.addEventListener("pointerdown",e=>{if(e.target.closest("button"))e.preventDefault()},true);
  document.addEventListener("focusout",e=>{
-  if(e.target?.classList?.contains("textobj")&&!keyboard.contains(e.relatedTarget))setTimeout(()=>{
+  if(!e.target?.classList?.contains("textobj"))return;
+  setTimeout(()=>{
+   if(!active||!active.isConnected){closeKeyboard(false);return}
+   if(body.classList.contains("azny-custom-keyboard")){
+    /* Manter o teclado visível enquanto o texto editado continuar ativo.
+       Só o botão OK deve fechar explicitamente o teclado. */
+    if(document.activeElement!==active)restoreSelection();
+    return;
+   }
    if(!board.querySelector(".textobj:focus"))closeKeyboard(false);
-  },150);
+  },220);
  },true);
  document.addEventListener("selectionchange",()=>{if(active&&document.activeElement===active)saveSelection()});
  window.addEventListener("resize",()=>{
