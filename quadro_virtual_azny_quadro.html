@@ -3137,20 +3137,9 @@ document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preve
  function mobileStudent(){return body.classList.contains("student-mode")&&matchMedia("(pointer:coarse)").matches}
  function activeText(){const el=document.activeElement;return !!(el&&el.matches&&el.matches(".student-mode .textobj[contenteditable='true']"))}
  function ensureDoneButton(){
-  if(!mobileStudent())return;
-  if(!doneButton){
-   doneButton=document.createElement("button");doneButton.type="button";doneButton.className="azny-student-text-done";
-   doneButton.addEventListener("pointerdown",e=>e.preventDefault());
-   doneButton.addEventListener("click",()=>{
-    studentTextFinishClick=true;const target=studentTextEditTarget;studentTextEditTarget=null;studentSavedRange=null;
-    body.classList.remove("text-entry-active");body.style.removeProperty("--azny-visible-height");
-    if(doneButton)doneButton.style.display="none";if(target)target.blur();
-    setTimeout(()=>{studentTextFinishClick=false},350);
-   });
-   document.body.appendChild(doneButton);
-  }
-  doneButton.textContent=document.documentElement.lang==="en"?"✓ Finish writing":"✓ Concluir escrita";
-  doneButton.style.display=studentTextEditTarget?"block":"none";
+  /* Não sobrepor o teclado nativo com uma barra extra “Concluir escrita”.
+     A edição termina quando o utilizador toca fora do texto ou muda de ferramenta. */
+  if(doneButton)doneButton.style.display="none";
  }
  function viewportHeight(){return window.visualViewport?window.visualViewport.height:window.innerHeight}
  function syncTextEntryLayout(){
@@ -3175,14 +3164,17 @@ document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preve
   blurTimer=setTimeout(function(){
    if(studentTextFinishClick){body.classList.remove("text-entry-active");body.style.removeProperty("--azny-visible-height");return}
    if(studentTextEditTarget===e.target&&studentTextEditTarget?.isConnected){
-    try{
-     studentTextEditTarget.focus({preventScroll:true});
-     if(studentSavedRange){const sel=window.getSelection();sel.removeAllRanges();sel.addRange(studentSavedRange)}
-    }catch(_){}
-    body.classList.add("text-entry-active");ensureDoneButton();requestAnimationFrame(syncTextEntryLayout);return;
+    /* Não forçar focus() após cada carácter: no Android isso pode fechar o teclado nativo.
+       Se o foco foi perdido por uma mudança transitória, só restaurar a seleção quando necessário. */
+    if(document.activeElement===studentTextEditTarget){
+     try{if(studentSavedRange){const sel=window.getSelection();if(sel&&sel.rangeCount===0){sel.addRange(studentSavedRange)}}}catch(_){}
+     body.classList.add("text-entry-active");requestAnimationFrame(syncTextEntryLayout);return;
+    }
+    body.classList.remove("text-entry-active");body.style.removeProperty("--azny-visible-height");
+    studentTextEditTarget=null;studentSavedRange=null;ensureDoneButton();return;
    }
    if(!activeText()){body.classList.remove("text-entry-active");body.style.removeProperty("--azny-visible-height");studentTextEditTarget=null;studentSavedRange=null;ensureDoneButton()}
-  },300);
+  },120);
  },true);
  document.addEventListener("selectionchange",()=>{if(mobileStudent()&&activeText()){try{const sel=window.getSelection();if(sel&&sel.rangeCount)studentSavedRange=sel.getRangeAt(0).cloneRange()}catch(_){}}});
  if(window.visualViewport){window.visualViewport.addEventListener("resize",syncTextEntryLayout,{passive:true});window.visualViewport.addEventListener("scroll",syncTextEntryLayout,{passive:true})}
