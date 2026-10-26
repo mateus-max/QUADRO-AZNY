@@ -2309,8 +2309,11 @@ function saveRecording(){
  if(btn){btn.disabled=false;btn.textContent=recorder?._aznyForStudent?"⏺ Gravar":"⏺ Gravar aula";btn.classList.remove("recording")}screenRecorder=null;recordedChunks=[];
  if(!blob.size){toast("A gravação ficou vazia. Tente novamente e permita a captura do ecrã.");return}
  const url=URL.createObjectURL(blob),name="quadro-azny-"+(recorder?._aznyForStudent?"aluno-":"aula-")+new Date().toISOString().slice(0,10)+"-"+new Date().toTimeString().slice(0,8).replace(/:/g,"-")+".webm";
- if(box){box.style.display="block";box.innerHTML="";const label=document.createElement("div");label.textContent="Gravação pronta ("+Math.round(blob.size/1024/1024*10)/10+" MB).";box.appendChild(label);const link=document.createElement("a");link.href=url;link.download=name;link.textContent="⬇ Baixar gravação para o dispositivo";link.style.cssText="display:inline-block;padding:8px 10px;margin-top:6px;background:#e8f2ff;border-radius:7px;color:#075ecf;font-weight:800;text-decoration:none";link.addEventListener("click",()=>{link.textContent="✓ Download iniciado";link.style.pointerEvents="none";setTimeout(()=>{box.style.display="none";box.replaceChildren();URL.revokeObjectURL(url)},1800)},{once:true});box.appendChild(link);const open=document.createElement("button");open.type="button";open.textContent="Abrir vídeo";open.style.marginLeft="6px";open.onclick=()=>window.open(url,"_blank","noopener");box.appendChild(open);box.scrollIntoView?.({block:"nearest",behavior:"smooth"})}
- toast("Gravação guardada. Use «Baixar gravação para o dispositivo» para a guardar no telefone ou computador.");
+ /* Ao parar a gravação, iniciar diretamente o download; não exigir um segundo botão. */
+ const link=document.createElement("a");link.href=url;link.download=name;link.style.display="none";document.body.appendChild(link);link.click();link.remove();
+ if(box){box.style.display="none";box.replaceChildren()}
+ toast("Gravação concluída. O download do vídeo foi iniciado.");
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]))}
 function addStudentVideoCard(id,name,stream,track){
@@ -3582,7 +3585,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   renderCase();
  }
  function openKeyboard(el){
-  if(!mobile()||body.classList.contains("student-mode"))return;
+  if(!mobile())return;
   active=el;active.setAttribute("inputmode","none");
   body.classList.add("azny-custom-keyboard");
   if(!keyboard.isConnected)wrap.appendChild(keyboard);
@@ -3599,7 +3602,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   active=null;savedRange=null;
  }
  document.addEventListener("focusin",e=>{
-  if(e.target?.classList?.contains("textobj")&&!body.classList.contains("student-mode"))openKeyboard(e.target);
+  if(e.target?.classList?.contains("textobj"))openKeyboard(e.target);
  },true);
  /* Em ecrãs táteis, tocar numa tecla não deve retirar o foco do texto.
     Alguns navegadores Android enviam focusout com relatedTarget=null ao tocar em botões. */
