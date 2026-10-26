@@ -3181,7 +3181,7 @@ document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preve
     body.classList.add("text-entry-active");ensureDoneButton();requestAnimationFrame(syncTextEntryLayout);return;
    }
    if(!activeText()){body.classList.remove("text-entry-active");body.style.removeProperty("--azny-visible-height");studentTextEditTarget=null;studentSavedRange=null;ensureDoneButton()}
-  },120);
+  },300);
  },true);
  document.addEventListener("selectionchange",()=>{if(mobileStudent()&&activeText()){try{const sel=window.getSelection();if(sel&&sel.rangeCount)studentSavedRange=sel.getRangeAt(0).cloneRange()}catch(_){}}});
  if(window.visualViewport){window.visualViewport.addEventListener("resize",syncTextEntryLayout,{passive:true});window.visualViewport.addEventListener("scroll",syncTextEntryLayout,{passive:true})}
