@@ -3170,6 +3170,7 @@ document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preve
      try{if(studentSavedRange){const sel=window.getSelection();if(sel&&sel.rangeCount===0){sel.addRange(studentSavedRange)}}}catch(_){}
      body.classList.add("text-entry-active");requestAnimationFrame(syncTextEntryLayout);return;
     }
+    if(body.classList.contains("azny-student-native-keyboard")&&studentTextEditTarget.isConnected){body.classList.add("text-entry-active");requestAnimationFrame(syncTextEntryLayout);return;}
     body.classList.remove("text-entry-active");body.style.removeProperty("--azny-visible-height");
     studentTextEditTarget=null;studentSavedRange=null;ensureDoneButton();return;
    }
