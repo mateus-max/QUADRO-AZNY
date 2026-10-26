@@ -1355,7 +1355,7 @@ function aznySameBoardPage(a,b){
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
  /* Do not rebuild the board from an older remote snapshot while the user is interacting with a document/PDF. */
- if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer"))return;
+ if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer,.textobj[contenteditable]"))return;
  try{
   if(Array.isArray(d.deletedObjectIds))d.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
   if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
