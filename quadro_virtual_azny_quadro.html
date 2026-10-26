@@ -2298,9 +2298,9 @@ async function startBoardFallbackRecording(forStudent,button,boxId){
   screenRecorder.onerror=e=>{console.error("AZNY recording:",e.error||e);toast("Ocorreu um erro durante a gravação.")};
   screenRecorder.onstop=()=>{stopped=true;clearInterval(frame);saveRecording()};
   screenRecorder.start(1000);frame=setInterval(render,100);
-  if(button){button.textContent=document.documentElement.lang==="en"?"⏹ Stop and save":"⏹ Parar e guardar";button.classList.add("recording")}
+  if(button){button.disabled=false;button.textContent=document.documentElement.lang==="en"?"⏹ Stop and save":"⏹ Parar e guardar";button.classList.add("recording")}
   toast(document.documentElement.lang==="en"?"High-quality full-board recording started. Click again to stop and save.":"Gravação do quadro inteiro em alta qualidade iniciada. Clique novamente para parar e guardar.");
- }catch(e){stopped=true;clearInterval(frame);clearInterval(audioScan);console.error("AZNY recording start:",e);try{stream?.getTracks?.().forEach(t=>t.stop())}catch(_){}try{audioContext?.close?.()}catch(_){}toast(document.documentElement.lang==="en"?"Could not start recording. Please try again.":"Não foi possível iniciar a gravação. Tente novamente.")}
+ }catch(e){stopped=true;clearInterval(frame);clearInterval(audioScan);if(button){button.disabled=false;button.textContent=forStudent?"⏺ Gravar":"⏺ Gravar aula";button.classList.remove("recording")}console.error("AZNY recording start:",e);try{stream?.getTracks?.().forEach(t=>t.stop())}catch(_){}try{audioContext?.close?.()}catch(_){}toast(document.documentElement.lang==="en"?"Could not start recording. Please try again.":"Não foi possível iniciar a gravação. Tente novamente.")}
 }
 function stopRecording(){if(screenRecorder&&screenRecorder.state==="recording"){try{screenRecorder.requestData()}catch(_){}screenRecorder.stop()}}
 function saveRecording(){
