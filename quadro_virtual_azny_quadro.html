@@ -2138,6 +2138,7 @@ async function startRecording(forStudent=isStudent){
  const previousBox=document.getElementById(forStudent?"studentRecordDownload":"recordDownload");
  if(previousBox){previousBox.style.display="none";previousBox.replaceChildren()}
  const button=document.getElementById(forStudent?"studentRecordBtn":"recordClassBtn"),boxId=forStudent?"studentRecordDownload":"recordDownload";
+ if(button){button.textContent=document.documentElement.lang==="en"?"Preparing recording…":"A preparar gravação…";button.disabled=true}
  if(!window.MediaRecorder){toast("Este navegador não disponibiliza a gravação de vídeo.");return}
  /* Use the same full-board capture path on phone and computer, for teacher and student.
     This avoids monitor/window cropping and keeps the whole board in the recording. */
@@ -2263,11 +2264,6 @@ async function startBoardFallbackRecording(forStudent,button,boxId){
     ctx.save();ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0);ctx.fillStyle=bg;ctx.fillRect(0,0,width,height);
     /* Captura a interface da aula inteira (quadro, ferramentas e controlos), sem a interface do navegador. */
     ctx.drawImage(shot,0,0,width,height);
-    const video= document.getElementById(forStudent?"studentSelfVideo":"teacherVideo");
-    if(video&&video.readyState>=2&&video.videoWidth){
-     const vw=Math.min(width*.25,220),vh=vw*video.videoHeight/video.videoWidth,x=width-vw-14,y=12;
-     ctx.fillStyle="#071b33";ctx.fillRect(x-3,y-3,vw+6,vh+6);ctx.drawImage(video,x,y,vw,vh);
-    }
     ctx.restore();
    }
    shot.width=1;shot.height=1;
@@ -2310,7 +2306,7 @@ function saveRecording(){
  const recorder=screenRecorder,stream=recorder?.stream,chunks=recordedChunks.slice();
  if(stream){try{clearInterval(stream._aznyAudioScanTimer)}catch(_){}try{stream._aznyDisplayStream?.getTracks().forEach(t=>t.stop())}catch(_){}try{stream._aznyMicStream?.getTracks().forEach(t=>t.stop())}catch(_){}try{stream._aznyRecordingMicStream?.getTracks().forEach(t=>t.stop())}catch(_){}try{stream.getTracks().forEach(t=>t.stop())}catch(_){}try{stream._aznyAudioSources?.forEach(n=>n.disconnect())}catch(_){}try{stream._aznyAudioContext?.close?.()}catch(_){}}
  const blob=new Blob(chunks,{type:recorder?.mimeType||"video/webm"}),box=document.getElementById(recorder?._aznyBoxId||"recordDownload"),btn=document.getElementById(recorder?._aznyButtonId||"recordClassBtn");
- if(btn){btn.textContent="⏺ Gravar aula";btn.classList.remove("recording")}screenRecorder=null;recordedChunks=[];
+ if(btn){btn.disabled=false;btn.textContent=recorder?._aznyForStudent?"⏺ Gravar":"⏺ Gravar aula";btn.classList.remove("recording")}screenRecorder=null;recordedChunks=[];
  if(!blob.size){toast("A gravação ficou vazia. Tente novamente e permita a captura do ecrã.");return}
  const url=URL.createObjectURL(blob),name="quadro-azny-"+(recorder?._aznyForStudent?"aluno-":"aula-")+new Date().toISOString().slice(0,10)+"-"+new Date().toTimeString().slice(0,8).replace(/:/g,"-")+".webm";
  if(box){box.style.display="block";box.innerHTML="";const label=document.createElement("div");label.textContent="Gravação pronta ("+Math.round(blob.size/1024/1024*10)/10+" MB).";box.appendChild(label);const link=document.createElement("a");link.href=url;link.download=name;link.textContent="⬇ Baixar gravação para o dispositivo";link.style.cssText="display:inline-block;padding:8px 10px;margin-top:6px;background:#e8f2ff;border-radius:7px;color:#075ecf;font-weight:800;text-decoration:none";link.addEventListener("click",()=>{link.textContent="✓ Download iniciado";link.style.pointerEvents="none";setTimeout(()=>{box.style.display="none";box.replaceChildren();URL.revokeObjectURL(url)},1800)},{once:true});box.appendChild(link);const open=document.createElement("button");open.type="button";open.textContent="Abrir vídeo";open.style.marginLeft="6px";open.onclick=()=>window.open(url,"_blank","noopener");box.appendChild(open);box.scrollIntoView?.({block:"nearest",behavior:"smooth"})}
