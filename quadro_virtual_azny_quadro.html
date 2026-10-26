@@ -75,6 +75,10 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
  #aznyExcelRibbonTools{display:flex;flex:1 1 620px;min-width:0;gap:5px;flex-wrap:wrap;align-items:center;padding:0;background:transparent;border:0}
  #aznyExcelRibbonTools button{background:#ffffff18;border:1px solid #ffffff55;border-radius:4px;padding:6px 8px;color:#fff;cursor:pointer;white-space:nowrap}
  #aznyExcelRibbonTools button:hover{background:#ffffff30}
+ #aznyExcelRibbonTabs{order:3;display:flex;flex:1 0 100%;min-width:0;gap:4px;overflow-x:auto;overflow-y:hidden;background:transparent;border-top:1px solid #ffffff44;border-bottom:0;padding:5px 0 0;margin-top:2px}
+ #aznyExcelRibbonTabs button{flex:0 0 auto;white-space:nowrap;border:1px solid #ffffff44;background:#ffffff12;color:#fff;padding:7px 12px;border-radius:4px;cursor:pointer}
+ #aznyExcelRibbonTabs button.active{background:#e0edf7;color:#12324a;border-bottom:2px solid #fff;font-weight:700}
+
  @media(max-width:1050px){.azny-excel-head{gap:6px;padding:6px}.azny-excel-head strong{flex:0 0 auto}.azny-excel-head>button{display:inline-flex;flex:0 1 auto;padding:7px 8px;font-size:12px;white-space:normal}#aznyExcelRibbonTools{order:2;flex-basis:100%}}
  @media(max-width:650px){.azny-excel-head{gap:5px;padding:6px}.azny-excel-head>button{font-size:11px;padding:6px}#aznyExcelRibbonTools button{font-size:12px;padding:6px}}
  .azny-excel-formula{display:flex;gap:6px;align-items:center;padding:6px;background:#f3f5f7;border-bottom:1px solid #d1d5db}
@@ -1143,8 +1147,8 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
   </div>
   <div class="canvas-wrap" id="canvasWrap">
     <section id="aznyExcelWorkspace" aria-label="Folha de cálculo partilhada"><div id="aznyExcelLivePointer" class="azny-live-surface-pointer" aria-hidden="true"><svg viewBox="0 0 44 48"><path class="azny-pointer-arrow" d="M3 2 L3 35 L12 27 L18 41 L24 38 L18 24 L31 24 Z"/></svg></div>
-      <div class="azny-excel-head"><strong>📊 Excel AZNY</strong><button id="aznyExcelNew">＋ Nova folha</button><button id="aznyExcelDeleteSelected" type="button" title="Eliminar a imagem, gráfico, objeto ou conteúdo selecionado">✕ Eliminar selecionado</button><button id="aznyExcelReset" type="button" title="Apagar todas as folhas e começar um Excel novo">🗑 Limpar Excel</button><button id="aznyExcelMerge">⇔ Mesclar células</button><button id="aznyExcelUnmerge">⇤ Desmesclar</button><button id="aznyExcelDownload">⬇ Exportar CSV</button><button id="aznyExcelPDF">📄 Exportar PDF</button><button id="aznyExcelClose">✕ Voltar ao quadro</button><div id="aznyExcelRibbonTools"><button data-cmd="bold"><b>B</b></button><button data-cmd="italic"><i>I</i></button><button data-cmd="underline"><u>U</u></button><button data-cmd="align-left">Alinhar à esquerda</button><button data-cmd="align-center">Centrar</button><button data-cmd="align-right">Alinhar à direita</button><button data-cmd="sum">Σ Soma</button><button data-cmd="filter">Filtro</button><button data-cmd="chart">Inserir gráfico</button></div></div>
-      <nav id="aznyExcelRibbonTabs" aria-label="Ferramentas Excel AZNY"><button class="active" data-ribbon="home">Página Inicial</button><button data-ribbon="insert">Inserir</button><button data-ribbon="layout">Layout da Página</button><button data-ribbon="formulas">Fórmulas</button><button data-ribbon="data">Dados</button><button data-ribbon="review">Revisão</button><button data-ribbon="view">Exibir</button></nav>
+      <div class="azny-excel-head"><strong>📊 Excel AZNY</strong><button id="aznyExcelNew">＋ Nova folha</button><button id="aznyExcelDeleteSelected" type="button" title="Eliminar a imagem, gráfico, objeto ou conteúdo selecionado">✕ Eliminar selecionado</button><button id="aznyExcelReset" type="button" title="Apagar todas as folhas e começar um Excel novo">🗑 Limpar Excel</button><button id="aznyExcelMerge">⇔ Mesclar células</button><button id="aznyExcelUnmerge">⇤ Desmesclar</button><button id="aznyExcelDownload">⬇ Exportar CSV</button><button id="aznyExcelPDF">📄 Exportar PDF</button><button id="aznyExcelClose">✕ Voltar ao quadro</button><div id="aznyExcelRibbonTools"><button data-cmd="bold"><b>B</b></button><button data-cmd="italic"><i>I</i></button><button data-cmd="underline"><u>U</u></button><button data-cmd="align-left">Alinhar à esquerda</button><button data-cmd="align-center">Centrar</button><button data-cmd="align-right">Alinhar à direita</button><button data-cmd="sum">Σ Soma</button><button data-cmd="filter">Filtro</button><button data-cmd="chart">Inserir gráfico</button></div><nav id="aznyExcelRibbonTabs" aria-label="Ferramentas Excel AZNY"><button class="active" data-ribbon="home">Página Inicial</button><button data-ribbon="insert">Inserir</button><button data-ribbon="layout">Layout da Página</button><button data-ribbon="formulas">Fórmulas</button><button data-ribbon="data">Dados</button><button data-ribbon="review">Revisão</button><button data-ribbon="view">Exibir</button></nav></div>
+      
       
       <div class="azny-excel-formula"><input id="aznyExcelCellName" readonly aria-label="Célula selecionada"><span>fx</span><input id="aznyExcelFormulaInput" aria-label="Valor ou fórmula da célula" placeholder="Introduza um valor ou fórmula, por exemplo =SUM(A1:A5)"></div>
       <div class="azny-excel-gridwrap"><table class="azny-excel-grid" id="aznyExcelGrid"></table></div>
@@ -3887,11 +3891,10 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
       const rg=selectedRange();
       clearSelectedCells();
       /* Images and formatting inserted from the Excel ribbon are stored separately from cell values. */
-      const formats=window.aznyExcelRibbonFormats;
-      if(formats){
-        for(let r=rg.r1;r<=rg.r2;r++)for(let c=rg.c1;c<=rg.c2;c++)delete formats[String(active)+":"+key(r,c)];
-        if(typeof window.aznyExcelPublish==="function")window.aznyExcelPublish();
-      }
+      const formatKeys=[];
+      for(let r=rg.r1;r<=rg.r2;r++)for(let c=rg.c1;c<=rg.c2;c++)formatKeys.push(key(r,c));
+      if(typeof window.aznyExcelDeleteCellFormats==="function")window.aznyExcelDeleteCellFormats(active,formatKeys);
+      else if(window.aznyExcelRibbonFormats){for(const k of formatKeys)delete window.aznyExcelRibbonFormats[String(active)+":"+k];window.aznyExcelPublish?.()}
       status.textContent="Seleção eliminada, incluindo imagens e formatação.";
       return true;
     }
@@ -3901,7 +3904,8 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
       panel.querySelectorAll(".azny-excel-user-object,.azny-excel-selectable").forEach(el=>el.remove());
       sheets=[{name:"Folha1",cells:{},merges:[]}];active=0;selected=selectionStart=selectionEnd="A1";
       Object.keys(cellFormats).forEach(k=>delete cellFormats[k]);
-      if(window.aznyExcelRibbonFormats)Object.keys(window.aznyExcelRibbonFormats).forEach(k=>delete window.aznyExcelRibbonFormats[k]);
+      if(typeof window.aznyExcelClearAllFormats==="function")window.aznyExcelClearAllFormats();
+      else if(window.aznyExcelRibbonFormats)Object.keys(window.aznyExcelRibbonFormats).forEach(k=>delete window.aznyExcelRibbonFormats[k]);
       if(typeof window.aznyExcelPublish==="function")window.aznyExcelPublish();
       render();schedulePublish();status.textContent="Excel limpo, incluindo imagens e formatações. Folha1 pronta para começar do zero.";
     }
@@ -3950,7 +3954,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
       if(a==="export-csv"){document.getElementById("aznyExcelDownload")?.click();return}
       if(a==="export-pdf"){document.getElementById("aznyExcelPDF")?.click();return}
       if(a==="close"){document.getElementById("aznyExcelClose")?.click();return}
-      if(a==="merge"){mergeSelection();return}if(a==="unmerge"){unmergeSelection();return}if(a==="copy"){clipboardCells=[];for(let r=rg.r1;r<=rg.r2;r++){const row=[];for(let col=rg.c1;col<=rg.c2;col++)row.push(current().cells[key(r,col)]??"");clipboardCells.push(row)}status.textContent="Células copiadas.";return}if(a==="paste"){if(!clipboardCells)return;clipboardCells.forEach((row,ri)=>row.forEach((v,ci)=>{if(rg.r1+ri<ROWS&&rg.c1+ci<COLS)current().cells[key(rg.r1+ri,rg.c1+ci)]=v}));render();schedulePublish();return}if(a==="delete"){deleteExcelSelection();return}if(a==="clear"){for(let r=rg.r1;r<=rg.r2;r++)for(let col=rg.c1;col<=rg.c2;col++){const k=key(r,col);delete current().cells[k];delete cellFormats[k];if(window.aznyExcelRibbonFormats)delete window.aznyExcelRibbonFormats[String(active)+":"+k]}render();schedulePublish();if(typeof window.aznyExcelPublish==="function")window.aznyExcelPublish();status.textContent="Conteúdo, imagens e formatação da seleção eliminados.";return}if(["bold","italic","align"].includes(a)){for(let r=rg.r1;r<=rg.r2;r++)for(let col=rg.c1;col<=rg.c2;col++){const k=key(r,col);cellFormats[k]=cellFormats[k]||{};if(a==="bold")cellFormats[k].bold=!cellFormats[k].bold;else if(a==="italic")cellFormats[k].italic=!cellFormats[k].italic;else cellFormats[k].align=cellFormats[k].align==="left"?"center":cellFormats[k].align==="center"?"right":"left"}render()}});
+      if(a==="merge"){mergeSelection();return}if(a==="unmerge"){unmergeSelection();return}if(a==="copy"){clipboardCells=[];for(let r=rg.r1;r<=rg.r2;r++){const row=[];for(let col=rg.c1;col<=rg.c2;col++)row.push(current().cells[key(r,col)]??"");clipboardCells.push(row)}status.textContent="Células copiadas.";return}if(a==="paste"){if(!clipboardCells)return;clipboardCells.forEach((row,ri)=>row.forEach((v,ci)=>{if(rg.r1+ri<ROWS&&rg.c1+ci<COLS)current().cells[key(rg.r1+ri,rg.c1+ci)]=v}));render();schedulePublish();return}if(a==="delete"){deleteExcelSelection();return}if(a==="clear"){const formatKeys=[];for(let r=rg.r1;r<=rg.r2;r++)for(let col=rg.c1;col<=rg.c2;col++){const k=key(r,col);delete current().cells[k];delete cellFormats[k];formatKeys.push(k)}if(typeof window.aznyExcelDeleteCellFormats==="function")window.aznyExcelDeleteCellFormats(active,formatKeys);else if(window.aznyExcelRibbonFormats)formatKeys.forEach(k=>delete window.aznyExcelRibbonFormats[String(active)+":"+k]);render();schedulePublish();status.textContent="Conteúdo, imagens e formatação da seleção eliminados.";return}if(["bold","italic","align"].includes(a)){for(let r=rg.r1;r<=rg.r2;r++)for(let col=rg.c1;col<=rg.c2;col++){const k=key(r,col);cellFormats[k]=cellFormats[k]||{};if(a==="bold")cellFormats[k].bold=!cellFormats[k].bold;else if(a==="italic")cellFormats[k].italic=!cellFormats[k].italic;else cellFormats[k].align=cellFormats[k].align==="left"?"center":cellFormats[k].align==="center"?"right":"left"}render()}});
     document.getElementById("aznyExcelMerge")?.addEventListener("click",mergeSelection);
     document.getElementById("aznyExcelUnmerge")?.addEventListener("click",()=>{const rg=selectedRange();current().merges=(current().merges||[]).filter(m=>{const a=coord(m.start),b=coord(m.end);return !(a[0]<=rg.r2&&b[0]>=rg.r1&&a[1]<=rg.c2&&b[1]>=rg.c1)});render();schedulePublish()});
     document.getElementById("aznyExcelDownload")?.addEventListener("click",()=>{const csv=Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,col)=>{const v=display(current().cells[key(r,col)]??"");return '"'+v.replace(/"/g,'""')+'"'}).join(",")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=current().name+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
@@ -4006,6 +4010,15 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  function read(td){return inputOf(td)?.value||""}
  function write(td,v){const input=inputOf(td);if(!input)return;input.value=String(v);input.dispatchEvent(new Event("change",{bubbles:true}))}
  function persistFormats(){window.aznyExcelRibbonFormats=formats;try{sessionStorage.setItem(storageKey,JSON.stringify(formats))}catch(_){if(status)status.textContent="A formatação foi aplicada, mas alguns dados excedem o limite de armazenamento desta sessão."}if(typeof window.aznyExcelPublish==="function")window.aznyExcelPublish()}
+ window.aznyExcelDeleteCellFormats=function(sheetIndex,keys){
+   const prefix=String(sheetIndex)+":";
+   (keys||[]).forEach(k=>{delete formats[prefix+String(k)]});
+   persistFormats();applyFormats();
+ };
+ window.aznyExcelClearAllFormats=function(){
+   Object.keys(formats).forEach(k=>delete formats[k]);
+   persistFormats();applyFormats();
+ };
  function applyFormats(){grid.querySelectorAll("td[data-cell]").forEach(td=>{const f=formats[formatKey(td)]||{},input=inputOf(td);if(!input)return;input.style.fontWeight=f.bold?"700":"";input.style.fontStyle=f.italic?"italic":"";input.style.textDecoration=f.underline?"underline":"";input.style.textAlign=f.align||"";input.style.color=f.color||"";input.style.fontSize=f.fontSize?f.fontSize+"px":"";td.style.backgroundColor=f.fill|| (f.table?"#e8f3ec":"");td.style.borderColor=f.table?"#a8cdb6":"";td.style.height=f.image?"110px":"";if(f.border==="all")td.style.border="1px solid #334155";else if(f.border==="bottom")td.style.borderBottom="2px solid #334155";else if(f.border==="none")td.style.border="";if(f.image){td.style.backgroundImage="url('"+f.image.replace(/'/g,"%27")+"')";td.style.backgroundSize="contain";td.style.backgroundRepeat="no-repeat";td.style.backgroundPosition="center";input.style.color="transparent"}else{td.style.backgroundImage="";if(!f.color)input.style.color=""}if(f.note)td.title=f.note;if(f.protected)td.dataset.protected="1";else delete td.dataset.protected})}
  new MutationObserver(applyFormats).observe(grid,{childList:true,subtree:true});
  function setFormat(prop,value){const before=cloneFormats();selectedCells().forEach(td=>{const k=formatKey(td);formats[k]=formats[k]||{};formats[k][prop]=value});pushHistory({type:"format",before,after:cloneFormats()});persistFormats();applyFormats()}
