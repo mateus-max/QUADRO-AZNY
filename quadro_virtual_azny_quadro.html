@@ -4101,3 +4101,28 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
 </script>
 </body>
 </html>
+
+
+<script>
+/* AZNY Excel Web button recovery: keep the spreadsheet opening inside the board. */
+(function(){
+  const button=document.getElementById("teacherExcelBtn");
+  const panel=document.getElementById("aznyExcelWorkspace");
+  const webPanel=document.getElementById("aznyWebWorkspace");
+  const grid=document.getElementById("aznyExcelGrid");
+  if(!button||!panel||!grid)return;
+  button.addEventListener("click",function(){
+    panel.classList.add("azny-excel-open");
+    panel.style.display="flex";
+    panel.setAttribute("aria-hidden","false");
+    if(webPanel){
+      webPanel.classList.remove("azny-web-open");
+      webPanel.setAttribute("aria-hidden","true");
+    }
+    requestAnimationFrame(function(){
+      grid.dispatchEvent(new Event("azny:excel-open"));
+      window.dispatchEvent(new Event("resize"));
+    });
+  });
+})();
+</script>
