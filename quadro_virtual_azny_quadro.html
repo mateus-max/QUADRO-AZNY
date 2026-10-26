@@ -3483,8 +3483,19 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  }
  function emitInput(){
   if(!active)return;
+  /* Disparar input mantém a sincronização do quadro; preservar o cursor depois
+     dos listeners de input evita que o próximo toque comece outra vez do zero. */
   active.dispatchEvent(new InputEvent("input",{bubbles:true,inputType:"insertText"}));
   saveSelection();
+  if(body.classList.contains("student-mode")){
+   const target=active,range=savedRange&&savedRange.cloneRange();
+   requestAnimationFrame(()=>{
+    if(!target.isConnected||active!==target||!body.classList.contains("azny-custom-keyboard"))return;
+    if(document.activeElement!==target){try{target.focus({preventScroll:true})}catch(_){target.focus()}}
+    const sel=getSelection();
+    if(range&&sel){try{sel.removeAllRanges();sel.addRange(range);savedRange=range.cloneRange()}catch(_){}}
+   });
+  }
  }
  function insertText(value){
   if(!active||!active.isConnected)return;
@@ -3627,6 +3638,18 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  }
  document.addEventListener("focusin",e=>{
   if(e.target?.classList?.contains("textobj"))openKeyboard(e.target);
+ },true);
+ /* Keep the student's text object active while the custom keys are tapped;
+    mobile browsers can report a transient focusout after every character. */
+ document.addEventListener("focusout",e=>{
+  if(!body.classList.contains("student-mode")||!body.classList.contains("azny-custom-keyboard"))return;
+  if(!e.target?.classList?.contains("textobj"))return;
+  const target=e.target;
+  setTimeout(()=>{
+   if(active!==target||!target.isConnected||!body.classList.contains("azny-custom-keyboard"))return;
+   if(document.activeElement!==target){try{target.focus({preventScroll:true})}catch(_){target.focus()}}
+   if(savedRange){const sel=getSelection();try{sel.removeAllRanges();sel.addRange(savedRange)}catch(_){}}
+  },0);
  },true);
  const studentTextToggle=document.getElementById("studentTextBtn");
  if(studentTextToggle)studentTextToggle.addEventListener("click",()=>{
