@@ -1007,6 +1007,17 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
  .azny-teacher-reload-actions .primary{background:#0e2c4c;color:#fff;border-color:#0e2c4c}
  .azny-student-text-done{position:fixed;top:40px;right:8px;z-index:15000;display:none;min-height:40px;padding:8px 12px;border:1px solid #7fa7d8;border-radius:9px;background:#eaf3ff;color:#10365d;font-weight:850;box-shadow:0 3px 14px #0003;touch-action:manipulation}
  body.student-mode.text-entry-active .azny-student-text-done{display:block}
+
+/* AZNY Excel ribbon: occupy the full available width, like a real spreadsheet ribbon. */
+#aznyExcelWorkspace .azny-excel-head{width:100%;flex-wrap:nowrap;gap:6px;min-width:0;}
+#aznyExcelWorkspace .azny-excel-head strong{flex:1 1 auto;min-width:max-content;margin-right:4px;}
+#aznyExcelWorkspace .azny-excel-head button{flex:0 1 auto;white-space:nowrap;min-width:0;padding:6px 8px;font-size:12px;}
+#aznyExcelRibbonTabs{width:100%;justify-content:space-between;gap:0;overflow-x:auto;scrollbar-width:thin;padding:3px 8px;}
+#aznyExcelRibbonTabs button{flex:1 0 auto;text-align:center;padding:7px clamp(7px,1vw,16px);}
+#aznyExcelRibbonTools{width:100%;justify-content:flex-start;gap:6px;}
+#aznyExcelRibbonTools button{white-space:nowrap;min-height:30px;}
+#aznyExcelWorkspace .azny-excel-formula{width:100%;}
+@media(max-width:900px){#aznyExcelWorkspace .azny-excel-head{overflow-x:auto;scrollbar-width:thin}#aznyExcelWorkspace .azny-excel-head strong{flex:0 0 auto}#aznyExcelRibbonTabs{justify-content:flex-start}#aznyExcelRibbonTabs button{flex:0 0 auto}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -3793,18 +3804,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
     document.getElementById("aznyExcelMerge")?.addEventListener("click",()=>{const rg=selectedRange();if(rg.r1===rg.r2&&rg.c1===rg.c2){status.textContent="Selecione várias células arrastando sobre a grelha.";return}const start=key(rg.r1,rg.c1),end=key(rg.r2,rg.c2);current().merges=current().merges||[];current().merges=current().merges.filter(m=>{const a=coord(m.start),b=coord(m.end);return !(a[0]<=rg.r2&&b[0]>=rg.r1&&a[1]<=rg.c2&&b[1]>=rg.c1)});current().merges.push({start,end});selected=selectionStart=start;selectionEnd=end;render();schedulePublish()});
     document.getElementById("aznyExcelUnmerge")?.addEventListener("click",()=>{const rg=selectedRange();current().merges=(current().merges||[]).filter(m=>{const a=coord(m.start),b=coord(m.end);return !(a[0]<=rg.r2&&b[0]>=rg.r1&&a[1]<=rg.c2&&b[1]>=rg.c1)});render();schedulePublish()});
     document.getElementById("aznyExcelDownload")?.addEventListener("click",()=>{const csv=Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,col)=>{const v=display(current().cells[key(r,col)]??"");return '"'+v.replace(/"/g,'""')+'"'}).join(",")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=current().name+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
-    document.getElementById("aznyExcelPDF")?.addEventListener("click",()=>{const table=Array.from({length:ROWS},(_,r)=>"<tr>"+Array.from({length:COLS},(_,col)=>"<td>"+esc(display(current().cells[key(r,col)]??""))+"</td>").join("")+"</tr>").join("");const w=window.open("","_blank");if(!w){status.textContent="Permita pop-ups para imprimir ou guardar em PDF.";return}w.document.write('<html><head><title>'+esc(current().name)+'</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td{border:1px solid #bbb;padding:5px;min-width:35px}
-/* AZNY Excel ribbon: occupy the full available width, like a real spreadsheet ribbon. */
-#aznyExcelWorkspace .azny-excel-head{width:100%;flex-wrap:nowrap;gap:6px;min-width:0;}
-#aznyExcelWorkspace .azny-excel-head strong{flex:1 1 auto;min-width:max-content;margin-right:4px;}
-#aznyExcelWorkspace .azny-excel-head button{flex:0 1 auto;white-space:nowrap;min-width:0;padding:6px 8px;font-size:12px;}
-#aznyExcelRibbonTabs{width:100%;justify-content:space-between;gap:0;overflow-x:auto;scrollbar-width:thin;padding:3px 8px;}
-#aznyExcelRibbonTabs button{flex:1 0 auto;text-align:center;padding:7px clamp(7px,1vw,16px);}
-#aznyExcelRibbonTools{width:100%;justify-content:flex-start;gap:6px;}
-#aznyExcelRibbonTools button{white-space:nowrap;min-height:30px;}
-#aznyExcelWorkspace .azny-excel-formula{width:100%;}
-@media(max-width:900px){#aznyExcelWorkspace .azny-excel-head{overflow-x:auto;scrollbar-width:thin}#aznyExcelWorkspace .azny-excel-head strong{flex:0 0 auto}#aznyExcelRibbonTabs{justify-content:flex-start}#aznyExcelRibbonTabs button{flex:0 0 auto}}
-</style></head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script></body></html>');w.document.close()});
+    document.getElementById("aznyExcelPDF")?.addEventListener("click",()=>{const table=Array.from({length:ROWS},(_,r)=>"<tr>"+Array.from({length:COLS},(_,col)=>"<td>"+esc(display(current().cells[key(r,col)]??""))+"</td>").join("")+"</tr>").join("");const w=window.open("","_blank");if(!w){status.textContent="Permita pop-ups para imprimir ou guardar em PDF.";return}w.document.write('<html><head><title>'+esc(current().name)+'</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td{border:1px solid #bbb;padding:5px;min-width:35px}</style></head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script></body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
     document.getElementById("aznyWebClose")?.addEventListener("click",()=>{webPanel.classList.remove("azny-web-open");if(!isStudent&&webRef)webRef.update({visible:false})});
