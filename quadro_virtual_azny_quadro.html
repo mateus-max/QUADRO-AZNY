@@ -49,6 +49,12 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
  .azny-excel-grid td.azny-cell-selected{background:#dff0ff}
  .azny-excel-grid td.azny-cell-anchor{outline:2px solid #107c41;outline-offset:-2px}
  .azny-excel-grid td.azny-cell-merged{display:none}
+ #aznyExcelRibbonTabs{display:flex;gap:2px;overflow:auto;background:#f4f6f8;border-bottom:1px solid #cbd5e1;padding:3px 6px;flex-shrink:0}
+ #aznyExcelRibbonTabs button{white-space:nowrap;border:0;background:transparent;color:#334155;padding:7px 11px;border-radius:4px;cursor:pointer}
+ #aznyExcelRibbonTabs button.active{background:#d9eaf8;border-bottom:2px solid #107c41;font-weight:700}
+ #aznyExcelRibbonTools{display:flex;gap:5px;flex-wrap:wrap;align-items:center;padding:5px 7px;background:#f9fafb;border-bottom:1px solid #d5dbe1;flex-shrink:0}
+ #aznyExcelRibbonTools button{background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:5px 8px;color:#243244;cursor:pointer}
+
  #aznyExcelContext{display:none;position:fixed;z-index:9999;min-width:190px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 8px 28px #0003;padding:5px;color:#1f2937}
  #aznyExcelContext.open{display:block}
  #aznyExcelContext button{display:block;width:100%;text-align:left;padding:8px 10px;border:0;background:transparent;border-radius:4px;cursor:pointer;font-size:13px}
@@ -1076,7 +1082,9 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
   </div>
   <div class="canvas-wrap" id="canvasWrap">
     <section id="aznyExcelWorkspace" aria-label="Folha de cálculo partilhada">
-      <div class="azny-excel-head"><strong>📊 Folha de cálculo AZNY</strong><button id="aznyExcelNew">＋ Nova folha</button><button id="aznyExcelMerge">⇔ Mesclar células</button><button id="aznyExcelUnmerge">⇤ Desmesclar</button><button id="aznyExcelDownload">⬇ Exportar CSV</button><button id="aznyExcelPDF">📄 Exportar PDF</button><button id="aznyExcelClose">✕ Voltar ao quadro</button></div>
+      <div class="azny-excel-head"><strong>📊 Excel AZNY</strong><button id="aznyExcelNew">＋ Nova folha</button><button id="aznyExcelMerge">⇔ Mesclar células</button><button id="aznyExcelUnmerge">⇤ Desmesclar</button><button id="aznyExcelDownload">⬇ Exportar CSV</button><button id="aznyExcelPDF">📄 Exportar PDF</button><button id="aznyExcelClose">✕ Voltar ao quadro</button></div>
+      <nav id="aznyExcelRibbonTabs" aria-label="Ferramentas Excel AZNY"><button class="active" data-ribbon="home">Página Inicial</button><button data-ribbon="insert">Inserir</button><button data-ribbon="layout">Layout da Página</button><button data-ribbon="formulas">Fórmulas</button><button data-ribbon="data">Dados</button><button data-ribbon="review">Revisão</button><button data-ribbon="view">Exibir</button></nav>
+      <div id="aznyExcelRibbonTools"><button data-cmd="bold"><b>B</b></button><button data-cmd="italic"><i>I</i></button><button data-cmd="underline"><u>U</u></button><button data-cmd="align-left">Alinhar à esquerda</button><button data-cmd="align-center">Centrar</button><button data-cmd="align-right">Alinhar à direita</button><button data-cmd="sum">Σ Soma</button><button data-cmd="filter">Filtro</button><button data-cmd="chart">Inserir gráfico</button></div>
       <div class="azny-excel-formula"><input id="aznyExcelCellName" readonly aria-label="Célula selecionada"><span>fx</span><input id="aznyExcelFormulaInput" aria-label="Valor ou fórmula da célula" placeholder="Introduza um valor ou fórmula, por exemplo =SUM(A1:A5)"></div>
       <div class="azny-excel-gridwrap"><table class="azny-excel-grid" id="aznyExcelGrid"></table></div>
       <div class="azny-excel-tabs" id="aznyExcelTabs"></div><div class="azny-excel-status" id="aznyExcelStatus">Folha partilhada em tempo real durante a aula.</div>
