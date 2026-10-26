@@ -3608,8 +3608,20 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  }
  function openKeyboard(el){
   if(!mobile())return;
+  active=el;
+  /* No telefone do aluno, usar o teclado nativo do Android/iPhone. É ele que
+     mantém a composição, o cursor e a tecla Enter como num SMS/WhatsApp.
+     O teclado desenhado dentro do quadro continua reservado ao professor. */
+  if(body.classList.contains("student-mode")){
+   body.classList.remove("azny-custom-keyboard");
+   body.classList.add("azny-student-native-keyboard");
+   active.setAttribute("inputmode","text");
+   saveSelection();
+   return;
+  }
   const sameTarget=active===el&&keyboard.isConnected&&body.classList.contains("azny-custom-keyboard");
-  active=el;active.setAttribute("inputmode","none");
+  active.setAttribute("inputmode","none");
+  body.classList.remove("azny-student-native-keyboard");
   body.classList.add("azny-custom-keyboard");
   if(!keyboard.isConnected)wrap.appendChild(keyboard);
   /* Rebuild only when opening or switching text objects, never on each caret focus. */
@@ -3631,7 +3643,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   if(rect.bottom>safeBottom)wrap.scrollTop+=rect.bottom-safeBottom;
  }
  function closeKeyboard(blur){
-  body.classList.remove("azny-custom-keyboard");
+  body.classList.remove("azny-custom-keyboard","azny-student-native-keyboard");
   if(blur&&active)active.blur();
   if(active)active.style.removeProperty("scroll-margin-bottom");
   active=null;savedRange=null;
@@ -3653,7 +3665,8 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  },true);
  const studentTextToggle=document.getElementById("studentTextBtn");
  if(studentTextToggle)studentTextToggle.addEventListener("click",()=>{
-  if(body.classList.contains("student-mode")&&body.classList.contains("azny-custom-keyboard")){
+  if(body.classList.contains("student-mode")&&
+     (body.classList.contains("azny-custom-keyboard")||body.classList.contains("azny-student-native-keyboard"))){
    closeKeyboard(true);
    if(typeof setTool==="function")setTool("view");
   }
