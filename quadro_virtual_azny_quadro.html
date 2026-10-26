@@ -1605,8 +1605,12 @@ function setPointerMode(on){
  pointerMode=!!on;
  const p=document.getElementById("livePointer"),b=document.getElementById("pointerTool");
  p.classList.toggle("active",pointerMode);b.classList.toggle("pointer-tool-on",pointerMode);
+ document.getElementById("aznyExcelLivePointer")?.classList.remove("active");
+ document.getElementById("aznyWordLivePointer")?.classList.remove("active");
  stage.style.cursor=pointerMode?"none":(tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default"));
- {const packet=JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:pointerMode});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(packet)}catch(_){}}})}
+ const sendPacket=packet=>{const raw=JSON.stringify(packet);if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"){try{ch.send(raw)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(raw)}catch(_){}}})};
+ sendPacket({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:pointerMode});
+ ["excel","word"].forEach(surface=>sendPacket({type:"live-pointer",surface,x:0,y:0,boardWidth:0,boardHeight:0,visible:false}));
 }
 let lastPointerPacketAt=0;
 function updateLivePointer(e){
