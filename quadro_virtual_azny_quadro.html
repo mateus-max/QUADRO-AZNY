@@ -981,6 +981,10 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
     <button id="startClassBtn">▶ Iniciar aula</button>
     <button id="endClassBtn" disabled>⏹ Encerrar aula</button>
     <button id="recordClassBtn">⏺ Gravar aula</button><button id="teacherScreenShareBtn" type="button" title="Partilhar ecrã com os alunos">▣ Partilhar ecrã</button>
+    <button id="copyClassLink" type="button" title="Copiar o link permanente da aula">🔗 Copiar link</button>
+    <button id="shareWhatsApp" type="button" title="Partilhar a aula no WhatsApp">🟢 WhatsApp</button>
+    <button id="shareFacebook" type="button" title="Partilhar a aula no Facebook">🔵 Facebook</button>
+    <button id="teacherExcelBtn" type="button" title="Abrir o Microsoft Excel para a Web">📊 Excel</button>
     <div class="record-download" id="recordDownload"></div>
   </div>
   <div class="top-actions"><button class="iconbtn" id="aznyFullscreenBtn" title="Ecrã inteiro" aria-label="Ecrã inteiro">⛶</button><button class="iconbtn" id="teacherDashboardBtn" title="Painel do professor">⌂</button>
@@ -1008,9 +1012,6 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
     <button class="tool wide" id="chartsBtn">📊 Gráficos</button>
     <button class="tool wide" id="musicBtn">🎵 Música</button>
     <button class="tool wide" id="pagesBtn">📑 Páginas do quadro</button>
-    <button class="tool wide" id="shareWhatsApp">🟢 Partilhar no WhatsApp</button>
-    <button class="tool wide" id="copyClassLink">🔗 Copiar link da aula</button>
-    <button class="tool wide" id="shareFacebook">🔵 Partilhar no Facebook</button>
   </div>
   <input id="imageInput" type="file" accept="image/*" hidden>
   <input id="docInput" type="file" accept=".txt,.md,.csv,.json,.html,.htm,.pdf,.doc,.docx" hidden>
@@ -1038,7 +1039,6 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
       <button class="mini" id="zoomOut" title="Diminuir zoom">−</button><span class="zoomlabel" id="zoomLabel">100%</span><button class="mini" id="zoomIn" title="Aumentar zoom">＋</button><button class="mini" id="zoomReset" title="Repor zoom">100%</button>
     </div>
     <div class="group azny-language-group"><button class="mini azny-language-btn" id="teacherLanguageBtn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button></div>
-    <div class="group"><button class="mini" id="teacherExcelBtn" type="button" title="Abrir o Microsoft Excel para a Web">📊 Excel</button></div>
   </div>
   <div class="canvas-wrap" id="canvasWrap">
     <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
