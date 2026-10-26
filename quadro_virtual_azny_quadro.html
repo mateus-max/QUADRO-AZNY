@@ -3608,15 +3608,35 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();
    keyboard.style.left=Math.max(0,r.left-w.left)+"px";
    keyboard.style.width=Math.min(r.width,w.right-r.left)+"px";
+   keepTextAboveKeyboard();
   });
+ }
+ function keepTextAboveKeyboard(){
+  if(!active||!active.isConnected||!body.classList.contains("azny-custom-keyboard"))return;
+  const vv=window.visualViewport;
+  const viewportBottom=vv?vv.offsetTop+vv.height:window.innerHeight;
+  const safeBottom=viewportBottom-(keyboard.getBoundingClientRect().height||150)-12;
+  const rect=active.getBoundingClientRect();
+  if(rect.bottom>safeBottom)wrap.scrollTop+=rect.bottom-safeBottom;
  }
  function closeKeyboard(blur){
   body.classList.remove("azny-custom-keyboard");
   if(blur&&active)active.blur();
+  if(active)active.style.removeProperty("scroll-margin-bottom");
   active=null;savedRange=null;
  }
  document.addEventListener("focusin",e=>{
   if(e.target?.classList?.contains("textobj"))openKeyboard(e.target);
+ },true);
+ const studentTextToggle=document.getElementById("studentTextBtn");
+ if(studentTextToggle)studentTextToggle.addEventListener("click",()=>{
+  if(body.classList.contains("student-mode")&&body.classList.contains("azny-custom-keyboard")){
+   closeKeyboard(true);
+   if(typeof setTool==="function")setTool("view");
+  }
+ },true);
+ document.addEventListener("input",e=>{
+  if(active&&e.target===active)requestAnimationFrame(keepTextAboveKeyboard);
  },true);
  /* Em ecrãs táteis, tocar numa tecla não deve retirar o foco do texto.
     Alguns navegadores Android enviam focusout com relatedTarget=null ao tocar em botões. */
@@ -3641,8 +3661,10 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();
    keyboard.style.left=Math.max(0,r.left-w.left)+"px";
    keyboard.style.width=Math.min(r.width,w.right-r.left)+"px";
+   keepTextAboveKeyboard();
   });
  },{passive:true});
+ if(window.visualViewport)window.visualViewport.addEventListener("resize",()=>requestAnimationFrame(keepTextAboveKeyboard),{passive:true});
  window.addEventListener("orientationchange",()=>{if(active&&active.isConnected)requestAnimationFrame(()=>{const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();keyboard.style.left=Math.max(0,r.left-w.left)+"px";keyboard.style.width=Math.min(r.width,w.right-r.left)+"px"})},{passive:true});
 })();
 </script>
