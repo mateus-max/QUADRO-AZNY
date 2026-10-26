@@ -1028,16 +1028,16 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
  .azny-student-text-done{position:fixed;top:40px;right:8px;z-index:15000;display:none;min-height:40px;padding:8px 12px;border:1px solid #7fa7d8;border-radius:9px;background:#eaf3ff;color:#10365d;font-weight:850;box-shadow:0 3px 14px #0003;touch-action:manipulation}
  body.student-mode.text-entry-active .azny-student-text-done{display:block}
 
-/* AZNY Excel ribbon: occupy the full available width, like a real spreadsheet ribbon. */
-#aznyExcelWorkspace .azny-excel-head{width:100%;flex-wrap:nowrap;gap:6px;min-width:0;}
-#aznyExcelWorkspace .azny-excel-head strong{flex:1 1 auto;min-width:max-content;margin-right:4px;}
-#aznyExcelWorkspace .azny-excel-head button{flex:0 1 auto;white-space:nowrap;min-width:0;padding:6px 8px;font-size:12px;}
-#aznyExcelRibbonTabs{width:100%;justify-content:space-between;gap:0;overflow-x:auto;scrollbar-width:thin;padding:3px 8px;}
-#aznyExcelRibbonTabs button{flex:1 0 auto;text-align:center;padding:7px clamp(7px,1vw,16px);}
-#aznyExcelRibbonTools{width:100%;justify-content:flex-start;gap:6px;}
-#aznyExcelRibbonTools button{white-space:nowrap;min-height:30px;}
+/* AZNY Excel ribbon: compact horizontal controls and a dedicated tab row in the green header. */
+#aznyExcelWorkspace .azny-excel-head{width:100%;display:flex;flex-flow:row wrap;align-items:center;justify-content:flex-start;gap:6px;min-width:0;overflow:visible;box-sizing:border-box;}
+#aznyExcelWorkspace .azny-excel-head strong{flex:0 0 auto;min-width:max-content;margin-right:8px;}
+#aznyExcelWorkspace .azny-excel-head>button{display:none!important;}
+#aznyExcelRibbonTools{order:2;display:flex;flex:1 1 650px;width:auto;min-width:0;max-width:100%;flex-flow:row wrap;align-items:center;justify-content:flex-start;gap:6px;padding:0;background:transparent;border:0;}
+#aznyExcelRibbonTools button{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;white-space:nowrap;min-height:34px;width:auto;padding:6px 9px;}
+#aznyExcelRibbonTabs{order:3;display:flex;flex:1 0 100%;width:100%;min-width:0;flex-flow:row nowrap;justify-content:flex-start;align-items:center;gap:5px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding:5px 0 0;margin-top:2px;border-top:1px solid #ffffff44;}
+#aznyExcelRibbonTabs button{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;white-space:nowrap;text-align:center;padding:7px 12px;}
 #aznyExcelWorkspace .azny-excel-formula{width:100%;}
-@media(max-width:900px){#aznyExcelWorkspace .azny-excel-head{overflow-x:auto;scrollbar-width:thin}#aznyExcelWorkspace .azny-excel-head strong{flex:0 0 auto}#aznyExcelRibbonTabs{justify-content:flex-start}#aznyExcelRibbonTabs button{flex:0 0 auto}}
+@media(max-width:900px){#aznyExcelWorkspace .azny-excel-head{flex-flow:row wrap;overflow:visible}#aznyExcelWorkspace .azny-excel-head strong{flex:0 0 auto}#aznyExcelRibbonTools{flex:1 1 100%;width:100%}#aznyExcelRibbonTabs{flex-basis:100%;justify-content:flex-start}#aznyExcelRibbonTabs button{flex:0 0 auto}}
 
 /* When Excel is open, replace the board's drawing toolbars with the spreadsheet ribbon. */
 /* Left toolbar remains visible while Excel is open. */
@@ -3937,7 +3937,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
       return false;
     };
     window.aznyExcelPublish=schedulePublish;
-    function bindRealtime(){if(!AZNY_DB||!aznyRoomRef)return;remoteRef=aznyRoomRef().child("spreadsheet");remoteRef.on("value",snap=>{const v=snap.val();if(!v)return;if(Number(v.updatedAt||0)<lastExcelLocalUpdate)return;if(v.visible){panel.classList.add("azny-excel-open");webPanel?.classList.remove("azny-web-open")}else if(isStudent)panel.classList.remove("azny-excel-open");if(applying)return;applying=true;if(v.cellFormats&&window.aznyExcelRibbonFormats){Object.keys(window.aznyExcelRibbonFormats).forEach(k=>delete window.aznyExcelRibbonFormats[k]);Object.assign(window.aznyExcelRibbonFormats,v.cellFormats)}if(Array.isArray(v.sheets)&&v.sheets.length){sheets=v.sheets.map((s,i)=>({name:String(s.name||"Folha"+(i+1)),cells:s.cells||{},merges:s.merges||[]}));active=Math.min(Number(v.active)||0,sheets.length-1);render();status.textContent="Folha sincronizada com os participantes."}applying=false})}
+    function bindRealtime(){if(!AZNY_DB||!aznyRoomRef)return;remoteRef=aznyRoomRef().child("spreadsheet");remoteRef.on("value",snap=>{const v=snap.val();if(!v)return;if(Number(v.updatedAt||0)<=lastExcelLocalUpdate)return;if(v.visible){panel.classList.add("azny-excel-open");webPanel?.classList.remove("azny-web-open")}else if(isStudent)panel.classList.remove("azny-excel-open");if(applying)return;applying=true;if(window.aznyExcelRibbonFormats){Object.keys(window.aznyExcelRibbonFormats).forEach(k=>delete window.aznyExcelRibbonFormats[k]);Object.assign(window.aznyExcelRibbonFormats,v.cellFormats&&typeof v.cellFormats==="object"?v.cellFormats:{})}if(Array.isArray(v.sheets)&&v.sheets.length){sheets=v.sheets.map((s,i)=>({name:String(s.name||"Folha"+(i+1)),cells:s.cells||{},merges:s.merges||[]}));active=Math.min(Number(v.active)||0,sheets.length-1);render();status.textContent="Folha sincronizada com os participantes."}applying=false})}
     function open(){webPanel?.classList.remove("azny-web-open");panel.classList.add("azny-excel-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{bindRealtime();if(!isStudent&&remoteRef)remoteRef.update({visible:true}).catch(()=>{})});else bindRealtime();render()}
     document.getElementById("teacherExcelBtn")?.addEventListener("click",open);
     document.getElementById("teacherGreenBoardBtn")?.addEventListener("click",()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.remove("azny-web-open");const live=document.getElementById("livePointer");if(live)live.classList.toggle("active",!!pointerMode);if(!isStudent&&remoteRef)remoteRef.update({visible:false}).catch(()=>{});/* Keep the Excel selection/state intact when switching workspaces. */});
@@ -3995,7 +3995,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   view:[["Zoom +","zoomin"],["Zoom −","zoomout"],["Mostrar/ocultar grelha","gridlines"],["Congelar cabeçalho","freeze"]]
  };
  const storageKey="azny-excel-cell-format:"+location.pathname+location.search;
- let formats=window.aznyExcelRibbonFormats||{};try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||"{}");if(!window.aznyExcelRibbonFormats)formats=saved;else Object.assign(formats,saved)}catch(_){}window.aznyExcelRibbonFormats=formats;
+ let formats=window.aznyExcelRibbonFormats||{};try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||"{}");if(!window.aznyExcelRibbonFormats)formats=saved;/* The shared workbook state is authoritative: never merge an old session cache over it, because deleted images would reappear. */}catch(_){}window.aznyExcelRibbonFormats=formats;
  const history=[],redoHistory=[];let pendingEdit=null,replaying=false;
  function cloneFormats(){return JSON.parse(JSON.stringify(formats))}
  function pushHistory(entry){if(replaying)return;history.push(entry);if(history.length>150)history.shift();redoHistory.length=0}
