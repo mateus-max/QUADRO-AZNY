@@ -51,6 +51,9 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
  #aznyExcelWorkspace.azny-excel-open{display:flex}
  .azny-excel-grid td.azny-cell-selected{background:#dff0ff}
  .azny-excel-grid td.azny-cell-anchor{outline:2px solid #107c41;outline-offset:-2px}
+#aznyExcelWorkspace .azny-excel-selectable{outline:3px solid #0b7f45!important;outline-offset:1px;cursor:move}
+#aznyExcelWorkspace .azny-excel-selectable.azny-excel-object-selected{box-shadow:0 0 0 3px #d5f0df!important}
+
  .azny-excel-grid td.azny-cell-merged{display:none}
  #aznyExcelRibbonTabs{display:flex;gap:2px;overflow:auto;background:#f4f6f8;border-bottom:1px solid #cbd5e1;padding:3px 6px;flex-shrink:0}
  #aznyExcelRibbonTabs button{white-space:nowrap;border:0;background:transparent;color:#334155;padding:7px 11px;border-radius:4px;cursor:pointer}
@@ -1134,7 +1137,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
   </div>
   <div class="canvas-wrap" id="canvasWrap">
     <section id="aznyExcelWorkspace" aria-label="Folha de cálculo partilhada"><div id="aznyExcelLivePointer" class="azny-live-surface-pointer" aria-hidden="true"><svg viewBox="0 0 44 48"><path class="azny-pointer-arrow" d="M3 2 L3 35 L12 27 L18 41 L24 38 L18 24 L31 24 Z"/></svg></div>
-      <div class="azny-excel-head"><strong>📊 Excel AZNY</strong><button id="aznyExcelNew">＋ Nova folha</button><button id="aznyExcelReset" type="button" title="Limpar a folha atual e começar do zero">🗑 Limpar folha</button><button id="aznyExcelMerge">⇔ Mesclar células</button><button id="aznyExcelUnmerge">⇤ Desmesclar</button><button id="aznyExcelDownload">⬇ Exportar CSV</button><button id="aznyExcelPDF">📄 Exportar PDF</button><button id="aznyExcelClose">✕ Voltar ao quadro</button></div>
+      <div class="azny-excel-head"><strong>📊 Excel AZNY</strong><button id="aznyExcelNew">＋ Nova folha</button><button id="aznyExcelDeleteSelected" type="button" title="Eliminar a imagem, gráfico, objeto ou conteúdo selecionado">✕ Eliminar selecionado</button><button id="aznyExcelReset" type="button" title="Apagar todas as folhas e começar um Excel novo">🗑 Limpar Excel</button><button id="aznyExcelMerge">⇔ Mesclar células</button><button id="aznyExcelUnmerge">⇤ Desmesclar</button><button id="aznyExcelDownload">⬇ Exportar CSV</button><button id="aznyExcelPDF">📄 Exportar PDF</button><button id="aznyExcelClose">✕ Voltar ao quadro</button></div>
       <nav id="aznyExcelRibbonTabs" aria-label="Ferramentas Excel AZNY"><button class="active" data-ribbon="home">Página Inicial</button><button data-ribbon="insert">Inserir</button><button data-ribbon="layout">Layout da Página</button><button data-ribbon="formulas">Fórmulas</button><button data-ribbon="data">Dados</button><button data-ribbon="review">Revisão</button><button data-ribbon="view">Exibir</button></nav>
       <div id="aznyExcelRibbonTools"><button data-cmd="bold"><b>B</b></button><button data-cmd="italic"><i>I</i></button><button data-cmd="underline"><u>U</u></button><button data-cmd="align-left">Alinhar à esquerda</button><button data-cmd="align-center">Centrar</button><button data-cmd="align-right">Alinhar à direita</button><button data-cmd="sum">Σ Soma</button><button data-cmd="filter">Filtro</button><button data-cmd="chart">Inserir gráfico</button></div>
       <div class="azny-excel-formula"><input id="aznyExcelCellName" readonly aria-label="Célula selecionada"><span>fx</span><input id="aznyExcelFormulaInput" aria-label="Valor ou fórmula da célula" placeholder="Introduza um valor ou fórmula, por exemplo =SUM(A1:A5)"></div>
@@ -3861,16 +3864,40 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
       current().merges=(current().merges||[]).filter(m=>{const a=coord(m.start),b=coord(m.end),r1=Math.min(a[0],b[0]),r2=Math.max(a[0],b[0]),c1=Math.min(a[1],b[1]),c2=Math.max(a[1],b[1]);return !(r1<=rg.r2&&r2>=rg.r1&&c1<=rg.c2&&c2>=rg.c1)});
       render();schedulePublish();status.textContent="Conteúdo e formatação da seleção eliminados.";return true;
     }
-    function resetCurrentSheet(){
-      if(!confirm("Limpar todos os dados, mesclagens e formatação da folha "+current().name+"? Esta ação não pode ser desfeita."))return;
-      current().cells={};current().merges=[];Object.keys(cellFormats).forEach(k=>delete cellFormats[k]);
-      selected=selectionStart=selectionEnd="A1";render();schedulePublish();status.textContent="Folha limpa. Pode começar do zero.";
+    let selectedExcelObject=null;
+    function deselectExcelObject(){if(selectedExcelObject){selectedExcelObject.classList.remove("azny-excel-object-selected");selectedExcelObject=null;}}
+    function selectExcelObject(el){deselectExcelObject();selectedExcelObject=el;el.classList.add("azny-excel-object-selected");status.textContent="Objeto selecionado. Prima «Eliminar selecionado» ou a tecla Delete.";}
+    function deleteExcelSelection(){
+      if(selectedExcelObject&&panel.contains(selectedExcelObject)){selectedExcelObject.remove();selectedExcelObject=null;schedulePublish();status.textContent="Objeto eliminado.";return true;}
+      clearSelectedCells();return true;
     }
+    function resetCurrentSheet(){
+      if(!confirm("Limpar TODAS as folhas e começar um Excel novo? Todos os dados, gráficos/objetos, mesclagens e formatações serão apagados. Esta ação não pode ser desfeita."))return;
+      deselectExcelObject();
+      panel.querySelectorAll(".azny-excel-user-object,.azny-excel-selectable").forEach(el=>el.remove());
+      sheets=[{name:"Folha1",cells:{},merges:[]}];active=0;selected=selectionStart=selectionEnd="A1";
+      Object.keys(cellFormats).forEach(k=>delete cellFormats[k]);
+      if(window.aznyExcelRibbonFormats)Object.keys(window.aznyExcelRibbonFormats).forEach(k=>delete window.aznyExcelRibbonFormats[k]);
+      render();schedulePublish();status.textContent="Excel limpo. Folha1 pronta para começar do zero.";
+    }
+    grid.addEventListener("click",e=>{
+      const obj=e.target.closest(".azny-excel-user-object,.azny-excel-selectable,[data-azny-excel-object]");
+      if(obj&&!obj.closest("table.azny-excel-grid")){selectExcelObject(obj);return;}
+      if(!e.target.closest("table.azny-excel-grid"))deselectExcelObject();
+    });
+    document.addEventListener("keydown",e=>{
+      if(!panel.classList.contains("azny-excel-open")||!selectedExcelObject)return;
+      if(e.key==="Delete"||e.key==="Backspace"){
+        if(e.target.matches("input,textarea,[contenteditable=true]"))return;
+        e.preventDefault();deleteExcelSelection();
+      }
+    });
+    document.getElementById("aznyExcelDeleteSelected")?.addEventListener("click",deleteExcelSelection);
     document.getElementById("aznyExcelReset")?.addEventListener("click",resetCurrentSheet);
     window.aznyClearActiveWorkspace=function(mode){
       if(panel.classList.contains("azny-excel-open")){
         if(mode==="reset"){resetCurrentSheet();return true;}
-        clearSelectedCells();return true;
+        deleteExcelSelection();return true;
       }
       if(webPanel?.classList.contains("azny-web-open")){
         const sel=window.getSelection(),hasRange=!!(sel&&sel.rangeCount&&webEditor.contains(sel.getRangeAt(0).commonAncestorContainer)&&!sel.getRangeAt(0).collapsed);
