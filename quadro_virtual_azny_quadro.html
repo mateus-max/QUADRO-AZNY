@@ -3908,6 +3908,31 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   if(action==="gridlines"){grid.classList.toggle("azny-hide-grid");let style=document.getElementById("aznyExcelGridToggleStyle");if(!style){style=document.createElement("style");style.id="aznyExcelGridToggleStyle";style.textContent=".azny-excel-grid.azny-hide-grid td,.azny-excel-grid.azny-hide-grid th{border-color:transparent!important}";document.head.appendChild(style)}return}
   if(action==="freeze"){grid.querySelectorAll("th").forEach(th=>th.style.position="sticky");return}
  });
+
+ /* Print only cells containing data or explicit formatting; restore the live grid afterwards. */
+ let printState=null;
+ function prepareExcelPrint(){
+  if(printState)return;
+  const activeSheet=String(document.querySelector("#aznyExcelTabs button.active")?.dataset.sheet??"0");
+  let maxRow=-1,maxCol=-1;
+  grid.querySelectorAll("td[data-cell]").forEach(td=>{
+   const ref=td.dataset.cell,m=ref.match(/^([A-Z]+)(\\d+)$/);if(!m)return;
+   let c=0;for(const ch of m[1])c=c*26+ch.charCodeAt(0)-64;
+   const r=Number(m[2])-1,format=formats[activeSheet+":"+ref]||{},input=inputOf(td);
+   const styled=!!(format.bold||format.italic||format.underline||format.align||format.color||format.fill||format.fontSize||format.image||format.border||format.table||format.note);
+   if((input&&input.value!=="")||styled){maxRow=Math.max(maxRow,r);maxCol=Math.max(maxCol,c-1)}
+  });
+  if(maxRow<0||maxCol<0){maxRow=0;maxCol=0}
+  printState=[];
+  const save=(el,prop)=>printState.push([el,prop,el.style[prop]]);
+  grid.querySelectorAll("tr").forEach((tr,ri)=>{save(tr,"display");if(ri>maxRow+1)tr.style.display="none"});
+  grid.querySelectorAll("tr").forEach(tr=>Array.from(tr.children).forEach((el,ci)=>{save(el,"display");if(ci===0||ci>maxCol+1)el.style.display="none"}));
+  save(grid,"className");grid.classList.remove("azny-hide-grid");
+ }
+ function restoreExcelPrint(){if(!printState)return;printState.forEach(([el,prop,val])=>{if(prop==="className")el.className=val;else el.style[prop]=val});printState=null}
+ window.addEventListener("beforeprint",prepareExcelPrint);
+ window.addEventListener("afterprint",restoreExcelPrint);
+
  tabs.querySelector('[data-ribbon="home"]')?.click();
  applyFormats();
 })();
