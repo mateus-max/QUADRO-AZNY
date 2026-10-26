@@ -1405,7 +1405,7 @@ function handleBoardChannelMessage(raw){
   }
   if(m.type==="text-live"){
    const el=board.querySelector('.object[data-id="'+String(m.id).replace(/[^a-zA-Z0-9_-]/g,"")+'"]');
-   if(el&&el.classList.contains("textobj")){const focused=document.activeElement===el;if(!focused)el.innerHTML=String(m.html||"");}
+   if(el&&el.classList.contains("textobj")){const focused=document.activeElement===el;const studentEditing=document.body.classList.contains("student-mode")&&document.body.classList.contains("azny-student-native-keyboard");if(!focused&&!studentEditing)el.innerHTML=String(m.html||"");}
    return;
   }
   if(m.type==="board-zoom"){if(Number.isFinite(Number(m.zoom)))setZoom(Number(m.zoom),false);return}if(m.type==="board-pan"){applyBoardPan(m.pan);return}
