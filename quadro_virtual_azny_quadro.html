@@ -3826,5 +3826,58 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  try{const view=sessionStorage.getItem(KEY);if(view==="excel")document.getElementById("teacherExcelBtn")?.click();else if(view==="document")document.getElementById("teacherWebBtn")?.click()}catch(_){}
 })();
 </script>
+<script>
+/* AZNY spreadsheet ribbon commands: tabs expose working actions instead of decorative labels. */
+(function(){
+ const tabs=document.getElementById("aznyExcelRibbonTabs"),tools=document.getElementById("aznyExcelRibbonTools"),grid=document.getElementById("aznyExcelGrid"),panel=document.getElementById("aznyExcelWorkspace");
+ if(!tabs||!tools||!grid||!panel)return;
+ const configs={
+  home:[["B","bold"],["I","italic"],["U","underline"],["Alinhar à esquerda","left"],["Centrar","center"],["Alinhar à direita","right"],["Σ Soma","sum"],["Filtro","filter"],["Inserir gráfico","chart"]],
+  insert:[["Formatar como tabela","table"],["Inserir imagem","image"],["Inserir data","date"],["Inserir ligação","link"],["Adicionar linha","row"],["Adicionar coluna","column"]],
+  layout:[["Ajustar largura","fit"],["Altura da linha","rowheight"],["Imprimir / PDF","print"],["Orientação horizontal","landscape"]],
+  formulas:[["Σ SOMA","sum"],["MÉDIA","average"],["MÍNIMO","min"],["MÁXIMO","max"],["CONTAR","count"],["Inserir fórmula","formula"]],
+  data:[["Ordenar A→Z","sortasc"],["Ordenar Z→A","sortdesc"],["Ativar filtro","filter"],["Remover duplicados","duplicates"]],
+  review:[["Adicionar comentário","comment"],["Proteger seleção","protect"],["Limpar conteúdo","clear"]],
+  view:[["Zoom +","zoomin"],["Zoom −","zoomout"],["Mostrar/ocultar grelha","gridlines"],["Congelar cabeçalho","freeze"]]
+ };
+ const storageKey="azny-excel-cell-format:"+location.pathname+location.search;
+ let formats={};try{formats=JSON.parse(sessionStorage.getItem(storageKey)||"{}")}catch(_){}
+ const cellKey=td=>td?.dataset?.cell||"";
+ function chosen(){return grid.querySelector("td.azny-cell-anchor")||grid.querySelector("td[data-cell]")}
+ function selectedCells(){const a=[...grid.querySelectorAll("td.azny-cell-selected")];return a.length?a:[chosen()].filter(Boolean)}
+ function inputOf(td){return td?.querySelector("input[data-input]")}
+ function read(td){return inputOf(td)?.value||""}
+ function write(td,v){const input=inputOf(td);if(!input)return;input.value=String(v);input.dispatchEvent(new Event("change",{bubbles:true}))}
+ function persistFormats(){try{sessionStorage.setItem(storageKey,JSON.stringify(formats))}catch(_){}}
+ function applyFormats(){grid.querySelectorAll("td[data-cell]").forEach(td=>{const f=formats[cellKey(td)]||{},input=inputOf(td);if(!input)return;input.style.fontWeight=f.bold?"700":"";input.style.fontStyle=f.italic?"italic":"";input.style.textDecoration=f.underline?"underline":"";input.style.textAlign=f.align||"";if(f.table){td.style.background="#e8f3ec";td.style.borderColor="#a8cdb6"}else{td.style.background="";td.style.borderColor=""}if(f.image){td.style.backgroundImage="url('"+f.image.replace(/'/g,"%27")+"')";td.style.backgroundSize="contain";td.style.backgroundRepeat="no-repeat";td.style.backgroundPosition="center";input.style.color="transparent"}else{td.style.backgroundImage="";input.style.color=""}if(f.note)td.title=f.note;if(f.protected)td.dataset.protected="1";else delete td.dataset.protected})}
+ new MutationObserver(applyFormats).observe(grid,{childList:true,subtree:true});
+ tabs.addEventListener("click",e=>{const tab=e.target.closest("[data-ribbon]");if(!tab)return;tabs.querySelectorAll("[data-ribbon]").forEach(b=>b.classList.toggle("active",b===tab));const items=configs[tab.dataset.ribbon]||configs.home;tools.replaceChildren();items.forEach(([label,cmd])=>{const b=document.createElement("button");b.type="button";b.dataset.aznyAction=cmd;b.textContent=label;tools.appendChild(b)});});
+ function rangeBounds(cells){const nums=cells.map(td=>{const m=cellKey(td).match(/^([A-Z]+)(\d+)$/);let c=0;for(const ch of (m?.[1]||"A"))c=c*26+ch.charCodeAt(0)-64;return {r:Number(m?.[2]||1)-1,c:c-1}});return {r1:Math.min(...nums.map(x=>x.r)),r2:Math.max(...nums.map(x=>x.r)),c1:Math.min(...nums.map(x=>x.c)),c2:Math.max(...nums.map(x=>x.c))}}
+ function col(n){let out="";for(n++;n;n=Math.floor((n-1)/26))out=String.fromCharCode(65+(n-1)%26)+out;return out}
+ function formulaFor(fn){const rg=rangeBounds(selectedCells()),a=col(rg.c1)+(rg.r1+1),b=col(rg.c2)+(rg.r2+1);write(chosen(),"="+fn+"("+a+(a===b?"":":"+b)+")")}
+ tools.addEventListener("click",e=>{const b=e.target.closest("[data-azny-action]");if(!b)return;const action=b.dataset.aznyAction,cells=selectedCells(),td=chosen(),key=cellKey(td);if(!td)return;
+  if(["bold","italic","underline","left","center","right","table","protect"].includes(action)){cells.forEach(cell=>{const k=cellKey(cell);formats[k]=formats[k]||{};if(action==="bold"||action==="italic"||action==="underline")formats[k][action]=!formats[k][action];else if(["left","center","right"].includes(action))formats[k].align=action;else if(action==="table")formats[k].table=true;else formats[k].protected=!formats[k].protected});persistFormats();applyFormats();return}
+  if(["sum","average","min","max","count"].includes(action)){formulaFor(({sum:"SUM",average:"AVERAGE",min:"MIN",max:"MAX",count:"COUNT"})[action]);return}
+  if(action==="formula"){const v=prompt("Introduza uma fórmula (ex.: =SUM(A1:A5))","=SUM(A1:A5)");if(v!==null)write(td,v);return}
+  if(action==="date"){write(td,new Date().toLocaleDateString("pt-PT"));return}
+  if(action==="link"){const v=prompt("Endereço da ligação:","https://");if(v)write(td,v);return}
+  if(action==="image"){const file=document.createElement("input");file.type="file";file.accept="image/*";file.onchange=()=>{const f=file.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{formats[key]=formats[key]||{};formats[key].image=String(reader.result);persistFormats();applyFormats()};reader.readAsDataURL(f)};file.click();return}
+  if(action==="row"){const rg=rangeBounds(cells),row=rg.r2+1;if(row>=30){alert("Limite de 30 linhas nesta folha.");return}for(let r=29;r>row;r--)for(let c=0;c<12;c++){const from=grid.querySelector('[data-input="'+col(c)+(r)+'"]'),to=grid.querySelector('[data-input="'+col(c)+(r+1)+'"]');if(from&&to)to.value=from.value}return}
+  if(action==="column"){alert("A folha actual contém 12 colunas. Pode usar a barra horizontal para navegar; a expansão estrutural de colunas ainda não está disponível.");return}
+  if(action==="fit"){grid.querySelectorAll("th,td").forEach(el=>el.style.minWidth="110px");return}
+  if(action==="rowheight"){const h=prompt("Altura das linhas em pixels:","32");if(h&&Number(h)>12&&Number(h)<200)grid.querySelectorAll("tr").forEach(tr=>tr.style.height=Number(h)+"px");return}
+  if(action==="print"||action==="landscape"){window.print();return}
+  if(action==="sortasc"||action==="sortdesc"){const rg=rangeBounds(cells);for(let c=rg.c1;c<=rg.c2;c++){const vals=[];for(let r=rg.r1;r<=rg.r2;r++){const el=grid.querySelector('[data-input="'+col(c)+(r+1)+'"]');vals.push(el?.value||"")}vals.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));if(action==="sortdesc")vals.reverse();vals.forEach((v,i)=>{const el=grid.querySelector('[data-input="'+col(c)+(rg.r1+i+1)+'"]');if(el){el.value=v;el.dispatchEvent(new Event("change",{bubbles:true}))}})}return}
+  if(action==="filter"){const value=read(td);grid.querySelectorAll("td[data-cell]").forEach(cell=>{cell.style.opacity=read(cell)===value?"1":".25"});return}
+  if(action==="duplicates"){const seen=new Set();cells.forEach(cell=>{const v=read(cell);if(v&&seen.has(v))write(cell,"");else if(v)seen.add(v)});return}
+  if(action==="comment"){const note=prompt("Comentário para "+key+":",formats[key]?.note||"");if(note!==null){formats[key]=formats[key]||{};formats[key].note=note;persistFormats();applyFormats()}return}
+  if(action==="clear"){cells.forEach(cell=>write(cell,""));return}
+  if(action==="zoomin"||action==="zoomout"){const table=grid.closest(".azny-excel-gridwrap");if(table){const z=Math.max(.6,Math.min(1.8,(Number(table.dataset.zoom)||1)+(action==="zoomin"?.1:-.1)));table.dataset.zoom=z;grid.style.transform="scale("+z+")";grid.style.transformOrigin="top left"}return}
+  if(action==="gridlines"){grid.classList.toggle("azny-hide-grid");let style=document.getElementById("aznyExcelGridToggleStyle");if(!style){style=document.createElement("style");style.id="aznyExcelGridToggleStyle";style.textContent=".azny-excel-grid.azny-hide-grid td,.azny-excel-grid.azny-hide-grid th{border-color:transparent!important}";document.head.appendChild(style)}return}
+  if(action==="freeze"){grid.querySelectorAll("th").forEach(th=>th.style.position="sticky");return}
+ });
+ applyFormats();
+})();
+</script>
 </body>
 </html>
