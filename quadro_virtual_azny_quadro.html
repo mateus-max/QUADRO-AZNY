@@ -1038,6 +1038,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
       <button class="mini" id="zoomOut" title="Diminuir zoom">−</button><span class="zoomlabel" id="zoomLabel">100%</span><button class="mini" id="zoomIn" title="Aumentar zoom">＋</button><button class="mini" id="zoomReset" title="Repor zoom">100%</button>
     </div>
     <div class="group azny-language-group"><button class="mini azny-language-btn" id="teacherLanguageBtn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button></div>
+    <div class="group"><button class="mini" id="teacherExcelBtn" type="button" title="Abrir o Microsoft Excel para a Web">📊 Excel</button></div>
   </div>
   <div class="canvas-wrap" id="canvasWrap">
     <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
@@ -3705,6 +3706,12 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  if(window.visualViewport)window.visualViewport.addEventListener("resize",()=>requestAnimationFrame(keepTextAboveKeyboard),{passive:true});
  window.addEventListener("orientationchange",()=>{if(active&&active.isConnected)requestAnimationFrame(()=>{const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();keyboard.style.left=Math.max(0,r.left-w.left)+"px";keyboard.style.width=Math.min(r.width,w.right-r.left)+"px"})},{passive:true});
 })();
+  /* AZNY: launch the real Microsoft Excel web app from the teacher toolbar. */
+  const teacherExcelBtn=document.getElementById("teacherExcelBtn");
+  if(teacherExcelBtn)teacherExcelBtn.addEventListener("click",()=>{
+    const excelWindow=window.open("https://www.microsoft365.com/launch/excel","_blank","noopener,noreferrer");
+    if(!excelWindow&&typeof toast==="function")toast(document.documentElement.lang==="en"?"Allow pop-ups to open Microsoft Excel.":"Permita janelas pop-up para abrir o Microsoft Excel.");
+  });
 </script>
 </body>
 </html>
