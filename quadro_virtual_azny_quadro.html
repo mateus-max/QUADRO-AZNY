@@ -3472,10 +3472,14 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   if(sel.rangeCount&&active.contains(sel.anchorNode))savedRange=sel.getRangeAt(0).cloneRange();
  }
  function restoreSelection(){
-  if(!active)return;
-  active.focus({preventScroll:true});
+  if(!active||!active.isConnected)return;
+  /* Não voltar a focar um elemento já focado: em Android isso dispara focusin,
+     reconstrói o teclado e atrasa o cursor a cada toque. */
+  if(document.activeElement!==active){
+   try{active.focus({preventScroll:true})}catch(_){active.focus()}
+  }
   const sel=getSelection();
-  if(savedRange){sel.removeAllRanges();sel.addRange(savedRange)}
+  if(savedRange&&sel){try{sel.removeAllRanges();sel.addRange(savedRange)}catch(_){}}
  }
  function emitInput(){
   if(!active)return;
@@ -3485,17 +3489,24 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  function insertText(value){
   if(!active||!active.isConnected)return;
   restoreSelection();
-  const sel=getSelection();
+  const sel=getSelection();if(!sel)return;
   let range=savedRange;
   if(!range||!active.contains(range.startContainer)){
    range=document.createRange();range.selectNodeContents(active);range.collapse(false);
   }
   range.deleteContents();
+  if(value==="\\n"){
+   const br=document.createElement("br");
+   range.insertNode(br);
+   const nextRange=document.createRange();nextRange.setStartAfter(br);nextRange.collapse(true);
+   /* Keep an editable line after the break, including at the end of the text. */
+   const marker=document.createTextNode("\\u200B");br.parentNode.insertBefore(marker,br.nextSibling);
+   nextRange.setStart(marker,1);nextRange.collapse(true);
+   sel.removeAllRanges();sel.addRange(nextRange);savedRange=nextRange.cloneRange();emitInput();return;
+  }
   const node=document.createTextNode(value);
   range.insertNode(node);
-  /* Keep the inserted text node intact so the caret can advance after every tap. */
-  const nextRange=document.createRange();
-  nextRange.setStartAfter(node);nextRange.collapse(true);
+  const nextRange=document.createRange();nextRange.setStartAfter(node);nextRange.collapse(true);
   sel.removeAllRanges();sel.addRange(nextRange);
   savedRange=nextRange.cloneRange();emitInput();
  }
@@ -3586,10 +3597,13 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  }
  function openKeyboard(el){
   if(!mobile())return;
+  const sameTarget=active===el&&keyboard.isConnected&&body.classList.contains("azny-custom-keyboard");
   active=el;active.setAttribute("inputmode","none");
   body.classList.add("azny-custom-keyboard");
   if(!keyboard.isConnected)wrap.appendChild(keyboard);
-  build();saveSelection();
+  /* Rebuild only when opening or switching text objects, never on each caret focus. */
+  if(!sameTarget)build();
+  saveSelection();
   requestAnimationFrame(()=>{
    const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();
    keyboard.style.left=Math.max(0,r.left-w.left)+"px";
