@@ -3506,12 +3506,12 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    range=document.createRange();range.selectNodeContents(active);range.collapse(false);
   }
   range.deleteContents();
-  if(value==="\\n"){
+  if(value==="\n"){
    const br=document.createElement("br");
    range.insertNode(br);
    const nextRange=document.createRange();nextRange.setStartAfter(br);nextRange.collapse(true);
    /* Keep an editable line after the break, including at the end of the text. */
-   const marker=document.createTextNode("\\u200B");br.parentNode.insertBefore(marker,br.nextSibling);
+   const marker=document.createTextNode("\u200B");br.parentNode.insertBefore(marker,br.nextSibling);
    nextRange.setStart(marker,1);nextRange.collapse(true);
    sel.removeAllRanges();sel.addRange(nextRange);savedRange=nextRange.cloneRange();emitInput();return;
   }
