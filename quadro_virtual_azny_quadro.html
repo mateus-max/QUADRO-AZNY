@@ -1119,8 +1119,6 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
     <button class="tool" id="chartsBtn">📊 Gráficos</button>
     <button class="tool" id="musicBtn">🎵 Música</button>
     <button class="tool" id="pagesBtn">📑 Páginas do quadro</button>
-    <button class="tool" id="teacherExcelBtn" type="button" title="Excel AZNY — folha de cálculo"><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true"><rect x="11" y="3" width="18" height="26" rx="2" fill="#21A366"/><path d="M18 9h8v3h-8zm0 6h8v3h-8zm0 6h8v3h-8z" fill="#fff"/><rect x="3" y="6" width="16" height="20" rx="2" fill="#107C41"/><path d="m7 11 3 5-3 5h3l2-3.5 2 3.5h3l-3-5 3-5h-3l-2 3.5-2-3.5z" fill="#fff"/></svg><span>Excel</span></button>
-    <button class="tool" id="teacherWebBtn" type="button" title="Word AZNY — editor colaborativo"><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true"><rect x="10" y="3" width="19" height="26" rx="2" fill="#2B7CD3"/><path d="M17 9h8v3h-8zm0 6h8v3h-8zm0 6h8v3h-8z" fill="#fff"/><rect x="3" y="6" width="16" height="20" rx="2" fill="#185ABD"/><path d="m6 11 2 10h3l2-6 2 6h3l2-10h-3l-1 7-2-7h-2l-2 7-1-7z" fill="#fff"/></svg><span>Word</span></button>
   </div>
   <input id="imageInput" type="file" accept="image/*" hidden>
   <input id="docInput" type="file" accept=".txt,.md,.csv,.json,.html,.htm,.pdf,.doc,.docx" hidden>
@@ -4173,5 +4171,21 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   wordBtn?.addEventListener("click",openWord,true);
   document.getElementById("aznyExcelClose")?.addEventListener("click",()=>{excel.classList.remove("azny-excel-open");excel.style.display="none"},true);
   document.getElementById("aznyWebClose")?.addEventListener("click",()=>{word.classList.remove("azny-web-open");word.style.display="none"},true);
+})();
+</script>
+
+<script>
+/* AZNY: restore the classic whiteboard interface. Excel/Word workspaces are intentionally retired. */
+(function(){
+  try { for (const k of Object.keys(sessionStorage)) if (k.startsWith("azny-workspace-view:")) sessionStorage.removeItem(k); } catch (_) {}
+  const excel=document.getElementById("aznyExcelWorkspace");
+  const word=document.getElementById("aznyWebWorkspace");
+  excel?.classList.remove("azny-excel-open");
+  word?.classList.remove("azny-web-open");
+  document.getElementById("teacherExcelBtn")?.remove();
+  document.getElementById("teacherWebBtn")?.remove();
+  excel?.remove();
+  word?.remove();
+  document.querySelectorAll("#aznyExcelContext,#aznyExcelChartOverlay").forEach(el=>el.remove());
 })();
 </script>
