@@ -102,9 +102,10 @@ $("registerForm").addEventListener("submit",async e=>{
  registrationInProgress=true;
  msg("A validar os dados e a preparar a conta empresarial...");
  try{
-   let cred;
+   let cred,justCreated=false;
    try{
      cred=await auth.createUserWithEmailAndPassword(email,password);
+     justCreated=true;
    }catch(createErr){
      if(createErr.code!=="auth/email-already-in-use")throw createErr;
      msg("Este e-mail já tem uma conta. A verificar o acesso...");
@@ -112,17 +113,23 @@ $("registerForm").addEventListener("submit",async e=>{
    }
    currentUser=cred.user;
    const profileRef=db.ref("aznyCompanies/"+cred.user.uid+"/profile");
-   const snap=await profileRef.once("value");
-   if(!snap.exists()){
+   if(justCreated){
      const newProfile={uid:cred.user.uid,organizationName,organizationEmail:email,managerName,phone,status:"pending_payment",createdAt:firebase.database.ServerValue.TIMESTAMP};
      await profileRef.set(newProfile);
      profile=newProfile;
      try{await cred.user.sendEmailVerification()}catch(verificationErr){console.warn("AZNY: não foi possível enviar verificação de e-mail",verificationErr)}
    }else{
-     profile=snap.val();
-     if(!profile.organizationName){
-       await profileRef.update({organizationName,organizationEmail:email,managerName,phone,status:profile.status||"pending_payment"});
-       profile={...profile,organizationName,organizationEmail:email,managerName,phone,status:profile.status||"pending_payment"};
+     const snap=await profileRef.once("value");
+     if(!snap.exists()){
+       const newProfile={uid:cred.user.uid,organizationName,organizationEmail:email,managerName,phone,status:"pending_payment",createdAt:firebase.database.ServerValue.TIMESTAMP};
+       await profileRef.set(newProfile);
+       profile=newProfile;
+     }else{
+       profile=snap.val();
+       if(!profile.organizationName){
+         await profileRef.update({organizationName,organizationEmail:email,managerName,phone,status:profile.status||"pending_payment"});
+         profile={...profile,organizationName,organizationEmail:email,managerName,phone,status:profile.status||"pending_payment"};
+       }
      }
    }
    msg("Conta empresarial criada ou recuperada. A abrir o painel e o checkout...",true);
@@ -162,7 +169,7 @@ if(profile.status!=="approved"){
   else {form.classList.remove("hidden");box.classList.add("hidden");m.textContent=""}
   return;
 }
-$("paymentArea").classList.add("hidden");$("dashboard").classList.remove("hidden");$("dashboardOrg").textContent=profile.organizationName;$("dashboardEmail").textContent=profile.organizationEmail;await loadActivities()}catch(err){msg("Não foi possível carregar o perfil: "+errorText(err))}}
+$("paymentArea").classList.add("hidden");$("dashboard").classList.remove("hidden");$("dashboardOrg").textContent=profile.organizationName;$("dashboardEmail").textContent=profile.organizationEmail;await loadActivities()}catch(err){console.error("AZNY loadDashboard:",err);if(currentUser&&profile&&profile.uid===currentUser.uid&&profile.status!=="approved"){$("authArea").classList.add("hidden");$("dashboard").classList.add("hidden");$("paymentArea").classList.remove("hidden");$("paymentOrg").textContent=profile.organizationName||"Ativar conta empresarial";$("paymentEmail").textContent=profile.organizationEmail||currentUser.email;$("paymentForm").classList.remove("hidden");$("paymentStatusBox").classList.add("hidden");$("paymentMessage").textContent="O perfil foi criado, mas não foi possível voltar a lê-lo. Pode tentar escolher o plano; se o envio do comprovativo falhar, será necessário corrigir as regras do Firebase.";return}msg("Não foi possível carregar o perfil empresarial: "+errorText(err)+". Se a conta já foi criada, inicie sessão com o mesmo e-mail; não crie outra.")}}
 async function loadActivities(){if(!currentUser||profile?.status!=="approved")return;const snap=await db.ref("aznyCompanies/"+currentUser.uid+"/activities").once("value");activities=snap.val()||{};const list=$("activitiesList");const entries=Object.values(activities).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));if(!entries.length){list.innerHTML='<p class="muted">Ainda não criou atividades. Clique em «Criar atividade» para começar.</p>';return}
 list.innerHTML=entries.map(a=>{const link=makeParticipantUrl(a);const type=({reuniao:"Reunião",encontro:"Encontro",apresentacao:"Apresentação",formacao:"Formação"})[a.type]||"Reunião";return '<article class="activity"><span class="badge">'+esc(type)+'</span><h3>'+esc(a.title)+'</h3><p><b>Responsável:</b> '+esc(profile.managerName)+' · '+esc(a.managerRole||profile.managerRole)+'</p>'+(a.date?'<p><b>Data:</b> '+esc(a.date.replace("T"," "))+'</p>':"")+(a.description?'<p>'+esc(a.description)+'</p>':"")+'<p><b>Link dos participantes:</b><br><a href="'+esc(link)+'" target="_blank" rel="noopener">'+esc(link)+'</a></p><div class="actions"><button class="btn primary" type="button" data-open="'+esc(a.id)+'">Abrir quadro</button><button class="btn secondary" type="button" data-copy="'+esc(a.id)+'">Copiar link</button><button class="btn secondary" type="button" data-wa="'+esc(a.id)+'">WhatsApp</button></div></article>'}).join("");
 list.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{const a=activities[b.dataset.open];location.href=makeBoardUrl(a)});
