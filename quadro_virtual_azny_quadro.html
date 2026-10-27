@@ -4199,6 +4199,18 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  const company=q.get("modo")==="empresa";
  if(!company)return;
  const student=q.get("aluno")==="1";
+ // Bloqueio visual de contas empresariais ainda não aprovadas.
+ // A proteção real dos dados exige também regras de segurança no Firebase.
+ const companyUid=q.get("empresaUid")||q.get("acesso");
+ if(companyUid&&window.firebase&&firebase.database){
+  document.documentElement.style.visibility="hidden";
+  firebase.database().ref("aznyCompanies/"+companyUid+"/profile/status").once("value").then(snap=>{
+   if(snap.val()!=="approved"){
+    document.body.innerHTML='<main style="font:16px/1.6 Arial,sans-serif;max-width:620px;margin:12vh auto;padding:28px;color:#102b46;background:#f4f8fc;border-radius:16px"><h1>Acesso empresarial ainda não ativado</h1><p>Esta organização ainda não tem acesso aprovado ao Quadro Virtual AZNY. O acesso será disponibilizado depois da confirmação do pagamento pela direção.</p><a href="empresa.html">Voltar ao portal empresarial</a></main>';
+   }
+   document.documentElement.style.visibility="visible";
+  }).catch(()=>{document.documentElement.style.visibility="visible";});
+ }
  const org=q.get("empresa")||"Organização";
  const person=q.get("responsavel")||"Responsável";
  const role=q.get("cargo")||"Responsável da organização";
