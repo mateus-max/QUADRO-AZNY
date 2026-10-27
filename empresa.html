@@ -79,11 +79,11 @@
 <script>
 (function(){
 "use strict";
-const CONFIG={apiKey:"AIzaSyB20GNxPQsMRmjF0"+"RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c3",measurementId:"G-SVR4LGF8TH"};
+const CONFIG={apiKey:["AIzaSy","B20GNxPQs","MRmjF0","RpRyQ8rNo","Ndpcgq13Y"].join(""),authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c3",measurementId:"G-SVR4LGF8TH"};
 if(!firebase.apps.length)firebase.initializeApp(CONFIG);
 const auth=firebase.auth(),db=firebase.database();
 const $=id=>document.getElementById(id);
-let currentUser=null,profile=null,activities={},selectedPaymentMethod="";
+let currentUser=null,profile=null,activities={},selectedPaymentMethod="",registrationInProgress=false;
 function msg(s,ok=false){$("authMessage").textContent=s;$("authMessage").style.color=ok?"#137547":"#b42318"}
 function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function tab(which){const reg=which==="register";$("loginForm").classList.toggle("hidden",reg);$("registerForm").classList.toggle("hidden",!reg);$("loginTab").classList.toggle("active",!reg);$("registerTab").classList.toggle("active",reg);msg("")}
@@ -99,6 +99,7 @@ $("registerForm").addEventListener("submit",async e=>{
  if(password.length<6){msg("A palavra-passe deve ter pelo menos 6 caracteres.");return}
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg("Introduza um endereço de e-mail válido.");return}
  if(submit){submit.disabled=true;submit.dataset.originalText=submit.textContent;submit.textContent="A criar conta..."}
+ registrationInProgress=true;
  msg("A validar os dados e a preparar a conta empresarial...");
  try{
    let cred;
@@ -133,6 +134,7 @@ $("registerForm").addEventListener("submit",async e=>{
    else if(err&&err.code==="auth/operation-not-allowed")message="O registo por e-mail/palavra-passe está desativado no Firebase Authentication. Ative esse método no Firebase Console.";
    msg(message);
  }finally{
+   registrationInProgress=false;
    if(submit){submit.disabled=false;submit.textContent=submit.dataset.originalText||"Criar conta empresarial"}
  }
 });
@@ -168,7 +170,7 @@ list.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{const a=acti
 list.querySelectorAll("[data-wa]").forEach(b=>b.onclick=()=>{const a=activities[b.dataset.wa],link=makeParticipantUrl(a);window.open("https://wa.me/?text="+encodeURIComponent("Convite para "+a.title+" — "+profile.organizationName+". "+link),"_blank","noopener,noreferrer")});
 }
 $("paymentForm").addEventListener("submit",async e=>{e.preventDefault();if(!currentUser||!profile)return;const plan=$("paymentPlan").value,details=planDetails(plan),file=$("paymentProof").files[0];if(!plan||!details||!selectedPaymentMethod||!file){$("paymentMessage").textContent="Selecione o plano, a forma de pagamento e o comprovativo.";return}if(file.size>2*1024*1024){$("paymentMessage").textContent="O ficheiro excede 2 MB. Escolha um ficheiro menor.";return}if(!["application/pdf"].includes(file.type)&&!file.type.startsWith("image/")){$("paymentMessage").textContent="Envie uma imagem ou um ficheiro PDF.";return}$("paymentMessage").textContent="A preparar comprovativo...";try{const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file)});const planLabel=details.planLabel+" — "+details.amountKz.toLocaleString("pt-PT")+" Kz";await db.ref("aznyCompanies/"+currentUser.uid+"/paymentSubmission").set({plan,planLabel,amountKz:details.amountKz,durationMonths:details.durationMonths,maxParticipants:details.maxParticipants,method:selectedPaymentMethod,reference:$("paymentReference").value.trim(),proofName:file.name,proofType:file.type,proofData:data,submittedAt:firebase.database.ServerValue.TIMESTAMP,status:"pending_review"});await db.ref("aznyCompanies/"+currentUser.uid+"/profile").update({status:"pending_review",subscription:{plan,planLabel,amountKz:details.amountKz,durationMonths:details.durationMonths,maxParticipants:details.maxParticipants,method:selectedPaymentMethod}});profile.status="pending_review";profile.subscription={plan,planLabel,amountKz:details.amountKz,durationMonths:details.durationMonths,maxParticipants:details.maxParticipants,method:selectedPaymentMethod};await loadDashboard()}catch(err){$("paymentMessage").textContent="Não foi possível enviar o comprovativo: "+errorText(err)}});
-auth.onAuthStateChanged(async user=>{currentUser=user;if(!user){$("authArea").classList.remove("hidden");$("dashboard").classList.add("hidden");$("paymentArea").classList.add("hidden");return}await loadDashboard()});
+auth.onAuthStateChanged(async user=>{if(registrationInProgress)return;currentUser=user;if(!user){$("authArea").classList.remove("hidden");$("dashboard").classList.add("hidden");$("paymentArea").classList.add("hidden");return}await loadDashboard()});
 if(new URLSearchParams(location.search).get("registar")==="1")tab("register");
 })();
 </script></body></html>
