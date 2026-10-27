@@ -4265,7 +4265,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  function shareText(){return "Convite para "+label+" «"+(title?.value.trim()||activity)+"» — "+org+". Responsável: "+person+" ("+role+"). Aceda ao Quadro Virtual AZNY: "+companyLink()}
  function intercept(id,fn){const el=document.getElementById(id);if(!el)return;el.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();fn()},true)}
  if(!student){
-  intercept("copyClassLink",async()=>{const link=companyLink();try{await navigator.clipboard.writeText(link);toast("Link da "+label+" copiado.")}catch(_){prompt("Copie o link da "+label+":",link)}});
+  intercept("copyClassLink",async()=>{const link=companyLink();try{await navigator.clipboard.writeText(link);alert("Link da "+label+" copiado.")}catch(_){prompt("Copie o link da "+label+":",link)}});
   intercept("shareWhatsApp",()=>window.open("https://wa.me/?text="+encodeURIComponent(shareText()),"_blank","noopener,noreferrer"));
   intercept("shareFacebook",()=>window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(companyLink()),"_blank","noopener,noreferrer,width=700,height=600"));
  }
