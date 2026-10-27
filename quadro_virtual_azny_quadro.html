@@ -1402,14 +1402,14 @@ async function resetBoardForClassLifecycle(){
  try{
   board.querySelectorAll(".object").forEach(el=>el.remove());
   strokes=[];selected=null;undoStack=[];redoStack=[];objectId=0;deletedObjectIds.clear();currentPage=1;
-  const blank=()=>({strokes:[],objects:[],title:"Nova aula",deletedObjectIds:[]});
+  const companyModeReset=new URLSearchParams(location.search).get("modo")==="empresa";const companyActivityReset=new URLSearchParams(location.search).get("atividade")||"Nova atividade";const blank=()=>({strokes:[],objects:[],title:companyModeReset?companyActivityReset:"Nova aula",deletedObjectIds:[]});
   pageStates=Array.from({length:5},blank);
-  const title=document.getElementById("boardTitle");if(title)title.value="Nova aula";
+  const title=document.getElementById("boardTitle");if(title)title.value=companyModeReset?companyActivityReset:"Nova aula";
   zoom=1;if(board){board.style.transformOrigin="0 0";board.style.transform="scale(1)"}updateZoomExtent();resizeCanvas();redraw();updateHint();updateObjectActions();updatePageLabel();
   try{localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage:1,pages:pageStates}))}catch(e){console.warn("AZNY clear local board:",e)}
  }finally{remoteBoardApplying=false}
  if(AZNY_DB){
-  try{await aznyRoomRef().child("board").set({currentPage:1,title:"Nova aula",zoom:1,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,deletedObjectIds:[],updatedAt:firebase.database.ServerValue.TIMESTAMP})}
+  try{await aznyRoomRef().child("board").set({currentPage:1,title:(new URLSearchParams(location.search).get("modo")==="empresa"?(new URLSearchParams(location.search).get("atividade")||"Nova atividade"):"Nova aula"),zoom:1,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,deletedObjectIds:[],updatedAt:firebase.database.ServerValue.TIMESTAMP})}
   catch(e){console.warn("AZNY clear shared board:",e)}
  }
  try{sendBoardSnapshotToAllPeers()}catch(_){}
@@ -2833,7 +2833,7 @@ async function restoreStudentSessionIfApproved(){
  }catch(e){console.warn("AZNY restore student session:",e);showStudentJoinReady();return false}
 }
 function setupStudent(){document.body.classList.add("student-mode","azny-landscape-view");document.body.classList.remove("student-approved");setTool("view");syncStudentAutoOrientation();if(!window.aznyStudentOrientationBound){window.aznyStudentOrientationBound=true;window.addEventListener("resize",syncStudentAutoOrientation,{passive:true});window.addEventListener("orientationchange",syncStudentAutoOrientation,{passive:true});if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener("change",syncStudentAutoOrientation)}const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}showStudentWaitingForClass();const bindStudentButton=(id,fn)=>{const b=document.getElementById(id);if(!b||b.dataset.aznyBound==="1")return;b.dataset.aznyBound="1";b.disabled=false;b.style.pointerEvents="auto";b.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();try{fn()}catch(err){console.error("AZNY student tool "+id,err);toast(document.documentElement.lang==="en"?"Could not activate this tool.":"Não foi possível ativar esta ferramenta.")}},{passive:false})};bindStudentButton("studentPointerBtn",()=>{const active=!pointerMode;if(active){setTool("view");setPointerMode(true);stage.style.cursor="none"}else{setPointerMode(false);stage.style.cursor="default"}});bindStudentButton("studentSelectBtn",()=>setTool(tool==="select"?"view":"select"));bindStudentButton("studentDeleteBtn",()=>deleteSelected());bindStudentButton("studentTextBtn",()=>setTool(tool==="text"?"view":"text"));bindStudentButton("studentEraseBtn",()=>setTool(tool==="eraser"?"view":"eraser"));bindStudentButton("studentUploadImageBtn",()=>document.getElementById("imageInput")?.click());bindStudentButton("studentUploadDocBtn",()=>document.getElementById("docInput")?.click());bindStudentButton("studentRecordBtn",()=>screenRecorder?.state==="recording"?stopRecording():startRecording(true));bindStudentButton("studentScreenShareBtn",()=>aznyToggleScreenShare(true));if(!document.getElementById("studentRecordDownload")){const box=document.createElement("div");box.id="studentRecordDownload";box.className="record-download";box.style.cssText="display:none;position:fixed;left:10px;bottom:10px;z-index:9999;max-width:min(92vw,360px);background:#fff;color:#172536;box-shadow:0 5px 20px #0004;font-size:12px";document.body.appendChild(box)}bindStudentButton("studentMicBtn",()=>toggleStudentMic());bindStudentButton("studentCameraBtn",()=>toggleStudentCamera());bindStudentButton("studentRaiseHandBtn",()=>{const b=document.getElementById("studentRaiseHandBtn");setStudentRaisedHand(!(b?.classList.contains("is-raised")))});bindStudentButton("studentLeaveClassBtn",leaveStudentClass);if(!classSessionId){document.getElementById("studentWaiting").textContent="Esta ligação de aula já não está ativa. Peça ao professor o link da aula atual.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=true;return}bindTeacherPresenceWatch();
-document.getElementById("studentResumeBtn").onclick=async()=>{const btn=document.getElementById("studentResumeBtn");btn.disabled=true;try{const ready=await ensureAZNYRealtime();if(!ready||!AZNY_DB){document.getElementById("studentWaiting").textContent="Sem ligação ao serviço. Tente novamente.";document.getElementById("studentWaiting").style.display="block";return}const restored=await restoreStudentSessionIfApproved();if(!restored){document.getElementById("studentWaiting").textContent="Não encontrámos uma entrada anteriormente aprovada para esta aula. Para entrar, digite o seu nome e clique em “Pedir entrada”; o professor terá de aprovar.";document.getElementById("studentWaiting").style.display="block";toast("Precisa de solicitar entrada ao professor primeiro.")}}finally{btn.disabled=false}};document.getElementById("studentJoinBtn").onclick=async()=>{const n=document.getElementById("studentNameInput").value.trim();if(!n){toast(document.documentElement.lang==="en"?"Enter your name.":"Digite o seu nome.");return}studentName=n;/* Use the join tap to request fullscreen and lock landscape automatically. */try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen()}catch(_){}try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock("landscape")}catch(e){console.info("Landscape lock unavailable in this browser; keeping AZNY landscape layout:",e)}document.body.classList.add("azny-landscape-view");const btn=document.getElementById("studentJoinBtn");btn.disabled=true;document.getElementById("studentWaiting").textContent="A ligar ao serviço da aula…";document.getElementById("studentWaiting").style.display="block";try{const ready=await ensureAZNYRealtime();if(!ready||!AZNY_DB){btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível ligar ao serviço. Tente novamente.";return}const sref=aznySessionRef();const sessionSnap=await sref.once("value");const sessionData=sessionSnap.val()||{};const ref=sref.child("joinRequests");studentRequestId=ref.push().key;try{localStorage.setItem(aznyStudentSessionStorageKey(),JSON.stringify({id:studentRequestId,name:n}))}catch(_){}await ref.child(studentRequestId).set({name:n,status:"pending",createdAt:firebase.database.ServerValue.TIMESTAMP,studentUid:aznyUid||""});watchStudentRequest();document.getElementById("studentWaiting").textContent="Pedido enviado. Aguarde a aprovação do professor.";toast("Pedido enviado ao professor em tempo real.")}catch(e){console.error(e);btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível enviar o pedido. Tente novamente.";toast(document.documentElement.lang==="en"?"Failed to send the request.":"Falha ao enviar o pedido.")}};document.getElementById("studentRotateBtn").onclick=toggleStudentOrientation;ensureAZNYRealtime().then(async ready=>{if(!ready||!AZNY_DB){showStudentWaitingForClass();const w=document.getElementById("studentWaiting");if(w)w.textContent="Sem ligação ao serviço da aula. A tentar novamente…";setTimeout(()=>ensureAZNYRealtime().then(()=>refreshStudentResumeAvailability()),2500);return}bindClassSessionRealtime();await refreshStudentResumeAvailability()}).catch(e=>{console.warn("AZNY student startup:",e);showStudentWaitingForClass()});}
+document.getElementById("studentResumeBtn").onclick=async()=>{const btn=document.getElementById("studentResumeBtn");btn.disabled=true;try{const ready=await ensureAZNYRealtime();if(!ready||!AZNY_DB){document.getElementById("studentWaiting").textContent="Sem ligação ao serviço. Tente novamente.";document.getElementById("studentWaiting").style.display="block";return}const restored=await restoreStudentSessionIfApproved();if(!restored){document.getElementById("studentWaiting").textContent="Não encontrámos uma entrada anteriormente aprovada para esta aula. Para entrar, digite o seu nome e clique em “Pedir entrada”; o professor terá de aprovar.";document.getElementById("studentWaiting").style.display="block";toast("Precisa de solicitar entrada ao professor primeiro.")}}finally{btn.disabled=false}};document.getElementById("studentJoinBtn").onclick=async()=>{const n=document.getElementById("studentNameInput").value.trim();if(!n){toast(document.documentElement.lang==="en"?"Enter your name.":"Digite o seu nome.");return}studentName=n;/* Use the join tap to request fullscreen and lock landscape automatically. */try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen()}catch(_){}try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock("landscape")}catch(e){console.info("Landscape lock unavailable in this browser; keeping AZNY landscape layout:",e)}document.body.classList.add("azny-landscape-view");const btn=document.getElementById("studentJoinBtn");btn.disabled=true;document.getElementById("studentWaiting").textContent="A ligar ao serviço da aula…";document.getElementById("studentWaiting").style.display="block";try{const ready=await ensureAZNYRealtime();if(!ready||!AZNY_DB){btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível ligar ao serviço. Tente novamente.";return}const sref=aznySessionRef();const sessionSnap=await sref.once("value");const sessionData=sessionSnap.val()||{};const companyParams=new URLSearchParams(location.search);if(companyParams.get("modo")==="empresa"){const companyUid=companyParams.get("empresaUid")||companyParams.get("acesso");if(!companyUid){btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível confirmar o plano empresarial. Peça um novo link ao responsável.";return}const companySnap=await AZNY_DB.ref("aznyCompanies/"+companyUid+"/profile").once("value");const companyProfile=companySnap.val()||{};if(companyProfile.status!=="approved"){btn.disabled=false;document.getElementById("studentWaiting").textContent="Esta conta empresarial ainda não tem acesso aprovado.";return}const cap=Math.max(1,Number(companyProfile.subscription?.maxParticipants)||15);const requestsSnap=await sref.child("joinRequests").once("value");const requests=requestsSnap.val()||{};const occupied=Object.values(requests).filter(r=>r&&(r.status==="pending"||r.status==="approved")).length;if(occupied>=cap){btn.disabled=false;document.getElementById("studentWaiting").textContent="Esta reunião atingiu o limite do plano empresarial ("+cap+" participantes). O responsável terá de atualizar o plano para aumentar a capacidade.";toast("Limite de participantes atingido.");return}}const ref=sref.child("joinRequests");studentRequestId=ref.push().key;try{localStorage.setItem(aznyStudentSessionStorageKey(),JSON.stringify({id:studentRequestId,name:n}))}catch(_){}await ref.child(studentRequestId).set({name:n,status:"pending",createdAt:firebase.database.ServerValue.TIMESTAMP,studentUid:aznyUid||""});watchStudentRequest();document.getElementById("studentWaiting").textContent="Pedido enviado. Aguarde a aprovação do professor.";toast("Pedido enviado ao professor em tempo real.")}catch(e){console.error(e);btn.disabled=false;document.getElementById("studentWaiting").textContent="Não foi possível enviar o pedido. Tente novamente.";toast(document.documentElement.lang==="en"?"Failed to send the request.":"Falha ao enviar o pedido.")}};document.getElementById("studentRotateBtn").onclick=toggleStudentOrientation;ensureAZNYRealtime().then(async ready=>{if(!ready||!AZNY_DB){showStudentWaitingForClass();const w=document.getElementById("studentWaiting");if(w)w.textContent="Sem ligação ao serviço da aula. A tentar novamente…";setTimeout(()=>ensureAZNYRealtime().then(()=>refreshStudentResumeAvailability()),2500);return}bindClassSessionRealtime();await refreshStudentResumeAvailability()}).catch(e=>{console.warn("AZNY student startup:",e);showStudentWaitingForClass()});}
 function setStudentRaisedHand(raised){
  const value=!!raised,btn=document.getElementById("studentRaiseHandBtn");
  if(btn){btn.classList.toggle("is-raised",value);btn.setAttribute("aria-pressed",String(value));btn.textContent=value?(document.documentElement.lang==="en"?"✋ Lower hand":"✋ Baixar mão"):(document.documentElement.lang==="en"?"✋ Raise hand":"✋ Levantar mão")}const selfBadge=document.getElementById("studentSelfRaisedHand");if(selfBadge){selfBadge.hidden=!value;selfBadge.textContent=value?"✋":" ";selfBadge.title=value?"Tens a mão levantada":""}
@@ -4187,5 +4187,102 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   excel?.remove();
   word?.remove();
   document.querySelectorAll("#aznyExcelContext,#aznyExcelChartOverlay").forEach(el=>el.remove());
+})();
+</script>
+
+
+<script>
+/* AZNY EMPRESAS: camada de apresentação isolada; mantém o motor do quadro e o modo professor intactos. */
+(function(){
+ "use strict";
+ const q=new URLSearchParams(location.search);
+ const company=q.get("modo")==="empresa";
+ if(!company)return;
+ const student=q.get("aluno")==="1";
+ // Bloqueio visual de contas empresariais ainda não aprovadas.
+ // A proteção real dos dados exige também regras de segurança no Firebase.
+ const companyUid=q.get("empresaUid")||q.get("acesso");
+ if(companyUid&&window.firebase&&firebase.database){
+  document.documentElement.style.visibility="hidden";
+  firebase.database().ref("aznyCompanies/"+companyUid+"/profile/status").once("value").then(snap=>{
+   if(snap.val()!=="approved"){
+    document.body.innerHTML='<main style="font:16px/1.6 Arial,sans-serif;max-width:620px;margin:12vh auto;padding:28px;color:#102b46;background:#f4f8fc;border-radius:16px"><h1>Acesso empresarial ainda não ativado</h1><p>Esta organização ainda não tem acesso aprovado ao Quadro Virtual AZNY. O acesso será disponibilizado depois da confirmação do pagamento pela direção.</p><a href="empresa.html">Voltar ao portal empresarial</a></main>';
+   }
+   document.documentElement.style.visibility="visible";
+  }).catch(()=>{document.documentElement.style.visibility="visible";});
+ }
+ const org=q.get("empresa")||"Organização";
+ const person=q.get("responsavel")||"Responsável";
+ const role=q.get("cargo")||"Responsável da organização";
+ const activity=q.get("atividade")||"Reunião";
+ const kind=q.get("tipo")||"reuniao";
+ const label=({reuniao:"reunião",encontro:"encontro",apresentacao:"apresentação",formacao:"formação"})[kind]||"reunião";
+ document.documentElement.classList.add("azny-company-mode");
+ document.documentElement.lang="pt";
+ document.title=org+" — "+activity+" | Quadro Virtual AZNY";
+ const style=document.createElement("style");
+ style.textContent=`
+ .azny-company-identity{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px 12px;background:#e8f1fb;border-bottom:1px solid #c8d8e8;color:#17324d;font:600 12px/1.4 Inter,Segoe UI,Arial,sans-serif;z-index:120}
+ .azny-company-identity strong{color:#071b33}.azny-company-identity .azny-company-kind{margin-left:auto;background:#0e2c4c;color:#fff;padding:4px 8px;border-radius:5px;text-transform:capitalize}
+ .azny-company-floating{position:fixed;left:12px;top:12px;max-width:calc(100vw - 24px);background:#071b33ed;color:#fff;padding:8px 12px;border-radius:8px;z-index:2147482000;font:600 12px/1.4 Inter,Segoe UI,Arial,sans-serif;box-shadow:0 4px 18px #0003;pointer-events:none}
+ .azny-company-floating small{display:block;color:#d7e8fa;font-weight:400}
+ .azny-company-mode .musicobj,.azny-company-mode .piano-wrap,.azny-company-mode .chart-music-modal{display:none!important}
+ .azny-company-mode .azny-company-hide{display:none!important}
+ @media(max-width:700px){.azny-company-identity{font-size:11px;padding:6px 8px}.azny-company-identity .azny-company-kind{margin-left:0}}
+ `;
+ document.head.appendChild(style);
+ const identity=document.createElement("div");
+ identity.className=student?"azny-company-floating":"azny-company-identity";
+ identity.innerHTML='<strong>'+esc(org)+'</strong><span>·</span><span>'+esc(person)+'</span><span>·</span><span>'+esc(role)+'</span><small></small>';
+ const small=identity.querySelector("small");if(small)small.textContent=activity;
+ if(student){document.body.appendChild(identity)}else{
+  const app=document.querySelector(".app");
+  const topbar=document.querySelector(".topbar");
+  if(topbar&&topbar.parentNode)topbar.insertAdjacentElement("afterend",identity);
+  else if(app)app.prepend(identity);
+ }
+ function esc(v){return String(v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
+ function hideMusicControls(){
+  const words=/piano|teclado musical|música|musica|pauta|clave de sol|clave de fá|solfejo|semibreve|semínima|colcheia|semicolcheia|fusa|semifusa|pausa musical|nota musical|notas musicais|partitura|pentagrama|music/i;
+  document.querySelectorAll("button,.tool,[role=button],.cm-grid button").forEach(el=>{
+   const text=(el.innerText||el.textContent||"").trim();
+   const title=el.getAttribute("title")||"";
+   const aria=el.getAttribute("aria-label")||"";
+   if(words.test(text+" "+title+" "+aria)){el.classList.add("azny-company-hide");el.setAttribute("aria-hidden","true")}
+  });
+  document.querySelectorAll(".chart-music-modal").forEach(el=>el.classList.add("azny-company-hide"));
+  document.querySelectorAll("#board .musicobj").forEach(el=>el.remove());
+ }
+ hideMusicControls();
+ new MutationObserver(hideMusicControls).observe(document.body,{childList:true,subtree:true});
+ const title=document.getElementById("boardTitle");
+ if(title){title.value=activity;title.setAttribute("aria-label","Tema da atividade");title.placeholder="Tema da atividade";}
+ const start=document.getElementById("startClassBtn");
+ if(start)start.textContent="▶ Iniciar "+label;
+ const end=document.getElementById("endClassBtn");if(end)end.textContent="⏹ Encerrar "+label;
+ const record=document.getElementById("recordClassBtn");if(record)record.textContent="⏺ Gravar "+label;
+ const copy=document.getElementById("copyClassLink");if(copy){copy.textContent="🔗 Copiar link da "+label;copy.title="Copiar o link desta "+label;}
+ const wa=document.getElementById("shareWhatsApp");if(wa)wa.title="Partilhar "+label+" no WhatsApp";
+ const screen=document.getElementById("teacherScreenShareBtn");if(screen)screen.textContent="▣ Partilhar ecrã";
+ const timer=document.getElementById("classTimer");if(timer)timer.setAttribute("aria-label","Duração da atividade");
+ const dash=document.getElementById("teacherDashboardBtn");if(dash){dash.title="Painel da empresa";dash.setAttribute("aria-label","Painel da empresa");dash.onclick=()=>{location.href="empresa.html"}}
+ function companyLink(){
+  const u=new URL("quadro_virtual_azny_quadro.html",location.href);
+  u.searchParams.set("aluno","1");u.searchParams.set("modo","empresa");
+  u.searchParams.set("sala",q.get("sala")||"");u.searchParams.set("empresaUid",q.get("empresaUid")||q.get("acesso")||"");u.searchParams.set("sess","ROOM-"+String(q.get("sala")||"").replace(/[.#$\/\[\]]/g,"_"));
+  u.searchParams.set("empresa",org);u.searchParams.set("responsavel",person);u.searchParams.set("cargo",role);
+  u.searchParams.set("atividade",title?.value.trim()||activity);u.searchParams.set("tipo",kind);
+  return u.href;
+ }
+ function shareText(){return "Convite para "+label+" «"+(title?.value.trim()||activity)+"» — "+org+". Responsável: "+person+" ("+role+"). Aceda ao Quadro Virtual AZNY: "+companyLink()}
+ function intercept(id,fn){const el=document.getElementById(id);if(!el)return;el.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();fn()},true)}
+ if(!student){
+  intercept("copyClassLink",async()=>{const link=companyLink();try{await navigator.clipboard.writeText(link);alert("Link da "+label+" copiado.")}catch(_){prompt("Copie o link da "+label+":",link)}});
+  intercept("shareWhatsApp",()=>window.open("https://wa.me/?text="+encodeURIComponent(shareText()),"_blank","noopener,noreferrer"));
+  intercept("shareFacebook",()=>window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(companyLink()),"_blank","noopener,noreferrer,width=700,height=600"));
+ }
+ // A ligação é sempre isolada por sala/atividade; o nome da empresa nunca é usado como espaço partilhado.
+ const logo=document.querySelector(".logo");if(logo&&!student)logo.innerHTML="Quadro AZNY <span>Empresas</span>";
+ const startToast=window.toast;
 })();
 </script>
