@@ -97,7 +97,7 @@ $("registerForm").addEventListener("submit",async e=>{
  if(!organizationName||!managerName||!phone||!email||!password){msg("Preencha todos os campos obrigatórios.");return}
  if(password!==$("registerPassword2").value){msg("As palavras-passe não coincidem.");return}
  if(password.length<6){msg("A palavra-passe deve ter pelo menos 6 caracteres.");return}
- if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){msg("Introduza um endereço de e-mail válido.");return}
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg("Introduza um endereço de e-mail válido.");return}
  if(submit){submit.disabled=true;submit.dataset.originalText=submit.textContent;submit.textContent="A criar conta..."}
  msg("A validar os dados e a preparar a conta empresarial...");
  try{
