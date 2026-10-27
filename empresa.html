@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071b33"><title>AZNY Empresas — Reuniões e encontros</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(135deg,#071b33,#12395c);font-family:Inter,Segoe UI,Arial,sans-serif;color:#172536;padding:24px}
+.wrap{max-width:960px;margin:auto}.brand{color:#fff;font-weight:900;font-size:22px;margin:4px 0 20px}.brand span{color:#65b1ff}.panel{background:#fff;border-radius:18px;padding:clamp(18px,4vw,32px);box-shadow:0 22px 70px #0003}.intro h1{margin:0;color:#0a2542;font-size:clamp(25px,4vw,36px)}.intro p{color:#5d6c7d;line-height:1.6}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.tabs button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:800;cursor:pointer}.tabs button{background:#edf3f9;color:#29445f}.tabs button.active,.btn.primary{background:#1677ff;color:#fff}.btn.secondary{background:#e9eff6;color:#183754}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:800;color:#334e68}.field input,.field select,.field textarea{width:100%;padding:12px;border:1px solid #cbd7e4;border-radius:9px;background:#fff;font:inherit;min-width:0}.field textarea{min-height:80px;resize:vertical}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.msg{min-height:22px;color:#b42318;font-size:13px;margin-top:10px;overflow-wrap:anywhere}.muted{font-size:12px;color:#64748b;line-height:1.5}.hidden{display:none!important}.activity{border:1px solid #dbe4ed;border-radius:12px;padding:14px;margin:10px 0;background:#fbfdff}.activity h3{margin:0 0 6px;color:#123454}.activity p{margin:4px 0;color:#526579;font-size:13px}.activity .actions{margin-top:10px}.activity a{overflow-wrap:anywhere;font-size:12px}.badge{display:inline-block;background:#e6f2ff;color:#0756a8;border-radius:5px;padding:4px 7px;font-size:11px;font-weight:800;text-transform:capitalize}.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.topline h2{margin:0;color:#0a2542}.org-label{font-size:13px;color:#64748b;margin-top:5px}
+@media(max-width:620px){body{padding:12px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.actions .btn{width:100%}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+</head>
+<body><div class="wrap"><div class="brand">QUADRO VIRTUAL <span>AZNY</span> · EMPRESAS</div>
+<section class="panel">
+<div class="intro"><h1>Reuniões profissionais, num quadro próprio.</h1><p>Crie uma conta para a sua organização, prepare reuniões e apresentações e partilhe um link exclusivo para cada atividade. O espaço de cada atividade fica separado dos restantes.</p></div>
+<div id="authArea">
+<div class="tabs"><button id="loginTab" class="active" type="button">Iniciar sessão</button><button id="registerTab" type="button">Criar conta empresarial</button></div>
+<form id="loginForm">
+<div class="grid"><div class="field full"><label for="loginEmail">E-mail empresarial</label><input id="loginEmail" type="email" autocomplete="username" required></div><div class="field full"><label for="loginPassword">Palavra-passe</label><input id="loginPassword" type="password" autocomplete="current-password" required></div></div>
+<div class="actions"><button class="btn primary" type="submit">Entrar no painel empresarial</button><a class="btn secondary" href="index.html" style="text-decoration:none">Voltar</a></div>
+</form>
+<form id="registerForm" class="hidden">
+<div class="grid">
+<div class="field full"><label for="orgName">Nome da empresa ou organização *</label><input id="orgName" required maxlength="120" autocomplete="organization" placeholder="Ex.: Empresa ABC, Lda."></div>
+<div class="field"><label for="orgDomain">Domínio / site institucional</label><input id="orgDomain" placeholder="empresa.ao ou https://empresa.ao"></div>
+<div class="field"><label for="orgEmail">E-mail empresarial *</label><input id="orgEmail" type="email" required autocomplete="email" placeholder="nome@empresa.ao"></div>
+<div class="field"><label for="managerName">Nome do responsável *</label><input id="managerName" required maxlength="100" autocomplete="name"></div>
+<div class="field"><label for="managerRole">Cargo / função *</label><input id="managerRole" required maxlength="100" placeholder="Diretor, gerente, supervisor..."></div>
+<div class="field"><label for="orgPhone">Telefone (opcional)</label><input id="orgPhone" type="tel" autocomplete="tel"></div>
+<div class="field"><label for="registerPassword">Criar palavra-passe *</label><input id="registerPassword" type="password" required minlength="6" autocomplete="new-password"></div>
+<div class="field"><label for="registerPassword2">Confirmar palavra-passe *</label><input id="registerPassword2" type="password" required minlength="6" autocomplete="new-password"></div>
+</div>
+<p class="muted">Use um e-mail a que tenha acesso. O domínio é guardado como informação da organização; não substitui a verificação de e-mail.</p>
+<div class="actions"><button class="btn primary" type="submit">Criar conta empresarial</button><button class="btn secondary" type="button" id="cancelRegister">Cancelar</button></div>
+</form><div class="msg" id="authMessage" role="status" aria-live="polite"></div>
+</div>
+<div id="dashboard" class="hidden">
+<div class="topline"><div><h2 id="dashboardOrg">Painel empresarial</h2><div id="dashboardEmail" class="org-label"></div></div><button id="logout" class="btn secondary" type="button">Terminar sessão</button></div>
+<div class="actions"><button id="newActivityBtn" class="btn primary" type="button">＋ Criar atividade</button></div>
+<form id="activityForm" class="hidden" style="margin-top:18px;padding-top:18px;border-top:1px solid #dbe4ed">
+<h2 style="margin:0 0 14px;color:#0a2542">Preparar nova atividade</h2>
+<div class="grid">
+<div class="field"><label for="activityType">Tipo de atividade *</label><select id="activityType" required><option value="reuniao">Reunião empresarial</option><option value="encontro">Encontro profissional</option><option value="apresentacao">Apresentação</option><option value="formacao">Formação empresarial</option></select></div>
+<div class="field"><label for="activityTitle">Tema / título *</label><input id="activityTitle" required maxlength="160" placeholder="Ex.: Análise dos resultados trimestrais"></div>
+<div class="field"><label for="activityDate">Data e hora (opcional)</label><input id="activityDate" type="datetime-local"></div>
+<div class="field"><label for="activityRole">Cargo nesta atividade</label><input id="activityRole" maxlength="100"></div>
+<div class="field full"><label for="activityDescription">Descrição / agenda (opcional)</label><textarea id="activityDescription" maxlength="2000" placeholder="Pontos a discutir, objetivos e informações para os participantes"></textarea></div>
+</div>
+<div class="actions"><button class="btn primary" type="submit">Guardar atividade e abrir quadro</button><button class="btn secondary" id="cancelActivity" type="button">Cancelar</button></div>
+</form>
+<div style="margin-top:24px"><h2 style="color:#0a2542">As atividades da organização</h2><p class="muted">Cada atividade tem uma sala e um link próprios. As atividades ficam visíveis apenas no painel da conta autenticada.</p><div id="activitiesList"></div></div>
+</div>
+</section></div>
+<script>
+(function(){
+"use strict";
+const CONFIG={apiKey:"AIzaSyB20GNxPQsMRmjF0"+"RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c3",measurementId:"G-SVR4LGF8TH"};
+if(!firebase.apps.length)firebase.initializeApp(CONFIG);
+const auth=firebase.auth(),db=firebase.database();
+const $=id=>document.getElementById(id);
+let currentUser=null,profile=null,activities={};
+function msg(s,ok=false){$("authMessage").textContent=s;$("authMessage").style.color=ok?"#137547":"#b42318"}
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function tab(which){const reg=which==="register";$("loginForm").classList.toggle("hidden",reg);$("registerForm").classList.toggle("hidden",!reg);$("loginTab").classList.toggle("active",!reg);$("registerTab").classList.toggle("active",reg);msg("")}
+$("loginTab").onclick=()=>tab("login");$("registerTab").onclick=()=>tab("register");$("cancelRegister").onclick=()=>tab("login");
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();msg("A iniciar sessão...");try{await auth.signInWithEmailAndPassword($("loginEmail").value.trim(),$("loginPassword").value);msg("",true)}catch(err){msg(errorText(err))}});
+$("registerForm").addEventListener("submit",async e=>{e.preventDefault();if($("registerPassword").value!==$("registerPassword2").value){msg("As palavras-passe não coincidem.");return}
+const email=$("orgEmail").value.trim().toLowerCase();const domain=$("orgDomain").value.trim();if(domain&&domain.includes("@")){msg("No campo domínio, indique o site/domínio da organização, não um e-mail.");return}
+msg("A criar a conta...");try{
+ const cred=await auth.createUserWithEmailAndPassword(email,$("registerPassword").value);currentUser=cred.user;
+ profile={uid:cred.user.uid,organizationName:$("orgName").value.trim(),domain,organizationEmail:email,managerName:$("managerName").value.trim(),managerRole:$("managerRole").value.trim(),phone:$("orgPhone").value.trim(),createdAt:firebase.database.ServerValue.TIMESTAMP};
+ await db.ref("aznyCompanies/"+cred.user.uid+"/profile").set(profile);
+ try{await cred.user.sendEmailVerification()}catch(_){}
+ msg("Conta criada. Verifique o seu e-mail, se possível. A abrir o painel...",true);await loadDashboard();
+}catch(err){msg(errorText(err))}});
+function errorText(err){const code=err&&err.code;const map={"auth/email-already-in-use":"Este e-mail já tem uma conta.","auth/invalid-email":"O endereço de e-mail não é válido.","auth/weak-password":"A palavra-passe deve ter pelo menos 6 caracteres.","auth/invalid-credential":"E-mail ou palavra-passe incorretos.","auth/user-not-found":"Não existe uma conta com este e-mail.","auth/wrong-password":"E-mail ou palavra-passe incorretos.","auth/network-request-failed":"Sem ligação à internet. Tente novamente."};return map[code]||err.message||"Não foi possível concluir a operação."}
+function makeRoomId(uid,id){let h=2166136261;for(const ch of String(uid)){h^=ch;h=Math.imul(h,16777619)}const scope=(h>>>0).toString(36);return "AZNY-"+scope+"-EMP-"+id}
+function newId(){return Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,9).toUpperCase()}
+function makeBoardUrl(a){const u=new URL("quadro_virtual_azny_quadro.html",location.href);u.searchParams.set("modo","empresa");u.searchParams.set("acesso",currentUser.uid);u.searchParams.set("sala",a.roomId);u.searchParams.set("empresa",profile.organizationName);u.searchParams.set("responsavel",profile.managerName);u.searchParams.set("cargo",a.managerRole||profile.managerRole);u.searchParams.set("atividade",a.title);u.searchParams.set("tipo",a.type);return u.href}
+function makeParticipantUrl(a){const u=new URL("quadro_virtual_azny_quadro.html",location.href);u.searchParams.set("aluno","1");u.searchParams.set("modo","empresa");u.searchParams.set("sala",a.roomId);u.searchParams.set("sess","ROOM-"+a.roomId.replace(/[.#$\/\[\]]/g,"_"));u.searchParams.set("empresa",profile.organizationName);u.searchParams.set("responsavel",profile.managerName);u.searchParams.set("cargo",a.managerRole||profile.managerRole);u.searchParams.set("atividade",a.title);u.searchParams.set("tipo",a.type);return u.href}
+$("activityForm").addEventListener("submit",async e=>{e.preventDefault();if(!currentUser||!profile)return;const id=newId();const a={id,companyUid:currentUser.uid,organizationName:profile.organizationName,type:$("activityType").value,title:$("activityTitle").value.trim(),date:$("activityDate").value||"",managerRole:$("activityRole").value.trim()||profile.managerRole,description:$("activityDescription").value.trim(),roomId:makeRoomId(currentUser.uid,id),createdAt:firebase.database.ServerValue.TIMESTAMP,status:"planned"};if(!a.title){msg("Indique o tema da atividade.");return}msg("A guardar a atividade...");try{await db.ref("aznyCompanies/"+currentUser.uid+"/activities/"+id).set(a);$("activityForm").reset();$("activityForm").classList.add("hidden");await loadActivities();location.href=makeBoardUrl(a)}catch(err){msg("Não foi possível guardar a atividade: "+errorText(err))}});
+$("newActivityBtn").onclick=()=>{$("activityForm").classList.toggle("hidden");$("activityRole").value=profile?.managerRole||""};
+$("cancelActivity").onclick=()=>$("activityForm").classList.add("hidden");
+$("logout").onclick=async()=>{await auth.signOut();location.reload()};
+async function loadDashboard(){if(!currentUser)return;try{const snap=await db.ref("aznyCompanies/"+currentUser.uid+"/profile").once("value");profile=snap.val();if(!profile){msg("Esta conta não tem um perfil empresarial associado. Crie uma conta empresarial com outro e-mail ou contacte o suporte.");await auth.signOut();return}
+$("authArea").classList.add("hidden");$("dashboard").classList.remove("hidden");$("dashboardOrg").textContent=profile.organizationName;$("dashboardEmail").textContent=profile.organizationEmail+" · "+(profile.domain||"Sem domínio indicado");await loadActivities()}catch(err){msg("Não foi possível carregar o perfil: "+errorText(err))}}
+async function loadActivities(){if(!currentUser)return;const snap=await db.ref("aznyCompanies/"+currentUser.uid+"/activities").once("value");activities=snap.val()||{};const list=$("activitiesList");const entries=Object.values(activities).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));if(!entries.length){list.innerHTML='<p class="muted">Ainda não criou atividades. Clique em «Criar atividade» para começar.</p>';return}
+list.innerHTML=entries.map(a=>{const link=makeParticipantUrl(a);const type=({reuniao:"Reunião",encontro:"Encontro",apresentacao:"Apresentação",formacao:"Formação"})[a.type]||"Reunião";return '<article class="activity"><span class="badge">'+esc(type)+'</span><h3>'+esc(a.title)+'</h3><p><b>Responsável:</b> '+esc(profile.managerName)+' · '+esc(a.managerRole||profile.managerRole)+'</p>'+(a.date?'<p><b>Data:</b> '+esc(a.date.replace("T"," "))+'</p>':"")+(a.description?'<p>'+esc(a.description)+'</p>':"")+'<p><b>Link dos participantes:</b><br><a href="'+esc(link)+'" target="_blank" rel="noopener">'+esc(link)+'</a></p><div class="actions"><button class="btn primary" type="button" data-open="'+esc(a.id)+'">Abrir quadro</button><button class="btn secondary" type="button" data-copy="'+esc(a.id)+'">Copiar link</button><button class="btn secondary" type="button" data-wa="'+esc(a.id)+'">WhatsApp</button></div></article>'}).join("");
+list.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{const a=activities[b.dataset.open];location.href=makeBoardUrl(a)});
+list.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{const a=activities[b.dataset.copy],link=makeParticipantUrl(a);try{await navigator.clipboard.writeText(link);alert("Link da atividade copiado.")}catch(_){prompt("Copie o link:",link)}});
+list.querySelectorAll("[data-wa]").forEach(b=>b.onclick=()=>{const a=activities[b.dataset.wa],link=makeParticipantUrl(a);window.open("https://wa.me/?text="+encodeURIComponent("Convite para "+a.title+" — "+profile.organizationName+". "+link),"_blank","noopener,noreferrer")});
+}
+auth.onAuthStateChanged(async user=>{currentUser=user;if(!user){$("authArea").classList.remove("hidden");$("dashboard").classList.add("hidden");return}await loadDashboard()});
+if(new URLSearchParams(location.search).get("registar")==="1")tab("register");
+})();
+</script></body></html>
