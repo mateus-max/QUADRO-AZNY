@@ -3963,7 +3963,37 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
     document.getElementById("aznyExcelMerge")?.addEventListener("click",mergeSelection);
     document.getElementById("aznyExcelUnmerge")?.addEventListener("click",()=>{const rg=selectedRange();current().merges=(current().merges||[]).filter(m=>{const a=coord(m.start),b=coord(m.end);return !(a[0]<=rg.r2&&b[0]>=rg.r1&&a[1]<=rg.c2&&b[1]>=rg.c1)});render();schedulePublish()});
     document.getElementById("aznyExcelDownload")?.addEventListener("click",()=>{const csv=Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,col)=>{const v=display(current().cells[key(r,col)]??"");return '"'+v.replace(/"/g,'""')+'"'}).join(",")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=current().name+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
-    document.getElementById("aznyExcelPDF")?.addEventListener("click",()=>{const table=Array.from({length:ROWS},(_,r)=>"<tr>"+Array.from({length:COLS},(_,col)=>"<td>"+esc(display(current().cells[key(r,col)]??""))+"</td>").join("")+"</tr>").join("");const w=window.open("","_blank");if(!w){status.textContent="Permita pop-ups para imprimir ou guardar em PDF.";return}w.document.write('<html><head><title>'+esc(current().name)+'</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td{border:1px solid #bbb;padding:5px;min-width:35px}</style></head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script></body></html>');w.document.close()});
+    document.getElementById("aznyExcelPDF")?.addEventListener("click",()=>{const table=Array.from({length:ROWS},(_,r)=>"<tr>"+Array.from({length:COLS},(_,col)=>"<td>"+esc(display(current().cells[key(r,col)]??""))+"</td>").join("")+"</tr>").join("");const w=window.open("","_blank");if(!w){status.textContent="Permita pop-ups para imprimir ou guardar em PDF.";return}w.document.write('<html><head><title>'+esc(current().name)+'</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td{border:1px solid #bbb;padding:5px;min-width:35px}</style></head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script>
+<script>
+/* AZNY Empresas: interface de reuniões, apresentações e formação corporativa. */
+(function(){
+ const q=new URLSearchParams(location.search);
+ if(q.get("modo")!=="empresa")return;
+ const org=q.get("empresa")||"Organização";
+ const activity=q.get("atividade")||"Nova reunião";
+ const type=q.get("tipo")||"reuniao";
+ const isPresentation=type==="apresentacao";
+ const isTraining=type==="formacao";
+ const kind=isPresentation?"Apresentação":isTraining?"Formação":"Reunião";
+ document.title=kind+" — "+org+" | AZNY";
+ const title=document.getElementById("boardTitle");
+ if(title){title.value=activity;title.setAttribute("placeholder","Nome da "+kind.toLowerCase());title.setAttribute("aria-label","Título da "+kind.toLowerCase())}
+ const logo=document.querySelector(".logo");
+ if(logo)logo.innerHTML='<span style="color:#fff">AZNY</span> <span style="color:#65b1ff">Business</span>';
+ const side=document.querySelector(".leftbar .sidehead");
+ if(side)side.textContent="Ferramentas de trabalho";
+ const music=document.getElementById("musicBtn");if(music)music.remove();
+ const green=document.getElementById("teacherGreenBoardBtn");if(green)green.remove();
+ const start=document.getElementById("startClassBtn");if(start)start.textContent="▶ Iniciar "+(type==="reuniao"?"reunião":type==="apresentacao"?"apresentação":"formação");
+ const end=document.getElementById("endClassBtn");if(end)end.textContent="■ Encerrar atividade";
+ const record=document.getElementById("recordClassBtn");if(record)record.textContent="● Gravar apresentação";
+ const timer=document.getElementById("classTimer");if(timer)timer.setAttribute("aria-label","Duração da atividade");
+ const help=document.getElementById("helpBtn");if(help)help.title="Ajuda para reuniões e apresentações";
+ const studentTitle=document.querySelector(".student-mode #boardTitle");if(studentTitle)studentTitle.value=activity;
+ document.querySelectorAll(".tools .tool").forEach(b=>{const t=(b.textContent||"").trim();if(/partitura|pauta|clave|solfejo|piano|bíblia|música/i.test(t))b.remove()});
+})();
+</script>
+</body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
     document.getElementById("aznyWebClose")?.addEventListener("click",()=>{webPanel.classList.remove("azny-web-open");if(!isStudent&&webRef)webRef.update({visible:false})});
