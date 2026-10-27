@@ -89,15 +89,53 @@ function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function tab(which){const reg=which==="register";$("loginForm").classList.toggle("hidden",reg);$("registerForm").classList.toggle("hidden",!reg);$("loginTab").classList.toggle("active",!reg);$("registerTab").classList.toggle("active",reg);msg("")}
 $("loginTab").onclick=()=>tab("login");$("registerTab").onclick=()=>tab("register");$("cancelRegister").onclick=()=>tab("login");
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();msg("A iniciar sessão...");try{await auth.signInWithEmailAndPassword($("loginEmail").value.trim(),$("loginPassword").value);msg("",true)}catch(err){msg(errorText(err))}});
-$("registerForm").addEventListener("submit",async e=>{e.preventDefault();if($("registerPassword").value!==$("registerPassword2").value){msg("As palavras-passe não coincidem.");return}
-const email=$("orgEmail").value.trim().toLowerCase();
-msg("A criar a conta...");try{
- const cred=await auth.createUserWithEmailAndPassword(email,$("registerPassword").value);currentUser=cred.user;
- profile={uid:cred.user.uid,organizationName:$("orgName").value.trim(),organizationEmail:email,managerName:$("managerName").value.trim(),phone:$("orgPhone").value.trim(),status:"pending_payment",createdAt:firebase.database.ServerValue.TIMESTAMP};
- await db.ref("aznyCompanies/"+cred.user.uid+"/profile").set(profile);
- try{await cred.user.sendEmailVerification()}catch(_){}
- msg("Conta criada. Agora selecione o plano e envie o comprovativo de pagamento.",true);await loadDashboard();
-}catch(err){msg(errorText(err))}});
+$("registerForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const form=$("registerForm"),submit=form.querySelector('button[type="submit"]');
+ const email=$("orgEmail").value.trim().toLowerCase(),password=$("registerPassword").value;
+ const organizationName=$("orgName").value.trim(),managerName=$("managerName").value.trim(),phone=$("orgPhone").value.trim();
+ if(!organizationName||!managerName||!phone||!email||!password){msg("Preencha todos os campos obrigatórios.");return}
+ if(password!==$("registerPassword2").value){msg("As palavras-passe não coincidem.");return}
+ if(password.length<6){msg("A palavra-passe deve ter pelo menos 6 caracteres.");return}
+ if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){msg("Introduza um endereço de e-mail válido.");return}
+ if(submit){submit.disabled=true;submit.dataset.originalText=submit.textContent;submit.textContent="A criar conta..."}
+ msg("A validar os dados e a preparar a conta empresarial...");
+ try{
+   let cred;
+   try{
+     cred=await auth.createUserWithEmailAndPassword(email,password);
+   }catch(createErr){
+     if(createErr.code!=="auth/email-already-in-use")throw createErr;
+     msg("Este e-mail já tem uma conta. A verificar o acesso...");
+     cred=await auth.signInWithEmailAndPassword(email,password);
+   }
+   currentUser=cred.user;
+   const profileRef=db.ref("aznyCompanies/"+cred.user.uid+"/profile");
+   const snap=await profileRef.once("value");
+   if(!snap.exists()){
+     const newProfile={uid:cred.user.uid,organizationName,organizationEmail:email,managerName,phone,status:"pending_payment",createdAt:firebase.database.ServerValue.TIMESTAMP};
+     await profileRef.set(newProfile);
+     profile=newProfile;
+     try{await cred.user.sendEmailVerification()}catch(verificationErr){console.warn("AZNY: não foi possível enviar verificação de e-mail",verificationErr)}
+   }else{
+     profile=snap.val();
+     if(!profile.organizationName){
+       await profileRef.update({organizationName,organizationEmail:email,managerName,phone,status:profile.status||"pending_payment"});
+       profile={...profile,organizationName,organizationEmail:email,managerName,phone,status:profile.status||"pending_payment"};
+     }
+   }
+   msg("Conta empresarial criada ou recuperada. A abrir o painel e o checkout...",true);
+   await loadDashboard();
+ }catch(err){
+   console.error("AZNY — erro no registo empresarial:",err);
+   let message=errorText(err);
+   if(err&&err.code==="PERMISSION_DENIED")message="A conta de autenticação foi criada, mas as regras do Firebase bloquearam a gravação do perfil empresarial. É necessário corrigir as regras do Realtime Database.";
+   else if(err&&err.code==="auth/operation-not-allowed")message="O registo por e-mail/palavra-passe está desativado no Firebase Authentication. Ative esse método no Firebase Console.";
+   msg(message);
+ }finally{
+   if(submit){submit.disabled=false;submit.textContent=submit.dataset.originalText||"Criar conta empresarial"}
+ }
+});
 function errorText(err){const code=err&&err.code;const map={"auth/email-already-in-use":"Este e-mail já tem uma conta.","auth/invalid-email":"O endereço de e-mail não é válido.","auth/weak-password":"A palavra-passe deve ter pelo menos 6 caracteres.","auth/invalid-credential":"E-mail ou palavra-passe incorretos.","auth/user-not-found":"Não existe uma conta com este e-mail.","auth/wrong-password":"E-mail ou palavra-passe incorretos.","auth/network-request-failed":"Sem ligação à internet. Tente novamente."};return map[code]||err.message||"Não foi possível concluir a operação."}
 function makeRoomId(uid,id){let h=2166136261;for(const ch of String(uid)){h^=ch;h=Math.imul(h,16777619)}const scope=(h>>>0).toString(36);return "AZNY-"+scope+"-EMP-"+id}
 function newId(){return Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,9).toUpperCase()}
