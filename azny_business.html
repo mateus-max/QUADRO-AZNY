@@ -4517,7 +4517,7 @@ body.azny-business-mode .cam-buttons #micBtn{order:1!important}
     if(camera.dataset.busy==="1")return;
     camera.dataset.busy="1";
     try{
-     const stream=window.teacherStream;
+     const stream=(typeof teacherStream!=="undefined"?teacherStream:null);
      const active=!!(stream&&stream.getVideoTracks().some(t=>t.readyState==="live"&&t.enabled));
      if(active){if(typeof stopCamera==="function")stopCamera();else stream.getVideoTracks().forEach(t=>t.stop());}
      else if(typeof startCamera==="function")await startCamera();
@@ -4532,7 +4532,7 @@ body.azny-business-mode .cam-buttons #micBtn{order:1!important}
     if(mic.dataset.busy==="1")return;
     mic.dataset.busy="1";
     try{
-     const stream=window.teacherAudioStream;
+     const stream=(typeof teacherAudioStream!=="undefined"?teacherAudioStream:null);
      const active=!!(stream&&stream.getAudioTracks().some(t=>t.readyState==="live"&&t.enabled));
      if(active){if(typeof stopMic==="function")stopMic();else stream.getAudioTracks().forEach(t=>t.stop());}
      else if(typeof startMic==="function")await startMic();
