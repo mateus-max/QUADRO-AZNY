@@ -2235,8 +2235,8 @@ function updateTeacherMediaStatus(){
  const en=document.documentElement.lang==="en",cam=teacherStream?(en?"on":"ligada"):(en?"off":"desligada"),mic=teacherAudioStream?(en?"on":"ligado"):(en?"off":"desligado");
  const status=document.getElementById("teacherMediaStatus");if(status)status.textContent=en?"Camera: "+cam+" · Microphone: "+mic:"Câmera: "+cam+" · Microfone: "+mic;
  const cameraBtn=document.getElementById("cameraBtn"),micBtn=document.getElementById("micBtn");
- if(cameraBtn){cameraBtn.classList.toggle("is-active",!!teacherStream);cameraBtn.classList.toggle("is-off",!teacherStream);cameraBtn.setAttribute("aria-label",teacherStream?(en?"Turn off camera":"Desligar câmera"):(en?"Turn on camera":"Ligar câmera"));cameraBtn.title=cameraBtn.getAttribute("aria-label");cameraBtn.textContent="📷";}
- if(micBtn){micBtn.classList.toggle("is-active",!!teacherAudioStream);micBtn.classList.toggle("is-off",!teacherAudioStream);micBtn.setAttribute("aria-label",teacherAudioStream?(en?"Turn off microphone":"Desligar microfone"):(en?"Turn on microphone":"Ligar microfone"));micBtn.title=micBtn.getAttribute("aria-label");micBtn.textContent="🎙";}
+ if(cameraBtn){cameraBtn.classList.toggle("is-active",!!teacherStream);cameraBtn.classList.toggle("is-off",!teacherStream);cameraBtn.setAttribute("aria-label",teacherStream?(en?"Turn off camera":"Desligar câmera"):(en?"Turn on camera":"Ligar câmera"));cameraBtn.title=cameraBtn.getAttribute("aria-label");cameraBtn.textContent=teacherStream?"📷":"📷 ×";}
+ if(micBtn){micBtn.classList.toggle("is-active",!!teacherAudioStream);micBtn.classList.toggle("is-off",!teacherAudioStream);micBtn.setAttribute("aria-label",teacherAudioStream?(en?"Turn off microphone":"Desligar microfone"):(en?"Turn on microphone":"Ligar microfone"));micBtn.title=micBtn.getAttribute("aria-label");micBtn.textContent=teacherAudioStream?"🎙":"🎙 ×";}
 }
 async function startCamera(){
  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
@@ -4437,6 +4437,13 @@ html body.azny-business-mode .camera-panel>.cam-buttons button.is-active::after{
 html body.azny-business-mode .camera-panel>.cam-buttons button#cameraBtn{order:1}
 html body.azny-business-mode .camera-panel>.cam-buttons button#micBtn{order:2}
 html body.azny-business-mode .camera-panel>.cam-buttons button:not(#cameraBtn):not(#micBtn){display:none!important}
+
+/* Dois controlos únicos: cada ícone indica também o estado ligado/desligado. */
+html body.azny-business-mode .camera-panel>.cam-buttons{position:absolute!important;z-index:40!important;left:8px!important;right:auto!important;bottom:7px!important;display:flex!important;flex-direction:row!important;gap:5px!important;margin:0!important;padding:0!important;width:auto!important;pointer-events:none!important}
+html body.azny-business-mode .camera-panel>.cam-buttons button{pointer-events:auto!important;display:flex!important;align-items:center!important;justify-content:center!important;width:34px!important;min-width:34px!important;max-width:34px!important;height:30px!important;min-height:30px!important;flex:0 0 34px!important;padding:0!important;font-size:15px!important;line-height:1!important;border-radius:7px!important;background:#071b33e8!important;color:#fff!important;border:1px solid #ffffffcc!important}
+html body.azny-business-mode .camera-panel>.cam-buttons button::before{content:none!important;display:none!important}
+html body.azny-business-mode .camera-panel>.cam-buttons button.is-off{background:#9b2835!important;border-color:#ffd7db!important}
+html body.azny-business-mode .camera-panel>.cam-buttons button.is-active{background:#0b7658!important;border-color:#c7ffeb!important}
 </style>
 <script>
 (function(){
