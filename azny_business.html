@@ -1907,7 +1907,7 @@ function addDoc(file){
     const wb=XLSX.read(reader.result,{type:"array"});
     const sheetName=wb.SheetNames[0];const ws=wb.Sheets[sheetName];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
-    const maxRows=Math.min(rows.length,300),maxCols=Math.min(Math.max(1,...rows.slice(0,maxRows).map(r=>r.length)),26);
+    const maxRows=Math.min(rows.length,3000),maxCols=Math.min(Math.max(1,...rows.slice(0,Math.min(rows.length,3000)).map(r=>r.length)),1000);
     let table='<table class="azny-imported-sheet" style="border-collapse:collapse;width:100%;background:#fff;color:#172b45;font:14px Arial">';
     for(let ri=0;ri<maxRows;ri++){table+='<tr>';for(let ci=0;ci<maxCols;ci++){const tag=ri===0?'th':'td';table+='<'+tag+' contenteditable="true" style="border:1px solid #b8c9dc;padding:6px;min-width:72px">'+escapeHtml(String(rows[ri]?.[ci]??""))+'</'+tag+'>'}table+='</tr>'}
     table+='</table>';
@@ -1918,7 +1918,7 @@ function addDoc(file){
     el.querySelector(".azny-export-xlsx").onclick=()=>exportImportedSheet(el,"xlsx");
     el.querySelector(".azny-export-csv").onclick=()=>exportImportedSheet(el,"csv");
     el.querySelectorAll("td,th").forEach(c=>c.addEventListener("input",()=>{scheduleSave();publishLiveBoardState()}));
-    updateHint();scheduleSave();publishLiveBoardState();toast("Folha Excel carregada e editável no quadro");
+    updateHint();scheduleSave();publishLiveBoardState();toast("Folha Excel carregada no quadro (limite de importação: 3.000 linhas × 1.000 colunas)");
    }catch(err){console.error(err);toast("Não foi possível abrir esta folha Excel.")}
   };reader.readAsArrayBuffer(file);return
  }
