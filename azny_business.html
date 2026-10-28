@@ -1181,13 +1181,9 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
       <div class="camera-label">Professor</div>
       <div class="cam-status" id="camStatus">Desligada</div>
     </div>
-    <div class="cam-buttons">
-      <button id="cameraBtn">🎥 Ligar câmera</button>
-      <button id="cameraStopBtn" disabled>⏹ Desligar</button>
-    </div>
-    <div class="cam-buttons">
-      <button id="micBtn">🎙 Ligar microfone</button>
-      <button id="micStopBtn" disabled>🔇 Desligar</button>
+    <div class="cam-buttons azny-host-media-buttons" aria-label="Controlos de câmara e microfone">
+      <button id="cameraBtn" type="button" aria-label="Ligar câmera" title="Ligar/desligar câmera">📷</button>
+      <button id="micBtn" type="button" aria-label="Ligar microfone" title="Ligar/desligar microfone">🎙</button>
     </div>
     <div class="teacher-media-status" id="teacherMediaStatus">Câmera: desligada · Microfone: desligado</div>
     <label class="azny-audio-output-picker" for="aznyAudioOutputSelect">🔊 Saída de som <select id="aznyAudioOutputSelect"><option value="default">Saída automática do dispositivo</option></select></label><div id="aznyAudioOutputStatus" class="teacher-media-status">Saída automática do dispositivo</div>
@@ -2239,8 +2235,8 @@ function updateTeacherMediaStatus(){
  const en=document.documentElement.lang==="en",cam=teacherStream?(en?"on":"ligada"):(en?"off":"desligada"),mic=teacherAudioStream?(en?"on":"ligado"):(en?"off":"desligado");
  const status=document.getElementById("teacherMediaStatus");if(status)status.textContent=en?"Camera: "+cam+" · Microphone: "+mic:"Câmera: "+cam+" · Microfone: "+mic;
  const cameraBtn=document.getElementById("cameraBtn"),micBtn=document.getElementById("micBtn");
- if(cameraBtn)cameraBtn.textContent=teacherStream?(en?"🎥 Camera on":"🎥 Câmera ligada"):(en?"🎥 Turn on camera":"🎥 Ligar câmera");
- if(micBtn)micBtn.textContent=teacherAudioStream?(en?"🎙 Microphone on":"🎙 Microfone ligado"):(en?"🎙 Turn on microphone":"🎙 Ligar microfone");
+ if(cameraBtn){cameraBtn.classList.toggle("is-active",!!teacherStream);cameraBtn.setAttribute("aria-label",teacherStream?(en?"Turn off camera":"Desligar câmera"):(en?"Turn on camera":"Ligar câmera"));cameraBtn.title=cameraBtn.getAttribute("aria-label");cameraBtn.textContent="📷";}
+ if(micBtn){micBtn.classList.toggle("is-active",!!teacherAudioStream);micBtn.setAttribute("aria-label",teacherAudioStream?(en?"Turn off microphone":"Desligar microfone"):(en?"Turn on microphone":"Ligar microfone"));micBtn.title=micBtn.getAttribute("aria-label");micBtn.textContent="🎙";}
 }
 async function startCamera(){
  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
@@ -2273,13 +2269,13 @@ async function startCamera(){
   document.querySelector("#teacherCamera .cam-off").style.display="none";
   document.getElementById("camStatus").textContent=document.documentElement.lang==="en"?"On":"Ligada";
   if(btn)btn.disabled=true;
-  document.getElementById("cameraStopBtn").disabled=false;
+  
   syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
  }catch(e){
   if(teacherStream){teacherStream.getTracks().forEach(t=>{try{t.stop()}catch(_){}});teacherStream=null}
   const v=document.getElementById("teacherVideo");if(v){v.srcObject=null;v.hidden=true}
   if(btn)btn.disabled=false;
-  document.getElementById("cameraStopBtn").disabled=true;
+  
   updateTeacherMediaStatus();
   const msg=e.name==="NotAllowedError"?"Permissão da câmera recusada. Autorize a câmera nas configurações do navegador.":e.name==="NotReadableError"||e.name==="AbortError"?"A câmera está ocupada ou o controlador não respondeu. Feche outros programas que usam a câmera e tente novamente.":"Não foi possível ligar a câmera: "+(e.name||e.message);
   toast(msg)
@@ -2290,7 +2286,7 @@ function stopCamera(){
  const v=document.getElementById("teacherVideo");v.srcObject=null;v.hidden=true;
  document.querySelector("#teacherCamera .cam-off").style.display="flex";
  document.getElementById("camStatus").textContent=document.documentElement.lang==="en"?"Off":"Desligada";
- document.getElementById("cameraBtn").disabled=false;document.getElementById("cameraStopBtn").disabled=true;
+ document.getElementById("cameraBtn").disabled=false;
  syncTeacherMediaToPeers();updateTeacherMediaStatus()
 }
 async function startMic(){
@@ -2298,17 +2294,17 @@ async function startMic(){
  try{
   teacherAudioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}},video:false});
   const track=teacherAudioStream.getAudioTracks()[0];track.enabled=true;
-  document.getElementById("micBtn").disabled=true;document.getElementById("micStopBtn").disabled=false;
+  document.getElementById("micBtn").disabled=false;
   syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Microfone do professor ligado e disponível em tempo real")
  }catch(e){toast(document.documentElement.lang==="en"?(e.name==="NotAllowedError"?"Microphone permission denied.":"Could not turn on the microphone: "+e.name):(e.name==="NotAllowedError"?"Permissão do microfone recusada.":"Não foi possível ligar o microfone: "+e.name))}
 }
 function stopMic(){
  if(teacherAudioStream){teacherAudioStream.getTracks().forEach(t=>t.stop());teacherAudioStream=null}
- document.getElementById("micBtn").disabled=false;document.getElementById("micStopBtn").disabled=true;
+ document.getElementById("micBtn").disabled=false;
  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Microfone do professor desligado")
 }
-document.getElementById("cameraBtn").onclick=startCamera;document.getElementById("cameraStopBtn").onclick=stopCamera;
-document.getElementById("micBtn").onclick=startMic;document.getElementById("micStopBtn").onclick=stopMic;
+document.getElementById("cameraBtn").onclick=()=>teacherStream?stopCamera():startCamera();
+document.getElementById("micBtn").onclick=()=>teacherAudioStream?stopMic():startMic();
 
 function formatDuration(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return [h,m,sec].map(v=>String(v).padStart(2,"0")).join(":")}
 function updateClassTimer(){document.getElementById("classTimer").textContent=formatDuration(Date.now()-classStartTime)}
@@ -4425,6 +4421,12 @@ html body.azny-business-mode #students .student{height:clamp(68px,11vh,92px)!imp
  html body.azny-business-mode .camera-panel>.cam-buttons button{width:24px!important;min-width:24px!important;max-width:24px!important;height:22px!important;min-height:22px!important;flex-basis:24px!important}
  html body.azny-business-mode #students .student{height:clamp(56px,11vh,76px)!important;min-height:54px!important}
 }
+
+/* Um único botão por função; o X aparece no próprio botão quando a função está ativa. */
+html body.azny-business-mode .camera-panel>.azny-host-media-buttons{position:absolute!important;z-index:40!important;left:8px!important;bottom:8px!important;right:auto!important;display:flex!important;flex-direction:row!important;gap:5px!important;width:auto!important;margin:0!important;padding:0!important;background:transparent!important;pointer-events:none!important}
+html body.azny-business-mode .camera-panel>.azny-host-media-buttons button{position:relative!important;pointer-events:auto!important;display:flex!important;align-items:center!important;justify-content:center!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:28px!important;min-height:28px!important;flex:0 0 30px!important;padding:0!important;border:1px solid #ffffffdd!important;border-radius:8px!important;background:#071b33e8!important;color:#fff!important;font-size:16px!important;line-height:1!important;box-shadow:0 1px 4px #0005!important}
+html body.azny-business-mode .camera-panel>.azny-host-media-buttons button.is-active::after{content:"×"!important;position:absolute!important;right:-3px!important;top:-5px!important;display:flex!important;align-items:center!important;justify-content:center!important;width:13px!important;height:13px!important;border-radius:50%!important;background:#dc2626!important;border:1px solid #fff!important;color:#fff!important;font:bold 12px/12px Arial!important}
+html body.azny-business-mode .camera-panel #cameraStopBtn,html body.azny-business-mode .camera-panel #micStopBtn{display:none!important}
 </style>
 <script>
 (function(){
