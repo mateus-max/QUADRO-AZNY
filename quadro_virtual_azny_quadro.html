@@ -3992,7 +3992,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  const studentTitle=document.querySelector(".student-mode #boardTitle");if(studentTitle)studentTitle.value=activity;
  document.querySelectorAll(".tools .tool").forEach(b=>{const t=(b.textContent||"").trim();if(/partitura|pauta|clave|solfejo|piano|bíblia|música/i.test(t))b.remove()});
 })();
-</script>
+<\/script>
 </body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
