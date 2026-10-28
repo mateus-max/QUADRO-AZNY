@@ -2337,6 +2337,8 @@ async function startClass(){
  try{
   const ready=await Promise.race([ensureAZNYRealtime(),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao ligar ao Firebase")),8000))]);
   if(!ready||!AZNY_DB)throw new Error("Firebase Realtime Database indisponível");
+  // Ouvir pedidos de entrada antes de publicar a sessão, para não perder solicitações em tempo real.
+  bindClassSessionRealtime();bindTeacherPresenceWatch();
   const roomRef=aznyRoomRef(),sessionRef=aznySessionRef();
   if(!roomRef||!sessionRef)throw new Error("Referência da reunião indisponível");
   await Promise.race([roomRef.child("activeSessionId").set(classSessionId),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao publicar a reunião")),8000))]);
@@ -2357,24 +2359,38 @@ async function startClass(){
 async function restoreActiveTeacherSession(){if(isStudent||!classSessionId||!AZNY_DB)return;try{const snap=await aznySessionRef()?.once("value");const session=snap?.val();if(!session||session.status!=="active"){return}try{await aznySessionRef().child("teacherReloadNotice").set({id:"restore-"+Date.now()+"-"+Math.random().toString(36).slice(2,9),at:firebase.database.ServerValue.TIMESTAMP,reason:"teacher-session-restored"})}catch(reloadSignalError){console.warn("AZNY teacher reload notice:",reloadSignalError)}classStarted=true;classStartTime=Number(session.startedAt)||Date.now();document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();try{await aznySessionRef().child("teacherPresence").update({online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP});aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}roomChannel?.postMessage({type:"class-started",title:session.title||document.getElementById("boardTitle").value,session:classSessionId});toast("Aula ativa restaurada após atualizar a página")}catch(e){console.warn("AZNY session restore:",e)}}
 async function endClass(){
  if(!classStarted){toast("Não há reunião ativa para encerrar.");return}
- const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn");
- classStarted=false;aznyObservedClassStatus="ended";clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;
- const timer=document.getElementById("classTimer");if(timer)timer.textContent="00:00:00";
- if(startBtn){startBtn.disabled=false;startBtn.removeAttribute("aria-busy")}if(endBtn)endBtn.disabled=true;
+ const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn"),timer=document.getElementById("classTimer");
+ // Encerramento local imediato: a interface, o cronómetro e as ligações param sem esperar pela rede.
+ classStarted=false;aznyObservedClassStatus="ended";
+ clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;
+ if(timer)timer.textContent="00:00:00";
+ if(startBtn){startBtn.disabled=false;startBtn.removeAttribute("aria-busy")}
+ if(endBtn)endBtn.disabled=true;
  try{localStorage.removeItem("azny-business-active-session-"+aznyRoomKey())}catch(_){}
- clearTeacherStudentCameras();
- Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}removeStudentVideoCard(id)});
- window.aznyTeacherPeers={};roomChannel?.postMessage({type:"business-meeting-ended",session:classSessionId});
- try{await resetBoardForClassLifecycle()}catch(e){console.warn("AZNY BUSINESS: não foi possível limpar o quadro completamente",e)}
+ try{roomChannel?.postMessage({type:"business-meeting-ended",session:classSessionId,endedAt:Date.now()})}catch(_){}
+ // Publicar o fim da reunião imediatamente; não deixar a limpeza do quadro bloquear a notificação aos participantes.
  try{
   if(AZNY_DB&&classSessionId){
-   const sessionRef=aznySessionRef();if(!sessionRef)throw new Error("Referência da reunião indisponível");
-   await Promise.race([sessionRef.update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite Firebase")),6000))]);
-  }else toast("Reunião encerrada neste dispositivo; o Firebase não está ligado.");
- }catch(e){console.error("AZNY BUSINESS: erro ao publicar fim da reunião",e);toast("Reunião encerrada neste dispositivo; o Firebase não sincronizou o encerramento.")}
- toast("Reunião encerrada. Cronómetro a zero e quadro limpo para a próxima reunião.");
+   const sessionRef=aznySessionRef();
+   if(sessionRef){
+    sessionRef.update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP})
+     .catch(e=>console.error("AZNY BUSINESS: não foi possível sincronizar o encerramento",e));
+   }
+  }else console.warn("AZNY BUSINESS: Firebase indisponível; encerramento apenas neste dispositivo.");
+ }catch(e){console.error("AZNY BUSINESS: falha ao publicar encerramento",e)}
+ // Fechar imediatamente todas as ligações de participantes e partilha de ecrã.
+ try{clearTeacherStudentCameras()}catch(e){console.warn(e)}
+ Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{
+  try{pc._aznyBoardChannel?.close()}catch(_){}
+  try{pc.close()}catch(_){}
+  try{removeStudentVideoCard(id)}catch(_){}
+ });
+ window.aznyTeacherPeers={};
+ try{if(aznyTeacherScreenTrack){aznyTeacherScreenTrack.stop();aznyTeacherScreenTrack=null}}catch(_){}
+ // Limpeza do quadro é secundária e corre em segundo plano; nunca atrasa o fim da reunião.
+ Promise.resolve().then(()=>resetBoardForClassLifecycle()).catch(e=>console.warn("AZNY BUSINESS: limpeza do quadro incompleta",e));
+ toast("Reunião encerrada. O cronómetro parou e os participantes serão desligados.");
 }
-
 async function aznyToggleScreenShare(forStudent){
  const button=document.getElementById(forStudent?"studentScreenShareBtn":"teacherScreenShareBtn");
  const active=forStudent?!!aznyStudentScreenTrack:!!aznyTeacherScreenTrack;
@@ -4739,5 +4755,75 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
     if(target && (target.id==="endClassBtn" || (target.closest && target.closest("#endClassBtn")))) stopFallback();
   },true);
   window.addEventListener("pagehide",stopFallback);
+})();
+</script>
+
+<!-- AZNY BUSINESS: reliable end and join-request controls -->
+<script>
+(function(){
+ if(window.__aznyBusinessJoinRequestV2)return;
+ window.__aznyBusinessJoinRequestV2=true;
+ var submitting=false;
+ function showStatus(message){
+  var box=document.getElementById("studentWaiting");
+  if(box){box.textContent=message;box.style.display="block"}
+ }
+ async function sendJoinRequest(){
+  var btn=document.getElementById("studentJoinBtn");
+  var input=document.getElementById("studentNameInput");
+  var name=(input&&input.value||"").trim();
+  var en=document.documentElement.lang==="en";
+  if(submitting)return;
+  if(!name){if(typeof toast==="function")toast(en?"Enter your name.":"Digite o seu nome.");else showStatus("Digite o seu nome.");return}
+  submitting=true;
+  if(btn)btn.disabled=true;
+  showStatus(en?"Connecting to the meeting service…":"A ligar ao serviço da reunião…");
+  try{
+   var ready=await ensureAZNYRealtime();
+   if(!ready||!AZNY_DB)throw new Error("Não foi possível estabelecer ligação autenticada ao Firebase.");
+   if(!classSessionId)throw new Error("O link não identifica uma sessão de reunião.");
+   var sessionRef=aznySessionRef();
+   if(!sessionRef)throw new Error("Sessão da reunião não encontrada no link.");
+   var sessionSnap=await sessionRef.once("value");
+   var sessionData=sessionSnap.val()||{};
+   if(sessionData.status!=="active"){
+    showStatus(en?"The host has not started the meeting yet. Please wait and try again.":"O anfitrião ainda não iniciou a reunião. Aguarde e tente novamente.");
+    return;
+   }
+   var requestsRef=sessionRef.child("joinRequests");
+   var requestRef=requestsRef.push();
+   if(!requestRef.key)throw new Error("Não foi possível criar um identificador para o pedido.");
+   var payload={name:name,status:"pending",createdAt:firebase.database.ServerValue.TIMESTAMP,studentUid:aznyUid||"",studentOnline:true,network:navigator.onLine?"online":"disconnected"};
+   await requestRef.set(payload);
+   // Confirmar que o pedido foi realmente guardado, em vez de mostrar sucesso fictício.
+   var verifySnap=await requestRef.once("value");
+   var saved=verifySnap.val();
+   if(!saved||saved.status!=="pending")throw new Error("O Firebase não confirmou a gravação do pedido.");
+   studentName=name;studentRequestId=requestRef.key;studentApproved=false;
+   try{localStorage.setItem(aznyStudentSessionStorageKey(),JSON.stringify({id:studentRequestId,name:name}))}catch(_){}
+   watchStudentRequest();
+   showStatus(en?"Request sent. Wait for the host to approve or reject it.":"Pedido enviado com sucesso. Aguarde que o anfitrião aprove ou rejeite a sua entrada.");
+   if(typeof toast==="function")toast(en?"Join request sent to the host.":"Pedido de entrada enviado ao anfitrião.");
+  }catch(err){
+   console.error("AZNY BUSINESS join request failed:",err);
+   showStatus((en?"Could not send the request: ":"Não foi possível enviar o pedido: ")+(err&&err.message?err.message:"erro de ligação"));
+   if(typeof toast==="function")toast(en?"Request failed. Check the connection and try again.":"O pedido falhou. Verifique a ligação e tente novamente.");
+  }finally{
+   submitting=false;
+   if(btn){
+    var waiting=document.getElementById("studentWaiting");
+    btn.disabled=!!(studentApproved||(waiting&&/Pedido enviado com sucesso|Request sent/i.test(waiting.textContent)));
+   }
+  }
+ }
+ document.addEventListener("click",function(event){
+  var target=event.target;
+  var btn=target&&(target.id==="studentJoinBtn"?target:(target.closest?target.closest("#studentJoinBtn"):null));
+  if(!btn)return;
+  event.preventDefault();
+  event.stopPropagation();
+  if(event.stopImmediatePropagation)event.stopImmediatePropagation();
+  sendJoinRequest();
+ },true);
 })();
 </script>
