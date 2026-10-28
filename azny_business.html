@@ -4108,28 +4108,6 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  const q=new URLSearchParams(location.search);
  q.set("modo","empresa");
  const isParticipant=q.get("aluno")==="1";
- const topActions=document.querySelector(".top-actions");
- if(topActions&&!isParticipant&&!document.getElementById("aznyBusinessModeBtn")){
-  const modeButton=document.createElement("button");
-  modeButton.type="button";modeButton.id="aznyBusinessModeBtn";
-  modeButton.textContent=q.get("modo")==="empresa"?"↩ Modo Professor":"▦ Modo Empresa";
-  modeButton.title=q.get("modo")==="empresa"?"Voltar à interface de ensino":"Abrir a interface de reuniões empresariais";
-  modeButton.addEventListener("click",()=>{
-   const next=new URL(location.href);
-   if(next.searchParams.get("modo")==="empresa"){next.searchParams.delete("modo");next.searchParams.delete("empresa");next.searchParams.delete("atividade");next.searchParams.delete("tipo");}
-   else{
-    const currentTitle=document.getElementById("boardTitle")?.value?.trim();
-    const org=prompt("Nome da empresa ou organização:","Organização");
-    if(org===null)return;
-    next.searchParams.set("modo","empresa");
-    next.searchParams.set("empresa",org.trim()||"Organização");
-    next.searchParams.set("atividade",currentTitle&&currentTitle!=="Nova aula"?currentTitle:"Reunião de negócios");
-    next.searchParams.set("tipo","reuniao");
-   }
-   location.href=next.href;
-  });
-  topActions.prepend(modeButton);
- }
  // Esta página é exclusivamente AZNY BUSINESS; não alterna para o quadro de ensino.
  const org=q.get("empresa")||"Organização";
  const activity=q.get("atividade")||"Nova reunião";
