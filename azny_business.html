@@ -2777,6 +2777,39 @@ async function toggleStudentCamera(){
  toast(document.documentElement.lang==="en"?(studentCameraOn?"Camera on.":"Camera off."):(studentCameraOn?"Câmera ligada.":"Câmera desligada."));
 }
 function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);toast(document.documentElement.lang==="en"?"The host approved your entry.":"Entrada aprovada pelo anfitrião");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O anfitrião recusou o pedido de entrada na reunião.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
+
+/* Public bridge for the external click handler; implementation stays inside the app scope. */
+window.aznyBusinessSendJoinRequest=async function(name){
+ const en=document.documentElement.lang==="en";
+ const btn=document.getElementById("studentJoinBtn");
+ const status=document.getElementById("studentWaiting");
+ const show=message=>{if(status){status.textContent=message;status.style.display="block"}};
+ const cleanName=String(name||"").trim();
+ if(!cleanName)throw new Error(en?"Enter your name.":"Digite o seu nome.");
+ const ready=await ensureAZNYRealtime();
+ if(!ready||!AZNY_DB)throw new Error("Firebase Realtime Database não está disponível. Verifique a ligação e tente novamente.");
+ if(!classSessionId)throw new Error("O link não identifica a sessão da reunião.");
+ const sessionRef=aznySessionRef();
+ if(!sessionRef)throw new Error("Sessão da reunião não encontrada no link.");
+ const sessionSnap=await sessionRef.once("value");
+ const sessionData=sessionSnap.val()||{};
+ if(sessionData.status!=="active")throw new Error(en?"The host has not started the meeting yet.":"O anfitrião ainda não iniciou a reunião.");
+ const requestsRef=sessionRef.child("joinRequests");
+ const requestRef=requestsRef.push();
+ if(!requestRef.key)throw new Error("Não foi possível criar o identificador do pedido.");
+ await requestRef.set({name:cleanName,status:"pending",createdAt:firebase.database.ServerValue.TIMESTAMP,studentUid:aznyUid||"",studentOnline:true,network:navigator.onLine?"online":"disconnected"});
+ const verify=await requestRef.once("value");
+ const saved=verify.val();
+ if(!saved||saved.status!=="pending")throw new Error("O Firebase não confirmou a gravação do pedido.");
+ studentName=cleanName;studentRequestId=requestRef.key;studentApproved=false;
+ try{localStorage.setItem(aznyStudentSessionStorageKey(),JSON.stringify({id:studentRequestId,name:cleanName}))}catch(_){}
+ watchStudentRequest();
+ show(en?"Request sent. Wait for the host to approve or reject it.":"Pedido enviado com sucesso. Aguarde que o anfitrião aprove ou rejeite a sua entrada.");
+ if(btn)btn.disabled=true;
+ if(typeof toast==="function")toast(en?"Join request sent to the host.":"Pedido de entrada enviado ao anfitrião.");
+ return true;
+};
+
 async function syncTeacherMediaToPeer(pc){
  if(!pc||pc.connectionState==="closed")return;
  const cam=aznyTeacherScreenTrack||teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
@@ -3157,7 +3190,32 @@ document.getElementById("closeMusic").onclick=()=>document.getElementById("music
 document.querySelectorAll("[data-music]").forEach(b=>b.onclick=()=>addMusic(b.dataset.music));
 // Bíblia e Gramática — abrir e fechar os respetivos menus e inserir o recurso no quadro.
 document.getElementById("startClassBtn").onclick=()=>{startClass().catch(e=>{console.error("AZNY start meeting:",e);toast("Erro ao acionar a reunião: "+(e?.message||"erro inesperado"));document.getElementById("startClassBtn").disabled=!!classStarted;document.getElementById("endClassBtn").disabled=!classStarted})};
-document.getElementById("endClassBtn").onclick=async()=>{try{if(!classStarted){toast("Não há reunião ativa para encerrar.");return}await endClass()}catch(e){console.error("AZNY end meeting:",e);classStarted=false;clearInterval(classTimerHandle);classTimerHandle=null;document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;toast("Reunião encerrada neste dispositivo; ocorreu um erro ao sincronizar.")}};
+document.getElementById("endClassBtn").onclick=async()=>{
+ const b=document.getElementById("endClassBtn");
+ if(b.dataset.aznyEnding==="1")return;
+ b.dataset.aznyEnding="1";b.disabled=true;
+ try{
+  if(!classStarted){
+   const ready=await ensureAZNYRealtime();
+   if(ready&&AZNY_DB){
+    const snap=await aznySessionRef()?.once("value");
+    const session=snap?.val();
+    if(session?.status==="active"){
+     classStarted=true;
+     classStartTime=Number(session.startedAtClient||session.startedAt)||Date.now();
+    }
+   }
+  }
+  if(!classStarted){toast("Não há reunião ativa para encerrar.");return}
+  await endClass();
+ }catch(e){
+  console.error("AZNY end meeting:",e);
+  toast("O encerramento teve um erro: "+(e?.message||"erro inesperado"));
+ }finally{
+  delete b.dataset.aznyEnding;
+  b.disabled=!classStarted;
+ }
+};
 document.getElementById("recordClassBtn").onclick=async()=>{const b=document.getElementById("recordClassBtn");try{if(screenRecorder?.state==="recording"){stopRecording();return}await startRecording(false)}catch(e){console.error("AZNY record meeting:",e);if(b){b.disabled=false;b.classList.remove("recording");b.textContent="● Gravar reunião"}toast("Não foi possível iniciar a gravação. Verifique a permissão do navegador e tente novamente.")}finally{if(b&&(!screenRecorder||screenRecorder.state!=="recording")){b.disabled=false}}};
 
 /* AZNY bilingual toolbar: Portuguese / English, available to teacher and student. */
@@ -4758,72 +4816,36 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
 })();
 </script>
 
-<!-- AZNY BUSINESS: reliable end and join-request controls -->
+
+<!-- AZNY BUSINESS: reliable join-request button bridge -->
 <script>
 (function(){
- if(window.__aznyBusinessJoinRequestV2)return;
- window.__aznyBusinessJoinRequestV2=true;
+ if(window.__aznyBusinessJoinRequestV3)return;
+ window.__aznyBusinessJoinRequestV3=true;
  var submitting=false;
- function showStatus(message){
-  var box=document.getElementById("studentWaiting");
-  if(box){box.textContent=message;box.style.display="block"}
- }
- async function sendJoinRequest(){
-  var btn=document.getElementById("studentJoinBtn");
-  var input=document.getElementById("studentNameInput");
-  var name=(input&&input.value||"").trim();
-  var en=document.documentElement.lang==="en";
-  if(submitting)return;
-  if(!name){if(typeof toast==="function")toast(en?"Enter your name.":"Digite o seu nome.");else showStatus("Digite o seu nome.");return}
-  submitting=true;
-  if(btn)btn.disabled=true;
-  showStatus(en?"Connecting to the meeting service…":"A ligar ao serviço da reunião…");
-  try{
-   var ready=await ensureAZNYRealtime();
-   if(!ready||!AZNY_DB)throw new Error("Não foi possível estabelecer ligação autenticada ao Firebase.");
-   if(!classSessionId)throw new Error("O link não identifica uma sessão de reunião.");
-   var sessionRef=aznySessionRef();
-   if(!sessionRef)throw new Error("Sessão da reunião não encontrada no link.");
-   var sessionSnap=await sessionRef.once("value");
-   var sessionData=sessionSnap.val()||{};
-   if(sessionData.status!=="active"){
-    showStatus(en?"The host has not started the meeting yet. Please wait and try again.":"O anfitrião ainda não iniciou a reunião. Aguarde e tente novamente.");
-    return;
-   }
-   var requestsRef=sessionRef.child("joinRequests");
-   var requestRef=requestsRef.push();
-   if(!requestRef.key)throw new Error("Não foi possível criar um identificador para o pedido.");
-   var payload={name:name,status:"pending",createdAt:firebase.database.ServerValue.TIMESTAMP,studentUid:aznyUid||"",studentOnline:true,network:navigator.onLine?"online":"disconnected"};
-   await requestRef.set(payload);
-   // Confirmar que o pedido foi realmente guardado, em vez de mostrar sucesso fictício.
-   var verifySnap=await requestRef.once("value");
-   var saved=verifySnap.val();
-   if(!saved||saved.status!=="pending")throw new Error("O Firebase não confirmou a gravação do pedido.");
-   studentName=name;studentRequestId=requestRef.key;studentApproved=false;
-   try{localStorage.setItem(aznyStudentSessionStorageKey(),JSON.stringify({id:studentRequestId,name:name}))}catch(_){}
-   watchStudentRequest();
-   showStatus(en?"Request sent. Wait for the host to approve or reject it.":"Pedido enviado com sucesso. Aguarde que o anfitrião aprove ou rejeite a sua entrada.");
-   if(typeof toast==="function")toast(en?"Join request sent to the host.":"Pedido de entrada enviado ao anfitrião.");
-  }catch(err){
-   console.error("AZNY BUSINESS join request failed:",err);
-   showStatus((en?"Could not send the request: ":"Não foi possível enviar o pedido: ")+(err&&err.message?err.message:"erro de ligação"));
-   if(typeof toast==="function")toast(en?"Request failed. Check the connection and try again.":"O pedido falhou. Verifique a ligação e tente novamente.");
-  }finally{
-   submitting=false;
-   if(btn){
-    var waiting=document.getElementById("studentWaiting");
-    btn.disabled=!!(studentApproved||(waiting&&/Pedido enviado com sucesso|Request sent/i.test(waiting.textContent)));
-   }
-  }
- }
- document.addEventListener("click",function(event){
+ document.addEventListener("click",async function(event){
   var target=event.target;
   var btn=target&&(target.id==="studentJoinBtn"?target:(target.closest?target.closest("#studentJoinBtn"):null));
   if(!btn)return;
-  event.preventDefault();
-  event.stopPropagation();
+  event.preventDefault();event.stopPropagation();
   if(event.stopImmediatePropagation)event.stopImmediatePropagation();
-  sendJoinRequest();
+  if(submitting)return;
+  var input=document.getElementById("studentNameInput");
+  var status=document.getElementById("studentWaiting");
+  var name=(input&&input.value||"").trim();
+  var en=document.documentElement.lang==="en";
+  if(!name){if(typeof toast==="function")toast(en?"Enter your name.":"Digite o seu nome.");return}
+  submitting=true;btn.disabled=true;
+  if(status){status.textContent=en?"Sending your request…":"A enviar o pedido…";status.style.display="block"}
+  try{
+   if(typeof window.aznyBusinessSendJoinRequest!=="function")throw new Error("O serviço de pedidos não foi inicializado. Atualize a página e tente novamente.");
+   await window.aznyBusinessSendJoinRequest(name);
+  }catch(err){
+   console.error("AZNY BUSINESS join request failed:",err);
+   if(status){status.textContent=(en?"Could not send the request: ":"Não foi possível enviar o pedido: ")+(err&&err.message?err.message:"erro inesperado");status.style.display="block"}
+   if(typeof toast==="function")toast(en?"Request failed. Check the connection and try again.":"O pedido falhou. Verifique a ligação e tente novamente.");
+   btn.disabled=false;
+  }finally{submitting=false}
  },true);
 })();
 </script>
