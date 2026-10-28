@@ -1077,6 +1077,8 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 .azny-live-surface-pointer .azny-pointer-glass{fill:#e11;stroke:#fff;stroke-width:1.4}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -1119,7 +1121,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
     <button class="tool" id="pagesBtn">📑 Páginas do quadro</button>
   </div>
   <input id="imageInput" type="file" accept="image/*" hidden>
-  <input id="docInput" type="file" accept=".txt,.md,.csv,.json,.html,.htm,.pdf,.doc,.docx" hidden>
+  <input id="docInput" type="file" accept=".txt,.md,.csv,.json,.html,.htm,.pdf,.doc,.docx,.xls,.xlsx" hidden>
   <div class="bottom-status"><strong class="azny-realtime-label">TEMPO REAL</strong><span id="storageState" aria-label="Estado da ligação">● Ligação ativa</span></div>
 </aside>
 
@@ -1725,7 +1727,7 @@ function constrainTextToBoard(el){
 function createText(x,y,anchor){
  pushHistory();
  const el=document.createElement("div");el.className="object textobj";el.dataset.id="o"+(++objectId);el.contentEditable="true";el.spellcheck=true;
- if(!document.body.classList.contains("student-mode")&&matchMedia("(pointer:coarse)").matches)el.setAttribute("inputmode","none");
+ /* Não desativar o teclado virtual: o texto deve poder ser escrito em telemóveis. */
  el.style.left=x+"px";el.style.top=y+"px";el.style.fontSize=document.getElementById("fontSize").value+"px";el.style.fontFamily=document.getElementById("fontFamily").value;el.style.color="#ffffff";
  constrainTextToBoard(el);
  if(anchor)anchorTextToObject(el,anchor,x,y);
@@ -1895,11 +1897,63 @@ async function renderAZNYPdfViewer(viewer,dataUrl){
 }
 function createAZNYPdfViewer(dataUrl,initialPage=1,initialScale=1){const viewer=document.createElement('div');viewer.className='docpdf-viewer';viewer.dataset.initialPage=String(initialPage);viewer.dataset.initialScale=String(initialScale);viewer.innerHTML='<div class="docpdf-toolbar"><button type="button" class="docpdf-prev" aria-label="Página anterior">◀</button><span class="docpdf-status">1 / 1</span><button type="button" class="docpdf-next" aria-label="Página seguinte">▶</button><span style="margin:0 3px;color:#c2cad3">|</span><button type="button" class="docpdf-zoom-out" aria-label="Reduzir">−</button><span class="docpdf-zoom-label">100%</span><button type="button" class="docpdf-zoom-in" aria-label="Ampliar">+</button></div><div class="docpdf-pages"><div class="docpdf-loading">A carregar documento…</div></div>';renderAZNYPdfViewer(viewer,dataUrl);return viewer}
 function addDoc(file){
- if(file.type==="application/pdf"||/\.pdf$/i.test(file.name)){
-  const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;if(isStudent)el.dataset.createdBy=studentRequestId;el.dataset.name=file.name;el.dataset.pdf=reader.result;el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(file.name)+'</span></div>';el.appendChild(createAZNYPdfViewer(reader.result));Object.assign(el.style,{left:"100px",top:"80px",width:"620px",height:"450px"});board.appendChild(el);makeInteractive(el);selectObject(isStudent?null:el);updateHint();scheduleSave();publishLiveBoardState();toast(document.documentElement.lang==="en"?"PDF opened on the board":"PDF aberto no quadro")};reader.readAsDataURL(file);return
+ const ext=(file.name.split(".").pop()||"").toLowerCase();
+ if(["xlsx","xls"].includes(ext)){
+  if(!window.XLSX){toast("Biblioteca Excel indisponível. Verifique a ligação à internet.");return}
+  const reader=new FileReader();
+  reader.onload=()=>{
+   try{
+    const wb=XLSX.read(reader.result,{type:"array"});
+    const sheetName=wb.SheetNames[0];const ws=wb.Sheets[sheetName];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+    const maxRows=Math.min(rows.length,300),maxCols=Math.min(Math.max(1,...rows.slice(0,maxRows).map(r=>r.length)),26);
+    let table='<table class="azny-imported-sheet" style="border-collapse:collapse;width:100%;background:#fff;color:#172b45;font:14px Arial">';
+    for(let ri=0;ri<maxRows;ri++){table+='<tr>';for(let ci=0;ci<maxCols;ci++){const tag=ri===0?'th':'td';table+='<'+tag+' contenteditable="true" style="border:1px solid #b8c9dc;padding:6px;min-width:72px">'+escapeHtml(String(rows[ri]?.[ci]??""))+'</'+tag+'>'}table+='</tr>'}
+    table+='</table>';
+    pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;el.dataset.name=file.name;el.dataset.documentType="spreadsheet";el.dataset.sheetName=sheetName;
+    el.innerHTML='<div class="dochead" style="display:flex;gap:8px;align-items:center">📊 <span>'+escapeHtml(file.name)+' — '+escapeHtml(sheetName)+'</span><button type="button" class="azny-export-xlsx" style="margin-left:auto">Exportar Excel</button><button type="button" class="azny-export-csv">Exportar CSV</button></div><div class="docbody" style="overflow:auto;background:white;padding:8px">'+table+'</div>';
+    Object.assign(el.style,{left:"70px",top:"60px",width:"min(820px,80%)",height:"420px",background:"#fff",color:"#172b45",overflow:"auto"});
+    board.appendChild(el);makeInteractive(el);selectObject(el);
+    el.querySelector(".azny-export-xlsx").onclick=()=>exportImportedSheet(el,"xlsx");
+    el.querySelector(".azny-export-csv").onclick=()=>exportImportedSheet(el,"csv");
+    el.querySelectorAll("td,th").forEach(c=>c.addEventListener("input",()=>{scheduleSave();publishLiveBoardState()}));
+    updateHint();scheduleSave();publishLiveBoardState();toast("Folha Excel carregada e editável no quadro");
+   }catch(err){console.error(err);toast("Não foi possível abrir esta folha Excel.")}
+  };reader.readAsArrayBuffer(file);return
  }
- const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;if(isStudent)el.dataset.createdBy=studentRequestId;el.dataset.name=file.name;el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(file.name)+'</span></div><div class="docbody"></div>';el.querySelector(".docbody").textContent=reader.result;Object.assign(el.style,{left:"100px",top:"80px",width:"500px",height:"350px"});board.appendChild(el);makeInteractive(el);selectObject(isStudent?null:el);updateHint();scheduleSave();publishLiveBoardState();toast(document.documentElement.lang==="en"?"Document opened on the board":"Documento aberto no quadro")};reader.readAsText(file)
+ if(["docx"].includes(ext)){
+  if(!window.mammoth){toast("Biblioteca Word indisponível. Verifique a ligação à internet.");return}
+  const reader=new FileReader();reader.onload=async()=>{
+   try{
+    const result=await mammoth.convertToHtml({arrayBuffer:reader.result});
+    addEditableWordDocument(file.name,result.value||"<p></p>");
+   }catch(err){console.error(err);toast("Não foi possível abrir este Word.")}
+  };reader.readAsArrayBuffer(file);return
+ }
+ if(file.type==="application/pdf"||/\.pdf$/i.test(file.name)){
+  const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;if(isStudent)el.dataset.createdBy=studentRequestId;el.dataset.name=file.name;el.dataset.pdf=reader.result;el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(file.name)+'</span></div>';el.appendChild(createAZNYPdfViewer(reader.result));Object.assign(el.style,{left:"100px",top:"80px",width:"620px",height:"450px"});board.appendChild(el);makeInteractive(el);selectObject(isStudent?null:el);updateHint();scheduleSave();publishLiveBoardState();toast("PDF aberto no quadro")};reader.readAsDataURL(file);return
+ }
+ const reader=new FileReader();reader.onload=()=>{addEditableWordDocument(file.name,'<p>'+escapeHtml(String(reader.result||"")).replace(/\n/g,"<br>")+'</p>')};reader.readAsText(file)
 }
+function addEditableWordDocument(name,html){
+ pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;el.dataset.name=name;el.dataset.documentType="word";
+ el.innerHTML='<div class="dochead" style="display:flex;gap:8px;align-items:center">📝 <span>'+escapeHtml(name)+'</span><button type="button" class="azny-export-docx" style="margin-left:auto">Exportar Word</button><button type="button" class="azny-export-doc-html">Exportar HTML</button><button type="button" class="azny-export-doc-pdf">Imprimir / PDF</button></div><div class="docbody azny-editable-word" contenteditable="true" spellcheck="true" style="overflow:auto;background:#fff;color:#172b45;padding:18px;min-height:240px;font:15px/1.55 Arial">'+html+'</div>';
+ Object.assign(el.style,{left:"80px",top:"60px",width:"min(780px,82%)",height:"440px",background:"#fff",color:"#172b45",overflow:"auto"});board.appendChild(el);makeInteractive(el);selectObject(el);
+ el.querySelector(".azny-export-docx").onclick=()=>{if(!window.htmlDocx){toast("Exportação Word não está disponível neste momento.");return}downloadBlob(htmlDocx.asBlob(el.querySelector(".azny-editable-word").innerHTML),"application/vnd.openxmlformats-officedocument.wordprocessingml.document",name.replace(/\.[^.]+$/,"")+".docx")};
+ el.querySelector(".azny-export-doc-html").onclick=()=>downloadBlob(el.querySelector(".azny-editable-word").innerHTML,"text/html;charset=utf-8",name.replace(/\.[^.]+$/,"")+".html");
+ el.querySelector(".azny-export-doc-pdf").onclick=()=>{const w=window.open("","_blank");if(!w){toast("Permita janelas pop-up para exportar PDF.");return}w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+escapeHtml(name)+"</title></head><body>"+el.querySelector(".azny-editable-word").innerHTML+"</body></html>");w.document.close();w.focus();w.print()};
+ el.querySelector(".azny-editable-word").addEventListener("input",()=>{scheduleSave();publishLiveBoardState()});
+ updateHint();scheduleSave();publishLiveBoardState();toast("Documento Word editável carregado no quadro")
+}
+function downloadBlob(content,mime,name){const blob=content instanceof Blob?content:new Blob([content],{type:mime});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
+function exportImportedSheet(el,format){
+ if(!window.XLSX){toast("Biblioteca Excel indisponível.");return}
+ const table=el.querySelector("table.azny-imported-sheet");if(!table)return;
+ const wb=XLSX.utils.table_to_book(table,{sheet:el.dataset.sheetName||"Folha1"});
+ if(format==="csv"){const csv=XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);downloadBlob("\ufeff"+csv,"text/csv;charset=utf-8",(el.dataset.name||"folha").replace(/\.[^.]+$/,"")+".csv")}
+ else XLSX.writeFile(wb,(el.dataset.name||"folha.xlsx").replace(/\.[^.]+$/,"")+".xlsx")
+}
+
 function chartSvg(type,values,title){
  const vals=values.split(',').map(Number).filter(v=>Number.isFinite(v)); const v=vals.length?vals:[12,19,8,15,10]; const W=640,H=360,p=48,max=Math.max(...v,1),min=Math.min(0,...v),range=Math.max(1,max-min); let body='';
  body+='<rect x="0" y="0" width="640" height="360" fill="white"/><text x="320" y="28" text-anchor="middle" font-size="20" font-weight="700">'+escapeHtml(title)+'</text>';
@@ -4144,7 +4198,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    body.azny-business-mode .toolbar{background:#0c2342!important;color:#fff!important;border-color:#23496f!important}
    body.azny-business-mode .toolbar .mini,body.azny-business-mode .toolbar .select{background:#153557!important;color:#fff!important;border-color:#315779!important}
    body.azny-business-mode .canvas-wrap{background:#dbe7f4!important;padding:8px!important}
-   body.azny-business-mode #board{background:#fff!important;border:1px solid #c7d7e9!important;box-shadow:0 5px 18px #09264a22!important;overflow:hidden}
+   body.azny-business-mode .topbar .logo{flex:0 0 auto!important;min-width:max-content!important;width:auto!important;white-space:nowrap!important;overflow:visible!important;font-size:clamp(13px,1.35vw,20px)!important;letter-spacing:-.25px!important;padding-right:8px!important} body.azny-business-mode .topbar .title{min-width:70px!important;flex:1 1 100px!important} body.azny-business-mode .topbar .title input{min-width:0!important;width:100%!important}body.azny-business-mode #board{background:#fff!important;border:1px solid #c7d7e9!important;box-shadow:0 5px 18px #09264a22!important;overflow:hidden}
    body.azny-business-mode .rightbar .camera{border:2px solid #20b8a4!important;border-radius:12px!important;overflow:hidden}
    body.azny-business-mode .students .student,body.azny-business-mode .students>div{border-radius:10px!important}
    body.azny-business-mode .bottom-status{color:#47617e!important}
