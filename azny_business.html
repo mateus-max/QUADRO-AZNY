@@ -4078,6 +4078,29 @@ body.azny-business-mode #students .no-students{padding:7px 4px!important;font-si
  body.azny-business-mode .rightbar>.sidehead{padding:4px 7px!important}
  body.azny-business-mode #students .student{height:clamp(58px,12vh,82px)!important;min-height:58px!important}
 }
+ 
+/* Ajuste fino solicitado: não encolher a câmara; só sobrepor controlos e retirar espaço extra. */
+body.azny-business-mode .camera-panel{padding:3px!important;gap:0!important}
+body.azny-business-mode .camera-panel .camera{height:clamp(110px,19vh,155px)!important;flex:0 0 auto!important;margin:0!important}
+body.azny-business-mode .camera-panel>.cam-buttons{position:absolute!important;z-index:12!important;bottom:9px!important;left:9px!important;right:auto!important;width:auto!important;margin:0!important;padding:0!important;display:flex!important;flex-direction:row!important;gap:4px!important;justify-content:flex-start!important;pointer-events:none!important}
+body.azny-business-mode .camera-panel>.cam-buttons button{pointer-events:auto!important;flex:0 0 27px!important;width:27px!important;min-width:27px!important;height:25px!important;min-height:25px!important;padding:0!important;border:1px solid #ffffffcc!important;border-radius:7px!important;background:#071b33dd!important;color:#fff!important;box-shadow:0 1px 4px #0005!important;backdrop-filter:blur(3px)!important}
+body.azny-business-mode .camera-panel>.cam-buttons button::before{font-size:14px!important}
+body.azny-business-mode .camera-panel>.cam-buttons button:disabled{opacity:.5!important}
+/* Remover os espaços reservados aos controlos antigos; participantes começam logo a seguir. */
+body.azny-business-mode .camera-panel #teacherMediaStatus,
+body.azny-business-mode .camera-panel .azny-audio-output-picker,
+body.azny-business-mode .camera-panel #aznyAudioOutputStatus{display:none!important;height:0!important;margin:0!important;padding:0!important}
+body.azny-business-mode .camera-panel .camera-join-requests{margin:0!important;padding:0!important;max-height:48px!important;overflow:auto!important}
+body.azny-business-mode .rightbar>.sidehead{margin:0!important;padding:4px 8px!important;min-height:27px!important;line-height:1.1!important;flex:0 0 auto!important}
+body.azny-business-mode #students.students{flex:1 1 0!important;min-height:0!important;height:100%!important;max-height:none!important;overflow-y:auto!important;margin:0!important;padding:2px 4px 6px!important;gap:4px!important}
+body.azny-business-mode #students .student{height:clamp(70px,12vh,100px)!important;min-height:64px!important;flex:0 0 auto!important}
+body.azny-business-mode .camera-panel{flex-shrink:0!important}
+@media(max-width:950px) and (orientation:landscape),(max-height:520px) and (pointer:coarse){
+ body.azny-business-mode .camera-panel .camera{height:clamp(92px,22vh,122px)!important}
+ body.azny-business-mode .camera-panel>.cam-buttons{bottom:7px!important;left:7px!important}
+ body.azny-business-mode .camera-panel>.cam-buttons button{flex-basis:25px!important;width:25px!important;min-width:25px!important;height:23px!important;min-height:23px!important}
+ body.azny-business-mode #students .student{height:clamp(58px,12vh,78px)!important;min-height:56px!important}
+}
 </style></head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script>
 </body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
