@@ -4666,7 +4666,7 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
     button.addEventListener("click",function(event){
       event.preventDefault();
       event.stopImmediatePropagation();
-      if(button.dataset.aznyStarting==="1" || window.classStarted===true) return;
+      if(button.dataset.aznyStarting==="1" || (typeof classStarted!=="undefined" && classStarted)) return;
       button.dataset.aznyStarting="1";
       button.disabled=true;
       button.setAttribute("aria-busy","true");
@@ -4679,9 +4679,9 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
           if(typeof toast==="function") toast("Erro ao iniciar reunião: "+(error && error.message ? error.message : "erro inesperado"));
         }).finally(function(){
           delete button.dataset.aznyStarting;
-          button.disabled=!!window.classStarted;
+          button.disabled=(typeof classStarted!=="undefined" && classStarted);
           button.removeAttribute("aria-busy");
-          if(endButton) endButton.disabled=!window.classStarted;
+          if(endButton) endButton.disabled=!(typeof classStarted!=="undefined" && classStarted);
         });
         else {
           delete button.dataset.aznyStarting;
