@@ -4653,3 +4653,36 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
   document.querySelectorAll("#aznyExcelContext,#aznyExcelChartOverlay").forEach(el=>el.remove());
 })();
 </script>
+
+<!-- AZNY BUSINESS START BUTTON FAILSAFE -->
+<script>
+(function(){
+  function wireBusinessStartButton(){
+    const button=document.getElementById("startClassBtn");
+    const endButton=document.getElementById("endClassBtn");
+    if(!button||button.dataset.aznyStartFailsafe==="1")return;
+    button.dataset.aznyStartFailsafe="1";
+    button.onclick=function(){
+      if(typeof startClass!=="function"){
+        console.error("AZNY BUSINESS: startClass não está disponível.");
+        button.disabled=false;
+        return;
+      }
+      try{
+        const result=startClass();
+        if(result&&typeof result.catch==="function")result.catch(error=>{
+          console.error("AZNY BUSINESS start:",error);
+          button.disabled=!!classStarted;
+          if(endButton)endButton.disabled=!classStarted;
+        });
+      }catch(error){
+        console.error("AZNY BUSINESS start:",error);
+        button.disabled=!!classStarted;
+        if(endButton)endButton.disabled=!classStarted;
+      }
+    };
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wireBusinessStartButton,{once:true});
+  else wireBusinessStartButton();
+})();
+</script>
