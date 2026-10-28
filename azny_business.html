@@ -4545,33 +4545,7 @@ body.azny-business-mode:not(.azny-mic-off) #micBtn::after{content:none!important
 body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mode .camera-panel .azny-audio-output-picker,body.azny-business-mode .camera-panel #aznyAudioOutputStatus{display:none!important}
 </style>
 
-<script id="azny-business-meeting-controls-recovery">
-/* Final click bindings for AZNY BUSINESS only; kept outside the board/template scripts. */
-(function(){
- const start=document.getElementById("startClassBtn"),end=document.getElementById("endClassBtn"),record=document.getElementById("recordClassBtn");
- const notify=m=>{const el=document.getElementById("toast");if(el){el.textContent=m;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),5000)}else alert(m)};
- if(!start||!end||!record){console.error("AZNY BUSINESS: meeting controls missing");return}
- start.addEventListener("click",async e=>{
-  e.preventDefault();e.stopImmediatePropagation();
-  try{if(typeof startClass!=="function")throw new Error("A função iniciar reunião não carregou");await startClass()}
-  catch(err){console.error("AZNY BUSINESS start click:",err);start.disabled=false;end.disabled=true;notify("Não foi possível iniciar a reunião: "+(err?.message||"erro JavaScript"))}
- },true);
- end.addEventListener("click",async e=>{
-  e.preventDefault();e.stopImmediatePropagation();
-  try{if(typeof endClass!=="function")throw new Error("A função encerrar reunião não carregou");await endClass()}
-  catch(err){console.error("AZNY BUSINESS end click:",err);notify("Não foi possível encerrar a reunião: "+(err?.message||"erro JavaScript"))}
- },true);
- record.addEventListener("click",async e=>{
-  e.preventDefault();e.stopImmediatePropagation();
-  try{
-   if(typeof startRecording!=="function")throw new Error("A função de gravação não carregou");
-   if(typeof screenRecorder!=="undefined"&&screenRecorder?.state==="recording"){stopRecording();return}
-   await startRecording(false);
-  }catch(err){console.error("AZNY BUSINESS record click:",err);record.disabled=false;notify("Não foi possível gravar a reunião: "+(err?.message||"erro JavaScript"))}
- },true);
- console.info("AZNY BUSINESS meeting controls ready");
-})();
-</script>
+
 
 </body>
 </html>
