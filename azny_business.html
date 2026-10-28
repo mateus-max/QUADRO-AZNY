@@ -2326,7 +2326,8 @@ async function startClass(){
  if(startBtn)startBtn.disabled=true;
  /* A business meeting must not clear/reset the work board. Start the clock and controls first. */
  const startedAt=Date.now();
- if(!classSessionId||!classSessionId.startsWith("BIZ-"))classSessionId="BIZ-"+aznyRoomKey()+"-"+startedAt.toString(36)+"-"+Math.random().toString(36).slice(2,7);
+ /* O link partilhado usa a sessão permanente ROOM- da sala; anfitrião e participantes têm de usar exatamente o mesmo ID. */
+ classSessionId="ROOM-"+aznyRoomKey();
  classStarted=true;classStartTime=startedAt;
  if(startBtn)startBtn.disabled=true;if(endBtn)endBtn.disabled=false;
  clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();
