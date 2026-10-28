@@ -4110,6 +4110,22 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  const isTraining=type==="formacao";
  const kind=isPresentation?"Apresentação":isTraining?"Formação":"Reunião";
  document.title=kind+" — "+org+" | AZNY";
+ document.body.classList.add("azny-business-mode");
+ if(!document.getElementById("azny-business-theme")){
+  const theme=document.createElement("style");theme.id="azny-business-theme";
+  theme.textContent=`
+   body.azny-business-mode{--azny-business-navy:#0b1730;--azny-business-blue:#174ea6;--azny-business-border:#cbd5e1;--azny-business-surface:#f8fafc;background:#eef2f7!important;color:#172033}
+   body.azny-business-mode .topbar{background:var(--azny-business-navy)!important;border-bottom:3px solid #3b82f6!important;color:#fff!important}
+   body.azny-business-mode .leftbar,body.azny-business-mode .rightbar,body.azny-business-mode .toolbar,body.azny-business-mode .tools-panel{background:#f8fafc!important;border-color:var(--azny-business-border)!important}
+   body.azny-business-mode .canvas-wrap{background:#dbe4f0!important}
+   body.azny-business-mode #board,body.azny-business-mode .board{background-color:#0b1730!important;background-image:linear-gradient(rgba(148,163,184,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.09) 1px,transparent 1px)!important;background-size:24px 24px!important;border:1px solid #334155!important}
+   body.azny-business-mode .logo{font-weight:800;letter-spacing:.04em}
+   body.azny-business-mode .tools .tool,body.azny-business-mode button{border-radius:8px}
+   body.azny-business-mode .class-timer{background:#172554!important;color:#dbeafe!important;border:1px solid #3b82f6!important}
+  `;
+  document.head.appendChild(theme);
+ }
+
  const title=document.getElementById("boardTitle");
  if(title){title.value=activity;title.setAttribute("placeholder","Nome da "+kind.toLowerCase());title.setAttribute("aria-label","Título da "+kind.toLowerCase())}
  const logo=document.querySelector(".logo");
