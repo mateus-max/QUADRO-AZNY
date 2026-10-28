@@ -2821,11 +2821,27 @@ window.aznyBusinessSendJoinRequest=async function(name){
  const ready=await ensureAZNYRealtime();
  if(!ready||!AZNY_DB)throw new Error("Firebase Realtime Database não está disponível. Verifique a ligação e tente novamente.");
  if(!classSessionId)throw new Error("O link não identifica a sessão da reunião.");
- const sessionRef=aznySessionRef();
+ const roomRef=aznyRoomRef();
+ if(!roomRef)throw new Error("Sala empresarial não encontrada.");
+ // O anfitrião pode publicar o ID ativo depois de o participante abrir o link.
+ // Consultar a sala é a fonte de verdade e corrigir um ID de sessão antigo do convite.
+ const activeSnap=await roomRef.child("activeSessionId").once("value");
+ const activeId=String(activeSnap.val()||"").trim();
+ if(activeId && activeId!==classSessionId)classSessionId=activeId;
+ let sessionRef=aznySessionRef();
  if(!sessionRef)throw new Error("Sessão da reunião não encontrada no link.");
- const sessionSnap=await sessionRef.once("value");
- const sessionData=sessionSnap.val()||{};
- if(sessionData.status!=="active")throw new Error(en?"The host has not started the meeting yet.":"O anfitrião ainda não iniciou a reunião.");
+ let sessionSnap=null,sessionData={};
+ // Repetir a leitura durante alguns segundos para tolerar a publicação do estado active após o ID da sala.
+ for(let attempt=0;attempt<5;attempt++){
+  sessionSnap=await sessionRef.once("value");
+  sessionData=sessionSnap.val()||{};
+  if(sessionData.status==="active")break;
+  if(attempt<4)await new Promise(resolve=>setTimeout(resolve,700));
+  const latestIdSnap=await roomRef.child("activeSessionId").once("value");
+  const latestId=String(latestIdSnap.val()||"").trim();
+  if(latestId && latestId!==classSessionId){classSessionId=latestId;sessionRef=aznySessionRef()}
+ }
+ if(sessionData.status!=="active")throw new Error(en?"The meeting is not active on the server yet. Ask the host to check the connection and retry.":"A reunião ainda não está ativa no servidor. O anfitrião deve verificar a ligação à Internet e tentar novamente.");
  const requestsRef=sessionRef.child("joinRequests");
  const requestRef=requestsRef.push();
  if(!requestRef.key)throw new Error("Não foi possível criar o identificador do pedido.");
