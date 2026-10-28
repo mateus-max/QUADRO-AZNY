@@ -4051,7 +4051,34 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
     document.getElementById("aznyExcelMerge")?.addEventListener("click",mergeSelection);
     document.getElementById("aznyExcelUnmerge")?.addEventListener("click",()=>{const rg=selectedRange();current().merges=(current().merges||[]).filter(m=>{const a=coord(m.start),b=coord(m.end);return !(a[0]<=rg.r2&&b[0]>=rg.r1&&a[1]<=rg.c2&&b[1]>=rg.c1)});render();schedulePublish()});
     document.getElementById("aznyExcelDownload")?.addEventListener("click",()=>{const csv=Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,col)=>{const v=display(current().cells[key(r,col)]??"");return '"'+v.replace(/"/g,'""')+'"'}).join(",")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=current().name+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
-    document.getElementById("aznyExcelPDF")?.addEventListener("click",()=>{const table=Array.from({length:ROWS},(_,r)=>"<tr>"+Array.from({length:COLS},(_,col)=>"<td>"+esc(display(current().cells[key(r,col)]??""))+"</td>").join("")+"</tr>").join("");const w=window.open("","_blank");if(!w){status.textContent="Permita pop-ups para imprimir ou guardar em PDF.";return}w.document.write('<html><head><title>'+esc(current().name)+'</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td{border:1px solid #bbb;padding:5px;min-width:35px}</style></head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script>
+    document.getElementById("aznyExcelPDF")?.addEventListener("click",()=>{const table=Array.from({length:ROWS},(_,r)=>"<tr>"+Array.from({length:COLS},(_,col)=>"<td>"+esc(display(current().cells[key(r,col)]??""))+"</td>").join("")+"</tr>").join("");const w=window.open("","_blank");if(!w){status.textContent="Permita pop-ups para imprimir ou guardar em PDF.";return}w.document.write('<html><head><title>'+esc(current().name)+'</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td{border:1px solid #bbb;padding:5px;min-width:35px} 
+/* AZNY BUSINESS: participantes imediatamente abaixo da câmara do anfitrião */
+body.azny-business-mode .rightbar{overflow:hidden!important}
+body.azny-business-mode .camera-panel{position:relative!important;padding:5px!important;flex:0 0 auto!important}
+body.azny-business-mode .camera-panel .camera{height:clamp(86px,15vh,125px)!important;margin:0!important;border-radius:10px!important}
+body.azny-business-mode .camera-panel .camera-label{bottom:5px!important;left:6px!important;padding:3px 6px!important;font-size:10px!important}
+body.azny-business-mode .camera-panel .cam-status{top:5px!important;right:5px!important;font-size:9px!important;padding:2px 5px!important}
+/* Os controlos do anfitrião ficam pequenos por cima da faixa inferior da própria câmara. */
+body.azny-business-mode .camera-panel>.cam-buttons{position:absolute!important;z-index:8!important;bottom:9px!important;left:9px!important;right:9px!important;width:auto!important;margin:0!important;padding:0!important;gap:5px!important;justify-content:flex-start!important;pointer-events:none!important}
+body.azny-business-mode .camera-panel>.cam-buttons button{pointer-events:auto!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;height:27px!important;min-height:27px!important;border:1px solid #ffffffaa!important;border-radius:6px!important;background:#071b33cc!important;color:#fff!important;backdrop-filter:blur(3px)!important}
+body.azny-business-mode .camera-panel>.cam-buttons button:disabled{opacity:.5!important}
+body.azny-business-mode .camera-panel>.cam-buttons button::before{font-size:14px!important}
+body.azny-business-mode .camera-panel #teacherMediaStatus,
+body.azny-business-mode .camera-panel .azny-audio-output-picker,
+body.azny-business-mode .camera-panel #aznyAudioOutputStatus{display:none!important}
+body.azny-business-mode .camera-panel .camera-join-requests{max-height:64px!important;overflow:auto!important;margin:2px 0 0!important}
+body.azny-business-mode .rightbar>.sidehead{height:auto!important;min-height:30px!important;flex:0 0 auto!important;padding:5px 9px!important;font-size:11px!important;line-height:1.15!important}
+body.azny-business-mode #students.students{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;padding:4px 5px 8px!important;gap:5px!important}
+body.azny-business-mode #students .student{height:clamp(66px,11vh,94px)!important;min-height:66px!important;flex:0 0 auto!important}
+body.azny-business-mode #students .no-students{padding:7px 4px!important;font-size:10px!important}
+@media(max-width:950px) and (orientation:landscape),(max-height:520px) and (pointer:coarse){
+ body.azny-business-mode .camera-panel .camera{height:clamp(72px,18vh,105px)!important}
+ body.azny-business-mode .camera-panel>.cam-buttons{bottom:7px!important;left:7px!important;right:7px!important}
+ body.azny-business-mode .camera-panel>.cam-buttons button{flex-basis:26px!important;width:26px!important;min-width:26px!important;height:24px!important;min-height:24px!important}
+ body.azny-business-mode .rightbar>.sidehead{padding:4px 7px!important}
+ body.azny-business-mode #students .student{height:clamp(58px,12vh,82px)!important;min-height:58px!important}
+}
+</style></head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script>
 </body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
