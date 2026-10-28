@@ -1962,37 +1962,7 @@ function addEditableWordDocument(name,html){
  el.querySelector(".azny-export-docx").onclick=()=>{if(!window.htmlDocx){toast("Exportação Word não está disponível neste momento.");return}downloadBlob(htmlDocx.asBlob(el.querySelector(".azny-editable-word").innerHTML),"application/vnd.openxmlformats-officedocument.wordprocessingml.document",name.replace(/\.[^.]+$/,"")+".docx")};
  el.querySelector(".azny-export-doc-html").onclick=()=>downloadBlob(el.querySelector(".azny-editable-word").innerHTML,"text/html;charset=utf-8",name.replace(/\.[^.]+$/,"")+".html");
  el.querySelector(".azny-export-doc-pdf").onclick=()=>{const w=window.open("","_blank");if(!w){toast("Permita janelas pop-up para exportar PDF.");return}w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+escapeHtml(name)+"</title></head><body>"+el.querySelector(".azny-editable-word").innerHTML+"
-<script id="azny-business-meeting-controls-recovery">
-/* Last-resort binding for the AZNY BUSINESS meeting controls.
-   Capture the click before stale/overwritten handlers; this applies only to the company meeting page. */
-(function(){
-  const start=document.getElementById("startClassBtn");
-  const end=document.getElementById("endClassBtn");
-  const record=document.getElementById("recordClassBtn");
-  const timer=document.getElementById("classTimer");
-  const notify=(message)=>{if(typeof window.toast==="function")window.toast(message);else{const el=document.getElementById("toast");if(el){el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),5000)}else alert(message)}};
-  if(!start||!end||!record){console.error("AZNY BUSINESS controls missing from DOM");return}
-  start.addEventListener("click",async function(e){
-    e.preventDefault();e.stopImmediatePropagation();
-    if(typeof window.startClass!=="function"){console.error("AZNY BUSINESS startClass function unavailable");notify("Erro AZNY BUSINESS: a função de iniciar reunião não carregou. Atualize a página; se persistir, verifique os erros JavaScript.");return}
-    try{await window.startClass()}catch(err){console.error("AZNY BUSINESS start click failed",err);start.disabled=false;end.disabled=true;notify("Falha ao iniciar reunião: "+(err?.message||"erro JavaScript"))}
-  },true);
-  end.addEventListener("click",async function(e){
-    e.preventDefault();e.stopImmediatePropagation();
-    if(typeof window.endClass!=="function"){console.error("AZNY BUSINESS endClass function unavailable");notify("Erro AZNY BUSINESS: a função de encerrar reunião não carregou.");return}
-    try{await window.endClass()}catch(err){console.error("AZNY BUSINESS end click failed",err);notify("Falha ao encerrar reunião: "+(err?.message||"erro JavaScript"))}
-  },true);
-  record.addEventListener("click",async function(e){
-    e.preventDefault();e.stopImmediatePropagation();
-    try{
-      if(typeof window.startRecording!=="function"){notify("Erro AZNY BUSINESS: a função de gravação não carregou.");return}
-      if(window.screenRecorder&&window.screenRecorder.state==="recording"){window.stopRecording?.();return}
-      await window.startRecording(false);
-    }catch(err){console.error("AZNY BUSINESS recording click failed",err);record.disabled=false;notify("Falha ao gravar a reunião: "+(err?.message||"erro JavaScript"))}
-  },true);
-  console.info("AZNY BUSINESS: recovery handlers installed", {start:!!start,end:!!end,record:!!record,timer:!!timer});
-})();
-</script>
+
 
 </body></html>");w.document.close();w.focus();w.print()};
  el.querySelector(".azny-editable-word").addEventListener("input",()=>{scheduleSave();publishLiveBoardState()});
@@ -4574,6 +4544,35 @@ body.azny-business-mode:not(.azny-camera-off) #cameraBtn::after,
 body.azny-business-mode:not(.azny-mic-off) #micBtn::after{content:none!important}
 body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mode .camera-panel .azny-audio-output-picker,body.azny-business-mode .camera-panel #aznyAudioOutputStatus{display:none!important}
 </style>
+
+<script id="azny-business-meeting-controls-recovery">
+/* Final click bindings for AZNY BUSINESS only; kept outside the board/template scripts. */
+(function(){
+ const start=document.getElementById("startClassBtn"),end=document.getElementById("endClassBtn"),record=document.getElementById("recordClassBtn");
+ const notify=m=>{const el=document.getElementById("toast");if(el){el.textContent=m;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),5000)}else alert(m)};
+ if(!start||!end||!record){console.error("AZNY BUSINESS: meeting controls missing");return}
+ start.addEventListener("click",async e=>{
+  e.preventDefault();e.stopImmediatePropagation();
+  try{if(typeof startClass!=="function")throw new Error("A função iniciar reunião não carregou");await startClass()}
+  catch(err){console.error("AZNY BUSINESS start click:",err);start.disabled=false;end.disabled=true;notify("Não foi possível iniciar a reunião: "+(err?.message||"erro JavaScript"))}
+ },true);
+ end.addEventListener("click",async e=>{
+  e.preventDefault();e.stopImmediatePropagation();
+  try{if(typeof endClass!=="function")throw new Error("A função encerrar reunião não carregou");await endClass()}
+  catch(err){console.error("AZNY BUSINESS end click:",err);notify("Não foi possível encerrar a reunião: "+(err?.message||"erro JavaScript"))}
+ },true);
+ record.addEventListener("click",async e=>{
+  e.preventDefault();e.stopImmediatePropagation();
+  try{
+   if(typeof startRecording!=="function")throw new Error("A função de gravação não carregou");
+   if(typeof screenRecorder!=="undefined"&&screenRecorder?.state==="recording"){stopRecording();return}
+   await startRecording(false);
+  }catch(err){console.error("AZNY BUSINESS record click:",err);record.disabled=false;notify("Não foi possível gravar a reunião: "+(err?.message||"erro JavaScript"))}
+ },true);
+ console.info("AZNY BUSINESS meeting controls ready");
+})();
+</script>
+
 </body>
 </html>
 
