@@ -4148,6 +4148,10 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    body.azny-business-mode .rightbar .camera{border:2px solid #20b8a4!important;border-radius:12px!important;overflow:hidden}
    body.azny-business-mode .students .student,body.azny-business-mode .students>div{border-radius:10px!important}
    body.azny-business-mode .bottom-status{color:#47617e!important}
+   /* Quadro empresarial limpo: sem gráficos ou cartões fixos */
+   body.azny-business-mode #board{background:#fff!important;border:3px solid #2f5f8f!important;border-radius:8px!important;box-shadow:inset 0 0 0 1px #dce7f2!important;overflow:hidden!important}
+   body.azny-business-mode #drawLayer{background:#fff!important}
+   body.azny-business-mode .azny-business-template{display:none!important}
    body.azny-business-mode .azny-business-template{position:absolute;inset:0;z-index:0;pointer-events:none;padding:clamp(12px,2.4%,30px);background:linear-gradient(135deg,#fff 0%,#f8fbff 100%);color:#102b50;overflow:hidden;font-family:Arial,sans-serif}
    body.azny-business-mode #drawLayer{position:absolute;z-index:2!important;pointer-events:none}
    body.azny-business-mode #livePointer{z-index:4!important}
@@ -4215,7 +4219,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  const help=document.getElementById("helpBtn");if(help)help.title="Ajuda para reuniões e apresentações";
 
  const board=document.getElementById("board");
- if(board&&!board.querySelector(".azny-business-template")){
+ if(false&&board&&!board.querySelector(".azny-business-template")){
   const dashboard=document.createElement("div");
   dashboard.className="azny-business-template";
   dashboard.setAttribute("aria-hidden","true");
