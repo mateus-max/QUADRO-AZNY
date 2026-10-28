@@ -1281,7 +1281,7 @@ function clearTeacherStudentCameras(){
  if(wrap)wrap.innerHTML='<div class="no-students" id="noStudents">Nenhum participante entrou na reunião.</div>';
  document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());
 }
-function bindClassSessionRealtime(){if(!AZNY_DB||!classSessionId||sessionRealtimeBound)return;sessionRealtimeBound=true;const sref=aznySessionRef();sref.child("status").on("value",snap=>{const status=snap.val()||"waiting";aznyObservedClassStatus=status;if(!isStudent){if(status!=="active")clearTeacherStudentCameras();return}if(status==="active"){if(!studentApproved)showStudentJoinReady()}else if(studentApproved&&status==="ended"){showClassEnded()}else{showStudentWaitingForClass()}});sref.child("joinRequests").on("value",snap=>{if(isStudent)return;if(aznyObservedClassStatus!=="active"){document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());return}const data=snap.val()||{};const pending=new Set();Object.entries(data).forEach(([id,d])=>{if(d&&d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}});document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()})});const handlePeer=snap=>{if(isStudent||aznyObservedClassStatus!=="active")return;const d=snap.val()||{};if(d.offer&&d.name)connectStudentPeer(snap.key,d)};const peers=sref.child("peers");peers.on("child_added",handlePeer);peers.on("child_changed",handlePeer)}
+function bindClassSessionRealtime(){if(!AZNY_DB||!classSessionId||sessionRealtimeBound)return;sessionRealtimeBound=true;const sref=aznySessionRef();sref.child("status").on("value",snap=>{const status=snap.val()||"waiting";aznyObservedClassStatus=status;if(!isStudent){if(status!=="active")clearTeacherStudentCameras();return}if(status==="active"){if(!studentApproved)showStudentJoinReady()}else if(studentApproved&&status==="ended"){showClassEnded()}else{showStudentWaitingForClass()}});sref.child("joinRequests").on("value",snap=>{if(isStudent)return;if(aznyObservedClassStatus!=="active"&&!(classStarted&&!isStudent)){document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());return}const data=snap.val()||{};const pending=new Set();Object.entries(data).forEach(([id,d])=>{if(d&&d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}});document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()})});const handlePeer=snap=>{if(isStudent||aznyObservedClassStatus!=="active")return;const d=snap.val()||{};if(d.offer&&d.name)connectStudentPeer(snap.key,d)};const peers=sref.child("peers");peers.on("child_added",handlePeer);peers.on("child_changed",handlePeer)}
 
 /* Presença e estado da rede: a aula permanece aberta durante falhas temporárias. */
 let aznyPresenceWatchBound=false;
@@ -2841,7 +2841,8 @@ window.aznyBusinessSendJoinRequest=async function(name){
   const latestId=String(latestIdSnap.val()||"").trim();
   if(latestId && latestId!==classSessionId){classSessionId=latestId;sessionRef=aznySessionRef()}
  }
- if(sessionData.status!=="active")throw new Error(en?"The meeting is not active on the server yet. Ask the host to check the connection and retry.":"A reunião ainda não está ativa no servidor. O anfitrião deve verificar a ligação à Internet e tentar novamente.");
+ const roomHasActiveMeeting=!!activeId&&activeId===classSessionId;
+ if(sessionData.status!=="active"&&!roomHasActiveMeeting)throw new Error(en?"The host has not published an active meeting yet. Ask the host to reconnect and retry.":"O servidor ainda não confirmou a reunião ativa. O anfitrião deve recuperar a ligação e tentar novamente.");
  const requestsRef=sessionRef.child("joinRequests");
  const requestRef=requestsRef.push();
  if(!requestRef.key)throw new Error("Não foi possível criar o identificador do pedido.");
@@ -3242,27 +3243,35 @@ document.getElementById("endClassBtn").onclick=async()=>{
  const b=document.getElementById("endClassBtn");
  if(b.dataset.aznyEnding==="1")return;
  b.dataset.aznyEnding="1";b.disabled=true;
- try{
-  if(!classStarted){
-   const ready=await ensureAZNYRealtime();
-   if(ready&&AZNY_DB){
-    const snap=await aznySessionRef()?.once("value");
-    const session=snap?.val();
-    if(session?.status==="active"){
-     classStarted=true;
-     classStartTime=Number(session.startedAtClient||session.startedAt)||Date.now();
-    }
-   }
-  }
-  if(!classStarted){toast("Não há reunião ativa para encerrar.");return}
-  await endClass();
- }catch(e){
-  console.error("AZNY end meeting:",e);
-  toast("O encerramento teve um erro: "+(e?.message||"erro inesperado"));
- }finally{
-  delete b.dataset.aznyEnding;
-  b.disabled=!classStarted;
+ const hadLocalSession=!!classStarted;
+ // Always stop the local meeting immediately, even if Firebase is unavailable or state was lost on refresh.
+ if(!classStarted){
+  classStarted=true;
+  classStartTime=Date.now();
  }
+ try{await endClass()}catch(e){
+  console.error("AZNY end meeting local:",e);
+  classStarted=false;clearInterval(classTimerHandle);classTimerHandle=null;
+  const timer=document.getElementById("classTimer");if(timer)timer.textContent="00:00:00";
+  const startBtn=document.getElementById("startClassBtn");if(startBtn){startBtn.disabled=false;startBtn.removeAttribute("aria-busy")}
+  b.disabled=true;
+ }
+ // If the page had lost its local state after refresh, best-effort server reconciliation runs in the background.
+ if(!hadLocalSession){
+  (async()=>{try{
+   const ready=await ensureAZNYRealtime();
+   if(!ready||!AZNY_DB)throw new Error("Firebase indisponível");
+   const roomRef=aznyRoomRef();
+   const activeSnap=await roomRef.child("activeSessionId").once("value");
+   const activeId=String(activeSnap.val()||"").trim();
+   if(activeId){
+    await roomRef.child("sessions").child(activeId).update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP});
+    try{localStorage.removeItem("azny-business-active-session-"+aznyRoomKey())}catch(_){}
+   }
+  }catch(e){console.warn("AZNY end meeting server sync:",e);toast("A reunião parou neste dispositivo, mas o servidor não confirmou o encerramento. Verifique a ligação.")}})();
+ }
+ delete b.dataset.aznyEnding;
+ b.disabled=true;
 };
 document.getElementById("recordClassBtn").onclick=async()=>{const b=document.getElementById("recordClassBtn");try{if(screenRecorder?.state==="recording"){stopRecording();return}await startRecording(false)}catch(e){console.error("AZNY record meeting:",e);if(b){b.disabled=false;b.classList.remove("recording");b.textContent="● Gravar reunião"}toast("Não foi possível iniciar a gravação. Verifique a permissão do navegador e tente novamente.")}finally{if(b&&(!screenRecorder||screenRecorder.state!=="recording")){b.disabled=false}}};
 
