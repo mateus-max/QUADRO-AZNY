@@ -2356,7 +2356,32 @@ async function startClass(){
  }
 }
 
-async function restoreActiveTeacherSession(){if(isStudent||!classSessionId||!AZNY_DB)return;try{const snap=await aznySessionRef()?.once("value");const session=snap?.val();if(!session||session.status!=="active"){return}try{await aznySessionRef().child("teacherReloadNotice").set({id:"restore-"+Date.now()+"-"+Math.random().toString(36).slice(2,9),at:firebase.database.ServerValue.TIMESTAMP,reason:"teacher-session-restored"})}catch(reloadSignalError){console.warn("AZNY teacher reload notice:",reloadSignalError)}classStarted=true;classStartTime=Number(session.startedAt)||Date.now();document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();try{await aznySessionRef().child("teacherPresence").update({online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP});aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}roomChannel?.postMessage({type:"class-started",title:session.title||document.getElementById("boardTitle").value,session:classSessionId});toast("Aula ativa restaurada após atualizar a página")}catch(e){console.warn("AZNY session restore:",e)}}
+async function restoreActiveTeacherSession(){
+ if(isStudent||!classSessionId||!AZNY_DB)return;
+ try{
+  const snap=await aznySessionRef()?.once("value");
+  const session=snap?.val();
+  if(!session||session.status!=="active")return;
+  // Prefer the client timestamp written at start; the server timestamp may still be unresolved during reconnect.
+  const startedAt=Number(session.startedAtClient)||Number(session.startedAt)||Date.now();
+  classStarted=true;aznyObservedClassStatus="active";classStartTime=startedAt;
+  const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn");
+  if(startBtn){startBtn.disabled=true;startBtn.removeAttribute("aria-busy")}
+  if(endBtn)endBtn.disabled=false;
+  clearInterval(classTimerHandle);
+  classTimerHandle=setInterval(()=>{if(classStarted)updateClassTimer()},1000);
+  updateClassTimer();
+  sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();
+  // Notify participants that the host is reconnecting; do not change the active meeting status.
+  try{await aznySessionRef().child("teacherReloadNotice").set({id:"restore-"+Date.now()+"-"+Math.random().toString(36).slice(2,9),at:firebase.database.ServerValue.TIMESTAMP,reason:"teacher-session-restored"})}catch(reloadSignalError){console.warn("AZNY teacher reload notice:",reloadSignalError)}
+  try{
+   await aznySessionRef().child("teacherPresence").update({online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP});
+   aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP});
+  }catch(e){console.warn("AZNY: presença do anfitrião ainda não sincronizada",e)}
+  try{roomChannel?.postMessage({type:"class-started",title:session.title||document.getElementById("boardTitle")?.value||"Reunião empresarial",session:classSessionId})}catch(_){}
+  toast("Reunião ativa restaurada após atualizar a página.");
+ }catch(e){console.warn("AZNY session restore:",e)}
+}
 async function endClass(){
  if(!classStarted){toast("Não há reunião ativa para encerrar.");return}
  const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn"),timer=document.getElementById("classTimer");
@@ -2366,17 +2391,24 @@ async function endClass(){
  if(timer)timer.textContent="00:00:00";
  if(startBtn){startBtn.disabled=false;startBtn.removeAttribute("aria-busy")}
  if(endBtn)endBtn.disabled=true;
- try{localStorage.removeItem("azny-business-active-session-"+aznyRoomKey())}catch(_){}
  try{roomChannel?.postMessage({type:"business-meeting-ended",session:classSessionId,endedAt:Date.now()})}catch(_){}
- // Publicar o fim da reunião imediatamente; não deixar a limpeza do quadro bloquear a notificação aos participantes.
+ // Publicar o fim imediatamente; Firebase recebe a escrita em segundo plano para não bloquear a interface.
  try{
   if(AZNY_DB&&classSessionId){
    const sessionRef=aznySessionRef();
    if(sessionRef){
-    sessionRef.update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP})
-     .catch(e=>console.error("AZNY BUSINESS: não foi possível sincronizar o encerramento",e));
+    const endWrite=sessionRef.update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP});
+    endWrite.then(()=>{
+     try{localStorage.removeItem("azny-business-active-session-"+aznyRoomKey())}catch(_){}
+    }).catch(e=>{
+     console.error("AZNY BUSINESS: não foi possível sincronizar o encerramento",e);
+     toast("A reunião parou neste dispositivo, mas falta confirmar o encerramento no servidor. Verifique a ligação.");
+    });
    }
-  }else console.warn("AZNY BUSINESS: Firebase indisponível; encerramento apenas neste dispositivo.");
+  }else{
+   console.warn("AZNY BUSINESS: Firebase indisponível; encerramento apenas neste dispositivo.");
+   toast("A reunião parou neste dispositivo, mas o servidor está indisponível.");
+  }
  }catch(e){console.error("AZNY BUSINESS: falha ao publicar encerramento",e)}
  // Fechar imediatamente todas as ligações de participantes e partilha de ecrã.
  try{clearTeacherStudentCameras()}catch(e){console.warn(e)}
