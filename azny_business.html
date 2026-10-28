@@ -1080,8 +1080,16 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
 <script src="https://unpkg.com/html-docx-js@0.3.1/dist/html-docx.js"></script>
+<style id="azny-business-first-paint">
+/* Definir o modo empresarial antes do primeiro desenho do navegador; nunca mostrar o quadro verde durante a atualização. */
+html,body.azny-business-mode{background:#eef2f7!important}
+body.azny-business-mode .app{background:#eef2f7!important}
+body.azny-business-mode .canvas-wrap,body.azny-business-mode #stage,body.azny-business-mode #board{background-color:#fff!important;background-image:none!important}
+body.azny-business-mode #board{border:3px solid #2f5f8f!important}
+body.azny-business-mode #drawLayer{background:transparent!important}
+</style>
 </head>
-<body>
+<body class="azny-business-mode">
 <div class="app">
 <header class="topbar">
   <div class="logo"><span style="color:#fff">AZNY</span> <span style="color:#65b1ff">BUSINESS</span></div>
@@ -2317,31 +2325,34 @@ function formatDuration(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor
 function updateClassTimer(){document.getElementById("classTimer").textContent=formatDuration(Date.now()-classStartTime)}
 async function startClass(){
  if(classStarted){toast("A reunião já está ativa.");return}
- const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn");
- if(startBtn)startBtn.disabled=true;
- /* A business meeting must not clear/reset the work board. Start the clock and controls first. */
+ const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn"),timer=document.getElementById("classTimer");
+ /* Mesmo ciclo de início do quadro verde, mas isolado no espaço empresarial:
+    não limpa o quadro e usa exclusivamente aznyBusinessRooms. */
  const startedAt=Date.now();
- if(!classSessionId||!classSessionId.startsWith("BIZ-"))classSessionId="BIZ-"+aznyRoomKey()+"-"+startedAt.toString(36)+"-"+Math.random().toString(36).slice(2,7);
- classStarted=true;classStartTime=startedAt;
+ if(!classSessionId||!classSessionId.startsWith("BIZ-"))classSessionId="BIZ-"+aznyRoomKey()+"-"+startedAt.toString(36)+"-"+Math.random().toString(36).slice(2,8);
+ classStarted=true;classStartTime=startedAt;aznyObservedClassStatus="active";
  if(startBtn)startBtn.disabled=true;if(endBtn)endBtn.disabled=false;
  clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();
  try{localStorage.setItem("azny-business-active-session-"+aznyRoomKey(),classSessionId)}catch(_){}
  const title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
- roomChannel?.postMessage({type:"business-meeting-started",title,session:classSessionId,startedAt});
+ try{roomChannel?.postMessage({type:"business-meeting-started",title,session:classSessionId,startedAt})}catch(_){}
  toast("Reunião iniciada. O cronómetro está a contar.");
- /* Synchronize with Firebase separately, with a timeout, so a slow/denied write cannot make the buttons appear dead. */
+ /* Tal como no quadro verde, a sessão passa a ativa e é publicada em tempo real.
+    A sincronização é separada do clique para a interface não ficar bloqueada. */
  try{
-  const ready=await Promise.race([ensureAZNYRealtime(),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao ligar ao Firebase")),7000))]);
+  const ready=await Promise.race([ensureAZNYRealtime(),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao ligar ao Firebase")),10000))]);
   if(!ready||!AZNY_DB)throw new Error("Firebase Realtime Database indisponível");
   const roomRef=aznyRoomRef(),sessionRef=aznySessionRef();
-  if(!roomRef||!sessionRef)throw new Error("Referência da reunião indisponível");
-  await Promise.race([roomRef.child("activeSessionId").set(classSessionId),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao publicar a reunião")),7000))]);
-  await Promise.race([sessionRef.set({status:"active",kind:"business-meeting",startedAt:firebase.database.ServerValue.TIMESTAMP,startedAtClient:startedAt,title,teacherUid:aznyUid||"",teacherPresence:{online:true,network:"online",updatedAt:firebase.database.ServerValue.TIMESTAMP}}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao guardar a reunião")),7000))]);
+  if(!roomRef||!sessionRef)throw new Error("Referência da reunião empresarial indisponível");
+  await Promise.race([roomRef.child("activeSessionId").set(classSessionId),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao publicar a reunião")),10000))]);
+  await Promise.race([sessionRef.set({status:"active",kind:"business-meeting",startedAt:firebase.database.ServerValue.TIMESTAMP,startedAtClient:startedAt,title,teacherUid:aznyUid||"",teacherPresence:{online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP}}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao guardar a reunião")),10000))]);
   try{sessionRef.child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}
-  bindClassSessionRealtime();bindTeacherPresenceWatch();
+  sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();if(typeof loadTeacherDisplayName==="function")loadTeacherDisplayName();
+  try{roomChannel?.postMessage({type:"business-meeting-started",title,session:classSessionId,startedAt})}catch(_){}
+  toast("Reunião ativa e sincronizada em tempo real.");
  }catch(e){
-  console.error("AZNY BUSINESS: reunião local iniciada, sincronização falhou",e);
-  toast("A reunião e o cronómetro iniciaram neste dispositivo, mas o Firebase não sincronizou. Verifique as regras/permissões da base de dados.");
+  console.error("AZNY BUSINESS: falha na sincronização da reunião",e);
+  toast("O cronómetro iniciou neste dispositivo, mas a reunião não sincronizou. Verifique a ligação e as permissões do Firebase.");
  }
 }
 
