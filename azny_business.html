@@ -1908,17 +1908,39 @@ function addDoc(file){
     const sheetName=wb.SheetNames[0];const ws=wb.Sheets[sheetName];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
     const maxRows=Math.min(rows.length,3000),maxCols=Math.min(Math.max(1,...rows.slice(0,Math.min(rows.length,3000)).map(r=>r.length)),1000);
-    let table='<table class="azny-imported-sheet" style="border-collapse:collapse;width:100%;background:#fff;color:#172b45;font:14px Arial">';
-    for(let ri=0;ri<maxRows;ri++){table+='<tr>';for(let ci=0;ci<maxCols;ci++){const tag=ri===0?'th':'td';table+='<'+tag+' contenteditable="true" style="border:1px solid #b8c9dc;padding:6px;min-width:72px">'+escapeHtml(String(rows[ri]?.[ci]??""))+'</'+tag+'>'}table+='</tr>'}
-    table+='</table>';
-    pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;el.dataset.name=file.name;el.dataset.documentType="spreadsheet";el.dataset.sheetName=sheetName;
-    el.innerHTML='<div class="dochead" style="display:flex;gap:8px;align-items:center">📊 <span>'+escapeHtml(file.name)+' — '+escapeHtml(sheetName)+'</span><button type="button" class="azny-export-xlsx" style="margin-left:auto">Exportar Excel</button><button type="button" class="azny-export-csv">Exportar CSV</button></div><div class="docbody" style="overflow:auto;background:white;padding:8px">'+table+'</div>';
-    Object.assign(el.style,{left:"70px",top:"60px",width:"min(820px,80%)",height:"420px",background:"#fff",color:"#172b45",overflow:"auto"});
+    const data=Array.from({length:maxRows},(_,ri)=>Array.from({length:maxCols},(_,ci)=>String(rows[ri]?.[ci]??"")));
+    const colNameAZNY=n=>{let out="";for(n++;n;n=Math.floor((n-1)/26))out=String.fromCharCode(65+(n-1)%26)+out;return out};
+    pushHistory();const el=document.createElement("div");el.className="object docobj azny-virtual-sheet";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;el.dataset.name=file.name;el.dataset.documentType="spreadsheet";el.dataset.sheetName=sheetName;
+    el.innerHTML='<div class="dochead" style="display:flex;gap:8px;align-items:center;min-height:34px">📊 <span class="azny-sheet-title">'+escapeHtml(file.name)+' — '+escapeHtml(sheetName)+'</span><span class="azny-sheet-size" style="font-size:12px;color:#5e7592">'+maxRows+' × '+maxCols+'</span><button type="button" class="azny-export-xlsx" style="margin-left:auto">Exportar Excel</button><button type="button" class="azny-export-csv">Exportar CSV</button></div><div class="azny-sheet-viewport" tabindex="0" style="position:relative;overflow:auto;background:#fff;color:#172b45;flex:1;min-height:0;overscroll-behavior:contain"><div class="azny-sheet-spacer" style="position:relative"></div></div>';
+    Object.assign(el.style,{left:"70px",top:"60px",width:"min(900px,88%)",height:"min(520px,78%)",minWidth:"300px",minHeight:"220px",background:"#fff",color:"#172b45",overflow:"hidden",display:"flex",flexDirection:"column"});
+    const viewport=el.querySelector(".azny-sheet-viewport"),spacer=el.querySelector(".azny-sheet-spacer");
+    const rowH=28,colW=112,rowHeadW=48,headH=28;spacer.style.width=(rowHeadW+maxCols*colW)+"px";spacer.style.height=(headH+maxRows*rowH)+"px";
+    let renderQueued=false;
+    function renderVirtualSheet(){
+     renderQueued=false;const sx=viewport.scrollLeft,sy=viewport.scrollTop,vw=viewport.clientWidth,vh=viewport.clientHeight;
+     const c0=Math.max(0,Math.floor(Math.max(0,sx-rowHeadW)/colW)-1),c1=Math.min(maxCols,Math.ceil((sx+vw-rowHeadW)/colW)+1);
+     const r0=Math.max(0,Math.floor(Math.max(0,sy-headH)/rowH)-1),r1=Math.min(maxRows,Math.ceil((sy+vh-headH)/rowH)+1);
+     const frag=document.createDocumentFragment();
+     const makeCell=(txt,left,top,width,height,header=false,rowIndex=-1,colIndex=-1)=>{
+      const cell=document.createElement("div");cell.textContent=txt;cell.style.cssText="position:absolute;left:"+left+"px;top:"+top+"px;width:"+width+"px;height:"+height+"px;box-sizing:border-box;border-right:1px solid #c7d4e2;border-bottom:1px solid #c7d4e2;padding:4px 6px;overflow:hidden;white-space:nowrap;font:13px Arial;color:#172b45;background:"+(header?"#edf3f9":"#fff")+";"+(header?"font-weight:700;text-align:center;":"");
+      if(!header){cell.contentEditable="true";cell.dataset.row=rowIndex;cell.dataset.col=colIndex;cell.setAttribute("role","textbox");cell.setAttribute("aria-label",colNameAZNY(colIndex)+(rowIndex+1));cell.addEventListener("focus",()=>{cell.dataset.original=data[rowIndex][colIndex]});cell.addEventListener("input",()=>{data[rowIndex][colIndex]=cell.textContent;});cell.addEventListener("blur",()=>{data[rowIndex][colIndex]=cell.textContent;el.dataset.edited="1";scheduleSave();publishLiveBoardState()});}
+      frag.appendChild(cell);return cell;
+     };
+     makeCell("",sx,sy,rowHeadW,headH,true);
+     for(let c=c0;c<c1;c++)makeCell(colNameAZNY(c),rowHeadW+c*colW,sy,colW,headH,true);
+     for(let ri=r0;ri<r1;ri++){
+      makeCell(String(ri+1),sx,headH+ri*rowH,rowHeadW,rowH,true);
+      for(let ci=c0;ci<c1;ci++)makeCell(data[ri][ci],rowHeadW+ci*colW,headH+ri*rowH,colW,rowH,false,ri,ci);
+     }
+     spacer.replaceChildren(frag);
+    }
+    viewport.addEventListener("scroll",()=>{if(!renderQueued){renderQueued=true;requestAnimationFrame(renderVirtualSheet)}},{passive:true});
+    new ResizeObserver(()=>renderVirtualSheet()).observe(viewport);renderVirtualSheet();
+    el.querySelector(".azny-export-xlsx").onclick=()=>exportVirtualSheet(data,el.dataset.name,"xlsx",sheetName);
+    el.querySelector(".azny-export-csv").onclick=()=>exportVirtualSheet(data,el.dataset.name,"csv",sheetName);
     board.appendChild(el);makeInteractive(el);selectObject(el);
-    el.querySelector(".azny-export-xlsx").onclick=()=>exportImportedSheet(el,"xlsx");
-    el.querySelector(".azny-export-csv").onclick=()=>exportImportedSheet(el,"csv");
-    el.querySelectorAll("td,th").forEach(c=>c.addEventListener("input",()=>{scheduleSave();publishLiveBoardState()}));
-    updateHint();scheduleSave();publishLiveBoardState();toast("Folha Excel carregada no quadro (limite de importação: 3.000 linhas × 1.000 colunas)");
+    updateHint();scheduleSave();publishLiveBoardState();toast("Folha Excel importada com grelha virtualizada: até 3.000 linhas × 1.000 colunas");
+
    }catch(err){console.error(err);toast("Não foi possível abrir esta folha Excel.")}
   };reader.readAsArrayBuffer(file);return
  }
@@ -1947,6 +1969,13 @@ function addEditableWordDocument(name,html){
  updateHint();scheduleSave();publishLiveBoardState();toast("Documento Word editável carregado no quadro")
 }
 function downloadBlob(content,mime,name){const blob=content instanceof Blob?content:new Blob([content],{type:mime});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
+function exportVirtualSheet(data,name,format,sheetName){
+ if(!window.XLSX){toast("Biblioteca Excel indisponível.");return}
+ const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet(data);XLSX.utils.book_append_sheet(wb,ws,(sheetName||"Folha1").slice(0,31));
+ const base=(name||"relatorio").replace(/\.[^.]+$/,"");
+ if(format==="csv"){downloadBlob("\ufeff"+XLSX.utils.sheet_to_csv(ws),"text/csv;charset=utf-8",base+".csv")}
+ else XLSX.writeFile(wb,base+".xlsx")
+}
 function exportImportedSheet(el,format){
  if(!window.XLSX){toast("Biblioteca Excel indisponível.");return}
  const table=el.querySelector("table.azny-imported-sheet");if(!table)return;
