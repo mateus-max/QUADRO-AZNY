@@ -2964,12 +2964,12 @@ function getClassLink(){
   link.searchParams.set("sala",roomId);
   link.searchParams.set("sess",permanentSession);
   const currentParams=new URLSearchParams(location.search);
-  if(currentParams.get("modo")==="empresa"){
-    link.searchParams.set("modo","empresa");
-    link.searchParams.set("empresa",currentParams.get("empresa")||"Organização");
-    link.searchParams.set("atividade",document.getElementById("boardTitle")?.value?.trim()||currentParams.get("atividade")||"Reunião de negócios");
-    link.searchParams.set("tipo",currentParams.get("tipo")||"reuniao");
-  }
+  // O quadro empresarial é independente: todos os convites devem abrir AZNY BUSINESS,
+  // incluindo o nome da organização e o título atual da reunião.
+  link.searchParams.set("modo","empresa");
+  link.searchParams.set("empresa",currentParams.get("empresa")||"Organização");
+  link.searchParams.set("atividade",document.getElementById("boardTitle")?.value?.trim()||currentParams.get("atividade")||"Reunião de negócios");
+  link.searchParams.set("tipo",currentParams.get("tipo")||"reuniao");
   return link.href;
 }
 async function copyClassLink(){
