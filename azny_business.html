@@ -4238,7 +4238,29 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  if(status)status.textContent="● Ligação ativa";
 
  const studentTitle=document.querySelector(".student-mode #boardTitle");if(studentTitle)studentTitle.value=activity;
- document.querySelectorAll(".tools .tool").forEach(b=>{const t=(b.textContent||"").trim();if(/partitura|pauta|clave|solfejo|piano|bíblia|música/i.test(t))b.remove()});
+ // Ferramentas empresariais: conservar as funcionalidades comuns, remover ferramentas de ensino/desenho livre.
+ const toolLabels=[
+  ['[data-tool="select"]','↖ Selecionar objeto','Selecionar e mover elementos da apresentação'],
+  ['[data-tool="text"]','T Nota / texto','Adicionar texto, notas e tópicos à reunião'],
+  ['#pointerTool','⌖ Cursor de apresentação','Apontar para conteúdo durante a conferência'],
+  ['#deleteTool','✕ Remover elemento','Eliminar o elemento selecionado'],
+  ['#undoSide','↶ Desfazer alteração','Desfazer a última alteração'],
+  ['#redoSide','↷ Repetir alteração','Repetir a última alteração'],
+  ['#imageBtn','▧ Inserir imagem','Adicionar imagem à apresentação'],
+  ['#docBtn','▤ Documentos e relatórios','Importar documentos e relatórios'],
+  ['#chartsBtn','▥ Gráficos e indicadores','Inserir gráficos para apresentar indicadores'],
+  ['#pagesBtn','▤ Páginas da reunião','Organizar páginas da apresentação']
+ ];
+ toolLabels.forEach(([selector,label,title])=>{const el=document.querySelector(selector);if(el){el.textContent=label;el.title=title;el.setAttribute("aria-label",label)}});
+ document.querySelectorAll('.tools [data-tool="pen"],.tools [data-tool="eraser"]').forEach(el=>el.remove());
+ document.querySelectorAll(".tools .tool").forEach(b=>{const t=(b.textContent||"").trim();if(/partitura|pauta|clave|solfejo|piano|bíblia|música|caneta|borracha/i.test(t))b.remove()});
+ const topTitle=document.getElementById("boardTitle");
+ if(topTitle){topTitle.setAttribute("placeholder","Tema da reunião / conferência");topTitle.setAttribute("aria-label","Tema da reunião ou conferência")}
+ const startButton=document.getElementById("startClassBtn");if(startButton)startButton.textContent="▶ Iniciar reunião";
+ const endButton=document.getElementById("endClassBtn");if(endButton)endButton.textContent="■ Encerrar reunião";
+ const recordButton=document.getElementById("recordClassBtn");if(recordButton)recordButton.textContent="● Gravar reunião";
+ const shareButton=document.getElementById("teacherScreenShareBtn");if(shareButton){shareButton.title="Partilhar ecrã na reunião";shareButton.setAttribute("aria-label","Partilhar ecrã na reunião")}
+ const copyButton=document.getElementById("copyClassLink");if(copyButton){copyButton.title="Copiar link desta reunião";copyButton.setAttribute("aria-label","Copiar link da reunião")}
 })();
 </script>
 </body>
