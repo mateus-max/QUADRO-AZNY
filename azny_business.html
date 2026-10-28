@@ -2313,40 +2313,32 @@ document.getElementById("micBtn").onclick=()=>teacherAudioStream?stopMic():start
 function formatDuration(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return [h,m,sec].map(v=>String(v).padStart(2,"0")).join(":")}
 function updateClassTimer(){document.getElementById("classTimer").textContent=formatDuration(Date.now()-classStartTime)}
 async function startClass(){
- if(classStarted)return;
+ if(classStarted){toast("A reunião já está ativa.");return}
  const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn");
  if(startBtn)startBtn.disabled=true;
- const withTimeout=(promise,ms=8000)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao sincronizar com Firebase")),ms))]);
+ /* A business meeting must not clear/reset the work board. Start the clock and controls first. */
+ const startedAt=Date.now();
+ if(!classSessionId||!classSessionId.startsWith("BIZ-"))classSessionId="BIZ-"+aznyRoomKey()+"-"+startedAt.toString(36)+"-"+Math.random().toString(36).slice(2,7);
+ classStarted=true;classStartTime=startedAt;
+ if(startBtn)startBtn.disabled=true;if(endBtn)endBtn.disabled=false;
+ clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();
+ try{localStorage.setItem("azny-business-active-session-"+aznyRoomKey(),classSessionId)}catch(_){}
+ const title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
+ roomChannel?.postMessage({type:"business-meeting-started",title,session:classSessionId,startedAt});
+ toast("Reunião iniciada. O cronómetro está a contar.");
+ /* Synchronize with Firebase separately, with a timeout, so a slow/denied write cannot make the buttons appear dead. */
  try{
-  const ready=await withTimeout(ensureAZNYRealtime(),8000);
+  const ready=await Promise.race([ensureAZNYRealtime(),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao ligar ao Firebase")),7000))]);
   if(!ready||!AZNY_DB)throw new Error("Firebase Realtime Database indisponível");
-  if(!classSessionId||!classSessionId.startsWith("BIZ-"))classSessionId="BIZ-"+aznyRoomKey()+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6);
-  await withTimeout(resetBoardForClassLifecycle(),8000);
-  sessionRealtimeBound=false;
-  const title=document.getElementById("boardTitle")?.value||"Reunião empresarial";
-  const startedAt=Date.now();
-  /* Start the local clock and enable End immediately; network writes must never freeze the controls. */
-  classStarted=true;classStartTime=startedAt;
-  if(startBtn)startBtn.disabled=true;if(endBtn)endBtn.disabled=false;
-  clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();
-  try{localStorage.setItem("azny-business-active-session-"+aznyRoomKey(),classSessionId)}catch(_){}
-  try{
-   await withTimeout(aznyRoomRef().child("activeSessionId").set(classSessionId),8000);
-   await withTimeout(aznySessionRef().set({status:"active",kind:"business-meeting",startedAt:firebase.database.ServerValue.TIMESTAMP,startedAtClient:startedAt,title,teacherUid:aznyUid||"",teacherPresence:{online:true,network:"online",updatedAt:firebase.database.ServerValue.TIMESTAMP}}),8000);
-   try{aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}
-   bindClassSessionRealtime();bindTeacherPresenceWatch();
-   roomChannel?.postMessage({type:"business-meeting-started",title,session:classSessionId});
-   toast("Reunião empresarial iniciada. O cronómetro está a contar.");
-  }catch(syncError){
-   console.error("AZNY BUSINESS: sincronização da reunião falhou",syncError);
-   /* Keep local controls responsive so the host can retry or end the meeting. */
-   toast("Cronómetro iniciado neste dispositivo, mas a sincronização falhou. Verifique a ligação/Firebase.");
-  }
+  const roomRef=aznyRoomRef(),sessionRef=aznySessionRef();
+  if(!roomRef||!sessionRef)throw new Error("Referência da reunião indisponível");
+  await Promise.race([roomRef.child("activeSessionId").set(classSessionId),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao publicar a reunião")),7000))]);
+  await Promise.race([sessionRef.set({status:"active",kind:"business-meeting",startedAt:firebase.database.ServerValue.TIMESTAMP,startedAtClient:startedAt,title,teacherUid:aznyUid||"",teacherPresence:{online:true,network:"online",updatedAt:firebase.database.ServerValue.TIMESTAMP}}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao guardar a reunião")),7000))]);
+  try{sessionRef.child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}
+  bindClassSessionRealtime();bindTeacherPresenceWatch();
  }catch(e){
-  console.error("AZNY BUSINESS: erro ao iniciar reunião",e);
-  classStarted=false;clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;
-  if(startBtn)startBtn.disabled=false;if(endBtn)endBtn.disabled=true;
-  toast("Não foi possível iniciar a reunião. Verifique a ligação e tente novamente.");
+  console.error("AZNY BUSINESS: reunião local iniciada, sincronização falhou",e);
+  toast("A reunião e o cronómetro iniciaram neste dispositivo, mas o Firebase não sincronizou. Verifique as regras/permissões da base de dados.");
  }
 }
 
@@ -2354,20 +2346,21 @@ async function restoreActiveTeacherSession(){if(isStudent||!classSessionId||!AZN
 async function endClass(){
  if(!classStarted){toast("Não há reunião ativa para encerrar.");return}
  const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn");
- /* End locally first; a slow Firebase request must not leave the meeting controls frozen. */
+ /* Close locally first; do not reset or erase the business board when ending a meeting. */
  classStarted=false;aznyObservedClassStatus="ended";clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;
  const timer=document.getElementById("classTimer");if(timer)timer.textContent="00:00:00";
  if(startBtn)startBtn.disabled=false;if(endBtn)endBtn.disabled=true;
- try{await resetBoardForClassLifecycle()}catch(e){console.warn("AZNY reset do quadro:",e)}
- try{stopCamera()}catch(_){}try{stopMic()}catch(_){}
  try{localStorage.removeItem("azny-business-active-session-"+aznyRoomKey())}catch(_){}
  clearTeacherStudentCameras();
  Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}removeStudentVideoCard(id)});
  window.aznyTeacherPeers={};roomChannel?.postMessage({type:"business-meeting-ended",session:classSessionId});
  toast("Reunião encerrada.");
  try{
-  if(AZNY_DB&&classSessionId)await Promise.race([aznySessionRef().update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite Firebase")),6000))]);
- }catch(e){console.error("AZNY BUSINESS: erro ao publicar fim da reunião",e);toast("Reunião encerrada neste dispositivo; não foi possível sincronizar o encerramento.") }
+  if(AZNY_DB&&classSessionId){
+   const sessionRef=aznySessionRef();if(!sessionRef)throw new Error("Referência da reunião indisponível");
+   await Promise.race([sessionRef.update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite Firebase")),6000))]);
+  }else{toast("Reunião encerrada neste dispositivo; o Firebase não está ligado.")}
+ }catch(e){console.error("AZNY BUSINESS: erro ao publicar fim da reunião",e);toast("Reunião encerrada neste dispositivo; o Firebase não sincronizou o encerramento.")}
 }
 
 async function aznyToggleScreenShare(forStudent){
