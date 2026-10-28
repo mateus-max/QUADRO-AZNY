@@ -1969,10 +1969,7 @@ function addEditableWordDocument(name,html){
  Object.assign(el.style,{left:"80px",top:"60px",width:"min(780px,82%)",height:"440px",background:"#fff",color:"#172b45",overflow:"auto"});board.appendChild(el);makeInteractive(el);selectObject(el);
  el.querySelector(".azny-export-docx").onclick=()=>{if(!window.htmlDocx){toast("Exportação Word não está disponível neste momento.");return}downloadBlob(htmlDocx.asBlob(el.querySelector(".azny-editable-word").innerHTML),"application/vnd.openxmlformats-officedocument.wordprocessingml.document",name.replace(/\.[^.]+$/,"")+".docx")};
  el.querySelector(".azny-export-doc-html").onclick=()=>downloadBlob(el.querySelector(".azny-editable-word").innerHTML,"text/html;charset=utf-8",name.replace(/\.[^.]+$/,"")+".html");
- el.querySelector(".azny-export-doc-pdf").onclick=()=>{const w=window.open("","_blank");if(!w){toast("Permita janelas pop-up para exportar PDF.");return}w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+escapeHtml(name)+"</title></head><body>"+el.querySelector(".azny-editable-word").innerHTML+"
-
-
-</body></html>");w.document.close();w.focus();w.print()};
+ el.querySelector(".azny-export-doc-pdf").onclick=()=>{const w=window.open("","_blank");if(!w){toast("Permita janelas pop-up para exportar PDF.");return}w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+escapeHtml(name)+"</title></head><body>"+el.querySelector(".azny-editable-word").innerHTML+"\n\n\n</body></html>");w.document.close();w.focus();w.print()};
  el.querySelector(".azny-editable-word").addEventListener("input",()=>{scheduleSave();publishLiveBoardState()});
  updateHint();scheduleSave();publishLiveBoardState();toast("Documento Word editável carregado no quadro")
 }
