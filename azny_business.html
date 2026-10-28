@@ -2329,7 +2329,7 @@ async function startClass(){
  /* Mesmo ciclo de início do quadro verde, mas isolado no espaço empresarial:
     não limpa o quadro e usa exclusivamente aznyBusinessRooms. */
  const startedAt=Date.now();
- if(!classSessionId||!classSessionId.startsWith("BIZ-"))classSessionId="BIZ-"+aznyRoomKey()+"-"+startedAt.toString(36)+"-"+Math.random().toString(36).slice(2,8);
+ if(!classSessionId)classSessionId="ROOM-"+aznyRoomKey(); /* Manter o identificador permanente que os links empresariais dos participantes já usam. */
  classStarted=true;classStartTime=startedAt;aznyObservedClassStatus="active";
  if(startBtn)startBtn.disabled=true;if(endBtn)endBtn.disabled=false;
  clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();
