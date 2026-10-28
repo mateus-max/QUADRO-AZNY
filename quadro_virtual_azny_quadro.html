@@ -2966,6 +2966,13 @@ function getClassLink(){
   link.searchParams.set("aluno","1");
   link.searchParams.set("sala",roomId);
   link.searchParams.set("sess",permanentSession);
+  const currentParams=new URLSearchParams(location.search);
+  if(currentParams.get("modo")==="empresa"){
+    link.searchParams.set("modo","empresa");
+    link.searchParams.set("empresa",currentParams.get("empresa")||"Organização");
+    link.searchParams.set("atividade",document.getElementById("boardTitle")?.value?.trim()||currentParams.get("atividade")||"Reunião de negócios");
+    link.searchParams.set("tipo",currentParams.get("tipo")||"reuniao");
+  }
   return link.href;
 }
 async function copyClassLink(){
@@ -4102,6 +4109,29 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
 /* AZNY Empresas: interface de reuniões, apresentações e formação corporativa. */
 (function(){
  const q=new URLSearchParams(location.search);
+ const isParticipant=q.get("aluno")==="1";
+ const topActions=document.querySelector(".top-actions");
+ if(topActions&&!isParticipant&&!document.getElementById("aznyBusinessModeBtn")){
+  const modeButton=document.createElement("button");
+  modeButton.type="button";modeButton.id="aznyBusinessModeBtn";
+  modeButton.textContent=q.get("modo")==="empresa"?"↩ Modo Professor":"▦ Modo Empresa";
+  modeButton.title=q.get("modo")==="empresa"?"Voltar à interface de ensino":"Abrir a interface de reuniões empresariais";
+  modeButton.addEventListener("click",()=>{
+   const next=new URL(location.href);
+   if(next.searchParams.get("modo")==="empresa"){next.searchParams.delete("modo");next.searchParams.delete("empresa");next.searchParams.delete("atividade");next.searchParams.delete("tipo");}
+   else{
+    const currentTitle=document.getElementById("boardTitle")?.value?.trim();
+    const org=prompt("Nome da empresa ou organização:","Organização");
+    if(org===null)return;
+    next.searchParams.set("modo","empresa");
+    next.searchParams.set("empresa",org.trim()||"Organização");
+    next.searchParams.set("atividade",currentTitle&&currentTitle!=="Nova aula"?currentTitle:"Reunião de negócios");
+    next.searchParams.set("tipo","reuniao");
+   }
+   location.href=next.href;
+  });
+  topActions.prepend(modeButton);
+ }
  if(q.get("modo")!=="empresa")return;
  const org=q.get("empresa")||"Organização";
  const activity=q.get("atividade")||"Nova reunião";
@@ -4167,6 +4197,27 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    body.azny-business-mode .biz-note{border:1px solid #dce7f4;border-radius:9px;background:#fff;padding:10px;font-size:clamp(9px,.95vw,12px);line-height:1.7;color:#34516f}
    body.azny-business-mode .biz-note strong{display:block;color:#17345a;margin-bottom:5px}
    body.azny-business-mode .biz-demo{position:absolute;right:12px;bottom:8px;color:#91a4bb;font-size:9px}
+   body.azny-business-mode #board{border:1px solid #c7d7e9!important;border-radius:3px!important}
+   body.azny-business-mode #drawLayer{z-index:2!important;background:transparent!important}
+   body.azny-business-mode .azny-business-template{z-index:0}
+   body.azny-business-mode #livePointer{z-index:4!important}
+   body.azny-business-mode .student-mode .topbar{display:flex!important}
+   body.student-mode.azny-business-mode .topbar{display:flex!important;min-height:54px!important;padding:6px 8px!important;flex-wrap:wrap}
+   body.student-mode.azny-business-mode .topbar .class-controls{display:none!important}
+   body.student-mode.azny-business-mode .topbar .title{display:block!important;flex:1;min-width:80px}
+   body.student-mode.azny-business-mode .top-actions #teacherDashboardBtn,body.student-mode.azny-business-mode .top-actions #saveBtn,body.student-mode.azny-business-mode .top-actions #refreshBoardBtn,body.student-mode.azny-business-mode .top-actions #clearBtn{display:none!important}
+   body.student-mode.azny-business-mode .leftbar{display:none!important}
+   body.student-mode.azny-business-mode .toolbar{display:none!important}
+   body.student-mode.azny-business-mode .rightbar{display:flex!important;width:190px;min-width:160px}
+   body.student-mode.azny-business-mode .main{width:auto!important;flex:1;min-width:0}
+   body.student-mode.azny-business-mode .canvas-wrap{height:calc(100vh - 112px)!important;min-height:0!important}
+   body.student-mode.azny-business-mode .student-controls{display:flex!important;position:fixed;left:0;right:0;bottom:0;z-index:500;background:#071a35!important;border-top:1px solid #315779!important;justify-content:center;gap:8px;padding:8px}
+   body.student-mode.azny-business-mode .student-controls button{background:#153557!important;color:#fff!important;border:1px solid #315779!important;border-radius:9px!important}
+   body.student-mode.azny-business-mode #board{border-width:1px!important}
+   body.azny-business-mode #aznyBusinessModeBtn{background:#153557;border:1px solid #3b82f6;color:#fff;border-radius:8px;padding:8px 10px;font-weight:700;cursor:pointer}
+   body.azny-business-mode #aznyBusinessModeBtn:hover{background:#1d4f87}
+   #aznyBusinessModeBtn{background:#153557;border:1px solid #3b82f6;color:#fff;border-radius:8px;padding:8px 10px;font-weight:700;cursor:pointer;white-space:nowrap}
+   @media(max-width:700px){body.student-mode.azny-business-mode .rightbar{width:120px;min-width:110px}body.student-mode.azny-business-mode .rightbar .sidehead{font-size:11px;padding:4px}body.student-mode.azny-business-mode .camera-panel{padding:4px}body.student-mode.azny-business-mode .azny-audio-output-picker{display:none}}
    @media(max-width:900px){body.azny-business-mode .logo:after{display:none}body.azny-business-mode .logo{min-width:100px;font-size:15px!important}body.azny-business-mode .biz-template-brand{display:none}}
    @media(max-width:700px){body.azny-business-mode .biz-template-head{margin-bottom:8px;padding-bottom:8px}body.azny-business-mode .biz-kpis,body.azny-business-mode .biz-data-grid,body.azny-business-mode .biz-bottom-grid{gap:5px}body.azny-business-mode .biz-kpi,body.azny-business-mode .biz-chart,body.azny-business-mode .biz-note{padding:6px}body.azny-business-mode .biz-chart h3{margin-bottom:5px}}
   `;
