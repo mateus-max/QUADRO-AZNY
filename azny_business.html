@@ -4574,6 +4574,46 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
 
 
 
+<script>
+(function(){
+ const start=document.getElementById("startClassBtn"),end=document.getElementById("endClassBtn"),timer=document.getElementById("classTimer");
+ if(!start||!end||!timer)return;
+ let running=false,startedAt=0,interval=null,sessionRef=null;
+ const params=new URLSearchParams(location.search),roomId=params.get("sala")||"",access=params.get("acesso")||"";
+ const clean=v=>String(v||"").replace(/[.#$\[\]\/]/g,"_");
+ const roomKey=clean(roomId.startsWith("AZNY-")?roomId:("AZNY-"+access+"-"+roomId));
+ const sessionKey="ROOM-"+roomKey;
+ const fmt=ms=>{const n=Math.max(0,Math.floor(ms/1000)),h=Math.floor(n/3600),m=Math.floor(n%3600/60),sec=n%60;return [h,m,sec].map(v=>String(v).padStart(2,"0")).join(":")};
+ const draw=()=>{if(running)timer.textContent=fmt(Date.now()-startedAt)};
+ const ui=on=>{start.disabled=on;end.disabled=!on;start.removeAttribute("aria-busy")};
+ async function firebaseSession(){
+  if(!window.firebase)throw new Error("Firebase não carregou");
+  const cfg={apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c3"};
+  if(!firebase.apps.length)firebase.initializeApp(cfg);
+  const db=firebase.database();
+  try{if(firebase.auth&&!firebase.auth().currentUser)await firebase.auth().signInAnonymously()}catch(e){console.warn("Firebase auth:",e)}
+  const room=db.ref("aznyBusinessRooms/"+roomKey);sessionRef=room.child("sessions").child(sessionKey);
+  await room.child("activeSessionId").set(sessionKey);
+  await sessionRef.set({status:"active",kind:"business-meeting",startedAt:firebase.database.ServerValue.TIMESTAMP,startedAtClient:startedAt,title:document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial",teacherPresence:{online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP}});
+  const snap=await sessionRef.once("value"),v=snap.val()||{};
+  if(v.status!=="active"||!Number(v.startedAtClient))throw new Error("Firebase não confirmou a reunião");
+ }
+ start.onclick=async function(ev){
+  ev.preventDefault();ev.stopImmediatePropagation();
+  if(running)return;
+  startedAt=Date.now();running=true;ui(true);timer.textContent="00:00:00";clearInterval(interval);interval=setInterval(draw,250);draw();start.setAttribute("aria-busy","true");
+  try{if(!roomId)throw new Error("O link não contém o identificador da sala");await firebaseSession();start.removeAttribute("aria-busy");if(typeof window.toast==="function")window.toast("Reunião iniciada e confirmada em tempo real.")}
+  catch(e){console.error("AZNY BUSINESS start:",e);running=false;clearInterval(interval);interval=null;timer.textContent="00:00:00";ui(false);if(typeof window.toast==="function")window.toast("Não foi possível iniciar em tempo real: "+(e?.message||"erro Firebase"));else alert("Não foi possível iniciar em tempo real: "+(e?.message||"erro Firebase"))}
+ };
+ end.onclick=async function(ev){
+  ev.preventDefault();ev.stopImmediatePropagation();if(!running)return;
+  running=false;clearInterval(interval);interval=null;ui(false);
+  try{if(!sessionRef){if(!window.firebase)throw new Error("Firebase não carregou");if(!firebase.apps.length)firebase.initializeApp({apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c3"});sessionRef=firebase.database().ref("aznyBusinessRooms/"+roomKey+"/sessions/"+sessionKey)}
+   await sessionRef.update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline"});if(typeof window.toast==="function")window.toast("Reunião encerrada e sincronizada.")
+  }catch(e){console.error("AZNY BUSINESS end:",e);if(typeof window.toast==="function")window.toast("Encerrada neste dispositivo, mas o Firebase não confirmou.")}
+ };
+})();
+</script>
 </body>
 </html>
 
