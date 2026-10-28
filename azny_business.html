@@ -2235,8 +2235,8 @@ function updateTeacherMediaStatus(){
  const en=document.documentElement.lang==="en",cam=teacherStream?(en?"on":"ligada"):(en?"off":"desligada"),mic=teacherAudioStream?(en?"on":"ligado"):(en?"off":"desligado");
  const status=document.getElementById("teacherMediaStatus");if(status)status.textContent=en?"Camera: "+cam+" · Microphone: "+mic:"Câmera: "+cam+" · Microfone: "+mic;
  const cameraBtn=document.getElementById("cameraBtn"),micBtn=document.getElementById("micBtn");
- if(cameraBtn){cameraBtn.classList.toggle("is-active",!!teacherStream);cameraBtn.setAttribute("aria-label",teacherStream?(en?"Turn off camera":"Desligar câmera"):(en?"Turn on camera":"Ligar câmera"));cameraBtn.title=cameraBtn.getAttribute("aria-label");cameraBtn.textContent="📷";}
- if(micBtn){micBtn.classList.toggle("is-active",!!teacherAudioStream);micBtn.setAttribute("aria-label",teacherAudioStream?(en?"Turn off microphone":"Desligar microfone"):(en?"Turn on microphone":"Ligar microfone"));micBtn.title=micBtn.getAttribute("aria-label");micBtn.textContent="🎙";}
+ if(cameraBtn){cameraBtn.classList.toggle("is-active",!!teacherStream);cameraBtn.classList.toggle("is-off",!teacherStream);cameraBtn.setAttribute("aria-label",teacherStream?(en?"Turn off camera":"Desligar câmera"):(en?"Turn on camera":"Ligar câmera"));cameraBtn.title=cameraBtn.getAttribute("aria-label");cameraBtn.textContent="📷";}
+ if(micBtn){micBtn.classList.toggle("is-active",!!teacherAudioStream);micBtn.classList.toggle("is-off",!teacherAudioStream);micBtn.setAttribute("aria-label",teacherAudioStream?(en?"Turn off microphone":"Desligar microfone"):(en?"Turn on microphone":"Ligar microfone"));micBtn.title=micBtn.getAttribute("aria-label");micBtn.textContent="🎙";}
 }
 async function startCamera(){
  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
@@ -4427,6 +4427,16 @@ html body.azny-business-mode .camera-panel>.azny-host-media-buttons{position:abs
 html body.azny-business-mode .camera-panel>.azny-host-media-buttons button{position:relative!important;pointer-events:auto!important;display:flex!important;align-items:center!important;justify-content:center!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:28px!important;min-height:28px!important;flex:0 0 30px!important;padding:0!important;border:1px solid #ffffffdd!important;border-radius:8px!important;background:#071b33e8!important;color:#fff!important;font-size:16px!important;line-height:1!important;box-shadow:0 1px 4px #0005!important}
 html body.azny-business-mode .camera-panel>.azny-host-media-buttons button.is-active::after{content:"×"!important;position:absolute!important;right:-3px!important;top:-5px!important;display:flex!important;align-items:center!important;justify-content:center!important;width:13px!important;height:13px!important;border-radius:50%!important;background:#dc2626!important;border:1px solid #fff!important;color:#fff!important;font:bold 12px/12px Arial!important}
 html body.azny-business-mode .camera-panel #cameraStopBtn,html body.azny-business-mode .camera-panel #micStopBtn{display:none!important}
+
+/* AZNY BUSINESS: exatamente dois controlos sobre a câmara; X integrado no próprio ícone quando desligado */
+html body.azny-business-mode .camera-panel>.cam-buttons{display:flex!important;flex-direction:row!important;gap:5px!important}
+html body.azny-business-mode .camera-panel>.cam-buttons button{position:relative!important;font-size:18px!important;line-height:1!important;display:grid!important;place-items:center!important;overflow:hidden!important}
+html body.azny-business-mode .camera-panel>.cam-buttons button::after{content:"";position:absolute;inset:3px;border:0 solid transparent;border-radius:50%;pointer-events:none}
+html body.azny-business-mode .camera-panel>.cam-buttons button.is-off::after{content:"×";inset:auto 0 0 auto;width:13px;height:13px;border:1px solid #fff;border-radius:50%;background:#d92d20;color:#fff;font:700 12px/11px Arial;text-align:center;box-shadow:0 0 0 1px #071b33}
+html body.azny-business-mode .camera-panel>.cam-buttons button.is-active::after{content:"";display:none}
+html body.azny-business-mode .camera-panel>.cam-buttons button#cameraBtn{order:1}
+html body.azny-business-mode .camera-panel>.cam-buttons button#micBtn{order:2}
+html body.azny-business-mode .camera-panel>.cam-buttons button:not(#cameraBtn):not(#micBtn){display:none!important}
 </style>
 <script>
 (function(){
