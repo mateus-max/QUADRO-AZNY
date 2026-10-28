@@ -2235,8 +2235,8 @@ function updateTeacherMediaStatus(){
  const en=document.documentElement.lang==="en",cam=teacherStream?(en?"on":"ligada"):(en?"off":"desligada"),mic=teacherAudioStream?(en?"on":"ligado"):(en?"off":"desligado");
  const status=document.getElementById("teacherMediaStatus");if(status)status.textContent=en?"Camera: "+cam+" · Microphone: "+mic:"Câmera: "+cam+" · Microfone: "+mic;
  const cameraBtn=document.getElementById("cameraBtn"),micBtn=document.getElementById("micBtn");
- if(cameraBtn){cameraBtn.classList.toggle("is-active",!!teacherStream);cameraBtn.classList.toggle("is-off",!teacherStream);cameraBtn.setAttribute("aria-label",teacherStream?(en?"Turn off camera":"Desligar câmera"):(en?"Turn on camera":"Ligar câmera"));cameraBtn.title=cameraBtn.getAttribute("aria-label");cameraBtn.textContent=teacherStream?"📷":"📷 ×";}
- if(micBtn){micBtn.classList.toggle("is-active",!!teacherAudioStream);micBtn.classList.toggle("is-off",!teacherAudioStream);micBtn.setAttribute("aria-label",teacherAudioStream?(en?"Turn off microphone":"Desligar microfone"):(en?"Turn on microphone":"Ligar microfone"));micBtn.title=micBtn.getAttribute("aria-label");micBtn.textContent=teacherAudioStream?"🎙":"🎙 ×";}
+ if(cameraBtn){cameraBtn.classList.toggle("is-active",!!teacherStream);cameraBtn.classList.toggle("is-off",!teacherStream);cameraBtn.setAttribute("aria-label",teacherStream?(en?"Turn off camera":"Desligar câmera"):(en?"Turn on camera":"Ligar câmera"));cameraBtn.title=cameraBtn.getAttribute("aria-label");cameraBtn.textContent="📷";}
+ if(micBtn){micBtn.classList.toggle("is-active",!!teacherAudioStream);micBtn.classList.toggle("is-off",!teacherAudioStream);micBtn.setAttribute("aria-label",teacherAudioStream?(en?"Turn off microphone":"Desligar microfone"):(en?"Turn on microphone":"Ligar microfone"));micBtn.title=micBtn.getAttribute("aria-label");micBtn.textContent="🎙";}
 }
 async function startCamera(){
  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
@@ -4444,6 +4444,26 @@ html body.azny-business-mode .camera-panel>.cam-buttons button{pointer-events:au
 html body.azny-business-mode .camera-panel>.cam-buttons button::before{content:none!important;display:none!important}
 html body.azny-business-mode .camera-panel>.cam-buttons button.is-off{background:#9b2835!important;border-color:#ffd7db!important}
 html body.azny-business-mode .camera-panel>.cam-buttons button.is-active{background:#0b7658!important;border-color:#c7ffeb!important}
+
+/* Ícones independentes no rodapé da câmara: X apenas no controlo que está desligado. */
+html body.azny-business-mode .camera-panel>.cam-buttons{
+ position:absolute!important;z-index:35!important;left:0!important;right:0!important;bottom:7px!important;
+ display:flex!important;flex-direction:row!important;justify-content:space-between!important;align-items:center!important;
+ width:100%!important;box-sizing:border-box!important;padding:0 7px!important;gap:0!important;margin:0!important;pointer-events:none!important
+}
+html body.azny-business-mode .camera-panel>.cam-buttons button{
+ position:relative!important;pointer-events:auto!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ width:24px!important;min-width:24px!important;max-width:24px!important;height:23px!important;min-height:23px!important;flex:0 0 24px!important;
+ padding:0!important;font-size:12px!important;line-height:1!important;border:1px solid #ffffffcc!important;border-radius:6px!important;
+ background:#0b1d32d9!important;color:#fff!important;box-shadow:0 1px 3px #0005!important
+}
+html body.azny-business-mode .camera-panel>.cam-buttons button::after{content:none!important;display:none!important}
+html body.azny-business-mode .camera-panel>.cam-buttons button.is-off::after{
+ content:"×"!important;display:flex!important;position:absolute!important;right:-4px!important;top:-5px!important;
+ width:12px!important;height:12px!important;align-items:center!important;justify-content:center!important;
+ font:900 11px/12px Arial,sans-serif!important;color:#fff!important;background:#e53935!important;border:1px solid #fff!important;border-radius:50%!important;
+}
+html body.azny-business-mode .camera-panel>.cam-buttons button.is-active::after{content:none!important;display:none!important}
 </style>
 <script>
 (function(){
