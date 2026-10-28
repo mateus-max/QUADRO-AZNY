@@ -1575,9 +1575,9 @@ function publishLiveBoardState(){
    firebaseBoardWriteTimer=setTimeout(()=>{
     const ref=aznyRoomRef().child("board");
     ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e));
-   },700);
+   },1800);
   }
- },30)
+ },120)
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
@@ -2443,7 +2443,7 @@ async function aznyToggleScreenShare(forStudent){
  }
  if(!navigator.mediaDevices?.getDisplayMedia){toast("Este navegador não permite partilhar o ecrã. Atualize o Chrome e permita a captura do ecrã.");return}
  try{
-  const display=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:12,max:20}},audio:false});
+  const display=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:8,max:10,width:{ideal:960,max:1280},height:{ideal:540,max:720}},audio:false});
   const track=display.getVideoTracks()[0];if(!track){display.getTracks().forEach(t=>t.stop());throw new Error("Não foi recebido vídeo do ecrã")}
   if(forStudent){
    aznyStudentScreenTrack=track;
@@ -3099,7 +3099,17 @@ function aznyInitAudioOutputPicker(){const sel=document.getElementById("aznyAudi
 /* AZNY Low Data Mode: cap outbound video bitrate/framerate on every peer connection. */
 function aznyApplyLowDataMode(pc){
  if(!pc||pc._aznyLowDataModeApplied)return;pc._aznyLowDataModeApplied=true;
- const tune=async()=>{for(const sender of (pc.getSenders?.()||[])){if(sender.track?.kind!=="video")continue;try{const p=sender.getParameters()||{};p.encodings=p.encodings?.length?p.encodings:[{}];p.encodings=p.encodings.map(e=>({...e,maxBitrate:180000,maxFramerate:10,scaleResolutionDownBy:Math.max(1,Number(e.scaleResolutionDownBy)||1)}));await sender.setParameters(p)}catch(e){console.debug("AZNY low-data video tuning unavailable:",e?.message||e)}}};
+ // Perfil económico para redes móveis: vídeo reduzido e áudio de voz com bitrate limitado.
+ const tune=async()=>{for(const sender of (pc.getSenders?.()||[])){
+  const kind=sender.track?.kind;if(kind!=="video"&&kind!=="audio")continue;
+  try{
+   const p=sender.getParameters()||{};p.encodings=p.encodings?.length?p.encodings:[{}];
+   p.encodings=p.encodings.map(e=>kind==="video"
+    ?({...e,maxBitrate:120000,maxFramerate:8,scaleResolutionDownBy:Math.max(1,Number(e.scaleResolutionDownBy)||1)})
+    :({...e,maxBitrate:24000}));
+   await sender.setParameters(p);
+  }catch(e){console.debug("AZNY low-data tuning unavailable:",e?.message||e)}
+ }};
  pc.addEventListener?.("negotiationneeded",()=>tune());tune();
 }
 
