@@ -2323,33 +2323,49 @@ function updateClassTimer(){document.getElementById("classTimer").textContent=fo
 async function startClass(){
  if(classStarted){toast("A reunião já está ativa.");return}
  const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn"),timer=document.getElementById("classTimer");
- /* Mesmo ciclo de início do quadro verde, mas isolado no espaço empresarial:
-    não limpa o quadro e usa exclusivamente aznyBusinessRooms. */
  const startedAt=Date.now();
- if(!classSessionId)classSessionId="ROOM-"+aznyRoomKey(); /* Manter o identificador permanente que os links empresariais dos participantes já usam. */
+ if(!classSessionId)classSessionId="ROOM-"+aznyRoomKey();
+ /* O cronómetro começa no próprio clique; o Firebase é a fonte partilhada do estado e do instante inicial. */
  classStarted=true;classStartTime=startedAt;aznyObservedClassStatus="active";
- if(startBtn)startBtn.disabled=true;if(endBtn)endBtn.disabled=false;
- clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();
- try{localStorage.setItem("azny-business-active-session-"+aznyRoomKey(),classSessionId)}catch(_){}
+ if(startBtn){startBtn.disabled=true;startBtn.setAttribute("aria-busy","true")}
+ if(endBtn)endBtn.disabled=false;
+ if(timer)timer.textContent="00:00:00";
+ clearInterval(classTimerHandle);
+ classTimerHandle=setInterval(()=>{if(classStarted){updateClassTimer()}},1000);
+ updateClassTimer();
  const title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
  try{roomChannel?.postMessage({type:"business-meeting-started",title,session:classSessionId,startedAt})}catch(_){}
- toast("Reunião iniciada. O cronómetro está a contar.");
- /* Tal como no quadro verde, a sessão passa a ativa e é publicada em tempo real.
-    A sincronização é separada do clique para a interface não ficar bloqueada. */
+ toast("A iniciar reunião e a sincronizar com os participantes…");
  try{
-  const ready=await Promise.race([ensureAZNYRealtime(),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao ligar ao Firebase")),10000))]);
+  const ready=await ensureAZNYRealtime();
   if(!ready||!AZNY_DB)throw new Error("Firebase Realtime Database indisponível");
   const roomRef=aznyRoomRef(),sessionRef=aznySessionRef();
   if(!roomRef||!sessionRef)throw new Error("Referência da reunião empresarial indisponível");
-  await Promise.race([roomRef.child("activeSessionId").set(classSessionId),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao publicar a reunião")),10000))]);
-  await Promise.race([sessionRef.set({status:"active",kind:"business-meeting",startedAt:firebase.database.ServerValue.TIMESTAMP,startedAtClient:startedAt,title,teacherUid:aznyUid||"",teacherPresence:{online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP}}),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo limite ao guardar a reunião")),10000))]);
+  const serverStartedAt=firebase.database.ServerValue.TIMESTAMP;
+  await roomRef.child("activeSessionId").set(classSessionId);
+  await sessionRef.set({status:"active",kind:"business-meeting",startedAt:serverStartedAt,startedAtClient:startedAt,title,teacherUid:aznyUid||"",teacherPresence:{online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP}});
+  /* Ler o timestamp confirmado no servidor: anfitrião e participantes usam o mesmo início. */
+  const confirmed=await sessionRef.once("value");
+  const session=confirmed.val()||{};
+  const sharedStart=Number(session.startedAtClient)||startedAt;
+  classStartTime=sharedStart;
+  if(timer)timer.textContent=formatDuration(Date.now()-classStartTime);
+  clearInterval(classTimerHandle);
+  classTimerHandle=setInterval(()=>{if(classStarted)updateClassTimer()},1000);
   try{sessionRef.child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}
-  sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();if(typeof loadTeacherDisplayName==="function")loadTeacherDisplayName();
-  try{roomChannel?.postMessage({type:"business-meeting-started",title,session:classSessionId,startedAt})}catch(_){}
-  toast("Reunião ativa e sincronizada em tempo real.");
+  sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();
+  if(typeof loadTeacherDisplayName==="function")loadTeacherDisplayName();
+  try{roomChannel?.postMessage({type:"business-meeting-started",title,session:classSessionId,startedAt:sharedStart})}catch(_){}
+  if(startBtn)startBtn.removeAttribute("aria-busy");
+  toast("Reunião iniciada e confirmada no Firebase em tempo real.");
  }catch(e){
-  console.error("AZNY BUSINESS: falha na sincronização da reunião",e);
-  toast("O cronómetro iniciou neste dispositivo, mas a reunião não sincronizou. Verifique a ligação e as permissões do Firebase.");
+  console.error("AZNY BUSINESS: falha ao iniciar/sincronizar a reunião",e);
+  /* Não fingir que a reunião está partilhada se a escrita remota falhar. */
+  classStarted=false;aznyObservedClassStatus="waiting";clearInterval(classTimerHandle);classTimerHandle=null;
+  if(timer)timer.textContent="00:00:00";
+  if(startBtn){startBtn.disabled=false;startBtn.removeAttribute("aria-busy")}
+  if(endBtn)endBtn.disabled=true;
+  toast("A reunião não iniciou em tempo real. O Firebase recusou ou não confirmou a gravação. Verifique a ligação/permissões e tente novamente.");
  }
 }
 
