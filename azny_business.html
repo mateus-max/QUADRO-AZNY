@@ -4654,35 +4654,51 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
 })();
 </script>
 
-<!-- AZNY BUSINESS START BUTTON FAILSAFE -->
+<!-- AZNY BUSINESS START BUTTON: CAPTURE-LEVEL BINDING -->
 <script>
 (function(){
-  function wireBusinessStartButton(){
+  function bindStart(){
     const button=document.getElementById("startClassBtn");
     const endButton=document.getElementById("endClassBtn");
-    if(!button||button.dataset.aznyStartFailsafe==="1")return;
-    button.dataset.aznyStartFailsafe="1";
-    button.onclick=function(){
-      if(typeof startClass!=="function"){
-        console.error("AZNY BUSINESS: startClass não está disponível.");
-        button.disabled=false;
-        return;
-      }
+    const timer=document.getElementById("classTimer");
+    if(!button || button.dataset.aznyCaptureBound==="1") return;
+    button.dataset.aznyCaptureBound="1";
+    button.addEventListener("click",function(event){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if(button.dataset.aznyStarting==="1" || window.classStarted===true) return;
+      button.dataset.aznyStarting="1";
+      button.disabled=true;
+      button.setAttribute("aria-busy","true");
+      if(endButton) endButton.disabled=false;
       try{
+        if(typeof startClass!=="function") throw new Error("A função de iniciar reunião não foi carregada.");
         const result=startClass();
-        if(result&&typeof result.catch==="function")result.catch(error=>{
-          console.error("AZNY BUSINESS start:",error);
-          button.disabled=!!classStarted;
-          if(endButton)endButton.disabled=!classStarted;
+        if(result && typeof result.catch==="function") result.catch(function(error){
+          console.error("AZNY BUSINESS start button:",error);
+          if(typeof toast==="function") toast("Erro ao iniciar reunião: "+(error && error.message ? error.message : "erro inesperado"));
+        }).finally(function(){
+          delete button.dataset.aznyStarting;
+          button.disabled=!!window.classStarted;
+          button.removeAttribute("aria-busy");
+          if(endButton) endButton.disabled=!window.classStarted;
         });
+        else {
+          delete button.dataset.aznyStarting;
+          button.disabled=!!window.classStarted;
+          button.removeAttribute("aria-busy");
+        }
       }catch(error){
-        console.error("AZNY BUSINESS start:",error);
-        button.disabled=!!classStarted;
-        if(endButton)endButton.disabled=!classStarted;
+        console.error("AZNY BUSINESS start button:",error);
+        delete button.dataset.aznyStarting;
+        button.disabled=false;
+        button.removeAttribute("aria-busy");
+        if(endButton) endButton.disabled=true;
+        if(typeof toast==="function") toast(error.message || "Não foi possível iniciar a reunião.");
       }
-    };
+    },true);
   }
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wireBusinessStartButton,{once:true});
-  else wireBusinessStartButton();
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bindStart,{once:true});
+  else bindStart();
 })();
 </script>
