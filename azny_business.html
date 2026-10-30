@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#071b33">
-<meta name="description" content="AZNY BUSINESS — plataforma de reuniões empresariais em tempo real.">
+<meta name="description" content="REMOTE WORK BOARD — plataforma de reuniões empresariais em tempo real.">
 <link rel="manifest" href="manifest-quadro.webmanifest">
 <link rel="icon" href="icons/azny-board.svg?v=2" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/azny-board.svg?v=2">
-<title>AZNY BUSINESS — Reuniões, conferências e colaboração</title>
+<title>REMOTE WORK BOARD — Reuniões, conferências e colaboração</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1288,7 +1288,7 @@ body:not(.student-mode) #students .student>.azny-student-device-controls button{
     <button id="shareFacebook" type="button" title="Partilhar no Facebook" aria-label="Partilhar no Facebook"><svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1877F2"/><path d="M18.5 28V17.2h3.6l.5-4.2h-4.1v-2.7c0-1.2.4-2 2.1-2h2.2V4.5c-.4-.1-1.8-.2-3.3-.2-3.3 0-5.5 2-5.5 5.7V13H10v4.2h4V28z" fill="#fff"/></svg></button>
     <div class="record-download" id="recordDownload"></div>
   </div>
-  <div class="top-actions"><button class="iconbtn" id="aznyFullscreenBtn" title="Ecrã inteiro" aria-label="Ecrã inteiro">⛶</button><button class="iconbtn" id="teacherDashboardBtn" title="Painel AZNY BUSINESS">⌂</button>
+  <div class="top-actions"><button class="iconbtn" id="aznyFullscreenBtn" title="Ecrã inteiro" aria-label="Ecrã inteiro">⛶</button><button class="iconbtn" id="teacherDashboardBtn" title="Painel REMOTE WORK BOARD">⌂</button>
     <button class="iconbtn" id="saveBtn" title="Guardar">💾</button>
     <button class="iconbtn" id="refreshBoardBtn" title="Atualizar quadro e restabelecer ligação">⟳</button>
     <button class="iconbtn" id="clearBtn" title="Limpar quadro">🗑</button>
@@ -2663,7 +2663,7 @@ async function startClass(){
  };
  if(wa)wa.onclick=function(){
   const link=getClassLink(),title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
-  const url="https://wa.me/?text="+encodeURIComponent("Convite para a reunião empresarial \""+title+"\" no AZNY BUSINESS: "+link);
+  const url="https://wa.me/?text="+encodeURIComponent("Convite para a reunião empresarial \""+title+"\" no REMOTE WORK BOARD: "+link);
   const popup=window.open(url,"_blank");
   if(!popup)toast("Permita janelas pop-up para abrir o WhatsApp.");
  };
@@ -4903,7 +4903,7 @@ body.azny-business-mode .camera-panel{flex-shrink:0!important}
   dashboard.className="azny-business-template";
   dashboard.setAttribute("aria-hidden","true");
   dashboard.innerHTML=`
-   <div class="biz-template-head"><div><h2>${kind==="Reunião"?"Visão geral da reunião":kind==="Apresentação"?"Apresentação empresarial":"Sessão de formação"}</h2><p>${activity} · ${org}</p></div><div class="biz-template-brand">AZNY BUSINESS<br><small style="color:#647b98;font-weight:400">Trabalhe · Apresente · Colabore</small></div></div>
+   <div class="biz-template-head"><div><h2>${kind==="Reunião"?"Visão geral da reunião":kind==="Apresentação"?"Apresentação empresarial":"Sessão de formação"}</h2><p>${activity} · ${org}</p></div><div class="biz-template-brand">REMOTE WORK BOARD<br><small style="color:#647b98;font-weight:400">Trabalhe · Apresente · Colabore</small></div></div>
    <div class="biz-kpis"><div class="biz-kpi"><small>Indicador principal</small><strong>—</strong><em>Adicionar valor</em></div><div class="biz-kpi"><small>Progresso</small><strong>—</strong><em>Atualizar durante a reunião</em></div><div class="biz-kpi"><small>Objetivo</small><strong>—</strong><em>Definir próximo passo</em></div></div>
    <div class="biz-data-grid"><div class="biz-chart"><h3>Desempenho / evolução</h3><div class="biz-bars"><i style="height:32%"></i><i style="height:43%"></i><i style="height:56%"></i><i style="height:68%"></i><i style="height:82%"></i><i style="height:96%"></i></div></div><div class="biz-chart"><h3>Distribuição por categoria</h3><div class="biz-donut-wrap"><div class="biz-donut"></div><div class="biz-legend">■ Serviços<br>■ Consultoria<br>■ Suporte<br>■ Outros</div></div></div></div>
    <div class="biz-bottom-grid"><div class="biz-note"><strong>✓ Principais resultados</strong>• Registar decisões<br>• Acompanhar indicadores<br>• Identificar oportunidades<br>• Definir responsáveis</div><div class="biz-note"><strong>✦ Próximos passos</strong>1. Confirmar prioridades<br>2. Distribuir tarefas<br>3. Definir prazos<br>4. Marcar seguimento</div></div>
