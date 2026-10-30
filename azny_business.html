@@ -4794,7 +4794,7 @@ body.azny-business-mode .camera-panel{flex-shrink:0!important}
  const isPresentation=type==="apresentacao";
  const isTraining=type==="formacao";
  const kind=isPresentation?"Apresentação":isTraining?"Formação":"Reunião";
- const remoteWorkTitle="Painel do afiliado — "+kind+" — "+org+" | REMOTE WORK BOARD";document.title=remoteWorkTitle;try{if(window.top&&window.top!==window)window.top.document.title=remoteWorkTitle}catch(titleError){console.warn("REMOTE WORK BOARD: não foi possível atualizar o título da janela principal",titleError)}
+ const remoteWorkTitle="REMOTE WORK BOARD";document.title=remoteWorkTitle;try{if(window.top&&window.top!==window)window.top.document.title=remoteWorkTitle}catch(titleError){console.warn("REMOTE WORK BOARD: a página anfitriã não permite alterar o título",titleError)}
  document.body.classList.add("azny-business-mode");
  if(!document.getElementById("azny-business-theme")){
   const theme=document.createElement("style");theme.id="azny-business-theme";
