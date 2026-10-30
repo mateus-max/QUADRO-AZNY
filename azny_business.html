@@ -2663,7 +2663,7 @@ async function startClass(){
  };
  if(wa)wa.onclick=function(){
   const link=getClassLink(),title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
-  const url="https://wa.me/?text="+encodeURIComponent("Convite para a reunião empresarial \""+title+"\" no AZNY BUSINESS: "+link);
+  const url="https://wa.me/?text="+encodeURIComponent("Convite para a reunião empresarial \""+title+"\" no REMOTE WORK BOARD: "+link);
   const popup=window.open(url,"_blank");
   if(!popup)toast("Permita janelas pop-up para abrir o WhatsApp.");
  };
