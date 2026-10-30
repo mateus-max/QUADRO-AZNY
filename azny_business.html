@@ -1276,7 +1276,7 @@ body:not(.student-mode) #students .student>.azny-student-device-controls button{
 <body class="azny-business-mode">
 <div class="app">
 <header class="topbar">
-  <div class="logo"><span style="color:#fff">AZNY</span> <span style="color:#65b1ff">BUSINESS</span></div>
+  <div class="logo"><span style="color:#fff">REMOTE WORK</span> <span style="color:#65b1ff">BOARD</span></div>
   <div class="title"><input id="boardTitle" value="Reunião de negócios" aria-label="Nome da reunião ou conferência"></div>
   <div class="class-controls" id="classControlsTop">
     <div class="class-timer" id="classTimer">00:00:00</div>
@@ -3657,7 +3657,7 @@ document.getElementById("recordClassBtn").onclick=async()=>{const b=document.get
   const wait=document.getElementById("studentWaiting");if(wait&&(!wait.textContent||/Pode solicitar entrada por este link permanente|You can request access using this permanent link/.test(wait.textContent)))wait.textContent=en?"You can request access using this permanent link.":"Pode solicitar entrada por este link permanente.";
   const liveLabels=document.querySelectorAll("#studentLive .student-video-card span");if(liveLabels[0])liveLabels[0].textContent=en?"Teacher":"Professor";if(liveLabels[1])liveLabels[1].textContent=en?"You":"Você";
   const secondHead=document.querySelectorAll(".sidehead")[2];if(secondHead)secondHead.textContent=en?"Students in class":"Alunos na aula";
-  const titlePairs=[["aznyFullscreenBtn",en?"Full screen":"Ecrã inteiro"],["teacherDashboardBtn",en?"Teacher dashboard":"Painel do professor"],["saveBtn",en?"Save":"Guardar"],["refreshBoardBtn",en?"Refresh board and restore connection":"Atualizar quadro e restabelecer ligação"],["clearBtn",en?"Clear board":"Limpar quadro"],["helpBtn",en?"Help":"Ajuda"]];
+  const titlePairs=[["aznyFullscreenBtn",en?"Full screen":"Ecrã inteiro"],["teacherDashboardBtn",en?"Affiliate dashboard":"Painel do afiliado"],["saveBtn",en?"Save":"Guardar"],["refreshBoardBtn",en?"Refresh board and restore connection":"Atualizar quadro e restabelecer ligação"],["clearBtn",en?"Clear board":"Limpar quadro"],["helpBtn",en?"Help":"Ajuda"]];
   titlePairs.forEach(([id,title])=>{const el=document.getElementById(id);if(el)el.title=title});
   const closeHelp=document.getElementById("closeHelp"),closeCharts=document.getElementById("closeCharts"),closeMusic=document.getElementById("closeMusic"),closePages=document.getElementById("closePages");
   if(closeHelp)closeHelp.textContent=en?"Got it":"Entendi";if(closeCharts)closeCharts.textContent=en?"Close":"Fechar";if(closeMusic)closeMusic.textContent=en?"Close":"Fechar";if(closePages)closePages.textContent=en?"Close":"Fechar";
@@ -4794,7 +4794,7 @@ body.azny-business-mode .camera-panel{flex-shrink:0!important}
  const isPresentation=type==="apresentacao";
  const isTraining=type==="formacao";
  const kind=isPresentation?"Apresentação":isTraining?"Formação":"Reunião";
- document.title=kind+" — "+org+" | AZNY";
+ document.title="REMOTE WORK BOARD — Painel do afiliado — "+kind+" — "+org+" | REMOTE WORK BOARD";
  document.body.classList.add("azny-business-mode");
  if(!document.getElementById("azny-business-theme")){
   const theme=document.createElement("style");theme.id="azny-business-theme";
@@ -4886,7 +4886,7 @@ body.azny-business-mode .camera-panel{flex-shrink:0!important}
  const title=document.getElementById("boardTitle");
  if(title){title.value=activity;title.setAttribute("placeholder","Nome da "+kind.toLowerCase());title.setAttribute("aria-label","Título da "+kind.toLowerCase())}
  const logo=document.querySelector(".logo");
- if(logo)logo.innerHTML='<span style="color:#fff">AZNY</span> <span style="color:#65b1ff">Business</span>';
+ if(logo)logo.innerHTML='<span style="color:#fff">REMOTE WORK</span> <span style="color:#65b1ff">BOARD</span>';
  const side=document.querySelector(".leftbar .sidehead");
  if(side)side.textContent="Ferramentas de trabalho";
  const music=document.getElementById("musicBtn");if(music)music.remove();
