@@ -1633,10 +1633,9 @@ function aznyMatchRemoteBoardAspect(sourceSize){
  aznyRemoteBoardSize={width:sourceW,height:sourceH};
  const fit=()=>{
   if(!aznyRemoteBoardSize||!isStudent)return;
-  const rect=stage.getBoundingClientRect();
   const borderX=(parseFloat(getComputedStyle(board).borderLeftWidth)||0)+(parseFloat(getComputedStyle(board).borderRightWidth)||0);
   const borderY=(parseFloat(getComputedStyle(board).borderTopWidth)||0)+(parseFloat(getComputedStyle(board).borderBottomWidth)||0);
-  const contentW=Math.max(1,Math.round(rect.width-borderX));
+  const contentW=Math.max(1,Math.round(stage.clientWidth-borderX));
   const contentH=Math.max(1,Math.round(contentW*aznyRemoteBoardSize.height/aznyRemoteBoardSize.width));
   board.style.setProperty("width","100%","important");
   board.style.setProperty("height",(contentH+borderY)+"px","important");
