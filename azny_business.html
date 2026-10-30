@@ -4871,6 +4871,10 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
     shareFacebook:function(button,event){return runAction(button,event,shareBusinessFacebook)},
     recordClassBtn:function(button,event){
       return runAction(button,event,function(){notify("A função de gravação não foi inicializada. Atualize a página e tente novamente.")});
+    },
+    teacherScreenShareBtn:function(button){
+      button.dataset.aznySyntheticClick="1";
+      try{button.click()}finally{setTimeout(function(){delete button.dataset.aznySyntheticClick},0)}
     }
   };
   document.addEventListener("click",function(event){
@@ -4879,6 +4883,7 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
     for(var i=0;i<ids.length;i++){
       var button=hitButton(event,ids[i]);
       if(!button)continue;
+      if(button.dataset.aznySyntheticClick==="1")return;
       if(button.disabled&&ids[i]!=="endClassBtn")return;
       event.preventDefault();event.stopPropagation();
       if(event.stopImmediatePropagation)event.stopImmediatePropagation();
