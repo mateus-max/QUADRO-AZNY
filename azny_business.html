@@ -5082,6 +5082,29 @@ body.azny-business-mode:not(.student-mode) #students .student>.azny-student-devi
 </style>
 
 
+<style id="azny-business-mini-transparent-media-controls">
+/* Controlos discretos: sem placas pretas e sem ocupar a imagem dos participantes. */
+body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls{
+ left:4px!important;right:4px!important;bottom:4px!important;gap:2px!important;
+ background:transparent!important;padding:0!important;
+}
+body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls button,
+body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls button.is-off{
+ flex:0 0 18px!important;width:18px!important;min-width:18px!important;
+ max-width:18px!important;height:18px!important;min-height:18px!important;
+ padding:0!important;margin:0!important;border:0!important;border-radius:50%!important;
+ background:transparent!important;color:#fff!important;font-size:10px!important;
+ line-height:18px!important;box-shadow:none!important;backdrop-filter:none!important;
+ text-shadow:0 1px 3px #000b!important;opacity:.9!important;
+}
+body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls button:hover{
+ background:transparent!important;opacity:1!important;transform:scale(1.08)!important;
+}
+body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls button.is-off{
+ color:#ffb8b8!important;
+}
+</style>
+
 <style id="azny-business-persist-participants-on-reload">
 body.azny-business-mode:not(.student-mode) #students .student.azny-student-reconnecting{opacity:.9!important}
 body.azny-business-mode:not(.student-mode) #students .student .azny-student-reconnect-overlay{
