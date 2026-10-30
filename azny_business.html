@@ -5400,19 +5400,9 @@ body.azny-business-mode:not(.student-mode) #students .student>.azny-student-devi
 </script>
 
 <script>
-/* AZNY: restore the classic whiteboard interface. Excel/Word workspaces are intentionally retired. */
-(function(){
-  try { for (const k of Object.keys(sessionStorage)) if (k.startsWith("azny-workspace-view:")) sessionStorage.removeItem(k); } catch (_) {}
-  const excel=document.getElementById("aznyExcelWorkspace");
-  const word=document.getElementById("aznyWebWorkspace");
-  excel?.classList.remove("azny-excel-open");
-  word?.classList.remove("azny-web-open");
-  document.getElementById("teacherExcelBtn")?.remove();
-  document.getElementById("teacherWebBtn")?.remove();
-  excel?.remove();
-  word?.remove();
-  document.querySelectorAll("#aznyExcelContext,#aznyExcelChartOverlay").forEach(el=>el.remove());
-})();
+/* AZNY BUSINESS: manter os espaços de trabalho Word e Excel disponíveis.
+   A remoção destes elementos desativava importação, edição e sincronização colaborativa.
+   A navegação de regresso ao quadro é controlada pelos botões próprios de cada espaço. */
 </script>
 
 
