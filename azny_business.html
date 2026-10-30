@@ -1414,7 +1414,7 @@ function clearTeacherStudentCameras(){
  if(wrap)wrap.innerHTML='<div class="no-students" id="noStudents">Nenhum participante entrou na reunião.</div>';
  document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());
 }
-function bindClassSessionRealtime(){if(!AZNY_DB||!classSessionId||sessionRealtimeBound)return;sessionRealtimeBound=true;const sref=aznySessionRef();sref.child("status").on("value",snap=>{const rawStatus=snap.val();const status=rawStatus||"waiting";aznyObservedClassStatus=status;if(isStudent){const header=document.getElementById("studentMeetingHeader"),timer=document.getElementById("studentMeetingTimer");if(header)header.style.display=status==="active"?"flex":"none";if(status==="active"&&timer){const started=Number(snap.child("startedAtClient").val()||snap.child("startedAt").val())||Date.now();if(window.__aznyStudentMeetingTimer)clearInterval(window.__aznyStudentMeetingTimer);const paint=()=>{const elapsed=Math.max(0,Date.now()-started),seconds=Math.floor(elapsed/1000),h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),sec=seconds%60;timer.textContent=[h,m,sec].map(v=>String(v).padStart(2,"0")).join(":")};paint();window.__aznyStudentMeetingTimer=setInterval(paint,1000)}}if(!isStudent){/* Uma leitura temporária vazia/waiting durante refresh ou reconexão nunca encerra a reunião nem limpa a lista de participantes. Só o estado explícito ended, publicado pelo botão Encerrar reunião, limpa as câmaras. */if(status==="ended")clearTeacherStudentCameras();return}if(status==="active"){if(!studentApproved)showStudentJoinReady()}else if(studentApproved&&status==="ended"){showClassEnded()}else{showStudentWaitingForClass()}});sref.child("joinRequests").on("value",snap=>{if(isStudent)return;if(aznyObservedClassStatus!=="active"&&!(classStarted&&!isStudent)){document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());return}const data=snap.val()||{};const pending=new Set();Object.entries(data).forEach(([id,d])=>{if(d&&d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}});document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()})});const handlePeer=snap=>{if(isStudent||aznyObservedClassStatus!=="active")return;const d=snap.val()||{};if(d.offer&&d.name)connectStudentPeer(snap.key,d)};const peers=sref.child("peers");peers.on("child_added",handlePeer);peers.on("child_changed",handlePeer)}
+function bindClassSessionRealtime(){if(!AZNY_DB||!classSessionId||sessionRealtimeBound)return;sessionRealtimeBound=true;const sref=aznySessionRef();sref.child("status").on("value",snap=>{const rawStatus=snap.val();const status=rawStatus||"waiting";aznyObservedClassStatus=status;if(isStudent){const header=document.getElementById("studentMeetingHeader"),timer=document.getElementById("studentMeetingTimer");if(header)header.style.display=status==="active"?"flex":"none";if(status==="active"&&timer){const started=Number(snap.child("startedAtClient").val()||snap.child("startedAt").val())||Date.now();if(window.__aznyStudentMeetingTimer)clearInterval(window.__aznyStudentMeetingTimer);const paint=()=>{const elapsed=Math.max(0,Date.now()-started),seconds=Math.floor(elapsed/1000),h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),sec=seconds%60;timer.textContent=[h,m,sec].map(v=>String(v).padStart(2,"0")).join(":")};paint();window.__aznyStudentMeetingTimer=setInterval(paint,1000)}}if(!isStudent){/* Uma leitura temporária vazia/waiting durante refresh ou reconexão nunca encerra a reunião nem limpa a lista de participantes. Só o estado explícito ended, publicado pelo botão Encerrar reunião, limpa as câmaras. */if(status==="ended")clearTeacherStudentCameras();return}if(status==="active"){if(!studentApproved)showStudentJoinReady()}else if(studentApproved&&status==="ended"){showClassEnded()}else{showStudentWaitingForClass()}});sref.child("joinRequests").on("value",snap=>{if(isStudent)return;if(aznyObservedClassStatus!=="active"&&!(classStarted&&!isStudent)){document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());return}const data=snap.val()||{};const pending=new Set();Object.entries(data).forEach(([id,d])=>{if(d&&d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}});document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()})});const handlePeer=snap=>{if(isStudent||aznyObservedClassStatus!=="active")return;const d=snap.val()||{};if(d.offer&&d.name)connectStudentPeer(snap.key,d)};const peers=sref.child("peers");peers.on("child_added",handlePeer);peers.on("child_changed",handlePeer);peers.on("child_removed",snap=>{if(!isStudent)removeStudentVideoCard(snap.key)})}
 
 /* Presença e estado da rede: a aula permanece aberta durante falhas temporárias. */
 let aznyPresenceWatchBound=false;
@@ -3068,6 +3068,22 @@ function setupPianoRealtime(){
  pianoEventRef.on("value",snap=>{const event=snap.val();if(isStudent)applyRemotePianoEvent(event)});
 }
 function setupRealtimeRoom(){if(!AZNY_DB)return;setupBoardRealtime();setupPianoRealtime();if(classSessionId)bindClassSessionRealtime()}
+function setStudentCardReconnectState(id,name,online){
+ let card=document.getElementById("student-"+id);
+ if(!card&&!online){
+  addStudentVideoCard(id,name||"Participante",null,null);
+  card=document.getElementById("student-"+id);
+ }
+ if(!card)return;
+ let notice=card.querySelector(".azny-student-reconnect-overlay");
+ if(!online){
+  if(!notice){notice=document.createElement("div");notice.className="azny-student-reconnect-overlay";notice.textContent="A restabelecer ligação…";card.appendChild(notice)}
+  card.classList.add("azny-student-reconnecting");
+ }else{
+  notice?.remove();
+  card.classList.remove("azny-student-reconnecting");
+ }
+}
 async function connectStudentPeer(id,d){
  window.aznyTeacherPeers=window.aznyTeacherPeers||{};
  const existing=window.aznyTeacherPeers[id];
@@ -3077,7 +3093,7 @@ async function connectStudentPeer(id,d){
   if(existing._aznyOfferSdp===d.offer?.sdp)return;
   try{existing.close()}catch(_){}
   delete window.aznyTeacherPeers[id];
-  removeStudentVideoCard(id);
+  setStudentCardReconnectState(id,d.name,false);
  }
  const ref=signalRef(id);
  let presenceInitialized=false,lastStudentOnline=null;
@@ -3087,10 +3103,11 @@ async function connectStudentPeer(id,d){
    presenceInitialized=true;lastStudentOnline=online;
    // Se o aluno já saiu antes de o professor abrir/recuperar o painel, limpar
    // qualquer cartão antigo que tenha ficado no DOM.
-   if(!online){removeStudentVideoCard(id);return}
+   if(!online){setStudentCardReconnectState(id,d.name,false);return}
+   setStudentCardReconnectState(id,d.name,true);
    return;
   }
-  if(online===lastStudentOnline){if(!online)removeStudentVideoCard(id);return}
+  if(online===lastStudentOnline){if(!online)setStudentCardReconnectState(id,d.name,false);return}
   lastStudentOnline=online;
   const en=document.documentElement.lang==="en",studentLabel=d.name||(en?"The student":"O aluno");
   if(online){toast(en?studentLabel+" returned to the class.":studentLabel+" voltou à aula.");showNetworkNotice(en?studentLabel+" returned to the class.":studentLabel+" voltou à aula.","good")}
@@ -3098,7 +3115,9 @@ async function connectStudentPeer(id,d){
   if(!online){
    const departedPeer=window.aznyTeacherPeers?.[id];
    if(departedPeer){try{departedPeer.close()}catch(_){};delete window.aznyTeacherPeers[id]}
-   removeStudentVideoCard(id);
+   setStudentCardReconnectState(id,d.name,false);
+  }else{
+   setStudentCardReconnectState(id,d.name,true);
   }
   const notice=document.createElement("div");
   notice.className="azny-student-presence-notice";
@@ -5059,6 +5078,18 @@ body.azny-business-mode:not(.student-mode) #students .student>.azny-student-devi
  body.azny-business-mode:not(.student-mode) #students .student>.label{bottom:32px!important;font-size:9px!important}
  body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls{left:4px!important;right:4px!important;bottom:4px!important}
  body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls button{flex-basis:23px!important;width:23px!important;min-width:23px!important;max-width:23px!important;height:22px!important;min-height:22px!important;font-size:11px!important}
+}
+</style>
+
+
+<style id="azny-business-persist-participants-on-reload">
+body.azny-business-mode:not(.student-mode) #students .student.azny-student-reconnecting{opacity:.9!important}
+body.azny-business-mode:not(.student-mode) #students .student .azny-student-reconnect-overlay{
+ position:absolute!important;inset:0!important;z-index:7!important;display:flex!important;
+ align-items:center!important;justify-content:center!important;padding:5px!important;
+ background:#071b33a8!important;color:#fff!important;font-size:10px!important;
+ font-weight:800!important;text-align:center!important;pointer-events:none!important;
+ backdrop-filter:blur(2px)!important;
 }
 </style>
 
