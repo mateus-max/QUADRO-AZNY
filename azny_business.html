@@ -1519,7 +1519,7 @@ function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeo
 function localPoint(e){const r=board.getBoundingClientRect();return{x:(e.clientX-r.left)/zoom,y:(e.clientY-r.top)/zoom}}
 function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds]}}
 function serializeObject(el){
- const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:parseFloat(el.style.width)||el.offsetWidth,height:parseFloat(el.style.height)||el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null};
+ const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:parseFloat(el.style.width)||el.offsetWidth,height:parseFloat(el.style.height)||el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null,imageZoom:el.classList.contains("mediaobj")?(Number(el.dataset.imageZoom)||1):undefined};
  if(el.classList.contains("textobj"))return{kind:"text",...b,html:el.innerHTML,anchorId:el.dataset.anchorId||null,anchorX:el.dataset.anchorX==null?null:+el.dataset.anchorX,anchorY:el.dataset.anchorY==null?null:+el.dataset.anchorY,anchorW:el.dataset.anchorW==null?null:+el.dataset.anchorW,anchorH:el.dataset.anchorH==null?null:+el.dataset.anchorH,anchorFontSize:el.dataset.anchorFontSize==null?null:+el.dataset.anchorFontSize,style:{fontSize:el.style.fontSize,fontFamily:el.style.fontFamily,fontWeight:el.style.fontWeight,fontStyle:el.style.fontStyle,textDecoration:el.style.textDecoration,color:el.style.color,textAlign:el.style.textAlign}};
  if(el.classList.contains("mediaobj"))return{kind:"image",...b,src:el.querySelector("img").src};
  if(el.classList.contains("chartobj"))return{kind:"chart",...b,chartType:el.dataset.chartType||"bar",title:el.dataset.title||"Gráfico",values:el.dataset.values||"12,19,8,15,10"};
@@ -1665,7 +1665,7 @@ function handleBoardChannelMessage(raw){
     return;
    }
    const p=document.getElementById("livePointer");
-   if(p){const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);const px=Number(m.x)*sx,py=Number(m.y)*sy;p.style.transform="translate("+(px-44)+"px,"+(py-2)+"px)";p.classList.toggle("active",!!m.visible)}
+   if(p){const px=Number.isFinite(Number(m.nx))?Number(m.nx)*board.clientWidth:Number(m.x)*(board.clientWidth/(Number(m.boardWidth)||board.clientWidth)),py=Number.isFinite(Number(m.ny))?Number(m.ny)*board.clientHeight:Number(m.y)*(board.clientHeight/(Number(m.boardHeight)||board.clientHeight));p.style.transform="translate("+(px-44)+"px,"+(py-2)+"px)";p.classList.toggle("active",!!m.visible)}
    return;
   }
   if(m.type==="text-live"){
@@ -1770,14 +1770,14 @@ let lastPointerPacketAt=0;
 function updateLivePointer(e){
  if(e.target?.closest?.("#aznyExcelWorkspace,#aznyWebWorkspace"))return;
  if(!board.contains(e.target)&&!pointerMode)return;
- const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
+ const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width)*board.clientWidth,y=(e.clientY-r.top)/Math.max(1,r.height)*board.clientHeight;
  const p=document.getElementById("livePointer");
- if(pointerMode){const touchOffset=e.pointerType==="touch";const tipX=x+(touchOffset?39:0),tipY=y+(touchOffset?-47:0);p.style.transform=`translate(${tipX-44}px,${tipY-2}px)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
+ if(pointerMode){p.style.transform=`translate(${x-44}px,${y-2}px)`;p.classList.remove("touch-pointer");p.classList.add("active")}
  {
   const now=performance.now();
   if(now-lastPointerPacketAt>=16){
    lastPointerPacketAt=now;
-   const touchOffset=e.pointerType==="touch";const packet=JSON.stringify({type:"live-pointer",x:x+(touchOffset?39:0),y:y+(touchOffset?-47:0),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode});
+   const packet=JSON.stringify({type:"live-pointer",x,y,nx:x/Math.max(1,board.clientWidth),ny:y/Math.max(1,board.clientHeight),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode});
    if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}
    else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});
   }
@@ -1792,6 +1792,7 @@ function setTool(t){
  // the pen/eraser work visually and interactively over images, PDFs, charts,
  // music staves, notes, keyboards and any other object on the board.
  board.classList.toggle("drawing-active",tool==="pen"||tool==="eraser");
+ board.classList.toggle("object-scroll-mode",tool!=="select");
  if(pointerMode)setPointerMode(false);
  else stage.style.cursor=tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default");
 }
@@ -1802,10 +1803,10 @@ document.getElementById("pointerTool").onclick=()=>setPointerMode(!pointerMode);
 let aznyPointerDragId=null,lastStudentPointerSend=0;
 function moveStudentPointer(e){
  if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
- const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
- const p=document.getElementById("livePointer");const tipX=x+39,tipY=y-47;p.style.transform="translate("+(tipX-44)+"px,"+(tipY-2)+"px)";p.classList.add("touch-pointer","active");
+ const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width)*board.clientWidth,y=(e.clientY-r.top)/Math.max(1,r.height)*board.clientHeight;
+ const p=document.getElementById("livePointer");p.style.transform="translate("+(x-44)+"px,"+(y-2)+"px)";p.classList.remove("touch-pointer");p.classList.add("active");
  const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
- const packet=JSON.stringify({type:"live-pointer",x:x+39,y:y-47,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
+ const packet=JSON.stringify({type:"live-pointer",x,y,nx:x/Math.max(1,board.clientWidth),ny:y/Math.max(1,board.clientHeight),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
  const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
 }
 stage.addEventListener("pointerdown",function(e){if(!isStudent||!pointerMode||!board.contains(e.target))return;aznyPointerDragId=e.pointerId;try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();moveStudentPointer(e)},{passive:false});
@@ -1961,7 +1962,31 @@ function addResource(type,lang){pushHistory();const el=createResourceObject(type
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 let studentTextFullSyncTimer=null;
+function ensureAZNYImageControls(el){
+ if(!el?.classList?.contains("mediaobj"))return;
+ const img=el.querySelector("img");if(!img)return;
+ let controls=el.querySelector(".azny-image-zoom-controls");
+ if(!controls){
+  controls=document.createElement("div");controls.className="azny-image-zoom-controls";
+  controls.innerHTML='<button type="button" data-image-zoom="-1" title="Diminuir imagem" aria-label="Diminuir imagem">−</button><span class="azny-image-zoom-label">100%</span><button type="button" data-image-zoom="1" title="Aumentar imagem" aria-label="Aumentar imagem">+</button>';
+  el.appendChild(controls);
+  controls.addEventListener("pointerdown",e=>{e.stopPropagation()});
+  controls.addEventListener("click",e=>{
+   const btn=e.target.closest("button[data-image-zoom]");if(!btn)return;
+   e.preventDefault();e.stopPropagation();
+   const current=Number(el.dataset.imageZoom)||1,next=Math.max(0.5,Math.min(4,current+(Number(btn.dataset.imageZoom)>0?0.25:-0.25)));
+   el.dataset.imageZoom=String(next);img.style.width=(next*100)+"%";img.style.height=(next*100)+"%";
+   const label=controls.querySelector(".azny-image-zoom-label");if(label)label.textContent=Math.round(next*100)+"%";
+   el.scrollLeft=Math.max(0,(img.offsetWidth-el.clientWidth)/2);el.scrollTop=Math.max(0,(img.offsetHeight-el.clientHeight)/2);
+   scheduleSave();publishLiveBoardState();
+  });
+ }
+ const z=Math.max(.5,Math.min(4,Number(el.dataset.imageZoom)||1));el.dataset.imageZoom=String(z);
+ img.style.width=(z*100)+"%";img.style.height=(z*100)+"%";
+ const label=controls.querySelector(".azny-image-zoom-label");if(label)label.textContent=Math.round(z*100)+"%";
+}
 function makeInteractive(el){
+ ensureAZNYImageControls(el);
  /* Protect document/PDF interactions from remote board refreshes. */
  if(el.classList.contains("docobj")&&!el.dataset.aznyDocGuard){el.dataset.aznyDocGuard="1";let guardTimer=0;const hold=()=>{localBoardEditing=true;clearTimeout(guardTimer)};const release=()=>{clearTimeout(guardTimer);guardTimer=setTimeout(()=>{localBoardEditing=false;scheduleSave();publishLiveBoardState()},900)};el.addEventListener("pointerdown",hold,{capture:true,passive:true});el.addEventListener("pointerup",release,{capture:true,passive:true});el.addEventListener("pointercancel",release,{capture:true,passive:true});el.addEventListener("scroll",()=>{hold();release()},{capture:true,passive:true});el.addEventListener("wheel",()=>{hold();release()},{capture:true,passive:true});}
  if(!el.querySelector(".resize")){const h=document.createElement("div");h.className="resize";el.appendChild(h);h.addEventListener("pointerdown",resizeStart)}
@@ -5114,6 +5139,35 @@ body.azny-business-mode:not(.student-mode) #students .student .azny-student-reco
  font-weight:800!important;text-align:center!important;pointer-events:none!important;
  backdrop-filter:blur(2px)!important;
 }
+</style>
+
+<style id="azny-image-zoom-scroll-and-exact-pointer">
+/* Lupa partilhada: coordenadas normalizadas, com a ponta do cursor no ponto exacto. */
+#livePointer{pointer-events:none!important}
+#livePointer .pointerIcon{pointer-events:none!important}
+/* Imagens: zoom interno e deslocamento vertical/horizontal dentro da própria moldura. */
+#board .mediaobj{overflow:auto!important;overscroll-behavior:contain!important;scrollbar-width:thin!important;scrollbar-color:#8294a8 #e8edf3!important}
+#board .mediaobj>img{display:block!important;max-width:none!important;max-height:none!important;object-fit:contain!important;pointer-events:none!important}
+#board .mediaobj>.azny-image-zoom-controls{
+ position:sticky!important;left:100%!important;top:4px!important;z-index:30!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ gap:3px!important;width:max-content!important;margin:4px 4px 0 auto!important;
+ padding:3px!important;border:1px solid #ffffffaa!important;border-radius:8px!important;
+ background:#0b2036d9!important;color:#fff!important;box-shadow:0 1px 5px #0004!important;
+}
+#board .mediaobj>.azny-image-zoom-controls button{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ width:24px!important;height:24px!important;min-width:24px!important;padding:0!important;
+ border:1px solid #ffffff66!important;border-radius:6px!important;
+ background:#173b5d!important;color:#fff!important;font-size:17px!important;
+ line-height:1!important;font-weight:800!important;cursor:pointer!important;touch-action:manipulation!important;
+}
+#board .mediaobj>.azny-image-zoom-controls .azny-image-zoom-label{
+ min-width:34px!important;text-align:center!important;color:#fff!important;font-size:10px!important;font-weight:700!important;
+}
+/* Com a ferramenta Selecionar desligada, o dedo/roda pode percorrer a imagem dentro das bordas. */
+#board.object-scroll-mode .mediaobj{touch-action:pan-y pan-x!important;cursor:default!important}
+#board.object-scroll-mode .mediaobj>.resize{display:none!important;pointer-events:none!important}
 </style>
 
 </body>
