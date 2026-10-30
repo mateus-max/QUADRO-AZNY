@@ -1219,6 +1219,53 @@ body.student-mode.azny-landscape-view #board{
 }
 </style>
 
+<style id="azny-final-camera-document-image-fixes">
+/* Nome sem tarja: rodapé discreto, entre os controlos do microfone e da câmara. */
+body:not(.student-mode) #students .student>.label{
+ position:absolute!important;left:7px!important;right:70px!important;top:auto!important;bottom:5px!important;
+ z-index:8!important;width:auto!important;max-width:none!important;margin:0!important;padding:2px 3px!important;
+ min-height:0!important;display:block!important;background:transparent!important;color:#fff!important;
+ border:0!important;border-radius:0!important;box-shadow:none!important;text-shadow:0 1px 3px #000!important;
+ font-size:10px!important;line-height:1.15!important;text-align:left!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+body:not(.student-mode) #students .student>.azny-student-device-controls{
+ position:absolute!important;left:auto!important;right:5px!important;top:auto!important;bottom:4px!important;
+ z-index:9!important;display:flex!important;flex-direction:row!important;gap:3px!important;
+ width:auto!important;padding:0!important;background:transparent!important;border:0!important;
+ border-radius:0!important;pointer-events:none!important;
+}
+body:not(.student-mode) #students .student>.azny-student-device-controls button{
+ width:23px!important;height:22px!important;min-width:23px!important;max-width:23px!important;
+ flex:0 0 23px!important;padding:1px!important;border-radius:6px!important;
+ background:#10243ad9!important;color:#fff!important;font-size:12px!important;line-height:1!important;
+ border:1px solid #ffffff55!important;pointer-events:auto!important;
+}
+/* PDF: renderização nítida em ecrãs de alta densidade, sem ampliar artificialmente o conteúdo. */
+.docpdf-pages canvas.docpdf-page{image-rendering:auto!important;display:block!important;max-width:none!important}
+/* Botões de zoom pequenos e encostados ao canto superior direito da imagem. */
+#board .mediaobj{position:absolute!important;overflow:auto!important}
+#board .mediaobj>.azny-image-zoom-controls{
+ position:absolute!important;top:2px!important;right:2px!important;left:auto!important;
+ gap:1px!important;padding:1px!important;margin:0!important;border:0!important;
+ border-radius:5px!important;background:#0b2036a8!important;box-shadow:none!important;
+}
+#board .mediaobj>.azny-image-zoom-controls button{
+ width:17px!important;height:17px!important;min-width:17px!important;max-width:17px!important;
+ padding:0!important;border:0!important;border-radius:3px!important;font-size:12px!important;line-height:1!important;
+ background:#173b5dcc!important;
+}
+#board .mediaobj>.azny-image-zoom-controls .azny-image-zoom-label{
+ min-width:22px!important;font-size:8px!important;line-height:1!important;
+}
+/* A pega de redimensionamento fica dentro da moldura para não ser cortada pelo scroll interno. */
+#board .mediaobj>.resize{
+ right:2px!important;bottom:2px!important;width:13px!important;height:13px!important;
+ z-index:35!important;border:1px solid #fff!important;box-shadow:0 1px 4px #0008!important;
+}
+#board .mediaobj.selected{border:2px solid #1677ff!important}
+#board .mediaobj.selected>.resize{display:block!important}
+</style>
 </head>
 <body class="azny-business-mode">
 <div class="app">
@@ -2043,9 +2090,9 @@ async function renderAZNYPdfViewer(viewer,dataUrl){
    try{
     const page=await pdf.getPage(pageNum);if(token!==renderToken)return;
     const available=Math.max(180,width-28),base=page.getViewport({scale:1}),fit=Math.min(available/base.width,1.5),viewport=page.getViewport({scale:fit*scale});
-    const canvas=document.createElement('canvas');canvas.className='docpdf-page';canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);canvas.style.width=viewport.width+'px';canvas.style.height=viewport.height+'px';
+    const canvas=document.createElement('canvas');canvas.className='docpdf-page';const outputScale=Math.max(1,Math.min(3,window.devicePixelRatio||1));canvas.width=Math.ceil(viewport.width*outputScale);canvas.height=Math.ceil(viewport.height*outputScale);canvas.style.width=viewport.width+'px';canvas.style.height=viewport.height+'px';
     const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error('Canvas indisponível');
-    renderTask=page.render({canvasContext:ctx,viewport});await renderTask.promise;renderTask=null;if(token!==renderToken)return;
+    renderTask=page.render({canvasContext:ctx,viewport,transform:outputScale===1?null:[outputScale,0,0,outputScale,0,0]});await renderTask.promise;renderTask=null;if(token!==renderToken)return;
     /* Keep the previous page visible until the new canvas is completely rendered. */
     const oldCanvas=pages.querySelector('canvas.docpdf-page');if(oldCanvas)oldCanvas.replaceWith(canvas);else{pages.querySelector('.docpdf-loading')?.remove();pages.appendChild(canvas)}
     if(host){host.dataset.pdfPage=String(pageNum);host.dataset.pdfScale=String(scale)}
