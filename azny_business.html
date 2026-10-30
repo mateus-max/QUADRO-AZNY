@@ -4701,6 +4701,61 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
 
 
 
+
+<!-- AZNY BUSINESS: ensure meeting controls receive taps on desktop and Android -->
+<style id="azny-business-meeting-controls-hitbox">
+  body.azny-business-mode #classControlsTop {
+    position:relative!important; z-index:10000!important; pointer-events:auto!important;
+  }
+  body.azny-business-mode #classControlsTop button {
+    position:relative!important; z-index:10001!important;
+    pointer-events:auto!important; touch-action:manipulation!important;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body.azny-business-mode #classControlsTop button:disabled {
+    pointer-events:none!important;
+  }
+</style>
+<script>
+(function(){
+  if(window.__aznyBusinessMeetingControlsBridgeV1)return;
+  window.__aznyBusinessMeetingControlsBridgeV1=true;
+  function buttonAtPoint(event,id){
+    var button=document.getElementById(id);
+    if(!button)return null;
+    var target=event.target;
+    if(target===button||(target&&button.contains(target)))return button;
+    if(typeof event.clientX!=="number"||typeof event.clientY!=="number")return null;
+    var rect=button.getBoundingClientRect();
+    return rect.width>0&&rect.height>0&&event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom?button:null;
+  }
+  function bind(id,label){
+    document.addEventListener("click",function(event){
+      var button=buttonAtPoint(event,id);
+      if(!button||button.disabled)return;
+      event.preventDefault();event.stopPropagation();
+      if(event.stopImmediatePropagation)event.stopImmediatePropagation();
+      if(button.dataset.aznyBridgeBusy==="1")return;
+      button.dataset.aznyBridgeBusy="1";
+      try{
+        if(typeof button.onclick!=="function"){
+          console.error("AZNY BUSINESS: ação "+label+" não foi inicializada.");
+          delete button.dataset.aznyBridgeBusy;return;
+        }
+        Promise.resolve(button.onclick.call(button,event)).catch(function(error){
+          console.error("AZNY BUSINESS: erro na ação "+label,error);
+        }).finally(function(){delete button.dataset.aznyBridgeBusy;});
+      }catch(error){
+        console.error("AZNY BUSINESS: falha na ação "+label,error);
+        delete button.dataset.aznyBridgeBusy;
+      }
+    },true);
+  }
+  bind("endClassBtn","Encerrar reunião");
+  bind("recordClassBtn","Gravar reunião");
+})();
+</script>
+
 </body>
 </html>
 
