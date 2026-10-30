@@ -1625,7 +1625,20 @@ function sendBoardSnapshotToAllPeers(){
    Nos participantes, o quadro mantém essa proporção em qualquer dispositivo;
    se o ecrã for mais estreito, a área pode ser percorrida, mas os objetos não
    são comprimidos para caber numa proporção de ecrã diferente. */
-let aznyRemoteBoardSize=null,aznyRemoteBoardResizeObserver=null;
+let aznyRemoteBoardSize=null,aznyRemoteBoardResizeObserver=null,aznyLastRemoteContentWidth=0;
+function aznyScaleVisibleBoard(scale){
+ if(!Number.isFinite(scale)||scale<=0||Math.abs(scale-1)<0.002)return;
+ board.querySelectorAll(".object").forEach(el=>{
+  const left=parseFloat(el.style.left),top=parseFloat(el.style.top),width=el.offsetWidth,height=el.offsetHeight;
+  if(Number.isFinite(left))el.style.left=(left*scale)+"px";
+  if(Number.isFinite(top))el.style.top=(top*scale)+"px";
+  if(width>0)el.style.width=(width*scale)+"px";
+  if(height>0)el.style.height=(height*scale)+"px";
+  el.querySelectorAll(".textobj").forEach(t=>{const n=parseFloat(getComputedStyle(t).fontSize);if(Number.isFinite(n))t.style.fontSize=(n*scale)+"px"});
+ });
+ strokes.forEach(st=>{if(Array.isArray(st.points))st.points=st.points.map(p=>({...p,x:(+p.x||0)*scale,y:(+p.y||0)*scale}));if(Number.isFinite(+st.width))st.width*=scale});
+ redraw();
+}
 function aznyMatchRemoteBoardAspect(sourceSize){
  if(!isStudent)return;
  const sourceW=Number(sourceSize?.width)||0,sourceH=Number(sourceSize?.height)||0;
@@ -1641,6 +1654,11 @@ function aznyMatchRemoteBoardAspect(sourceSize){
   board.style.setProperty("height",(contentH+borderY)+"px","important");
   board.style.setProperty("max-height","none","important");
   stage.style.setProperty("overflow","auto","important");
+  const actualW=Math.max(1,board.clientWidth);
+  if(aznyLastRemoteContentWidth&&Math.abs(actualW-aznyLastRemoteContentWidth)>1){
+   aznyScaleVisibleBoard(actualW/aznyLastRemoteContentWidth);
+  }
+  aznyLastRemoteContentWidth=actualW;
   requestAnimationFrame(()=>{updateZoomExtent();resizeCanvas()});
  };
  fit();
