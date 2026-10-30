@@ -1621,33 +1621,60 @@ function sendBoardSnapshotToPeer(pc){
 function sendBoardSnapshotToAllPeers(){
  Object.values(window.aznyTeacherPeers||{}).forEach(sendBoardSnapshotToPeer);
 }
+/* O quadro do anfitrião define a proporção de referência.
+   Nos participantes, o quadro mantém essa proporção em qualquer dispositivo;
+   se o ecrã for mais estreito, a área pode ser percorrida, mas os objetos não
+   são comprimidos para caber numa proporção de ecrã diferente. */
+let aznyRemoteBoardSize=null,aznyRemoteBoardResizeObserver=null;
+function aznyMatchRemoteBoardAspect(sourceSize){
+ if(!isStudent)return;
+ const sourceW=Number(sourceSize?.width)||0,sourceH=Number(sourceSize?.height)||0;
+ if(!sourceW||!sourceH)return;
+ aznyRemoteBoardSize={width:sourceW,height:sourceH};
+ const fit=()=>{
+  if(!aznyRemoteBoardSize||!isStudent)return;
+  const rect=stage.getBoundingClientRect();
+  const borderX=(parseFloat(getComputedStyle(board).borderLeftWidth)||0)+(parseFloat(getComputedStyle(board).borderRightWidth)||0);
+  const borderY=(parseFloat(getComputedStyle(board).borderTopWidth)||0)+(parseFloat(getComputedStyle(board).borderBottomWidth)||0);
+  const contentW=Math.max(1,Math.round(rect.width-borderX));
+  const contentH=Math.max(1,Math.round(contentW*aznyRemoteBoardSize.height/aznyRemoteBoardSize.width));
+  board.style.setProperty("width","100%","important");
+  board.style.setProperty("height",(contentH+borderY)+"px","important");
+  board.style.setProperty("max-height","none","important");
+  stage.style.setProperty("overflow","auto","important");
+  requestAnimationFrame(()=>{updateZoomExtent();resizeCanvas()});
+ };
+ fit();
+ if(!aznyRemoteBoardResizeObserver&&window.ResizeObserver){
+  aznyRemoteBoardResizeObserver=new ResizeObserver(fit);
+  aznyRemoteBoardResizeObserver.observe(stage);
+ }
+}
 function normalizeRemoteBoardPages(pages,sourceSize){
  if(!Array.isArray(pages))return pages;
  const sourceW=Number(sourceSize?.width)||0,sourceH=Number(sourceSize?.height)||0;
- const targetW=Math.max(1,board.clientWidth),targetH=Math.max(1,board.clientHeight);
+ const targetW=Math.max(1,board.clientWidth);
  if(!sourceW||!sourceH)return pages.map(page=>page?JSON.parse(JSON.stringify(page)):page);
- /* Usar uma escala única (contain), nunca escalas X/Y independentes.
-    Assim cada objecto mantém proporção e cabe no quadro do telefone/PC.
-    O conteúdo fica centrado quando os ecrãs têm proporções diferentes. */
- const scale=Math.min(targetW/sourceW,targetH/sourceH);
+ /* Uma única escala baseada na largura útil do quadro. A altura do quadro do
+    participante já foi ajustada à proporção do anfitrião acima. */
+ const scale=targetW/sourceW;
  if(!Number.isFinite(scale)||scale<=0)return pages.map(page=>page?JSON.parse(JSON.stringify(page)):page);
- const offsetX=(targetW-sourceW*scale)/2,offsetY=(targetH-sourceH*scale)/2;
- if(Math.abs(scale-1)<0.002&&Math.abs(offsetX)<1&&Math.abs(offsetY)<1)return pages;
+ if(Math.abs(scale-1)<0.002)return pages;
  return pages.map(page=>{
   if(!page)return page;
   const out=JSON.parse(JSON.stringify(page));
   (out.strokes||[]).forEach(st=>{
    if(!st||!Array.isArray(st.points))return;
-   if(!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*scale+offsetX,y:(+p.y||0)*scale+offsetY}));
+   if(!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*scale,y:(+p.y||0)*scale}));
    if(Number.isFinite(+st.width))st.width*=scale;
   });
   (out.objects||[]).forEach(o=>{
-   if(o.left!=null)o.left=o.left*scale+offsetX;
-   if(o.top!=null)o.top=o.top*scale+offsetY;
+   if(o.left!=null)o.left*=scale;
+   if(o.top!=null)o.top*=scale;
    if(o.width!=null)o.width*=scale;
    if(o.height!=null)o.height*=scale;
-   if(o.anchorX!=null)o.anchorX=o.anchorX*scale+offsetX;
-   if(o.anchorY!=null)o.anchorY=o.anchorY*scale+offsetY;
+   if(o.anchorX!=null)o.anchorX*=scale;
+   if(o.anchorY!=null)o.anchorY*=scale;
    if(o.anchorW!=null)o.anchorW*=scale;
    if(o.anchorH!=null)o.anchorH*=scale;
    if(o.anchorFontSize!=null)o.anchorFontSize*=scale;
@@ -1668,6 +1695,7 @@ function aznySameBoardPage(a,b){
 }
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
+ aznyMatchRemoteBoardAspect(d.boardSize);
  /* Do not rebuild the board from an older remote snapshot while the user is interacting with a document/PDF. */
  if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer,.textobj[contenteditable]"))return;
  try{
@@ -1788,6 +1816,7 @@ function setupBoardRealtime(){
   if(localBoardEditing||(activeText&&board.contains(activeText)))return;
   /* Ignore a Firebase echo when the visible page is already identical.
      Rebuilding the DOM for an unchanged snapshot was dropping object selection. */
+  aznyMatchRemoteBoardAspect(d.boardSize);
   try{
    const local=snapshot();
    const remotePages=Array.isArray(d.pages)?normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize):null;
