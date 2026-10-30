@@ -1670,11 +1670,11 @@ function aznyMatchRemoteBoardAspect(sourceSize){
 function normalizeRemoteBoardPages(pages,sourceSize){
  if(!Array.isArray(pages))return pages;
  const sourceW=Number(sourceSize?.width)||0,sourceH=Number(sourceSize?.height)||0;
- /* Use the final participant viewport width, not board.clientWidth captured
-    before the host aspect-ratio layout has completed. This keeps the document
-    at the same percentage of the board on phones and desktop screens. */
- const borderX=(parseFloat(getComputedStyle(board).borderLeftWidth)||0)+(parseFloat(getComputedStyle(board).borderRightWidth)||0);
- const targetW=Math.max(1,stage.clientWidth-borderX);
+ /* The serialized source width is board.clientWidth on the host.
+    Scale against the participant board's own clientWidth as well: stage width
+    is only the parent viewport and can differ from the actual board coordinate
+    space because of borders, box-sizing and the responsive landscape layout. */
+ const targetW=Math.max(1,board.clientWidth);
  if(!sourceW||!sourceH)return pages.map(page=>page?JSON.parse(JSON.stringify(page)):page);
  /* Uma única escala baseada na largura útil do quadro. A altura do quadro do
     participante já foi ajustada à proporção do anfitrião acima. */
