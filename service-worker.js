@@ -1,4 +1,4 @@
-const CACHE_NAME="azny-pwa-shell-v61";
+const CACHE_NAME="azny-pwa-shell-v62";
 /* Works on both academia.apsanlda.com (site root) and github.io/QUADRO-AZNY/. */
 const BASE=new URL("./",self.location.href).pathname;
 const SHELL=[BASE,BASE+"aulas/",BASE+"aulas/index.html",BASE+"avaliacoes/",BASE+"avaliacoes/index.html",BASE+"supervisao/",BASE+"supervisao/index.html",BASE+"responder/",BASE+"responder/index.html",BASE+"testes/",BASE+"testes/index.html",BASE+"index.html",BASE+"entrada.html",BASE+"dashboard.html",BASE+"azny_business.html",BASE+"avaliacao.html",BASE+"supervisao.html",BASE+"manifest.json",BASE+"exames.html",BASE+"manifest.webmanifest",BASE+"icons/azny-exam.svg",BASE+"icons/azny-exam-192.png",BASE+"icons/azny-exam-512.png",BASE+"screenshots/azny-exams-mobile.png",BASE+"screenshots/azny-dashboard-desktop.png",BASE+"quadro_virtual_azny_quadro.html",BASE+"manifest-quadro.webmanifest",BASE+"icons/azny-board.svg",BASE+"icons/express-logo.svg",BASE+"icons/azny-board-192.png",BASE+"icons/azny-board-512.png"];
