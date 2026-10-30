@@ -1621,32 +1621,11 @@ function sendBoardSnapshotToAllPeers(){
  Object.values(window.aznyTeacherPeers||{}).forEach(sendBoardSnapshotToPeer);
 }
 function normalizeRemoteBoardPages(pages,sourceSize){
- const targetW=Math.max(1,board.clientWidth),targetH=Math.max(1,board.clientHeight);
- const sourceW=Number(sourceSize&&sourceSize.width)||targetW,sourceH=Number(sourceSize&&sourceSize.height)||targetH;
- const sx=targetW/sourceW,sy=targetH/sourceH,ss=Math.min(sx,sy);
- if(Math.abs(sx-1)<0.002&&Math.abs(sy-1)<0.002)return pages;
- return pages.map(page=>{
-  if(!page)return page;
-  const out=JSON.parse(JSON.stringify(page));
-  /* Preserve the author's proportional position on each axis. This keeps corner items (such as the date) in their original corners on a board with a different aspect ratio. */
-  (out.strokes||[]).forEach(st=>{
-   if(st&&Array.isArray(st.points)&&!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*sx,y:(+p.y||0)*sy}));
-   if(st&&Number.isFinite(+st.width))st.width*=ss;
-  });
-  (out.objects||[]).forEach(o=>{
-   if(o.left!=null)o.left*=sx;
-   if(o.top!=null)o.top*=sy;
-   if(o.width!=null)o.width*=sx;
-   if(o.height!=null)o.height*=sy;
-   if(o.anchorX!=null)o.anchorX*=sx;
-   if(o.anchorY!=null)o.anchorY*=sy;
-   if(o.anchorW!=null)o.anchorW*=sx;
-   if(o.anchorH!=null)o.anchorH*=sy;
-   if(o.anchorFontSize!=null)o.anchorFontSize*=ss;
-   if(o.style&&o.style.fontSize){const n=parseFloat(o.style.fontSize);if(Number.isFinite(n))o.style.fontSize=(n*ss)+"px"}
-  });
-  return out;
- });
+ /* Os valores left/top/width/height são as medidas escolhidas pelo autor do objecto.
+    Não os redimensionar em cada recepção: em ecrãs com dimensões diferentes, a
+    conversão repetida fazia os objectos parecerem deslocar-se ou mudar de tamanho
+    a cada eco de sincronização. Manter as medidas originais como referência comum. */
+ return Array.isArray(pages)?pages.map(page=>page?JSON.parse(JSON.stringify(page)):page):pages;
 }
 function aznyStableValue(value){
  if(Array.isArray(value))return value.map(aznyStableValue);
@@ -5215,6 +5194,43 @@ body.azny-business-mode:not(.student-mode) #students .student .azny-student-reco
 /* Com a ferramenta Selecionar desligada, o dedo/roda pode percorrer a imagem dentro das bordas. */
 html body #board.object-scroll-mode .mediaobj{touch-action:pan-y pan-x!important;cursor:default!important}
 #board.object-scroll-mode .mediaobj>.resize{display:none!important;pointer-events:none!important}
+</style>
+
+<style id="azny-final-student-camera-name-no-overlay">
+/* Nome no rodapé, sem faixa preta; controlos nas extremidades e nome livre entre eles. */
+body.azny-business-mode:not(.student-mode) #students .student>.label{
+ position:absolute!important;left:34px!important;right:34px!important;
+ top:auto!important;bottom:7px!important;z-index:7!important;
+ display:block!important;width:auto!important;max-width:none!important;
+ margin:0!important;padding:0 3px!important;
+ background:transparent!important;background-color:transparent!important;
+ border:0!important;border-radius:0!important;box-shadow:none!important;
+ color:#fff!important;font-size:10px!important;font-weight:750!important;
+ line-height:18px!important;text-align:center!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+ text-shadow:0 1px 3px #000,0 0 4px #000!important;
+}
+body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls{
+ position:absolute!important;left:4px!important;right:4px!important;
+ top:auto!important;bottom:4px!important;z-index:8!important;
+ display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+ align-items:center!important;justify-content:space-between!important;
+ gap:2px!important;padding:0!important;margin:0!important;
+ background:transparent!important;border:0!important;box-shadow:none!important;
+ pointer-events:none!important;
+}
+body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls button,
+body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls button.is-off{
+ pointer-events:auto!important;flex:0 0 17px!important;width:17px!important;
+ min-width:17px!important;max-width:17px!important;height:17px!important;min-height:17px!important;
+ padding:0!important;margin:0!important;border:0!important;border-radius:50%!important;
+ background:transparent!important;color:#fff!important;font-size:10px!important;
+ line-height:17px!important;box-shadow:none!important;backdrop-filter:none!important;
+ text-shadow:0 1px 3px #000!important;
+}
+body.azny-business-mode:not(.student-mode) #students .student>.azny-student-device-controls button.is-off{
+ color:#ffbcbc!important;background:transparent!important;
+}
 </style>
 
 </body>
