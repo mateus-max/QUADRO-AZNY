@@ -1621,11 +1621,39 @@ function sendBoardSnapshotToAllPeers(){
  Object.values(window.aznyTeacherPeers||{}).forEach(sendBoardSnapshotToPeer);
 }
 function normalizeRemoteBoardPages(pages,sourceSize){
- /* Os valores left/top/width/height são as medidas escolhidas pelo autor do objecto.
-    Não os redimensionar em cada recepção: em ecrãs com dimensões diferentes, a
-    conversão repetida fazia os objectos parecerem deslocar-se ou mudar de tamanho
-    a cada eco de sincronização. Manter as medidas originais como referência comum. */
- return Array.isArray(pages)?pages.map(page=>page?JSON.parse(JSON.stringify(page)):page):pages;
+ if(!Array.isArray(pages))return pages;
+ const sourceW=Number(sourceSize?.width)||0,sourceH=Number(sourceSize?.height)||0;
+ const targetW=Math.max(1,board.clientWidth),targetH=Math.max(1,board.clientHeight);
+ if(!sourceW||!sourceH)return pages.map(page=>page?JSON.parse(JSON.stringify(page)):page);
+ /* Usar uma escala única (contain), nunca escalas X/Y independentes.
+    Assim cada objecto mantém proporção e cabe no quadro do telefone/PC.
+    O conteúdo fica centrado quando os ecrãs têm proporções diferentes. */
+ const scale=Math.min(targetW/sourceW,targetH/sourceH);
+ if(!Number.isFinite(scale)||scale<=0)return pages.map(page=>page?JSON.parse(JSON.stringify(page)):page);
+ const offsetX=(targetW-sourceW*scale)/2,offsetY=(targetH-sourceH*scale)/2;
+ if(Math.abs(scale-1)<0.002&&Math.abs(offsetX)<1&&Math.abs(offsetY)<1)return pages;
+ return pages.map(page=>{
+  if(!page)return page;
+  const out=JSON.parse(JSON.stringify(page));
+  (out.strokes||[]).forEach(st=>{
+   if(!st||!Array.isArray(st.points))return;
+   if(!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*scale+offsetX,y:(+p.y||0)*scale+offsetY}));
+   if(Number.isFinite(+st.width))st.width*=scale;
+  });
+  (out.objects||[]).forEach(o=>{
+   if(o.left!=null)o.left=o.left*scale+offsetX;
+   if(o.top!=null)o.top=o.top*scale+offsetY;
+   if(o.width!=null)o.width*=scale;
+   if(o.height!=null)o.height*=scale;
+   if(o.anchorX!=null)o.anchorX=o.anchorX*scale+offsetX;
+   if(o.anchorY!=null)o.anchorY=o.anchorY*scale+offsetY;
+   if(o.anchorW!=null)o.anchorW*=scale;
+   if(o.anchorH!=null)o.anchorH*=scale;
+   if(o.anchorFontSize!=null)o.anchorFontSize*=scale;
+   if(o.style?.fontSize){const n=parseFloat(o.style.fontSize);if(Number.isFinite(n))o.style.fontSize=(n*scale)+"px"}
+  });
+  return out;
+ });
 }
 function aznyStableValue(value){
  if(Array.isArray(value))return value.map(aznyStableValue);
