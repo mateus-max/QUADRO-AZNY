@@ -1563,7 +1563,7 @@ function bindTeacherPresenceWatchForStudent(){
 }
 
 function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove("show"),1000)}
-function localPoint(e){const r=board.getBoundingClientRect();return{x:(e.clientX-r.left)/zoom,y:(e.clientY-r.top)/zoom}}
+function localPoint(e){const r=board.getBoundingClientRect(),scale=zoom*(isStudent?(Number(aznyRemoteFitScale)||1):1);return{x:(e.clientX-r.left)/scale,y:(e.clientY-r.top)/scale}}
 function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds]}}
 function serializeObject(el){
  const docScroller=el.querySelector(".docpdf-pages,.docbody,.azny-sheet-viewport,.azny-editable-word");const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:el.offsetWidth,height:el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null,imageZoom:el.classList.contains("mediaobj")?(Number(el.dataset.imageZoom)||1):undefined,docScrollTop:docScroller?.scrollTop||0,docScrollLeft:docScroller?.scrollLeft||0};
@@ -1621,24 +1621,11 @@ function sendBoardSnapshotToPeer(pc){
 function sendBoardSnapshotToAllPeers(){
  Object.values(window.aznyTeacherPeers||{}).forEach(sendBoardSnapshotToPeer);
 }
-/* O quadro do anfitrião define a proporção de referência.
-   Nos participantes, o quadro mantém essa proporção em qualquer dispositivo;
-   se o ecrã for mais estreito, a área pode ser percorrida, mas os objetos não
-   são comprimidos para caber numa proporção de ecrã diferente. */
-let aznyRemoteBoardSize=null,aznyRemoteBoardResizeObserver=null,aznyLastRemoteContentWidth=0;
-function aznyScaleVisibleBoard(scale){
- if(!Number.isFinite(scale)||scale<=0||Math.abs(scale-1)<0.002)return;
- board.querySelectorAll(".object").forEach(el=>{
-  const left=parseFloat(el.style.left),top=parseFloat(el.style.top),width=el.offsetWidth,height=el.offsetHeight;
-  if(Number.isFinite(left))el.style.left=(left*scale)+"px";
-  if(Number.isFinite(top))el.style.top=(top*scale)+"px";
-  if(width>0)el.style.width=(width*scale)+"px";
-  if(height>0)el.style.height=(height*scale)+"px";
-  el.querySelectorAll(".textobj").forEach(t=>{const n=parseFloat(getComputedStyle(t).fontSize);if(Number.isFinite(n))t.style.fontSize=(n*scale)+"px"});
- });
- strokes.forEach(st=>{if(Array.isArray(st.points)&&!st.anchorId)st.points=st.points.map(p=>({...p,x:(+p.x||0)*scale,y:(+p.y||0)*scale}));if(Number.isFinite(+st.width))st.width*=scale});
- redraw();
-}
+/* O participante conserva as coordenadas originais do anfitrião.
+   A escala é aplicada ao quadro inteiro, numa única transformação CSS. Assim,
+   documentos e imagens que chegam até às margens do anfitrião também chegam
+   exatamente às margens no telefone, sem escalas cumulativas por objeto. */
+let aznyRemoteBoardSize=null,aznyRemoteBoardResizeObserver=null,aznyRemoteFitScale=1;
 function aznyMatchRemoteBoardAspect(sourceSize){
  if(!isStudent)return;
  const sourceW=Number(sourceSize?.width)||0,sourceH=Number(sourceSize?.height)||0;
@@ -1647,18 +1634,16 @@ function aznyMatchRemoteBoardAspect(sourceSize){
  const fit=()=>{
   if(!aznyRemoteBoardSize||!isStudent)return;
   const borderX=(parseFloat(getComputedStyle(board).borderLeftWidth)||0)+(parseFloat(getComputedStyle(board).borderRightWidth)||0);
-  const borderY=(parseFloat(getComputedStyle(board).borderTopWidth)||0)+(parseFloat(getComputedStyle(board).borderBottomWidth)||0);
-  const contentW=Math.max(1,Math.round(stage.clientWidth-borderX));
-  const contentH=Math.max(1,Math.round(contentW*aznyRemoteBoardSize.height/aznyRemoteBoardSize.width));
-  board.style.setProperty("width","100%","important");
-  board.style.setProperty("height",(contentH+borderY)+"px","important");
+  const availableW=Math.max(1,stage.clientWidth-borderX);
+  aznyRemoteFitScale=availableW/aznyRemoteBoardSize.width;
+  /* Keep the exact host coordinate system; only the rendered board is fitted. */
+  board.style.setProperty("width",aznyRemoteBoardSize.width+"px","important");
+  board.style.setProperty("height",aznyRemoteBoardSize.height+"px","important");
+  board.style.setProperty("max-width","none","important");
   board.style.setProperty("max-height","none","important");
+  board.style.setProperty("transform-origin","0 0","important");
+  board.style.setProperty("transform","scale("+(zoom*aznyRemoteFitScale)+")","important");
   stage.style.setProperty("overflow","auto","important");
-  const actualW=Math.max(1,board.clientWidth);
-  if(aznyLastRemoteContentWidth&&Math.abs(actualW-aznyLastRemoteContentWidth)>1){
-   aznyScaleVisibleBoard(actualW/aznyLastRemoteContentWidth);
-  }
-  aznyLastRemoteContentWidth=actualW;
   requestAnimationFrame(()=>{updateZoomExtent();resizeCanvas()});
  };
  fit();
@@ -1668,41 +1653,9 @@ function aznyMatchRemoteBoardAspect(sourceSize){
  }
 }
 function normalizeRemoteBoardPages(pages,sourceSize){
- if(!Array.isArray(pages))return pages;
- const sourceW=Number(sourceSize?.width)||0,sourceH=Number(sourceSize?.height)||0;
- /* The serialized source width is board.clientWidth on the host.
-    Scale against the participant board's own clientWidth as well: stage width
-    is only the parent viewport and can differ from the actual board coordinate
-    space because of borders, box-sizing and the responsive landscape layout. */
- const targetW=Math.max(1,board.clientWidth);
- if(!sourceW||!sourceH)return pages.map(page=>page?JSON.parse(JSON.stringify(page)):page);
- /* Uma única escala baseada na largura útil do quadro. A altura do quadro do
-    participante já foi ajustada à proporção do anfitrião acima. */
- const scale=targetW/sourceW;
- if(!Number.isFinite(scale)||scale<=0)return pages.map(page=>page?JSON.parse(JSON.stringify(page)):page);
- if(Math.abs(scale-1)<0.002)return pages;
- return pages.map(page=>{
-  if(!page)return page;
-  const out=JSON.parse(JSON.stringify(page));
-  (out.strokes||[]).forEach(st=>{
-   if(!st||!Array.isArray(st.points))return;
-   if(!st.anchorId)st.points=st.points.map(p=>Object.assign({},p,{x:(+p.x||0)*scale,y:(+p.y||0)*scale}));
-   if(Number.isFinite(+st.width))st.width*=scale;
-  });
-  (out.objects||[]).forEach(o=>{
-   if(o.left!=null)o.left*=scale;
-   if(o.top!=null)o.top*=scale;
-   if(o.width!=null)o.width*=scale;
-   if(o.height!=null)o.height*=scale;
-   if(o.anchorX!=null)o.anchorX*=scale;
-   if(o.anchorY!=null)o.anchorY*=scale;
-   if(o.anchorW!=null)o.anchorW*=scale;
-   if(o.anchorH!=null)o.anchorH*=scale;
-   if(o.anchorFontSize!=null)o.anchorFontSize*=scale;
-   if(o.style?.fontSize){const n=parseFloat(o.style.fontSize);if(Number.isFinite(n))o.style.fontSize=(n*scale)+"px"}
-  });
-  return out;
- });
+ /* Do not mutate source coordinates. The complete board is fitted as one unit
+    by aznyMatchRemoteBoardAspect, preserving exact object-to-board widths. */
+ return Array.isArray(pages)?pages.map(page=>page?JSON.parse(JSON.stringify(page)):page):pages;
 }
 function aznyStableValue(value){
  if(Array.isArray(value))return value.map(aznyStableValue);
@@ -2364,7 +2317,7 @@ function strokePoints(s){
 }
 function redraw(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;ctx.clearRect(0,0,r.width,r.height);ctx.lineCap="round";ctx.lineJoin="round";for(const s of strokes){const pts=strokePoints(s);if(!pts.length)continue;ctx.strokeStyle=s.color;ctx.lineWidth=s.width;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke()}if(isStudent)aznyRemoteLiveStrokes.forEach(s=>{const pts=s.points||[];if(!pts.length)return;ctx.strokeStyle=s.color||"#000";ctx.lineWidth=Number(s.width)||3;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke()})}
 
-function resizeCanvas(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));canvas.style.width=r.width+"px";canvas.style.height=r.height+"px";ctx.setTransform(d,0,0,d,0,0);redraw()}
+function resizeCanvas(){const w=Math.max(1,board.clientWidth),h=Math.max(1,board.clientHeight),d=devicePixelRatio||1;canvas.width=Math.max(1,Math.round(w*d));canvas.height=Math.max(1,Math.round(h*d));canvas.style.width=w+"px";canvas.style.height=h+"px";ctx.setTransform(d,0,0,d,0,0);redraw()}
 function objectAtPoint(p){const els=[...board.querySelectorAll('.object')].reverse();for(const el of els){const b=anchorBox(el);if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return el}return null}
 function eraseAt(p){const radius=18;strokes=strokes.filter(s=>!strokePoints(s).some(q=>Math.hypot(q.x-p.x,q.y-p.y)<radius))}
 function broadcastLiveStroke(done=false){if(!currentStroke||!aznyLiveStrokeId)return;const points=currentStroke.anchorId?strokePoints(currentStroke):currentStroke.points;const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,done});const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}};if(isStudent){send(studentBoardChannel);return}Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null))}
@@ -2549,8 +2502,8 @@ document.addEventListener("keydown",e=>{
  else if(e.key==="Escape"){selectObject(null)}
  else if(e.key==="Delete"&&selected&&!selected.matches(":focus")){e.preventDefault();deleteSelected()}
 });
-function updateZoomExtent(){const extent=document.getElementById("zoomExtent");if(!extent)return;extent.style.width=Math.max(stage.clientWidth,board.offsetWidth*zoom)+"px";extent.style.height=Math.max(stage.clientHeight,board.offsetHeight*zoom)+"px"}
- function setZoom(z,sync=true){const oldMaxX=Math.max(1,stage.scrollWidth-stage.clientWidth),oldMaxY=Math.max(1,stage.scrollHeight-stage.clientHeight),fx=stage.scrollLeft/oldMaxX,fy=stage.scrollTop/oldMaxY;zoom=Math.max(.5,Math.min(2,Number(z)||1));board.style.transformOrigin="0 0";board.style.transform=`scale(${zoom})`;updateZoomExtent();requestAnimationFrame(()=>{stage.scrollLeft=fx*Math.max(0,stage.scrollWidth-stage.clientWidth);stage.scrollTop=fy*Math.max(0,stage.scrollHeight-stage.clientHeight)});document.getElementById("zoomLabel").textContent=Math.round(zoom*100)+"%";resizeCanvas();if(sync&&!isStudent&&!remoteBoardApplying){const packet=JSON.stringify({type:"board-zoom",zoom});Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});if(AZNY_DB){aznyRoomRef().child("board/zoom").set(zoom).catch(e=>console.warn("AZNY zoom sync:",e))}}}
+function updateZoomExtent(){const extent=document.getElementById("zoomExtent");if(!extent)return;const fit=isStudent?(Number(aznyRemoteFitScale)||1):1;extent.style.width=Math.max(stage.clientWidth,board.offsetWidth*zoom*fit)+"px";extent.style.height=Math.max(stage.clientHeight,board.offsetHeight*zoom*fit)+"px"}
+ function setZoom(z,sync=true){const oldMaxX=Math.max(1,stage.scrollWidth-stage.clientWidth),oldMaxY=Math.max(1,stage.scrollHeight-stage.clientHeight),fx=stage.scrollLeft/oldMaxX,fy=stage.scrollTop/oldMaxY;zoom=Math.max(.5,Math.min(2,Number(z)||1));board.style.transformOrigin="0 0";board.style.transform=`scale(${zoom*(isStudent?(Number(aznyRemoteFitScale)||1):1)})`;updateZoomExtent();requestAnimationFrame(()=>{stage.scrollLeft=fx*Math.max(0,stage.scrollWidth-stage.clientWidth);stage.scrollTop=fy*Math.max(0,stage.scrollHeight-stage.clientHeight)});document.getElementById("zoomLabel").textContent=Math.round(zoom*100)+"%";resizeCanvas();if(sync&&!isStudent&&!remoteBoardApplying){const packet=JSON.stringify({type:"board-zoom",zoom});Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});if(AZNY_DB){aznyRoomRef().child("board/zoom").set(zoom).catch(e=>console.warn("AZNY zoom sync:",e))}}}
 document.getElementById("zoomIn").onclick=()=>setZoom(zoom+.1);document.getElementById("zoomOut").onclick=()=>setZoom(zoom-.1);document.getElementById("zoomReset").onclick=()=>setZoom(1);
 /* Ctrl + roda do rato faz zoom do quadro; a alteração é propagada aos alunos. */
 stage.addEventListener("wheel",e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();setZoom(zoom+(e.deltaY<0?.1:-.1))}},{passive:false});
