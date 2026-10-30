@@ -12,8 +12,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style id="azny-word-cross-device-font">/* Mesmas métricas tipográficas em PC e Android para manter as quebras de linha do Word. */
-#board .azny-editable-word,#board .azny-editable-word *{font-family:Roboto,Arial,sans-serif!important}
+<style id="azny-word-cross-device-font">
+/* Word: uma única métrica de texto em todos os dispositivos. A escala deve ser aplicada ao quadro,
+   nunca pelo redimensionamento responsivo da área interna do documento. */
+#board .docobj .azny-editable-word{
+ box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:none!important;
+ flex:1 1 0!important;-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important;
+ font-family:Roboto,Arial,sans-serif!important;font-kerning:normal!important;
+ font-variant-ligatures:none!important;font-size-adjust:none!important;letter-spacing:normal!important;
+}
+#board .docobj .azny-editable-word,#board .docobj .azny-editable-word *{
+ font-family:Roboto,Arial,sans-serif!important;-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important;
+ font-kerning:normal!important;font-variant-ligatures:none!important;
+}
 </style>
 <style>
 *{box-sizing:border-box}
@@ -1738,7 +1749,7 @@ function handleBoardChannelMessage(raw){
   }
   if(m.type==="word-live"){
    const id=String(m.id||"").replace(/[^a-zA-Z0-9_-]/g,""),doc=board.querySelector('.docobj[data-id="'+id+'"]'),body=doc?.querySelector(".azny-editable-word");
-   if(body&&document.activeElement!==body)body.innerHTML=String(m.html||"");
+   if(body&&document.activeElement!==body){body.innerHTML=String(m.html||"");aznyNormalizeWordDocument(doc)}
    if(!isStudent){Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(JSON.stringify(m))}catch(_){}}});scheduleSave();publishLiveBoardState()}
    return;
   }
@@ -1977,6 +1988,29 @@ function duplicateSelectedObject(){if(!selected)return;const d=serializeObject(s
 function changeSelectedLayer(dir){if(!selected||!selected.isConnected)return;pushHistory();const objects=[...board.children].filter(el=>el.classList.contains("object"));const i=objects.indexOf(selected);if(i<0)return;const target=Math.max(0,Math.min(objects.length-1,i+(dir<0?-1:1)));if(target===i){toast(dir<0?"O objeto já está atrás dos outros.":"O objeto já está à frente dos outros.");return}objects.splice(i,1);objects.splice(target,0,selected);objects.forEach((el,index)=>{el.style.zIndex=String(5+index);board.appendChild(el)});commitObjectAction(dir<0?"Objeto enviado para trás":"Objeto trazido para a frente")}
 
 function deleteSelected(){if(!selected)return;if(isStudent&&(!selected.dataset.createdBy||selected.dataset.createdBy!==studentRequestId)){toast(document.documentElement.lang==="en"?"You can only delete an image or document that you uploaded.":"Só pode eliminar a imagem ou o documento que carregou.");return}pushHistory();const id=selected.dataset.id;deletedObjectIds.add(aznyObjectKey(selected));board.querySelectorAll('.textobj[data-anchor-id="'+id+'"]').forEach(t=>t.remove());selected.remove();strokes=strokes.filter(s=>s.anchorId!==id);selected=null;redraw();updateHint();scheduleSave();publishLiveBoardState();toast(document.documentElement.lang==="en"?"Object permanently deleted":"Objeto eliminado definitivamente") }
+function aznyNormalizeWordDocument(el){
+ if(!el?.classList?.contains("docobj"))return;
+ const body=el.querySelector(".azny-editable-word");if(!body)return;
+ body.style.setProperty("box-sizing","border-box","important");
+ body.style.setProperty("width","100%","important");
+ body.style.setProperty("min-width","0","important");
+ body.style.setProperty("max-width","none","important");
+ body.style.setProperty("flex","1 1 0","important");
+ body.style.setProperty("font-family","Roboto,Arial,sans-serif","important");
+ body.style.setProperty("-webkit-text-size-adjust","100%","important");
+ body.style.setProperty("text-size-adjust","100%","important");
+ body.querySelectorAll("*").forEach(node=>{
+  node.style.setProperty("font-family","Roboto,Arial,sans-serif","important");
+  node.style.setProperty("-webkit-text-size-adjust","100%","important");
+  node.style.setProperty("text-size-adjust","100%","important");
+ });
+ const ready=document.fonts?.load?document.fonts.load("15px Roboto"):Promise.resolve();
+ Promise.resolve(ready).catch(()=>{}).then(()=>{
+  if(!body.isConnected)return;
+  body.style.setProperty("font-family","Roboto,Arial,sans-serif","important");
+  body.querySelectorAll("*").forEach(node=>node.style.setProperty("font-family","Roboto,Arial,sans-serif","important"));
+ });
+}
 function createFromData(o){
  let el;
  if(o.kind==="spreadsheet"){el=createAZNYVirtualSheetObject(o.name||"Folha Excel",o.sheetName||"Sheet1",o.sheetData||[],o.id);Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});}
@@ -1994,6 +2028,7 @@ function createFromData(o){
   el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(o.name||"Documento")+'</span></div>';
   if(o.pdf){el.appendChild(createAZNYPdfViewer(o.pdf,+o.pdfPage||1,+o.pdfScale||1))}else if(o.html){const body=document.createElement("div");body.className="docbody azny-editable-word";body.contentEditable="true";body.spellcheck=true;body.innerHTML=o.html;body.style.cssText="overflow:auto;background:#fff;color:#172b45;padding:18px;min-height:240px;font:15px/1.55 Arial";body.addEventListener("input",()=>{scheduleSave();publishLiveBoardState()});el.appendChild(body)}else{const body=document.createElement("div");body.className="docbody";body.textContent=o.content||"";el.appendChild(body)}
   Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});
+  if(o.html)aznyNormalizeWordDocument(el);
  }
  el.dataset.id=o.id||"o"+(++objectId);if(o.createdBy)el.dataset.createdBy=String(o.createdBy);if(o.aznyMinimized){el.dataset.aznyMinimized="1";el.dataset.aznyOldWidth=o.aznyOldWidth||"360px";el.dataset.aznyOldHeight=o.aznyOldHeight||"260px"}board.appendChild(el);makeInteractive(el);if(Number(o.docScrollTop)||Number(o.docScrollLeft)){const restoreScroll=()=>{const target=el.querySelector(".docpdf-pages,.docbody,.azny-sheet-viewport,.azny-editable-word");if(target){target.scrollTop=Number(o.docScrollTop)||0;target.scrollLeft=Number(o.docScrollLeft)||0}};requestAnimationFrame(restoreScroll);setTimeout(restoreScroll,350)}
 }
@@ -2250,7 +2285,7 @@ function addEditableWordDocument(name,html){
  /* A largura lógica do documento não pode depender da largura do ecrã.
     O quadro do participante é que aplica a escala visual global no telefone. */
  Object.assign(el.style,{left:"80px",top:"60px",width:"780px",height:"440px",minWidth:"780px",maxWidth:"none",background:"#fff",color:"#172b45",overflow:"hidden"});
- board.appendChild(el);makeInteractive(el);selectObject(el);
+ board.appendChild(el);aznyNormalizeWordDocument(el);makeInteractive(el);selectObject(el);
  const wordBody=el.querySelector(".azny-editable-word");
  const applyStableWordMetrics=()=>{wordBody.style.setProperty("font-family","Roboto,Arial,sans-serif","important");wordBody.querySelectorAll("*").forEach(node=>node.style.setProperty("font-family","Roboto,Arial,sans-serif","important"))};
  const fontReady=document.fonts?.load?document.fonts.load("15px Roboto"):Promise.resolve();
