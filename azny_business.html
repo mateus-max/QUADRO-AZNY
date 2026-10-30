@@ -2484,7 +2484,7 @@ async function aznyToggleScreenShare(forStudent){
  }
  if(!navigator.mediaDevices?.getDisplayMedia){toast("Este navegador não permite partilhar o ecrã. Atualize o Chrome e permita a captura do ecrã.");return}
  try{
-  const display=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:8,max:10,width:{ideal:960,max:1280},height:{ideal:540,max:720}},audio:false});
+  const display=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:8,max:10,width:{ideal:960,max:1280},height:{ideal:540,max:720}}},audio:false});
   const track=display.getVideoTracks()[0];if(!track){display.getTracks().forEach(t=>t.stop());throw new Error("Não foi recebido vídeo do ecrã")}
   if(forStudent){
    aznyStudentScreenTrack=track;
