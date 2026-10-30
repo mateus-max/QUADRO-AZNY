@@ -1728,6 +1728,12 @@ function handleBoardChannelMessage(raw){
    if(el&&el.classList.contains("textobj")){const focused=document.activeElement===el;const studentEditing=document.body.classList.contains("student-mode")&&document.body.classList.contains("azny-student-native-keyboard");if(!focused&&!studentEditing)el.innerHTML=String(m.html||"");}
    return;
   }
+  if(m.type==="word-live"){
+   const id=String(m.id||"").replace(/[^a-zA-Z0-9_-]/g,""),doc=board.querySelector('.docobj[data-id="'+id+'"]'),body=doc?.querySelector(".azny-editable-word");
+   if(body&&document.activeElement!==body)body.innerHTML=String(m.html||"");
+   if(!isStudent){Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(JSON.stringify(m))}catch(_){}}});scheduleSave();publishLiveBoardState()}
+   return;
+  }
   if(m.type==="sheet-cell"){aznyApplySheetCell(m);return}
   if(m.type==="doc-scroll"){aznyApplyDocumentScroll(m);return}
   if(m.type==="board-zoom"){if(Number.isFinite(Number(m.zoom)))setZoom(Number(m.zoom),false);return}if(m.type==="board-pan"){applyBoardPan(m.pan);return}
@@ -2078,7 +2084,7 @@ function makeInteractive(el){
    selectObject(el);dragStart(e,el);
   }
  },{passive:false});
- el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){if(isStudent){clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>publishLiveBoardState(),650)}clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}})},35)}});
+ el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){if(isStudent){clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>publishLiveBoardState(),650)}clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}})},35)}if(el.classList.contains("docobj")&&el.querySelector(".azny-editable-word")){clearTimeout(el._aznyWordLiveTimer);el._aznyWordLiveTimer=setTimeout(()=>{const body=el.querySelector(".azny-editable-word"),packet=JSON.stringify({type:"word-live",id:el.dataset.id,html:body.innerHTML});const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}};if(isStudent)send(studentBoardChannel);else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null))},180)}});
 }
 function dragStart(e,el){
  if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();localBoardEditing=true;pushHistory();const p=localPoint(e),sx=parseFloat(el.style.left)||0,sy=parseFloat(el.style.top)||0,pointerId=e.pointerId;
@@ -2202,12 +2208,16 @@ function addDoc(file){
   reader.onload=()=>{
    try{
     const wb=XLSX.read(reader.result,{type:"array"});
-    const sheetName=wb.SheetNames[0],ws=wb.Sheets[sheetName];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
-    const data=rows.map(row=>Array.from(row||[],v=>String(v??"")));
-    const el=createAZNYVirtualSheetObject(file.name,sheetName,data);
-    pushHistory();board.appendChild(el);makeInteractive(el);selectObject(el);
-    updateHint();scheduleSave();publishLiveBoardState();toast("Folha Excel carregada e pronta para edição colaborativa");
+    if(!wb.SheetNames.length)throw new Error("O ficheiro não contém folhas.");
+    pushHistory();
+    wb.SheetNames.forEach((sheetName,index)=>{
+     const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,defval:""});
+     const data=rows.map(row=>Array.from(row||[],v=>String(v??"")));
+     const el=createAZNYVirtualSheetObject(file.name,sheetName,data);
+     Object.assign(el.style,{left:(70+index*26)+"px",top:(60+index*26)+"px"});
+     board.appendChild(el);makeInteractive(el);if(index===0)selectObject(el);
+    });
+    updateHint();scheduleSave();publishLiveBoardState();toast(wb.SheetNames.length+" folha(s) Excel carregada(s) para edição colaborativa");
    }catch(err){console.error(err);toast("Não foi possível abrir esta folha Excel.")}
   };reader.readAsArrayBuffer(file);return
  }
