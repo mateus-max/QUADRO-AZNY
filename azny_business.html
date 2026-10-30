@@ -2354,7 +2354,48 @@ async function startClass(){
   if(startBtn){startBtn.disabled=classStarted;startBtn.removeAttribute("aria-busy")}
   if(endBtn)endBtn.disabled=!classStarted;
  }
+
 }
+
+// AZNY BUSINESS: bind meeting actions in the same scope as their real functions.
+// These handlers are installed immediately after the meeting functions are declared.
+(function bindBusinessMeetingActionsEarly(){
+ const start=document.getElementById("startClassBtn");
+ const end=document.getElementById("endClassBtn");
+ const copy=document.getElementById("copyClassLink");
+ const wa=document.getElementById("shareWhatsApp");
+ const fb=document.getElementById("shareFacebook");
+ const record=document.getElementById("recordClassBtn");
+ if(start)start.onclick=async function(){
+  try{await startClass()}
+  catch(error){console.error("AZNY BUSINESS start:",error);toast("Não foi possível iniciar a reunião: "+(error?.message||"erro inesperado"));start.disabled=!!classStarted;if(end)end.disabled=!classStarted}
+ };
+ if(end)end.onclick=async function(){
+  end.disabled=true;
+  try{await endClass()}
+  catch(error){console.error("AZNY BUSINESS end:",error);toast("Não foi possível encerrar a reunião: "+(error?.message||"erro inesperado"));end.disabled=false}
+ };
+ if(copy)copy.onclick=async function(){
+  const link=getClassLink();
+  try{await navigator.clipboard.writeText(link);toast("Link da reunião copiado.")}
+  catch(_){window.prompt("Copie o link da reunião:",link)}
+ };
+ if(wa)wa.onclick=function(){
+  const link=getClassLink(),title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
+  const url="https://wa.me/?text="+encodeURIComponent("Convite para a reunião empresarial \""+title+"\" no AZNY BUSINESS: "+link);
+  const popup=window.open(url,"_blank");
+  if(!popup)toast("Permita janelas pop-up para abrir o WhatsApp.");
+ };
+ if(fb)fb.onclick=function(){
+  const link=getClassLink();
+  const popup=window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link),"_blank");
+  if(!popup)toast("Permita janelas pop-up para abrir o Facebook.");
+ };
+ if(record)record.onclick=async function(){
+  try{await startRecording(false)}
+  catch(error){console.error("AZNY BUSINESS recording:",error);toast("Não foi possível iniciar a gravação: "+(error?.message||"erro inesperado"))}
+ };
+})(); 
 
 async function restoreActiveTeacherSession(){
  if(isStudent||!classSessionId||!AZNY_DB)return;
@@ -4702,198 +4743,7 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
 
 
 
-<!-- AZNY BUSINESS: definitive toolbar interaction and action fallback -->
-<style id="azny-business-meeting-controls-hitbox">
-  body.azny-business-mode .topbar{
-    position:relative!important;z-index:2147483000!important;
-    pointer-events:auto!important;isolation:isolate!important;
-  }
-  body.azny-business-mode #classControlsTop{
-    position:relative!important;z-index:2147483001!important;
-    pointer-events:auto!important;
-  }
-  body.azny-business-mode #classControlsTop button{
-    position:relative!important;z-index:2147483002!important;
-    pointer-events:auto!important;touch-action:manipulation!important;
-    -webkit-tap-highlight-color:transparent;cursor:pointer!important;
-  }
-  body.azny-business-mode #classControlsTop button:disabled{
-    cursor:not-allowed!important;
-  }
-</style>
-<script>
-(function(){
-  if(window.__aznyBusinessToolbarDefinitiveV2)return;
-  window.__aznyBusinessToolbarDefinitiveV2=true;
 
-  function hashKey(value){
-    var h=2166136261;
-    for(var i=0;i<String(value||"").length;i++){
-      h^=String(value||"").charCodeAt(i);h=Math.imul(h,16777619);
-    }
-    return (h>>>0).toString(36);
-  }
-  function getBusinessRoomId(){
-    var params=new URLSearchParams(location.search);
-    var room=params.get("sala");
-    var access=params.get("acesso")||"";
-    var scope=hashKey(access);
-    if(room){
-      if(access&&!room.startsWith("AZNY-"+scope+"-"))room="AZNY-"+scope+"-"+room;
-      return room;
-    }
-    try{
-      room=localStorage.getItem("azny_teacher_room_v1_"+scope)||"";
-    }catch(_){}
-    return room||("AZNY-TEACHER-"+scope);
-  }
-  function getBusinessLink(){
-    var params=new URLSearchParams(location.search);
-    var room=getBusinessRoomId();
-    var safeRoom=String(room).replace(/[.#$\[\]\/]/g,"_");
-    var link=new URL("azny_business.html",location.href);
-    link.searchParams.set("aluno","1");
-    link.searchParams.set("sala",room);
-    link.searchParams.set("sess","ROOM-"+safeRoom);
-    link.searchParams.set("modo","empresa");
-    link.searchParams.set("empresa",params.get("empresa")||"Organização");
-    link.searchParams.set("atividade",document.getElementById("boardTitle")?.value?.trim()||params.get("atividade")||"Reunião de negócios");
-    link.searchParams.set("tipo",params.get("tipo")||"reuniao");
-    return link.href;
-  }
-  function notify(message){
-    var box=document.getElementById("toast");
-    if(box){box.textContent=message;box.classList.add("show");clearTimeout(box._aznyTimer);box._aznyTimer=setTimeout(function(){box.classList.remove("show")},3200)}
-    else alert(message);
-  }
-  async function fallbackEndMeeting(){
-    var button=document.getElementById("endClassBtn");
-    var start=document.getElementById("startClassBtn");
-    var timer=document.getElementById("classTimer");
-    if(button){button.disabled=true;button.setAttribute("aria-busy","true")}
-    try{
-      if(!window.firebase)throw new Error("Firebase não foi carregado.");
-      if(!firebase.apps.length)firebase.initializeApp({
-        apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",
-        authDomain:"quadro-azny.firebaseapp.com",
-        databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",
-        projectId:"quadro-azny",
-        storageBucket:"quadro-azny.firebasestorage.app",
-        messagingSenderId:"204452366229",
-        appId:"1:204452366229:web:a6294fee1a6d92e604d89c3",
-        measurementId:"G-SVR4LGF8TH"
-      });
-      var auth=firebase.auth();
-      if(!auth.currentUser)await auth.signInAnonymously();
-      var roomKey=String(getBusinessRoomId()).replace(/[.#$\[\]\/]/g,"_");
-      var roomRef=firebase.database().ref("aznyBusinessRooms/"+roomKey);
-      var activeSnap=await roomRef.child("activeSessionId").once("value");
-      var sessionId=String(activeSnap.val()||"").trim()||("ROOM-"+roomKey);
-      await roomRef.child("sessions").child(sessionId).update({
-        status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,
-        "teacherPresence/online":false,"teacherPresence/network":"offline",
-        "teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP
-      });
-      try{localStorage.removeItem("azny-business-active-session-"+roomKey)}catch(_){}
-      try{
-        var channel=new BroadcastChannel("azny-room-"+getBusinessRoomId());
-        channel.postMessage({type:"business-meeting-ended",session:sessionId,endedAt:Date.now()});
-        channel.close();
-      }catch(_){}
-      if(timer)timer.textContent="00:00:00";
-      if(start){start.disabled=false;start.removeAttribute("aria-busy")}
-      if(button){button.disabled=true;button.removeAttribute("aria-busy")}
-      notify("Reunião encerrada. Os participantes serão desligados.");
-    }catch(error){
-      console.error("AZNY BUSINESS fallback end:",error);
-      if(button){button.disabled=false;button.removeAttribute("aria-busy")}
-      notify("Não foi possível confirmar o encerramento no servidor: "+(error&&error.message?error.message:"verifique a ligação."));
-    }
-  }
-  async function copyBusinessLink(){
-    var link=getBusinessLink();
-    try{
-      if(navigator.clipboard&&navigator.clipboard.writeText){
-        await navigator.clipboard.writeText(link);
-        notify("Link da reunião copiado.");
-      }else{
-        window.prompt("Copie o link da reunião:",link);
-      }
-    }catch(error){
-      window.prompt("Copie o link da reunião:",link);
-    }
-  }
-  function shareBusinessWhatsApp(){
-    var link=getBusinessLink();
-    var title=document.getElementById("boardTitle")?.value?.trim()||"Reunião de negócios";
-    var message="Convite para a reunião empresarial \""+title+"\" no AZNY BUSINESS: "+link;
-    var win=window.open("https://wa.me/?text="+encodeURIComponent(message),"_blank");
-    if(!win)notify("O navegador bloqueou a abertura do WhatsApp. Permita janelas pop-up e tente novamente.");
-  }
-  function shareBusinessFacebook(){
-    var link=getBusinessLink();
-    var win=window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link),"_blank");
-    if(!win)notify("O navegador bloqueou a abertura do Facebook. Permita janelas pop-up e tente novamente.");
-  }
-  function hitButton(event,id){
-    var button=document.getElementById(id);
-    if(!button)return null;
-    var target=event.target;
-    if(target===button||(target&&button.contains(target)))return button;
-    if(typeof event.clientX!=="number"||typeof event.clientY!=="number")return null;
-    var rect=button.getBoundingClientRect();
-    return rect.width>0&&rect.height>0&&event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom?button:null;
-  }
-  function runAction(button,event,fallback){
-    if(button.dataset.aznyToolbarBusy==="1")return;
-    button.dataset.aznyToolbarBusy="1";
-    try{
-      var result;
-      if(typeof button.onclick==="function")result=button.onclick.call(button,event);
-      else result=fallback();
-      Promise.resolve(result).catch(function(error){
-        console.error("AZNY BUSINESS toolbar action failed:",error);
-        notify("O botão não conseguiu concluir a ação. Verifique a ligação e tente novamente.");
-      }).finally(function(){delete button.dataset.aznyToolbarBusy});
-    }catch(error){
-      console.error("AZNY BUSINESS toolbar action error:",error);
-      delete button.dataset.aznyToolbarBusy;
-      notify("Ocorreu um erro ao executar esta ação.");
-    }
-  }
-  var routes={
-    endClassBtn:function(button,event){
-      if(typeof button.onclick==="function")return runAction(button,event,fallbackEndMeeting);
-      return runAction(button,event,fallbackEndMeeting);
-    },
-    copyClassLink:function(button,event){return runAction(button,event,copyBusinessLink)},
-    shareWhatsApp:function(button,event){return runAction(button,event,shareBusinessWhatsApp)},
-    shareFacebook:function(button,event){return runAction(button,event,shareBusinessFacebook)},
-    recordClassBtn:function(button,event){
-      return runAction(button,event,function(){notify("A função de gravação não foi inicializada. Atualize a página e tente novamente.")});
-    },
-    teacherScreenShareBtn:function(button){
-      button.dataset.aznySyntheticClick="1";
-      try{button.click()}finally{setTimeout(function(){delete button.dataset.aznySyntheticClick},0)}
-    }
-  };
-  document.addEventListener("click",function(event){
-    if(event.__aznyBusinessRouted)return;
-    var ids=Object.keys(routes);
-    for(var i=0;i<ids.length;i++){
-      var button=hitButton(event,ids[i]);
-      if(!button)continue;
-      if(button.dataset.aznySyntheticClick==="1")return;
-      if(button.disabled&&ids[i]!=="endClassBtn")return;
-      event.preventDefault();event.stopPropagation();
-      if(event.stopImmediatePropagation)event.stopImmediatePropagation();
-      event.__aznyBusinessRouted=true;
-      routes[ids[i]](button,event);
-      return;
-    }
-  },true);
-})();
-</script>
 
 </body>
 </html>
@@ -4992,74 +4842,7 @@ body.azny-business-mode .camera-panel #teacherMediaStatus,body.azny-business-mod
 
 
 
-<!-- AZNY BUSINESS: resilient meeting-start click binding -->
-<style id="azny-business-start-hitbox-fix">
-  body.azny-business-mode #classControlsTop{position:relative!important;z-index:10000!important;pointer-events:auto!important}
-  body.azny-business-mode #startClassBtn{position:relative!important;z-index:10001!important;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important}
-</style>
-<script>
-(function(){
-  if(window.__aznyBusinessStartBindingV2) return;
-  window.__aznyBusinessStartBindingV2 = true;
-  var fallbackInterval = null;
-  var fallbackStartedAt = 0;
-  var busy = false;
-  function formatElapsed(ms){
-    var sec=Math.max(0,Math.floor(ms/1000));
-    return [Math.floor(sec/3600),Math.floor((sec%3600)/60),sec%60]
-      .map(function(n){return String(n).padStart(2,"0")}).join(":");
-  }
-  function stopFallback(){
-    if(fallbackInterval){clearInterval(fallbackInterval);fallbackInterval=null;}
-    fallbackStartedAt=0;
-  }
-  function runStart(){
-    var btn=document.getElementById("startClassBtn");
-    var end=document.getElementById("endClassBtn");
-    if(busy||!btn)return;
-    if(btn.disabled&&btn.getAttribute("aria-busy")==="true")return;
-    busy=true;
-    try{
-      if(typeof btn.onclick!=="function")throw new Error("A ação de iniciar reunião não foi inicializada. Atualize a página.");
-      btn.onclick.call(btn,new MouseEvent("click",{bubbles:true,cancelable:true,view:window}));
-      setTimeout(function(){
-        if(btn.disabled){if(end)end.disabled=false;}
-        else if(end)end.disabled=true;
-        busy=false;
-        btn.removeAttribute("aria-busy");
-      },250);
-    }catch(err){
-      console.error("AZNY Business: falha ao acionar iniciar reunião",err);
-      busy=false;
-      btn.disabled=false;
-      btn.removeAttribute("aria-busy");
-      if(end)end.disabled=true;
-      alert(err.message||"Não foi possível iniciar a reunião.");
-    }
-  }
-  function isStartClick(event){
-    var btn=document.getElementById("startClassBtn");
-    if(!btn) return false;
-    var target=event.target;
-    if(target===btn || (target && btn.contains(target))) return true;
-    if(typeof event.clientX!=="number" || typeof event.clientY!=="number") return false;
-    var r=btn.getBoundingClientRect();
-    return r.width>0 && r.height>0 && event.clientX>=r.left && event.clientX<=r.right && event.clientY>=r.top && event.clientY<=r.bottom;
-  }
-  document.addEventListener("click",function(event){
-    if(!isStartClick(event)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    if(event.stopImmediatePropagation) event.stopImmediatePropagation();
-    runStart();
-  },true);
-  document.addEventListener("click",function(event){
-    var target=event.target;
-    if(target && (target.id==="endClassBtn" || (target.closest && target.closest("#endClassBtn")))) stopFallback();
-  },true);
-  window.addEventListener("pagehide",stopFallback);
-})();
-</script>
+
 
 
 <!-- AZNY BUSINESS: reliable join-request button bridge -->
