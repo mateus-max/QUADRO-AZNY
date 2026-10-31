@@ -1078,72 +1078,24 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style id="azny-teacher-camera-controls-and-refresh-persistence">
-/* Quadro dos professores: painel lateral igual ao modelo enviado pelo utilizador. */
-body:not(.student-mode) .rightbar .camera-panel{
-  padding:5px 6px 7px!important;display:flex!important;flex-direction:column!important;
-  gap:0!important;min-height:0!important;overflow:hidden!important;
-}
-body:not(.student-mode) .rightbar .camera-label{
-  display:block!important;position:static!important;order:0!important;
-  width:100%!important;margin:0 0 4px!important;padding:0 2px!important;
-  background:transparent!important;color:#17212b!important;text-align:center!important;
-  font-size:13px!important;font-weight:800!important;line-height:1.2!important;
-}
-body:not(.student-mode) .rightbar .camera{
-  order:1!important;position:relative!important;width:100%!important;
-  height:clamp(92px,14vh,122px)!important;min-height:92px!important;
-  border:2px solid #23a99b!important;border-radius:15px!important;
-  overflow:hidden!important;background:#091626!important;
-}
-body:not(.student-mode) .rightbar #teacherVideo{
-  width:100%!important;height:100%!important;
-  object-fit:cover!important;transform:scaleX(-1)!important;
-}
-body:not(.student-mode) .rightbar .camera .cam-off{
-  font-size:9px!important;gap:2px!important;padding:4px!important;
-}
+/* Apenas dois botões de alternância: microfone à esquerda e câmara à direita. */
+body:not(.student-mode) .rightbar .camera-panel{padding:5px 6px 7px!important;display:flex!important;flex-direction:column!important;gap:0!important;min-height:0!important;overflow:hidden!important}
+body:not(.student-mode) .rightbar .camera-label{display:block!important;position:static!important;order:0!important;width:100%!important;margin:0 0 4px!important;padding:0 2px!important;background:transparent!important;color:#17212b!important;text-align:center!important;font-size:13px!important;font-weight:800!important;line-height:1.2!important}
+body:not(.student-mode) .rightbar .camera{order:1!important;position:relative!important;width:100%!important;height:clamp(92px,14vh,122px)!important;min-height:92px!important;border:2px solid #23a99b!important;border-radius:15px!important;overflow:hidden!important;background:#091626!important}
+body:not(.student-mode) .rightbar #teacherVideo{width:100%!important;height:100%!important;object-fit:cover!important;transform:scaleX(-1)!important}
+body:not(.student-mode) .rightbar .camera .cam-off{font-size:9px!important;gap:2px!important;padding:4px!important}
 body:not(.student-mode) .rightbar .camera .cam-off .big{font-size:19px!important}
-body:not(.student-mode) .rightbar .camera .cam-status{
-  position:absolute!important;top:5px!important;right:5px!important;bottom:auto!important;
-  z-index:5!important;font-size:8px!important;padding:3px 6px!important;
-  border-radius:10px!important;background:#071b33d9!important;color:#fff!important;
-}
-body:not(.student-mode) .rightbar .camera .cam-controls-overlay{
-  position:absolute!important;left:5px!important;right:5px!important;bottom:5px!important;
-  z-index:8!important;display:grid!important;grid-template-columns:1fr 1fr!important;
-  gap:4px!important;padding:4px!important;background:#071b33d9!important;
-  border:1px solid #ffffff45!important;border-radius:10px!important;
-}
-body:not(.student-mode) .rightbar .camera .cam-controls-overlay .cam-buttons{
-  display:contents!important;margin:0!important;padding:0!important;
-}
-body:not(.student-mode) .rightbar .camera .cam-controls-overlay button{
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  min-width:0!important;width:100%!important;height:27px!important;min-height:27px!important;
-  margin:0!important;padding:2px!important;border:1px solid #ffffff55!important;
-  border-radius:7px!important;background:#173653!important;color:#fff!important;
-  font-size:0!important;line-height:1!important;
-}
-body:not(.student-mode) .rightbar .camera .cam-controls-overlay #cameraBtn:before{content:"📷";font-size:15px!important}
-body:not(.student-mode) .rightbar .camera .cam-controls-overlay #cameraStopBtn:before{content:"⏹";font-size:13px!important}
-body:not(.student-mode) .rightbar .camera .cam-controls-overlay #micBtn:before{content:"🎙";font-size:15px!important}
-body:not(.student-mode) .rightbar .camera .cam-controls-overlay #micStopBtn:before{content:"🔇";font-size:15px!important}
-body:not(.student-mode) .rightbar .camera .cam-controls-overlay button:disabled{opacity:.42!important}
-body:not(.student-mode) .rightbar .camera-panel>.teacher-media-status,
-body:not(.student-mode) .rightbar .camera-panel>.azny-audio-output-picker,
-body:not(.student-mode) .rightbar .camera-panel>#aznyAudioOutputStatus{display:none!important}
+body:not(.student-mode) .rightbar .camera .cam-status{position:absolute!important;top:5px!important;right:5px!important;bottom:auto!important;z-index:5!important;font-size:8px!important;padding:3px 6px!important;border-radius:10px!important;background:#071b33d9!important;color:#fff!important}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay{position:absolute!important;left:5px!important;right:5px!important;bottom:5px!important;z-index:8!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:0!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay .cam-buttons{display:contents!important}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay button{display:flex!important;align-items:center!important;justify-content:center!important;flex:0 0 32px!important;width:32px!important;min-width:32px!important;height:30px!important;min-height:30px!important;margin:0!important;padding:0!important;border:0!important;border-radius:50%!important;background:transparent!important;box-shadow:none!important;color:#fff!important;font-size:19px!important;line-height:1!important;text-shadow:0 1px 3px #000!important}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay #micBtn{order:0!important}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay #cameraBtn{order:1!important}
+body:not(.student-mode) .rightbar .camera-panel>.teacher-media-status,body:not(.student-mode) .rightbar .camera-panel>.azny-audio-output-picker,body:not(.student-mode) .rightbar .camera-panel>#aznyAudioOutputStatus{display:none!important}
 body:not(.student-mode) .rightbar .camera-join-requests{max-height:55px!important;overflow:auto!important;font-size:9px!important}
-body:not(.student-mode) .rightbar .camera-panel+.sidehead{
-  padding:7px 6px!important;min-height:34px!important;height:auto!important;
-  font-size:12px!important;font-weight:800!important;line-height:1.2!important;
-}
-body:not(.student-mode) .rightbar #students.students{
-  flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;
-  padding:5px!important;gap:5px!important;
-}
-body:not(.student-mode) .rightbar #students #noStudents{
-  font-size:10px!important;padding:10px 6px!important;
-}
+body:not(.student-mode) .rightbar .camera-panel+.sidehead{padding:7px 6px!important;min-height:34px!important;height:auto!important;font-size:12px!important;font-weight:800!important;line-height:1.2!important}
+body:not(.student-mode) .rightbar #students.students{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;padding:5px!important;gap:5px!important}
+body:not(.student-mode) .rightbar #students #noStudents{font-size:10px!important;padding:10px 6px!important}
 </style>
 </head>
 <body>
@@ -1249,12 +1201,8 @@ body:not(.student-mode) .rightbar #students #noStudents{
       <div class="cam-status" id="camStatus">Desligada</div>
       <div class="cam-controls-overlay" aria-label="Controlos da câmara e do microfone">
         <div class="cam-buttons">
-          <button id="cameraBtn" type="button" title="Ligar câmera" aria-label="Ligar câmera">🎥 Ligar câmera</button>
-          <button id="cameraStopBtn" type="button" title="Desligar câmera" aria-label="Desligar câmera" disabled>⏹ Desligar</button>
-        </div>
-        <div class="cam-buttons">
-          <button id="micBtn" type="button" title="Ligar microfone" aria-label="Ligar microfone">🎙 Ligar microfone</button>
-          <button id="micStopBtn" type="button" title="Desligar microfone" aria-label="Desligar microfone" disabled>🔇 Desligar</button>
+          <button id="micBtn" type="button" title="Ligar/desligar microfone" aria-label="Ligar ou desligar microfone">🎙</button>
+          <button id="cameraBtn" type="button" title="Ligar/desligar câmera" aria-label="Ligar ou desligar câmera">📷</button>
         </div>
       </div>
     </div>
@@ -2227,13 +2175,12 @@ function updateTeacherMediaStatus(){
  const en=document.documentElement.lang==="en",cam=teacherStream?(en?"on":"ligada"):(en?"off":"desligada"),mic=teacherAudioStream?(en?"on":"ligado"):(en?"off":"desligado");
  const status=document.getElementById("teacherMediaStatus");if(status)status.textContent=en?"Camera: "+cam+" · Microphone: "+mic:"Câmera: "+cam+" · Microfone: "+mic;
  const cameraBtn=document.getElementById("cameraBtn"),micBtn=document.getElementById("micBtn");
- if(cameraBtn)cameraBtn.textContent=teacherStream?(en?"🎥 Camera on":"🎥 Câmera ligada"):(en?"🎥 Turn on camera":"🎥 Ligar câmera");
- if(micBtn)micBtn.textContent=teacherAudioStream?(en?"🎙 Microphone on":"🎙 Microfone ligado"):(en?"🎙 Turn on microphone":"🎙 Ligar microfone");
+ if(cameraBtn){cameraBtn.textContent="📷";cameraBtn.setAttribute("aria-pressed",teacherStream?"true":"false");cameraBtn.title=teacherStream?(en?"Turn camera off":"Desligar câmera"):(en?"Turn camera on":"Ligar câmera");}
+ if(micBtn){micBtn.textContent="🎙";micBtn.setAttribute("aria-pressed",teacherAudioStream?"true":"false");micBtn.title=teacherAudioStream?(en?"Turn microphone off":"Desligar microfone"):(en?"Turn microphone on":"Ligar microfone");}
 }
 async function startCamera(){
  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
  const btn=document.getElementById("cameraBtn");
- if(btn)btn.disabled=true;
  try{
   // Não reutilizar uma stream antiga que possa estar parada ou bloqueada.
   if(teacherStream){teacherStream.getTracks().forEach(t=>{try{t.stop()}catch(_){}});teacherStream=null}
@@ -2260,14 +2207,12 @@ async function startCamera(){
   if(v){v.srcObject=teacherStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.removeAttribute("hidden");v.hidden=false;v.style.cssText+=";display:block!important;visibility:visible!important;opacity:1!important;width:100%;height:100%;min-height:60px;object-fit:cover;background:#0b1828;position:absolute;inset:0;z-index:2";v.onloadedmetadata=()=>{v.play?.().catch(()=>{})};await new Promise(resolve=>{if(v.readyState>=2){resolve();return}const done=()=>resolve();v.addEventListener("loadeddata",done,{once:true});setTimeout(done,1200)});try{await v.play()}catch(playError){console.warn("AZNY camera play:",playError);toast(document.documentElement.lang==="en"?"The camera is on. Tap the video to start the image.":"A câmara está ligada. Toque no vídeo para iniciar a imagem.");v.addEventListener("pointerdown",()=>v.play?.().catch(()=>{}),{once:true})}}
   document.querySelector("#teacherCamera .cam-off").style.display="none";
   document.getElementById("camStatus").textContent=document.documentElement.lang==="en"?"On":"Ligada";
-  if(btn)btn.disabled=true;
-  document.getElementById("cameraStopBtn").disabled=false;
+  if(btn)btn.disabled=false;
   syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
  }catch(e){
   if(teacherStream){teacherStream.getTracks().forEach(t=>{try{t.stop()}catch(_){}});teacherStream=null}
   const v=document.getElementById("teacherVideo");if(v){v.srcObject=null;v.hidden=true}
   if(btn)btn.disabled=false;
-  document.getElementById("cameraStopBtn").disabled=true;
   updateTeacherMediaStatus();
   const msg=e.name==="NotAllowedError"?"Permissão da câmera recusada. Autorize a câmera nas configurações do navegador.":e.name==="NotReadableError"||e.name==="AbortError"?"A câmera está ocupada ou o controlador não respondeu. Feche outros programas que usam a câmera e tente novamente.":"Não foi possível ligar a câmera: "+(e.name||e.message);
   toast(msg)
@@ -2278,7 +2223,7 @@ function stopCamera(){
  const v=document.getElementById("teacherVideo");v.srcObject=null;v.hidden=true;
  document.querySelector("#teacherCamera .cam-off").style.display="flex";
  document.getElementById("camStatus").textContent=document.documentElement.lang==="en"?"Off":"Desligada";
- document.getElementById("cameraBtn").disabled=false;document.getElementById("cameraStopBtn").disabled=true;
+ document.getElementById("cameraBtn").disabled=false;
  syncTeacherMediaToPeers();updateTeacherMediaStatus()
 }
 async function startMic(){
@@ -2286,17 +2231,17 @@ async function startMic(){
  try{
   teacherAudioStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}},video:false});
   const track=teacherAudioStream.getAudioTracks()[0];track.enabled=true;
-  document.getElementById("micBtn").disabled=true;document.getElementById("micStopBtn").disabled=false;
+  document.getElementById("micBtn").disabled=false;
   syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Microfone do professor ligado e disponível em tempo real")
  }catch(e){toast(document.documentElement.lang==="en"?(e.name==="NotAllowedError"?"Microphone permission denied.":"Could not turn on the microphone: "+e.name):(e.name==="NotAllowedError"?"Permissão do microfone recusada.":"Não foi possível ligar o microfone: "+e.name))}
 }
 function stopMic(){
  if(teacherAudioStream){teacherAudioStream.getTracks().forEach(t=>t.stop());teacherAudioStream=null}
- document.getElementById("micBtn").disabled=false;document.getElementById("micStopBtn").disabled=true;
+ document.getElementById("micBtn").disabled=false;
  syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Microfone do professor desligado")
 }
-document.getElementById("cameraBtn").onclick=startCamera;document.getElementById("cameraStopBtn").onclick=stopCamera;
-document.getElementById("micBtn").onclick=startMic;document.getElementById("micStopBtn").onclick=stopMic;
+document.getElementById("cameraBtn").onclick=()=>teacherStream?stopCamera():startCamera();
+document.getElementById("micBtn").onclick=()=>teacherAudioStream?stopMic():startMic();
 
 function formatDuration(ms){const s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return [h,m,sec].map(v=>String(v).padStart(2,"0")).join(":")}
 function updateClassTimer(){document.getElementById("classTimer").textContent=formatDuration(Date.now()-classStartTime)}
@@ -3124,11 +3069,9 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
   if(studentHand)studentHand.textContent=studentHand.classList.contains("is-raised")?(en?"✋ Lower hand":"✋ Baixar mão"):(en?"✋ Raise hand":"✋ Levantar mão");
   const pageLabel=document.getElementById("pageLabel");if(pageLabel)pageLabel.textContent=(en?"Page ":"Página ")+currentPage+"/5";
   const done=document.querySelector(".azny-student-text-done");if(done)done.textContent=en?"✓ Finish writing":"✓ Concluir escrita";
-  const cameraBtn=document.getElementById("cameraBtn"),cameraStop=document.getElementById("cameraStopBtn"),micBtn=document.getElementById("micBtn"),micStop=document.getElementById("micStopBtn");
-  if(cameraBtn)cameraBtn.textContent=teacherStream?(en?"🎥 Camera on":"🎥 Câmera ligada"):(en?"🎥 Turn on camera":"🎥 Ligar câmera");
-  if(cameraStop)cameraStop.textContent=en?"⏹ Turn off":"⏹ Desligar";
-  if(micBtn)micBtn.textContent=teacherAudioStream?(en?"🎙 Microphone on":"🎙 Microfone ligado"):(en?"🎙 Turn on microphone":"🎙 Ligar microfone");
-  if(micStop)micStop.textContent=en?"🔇 Turn off":"🔇 Desligar";
+  const cameraBtn=document.getElementById("cameraBtn"),micBtn=document.getElementById("micBtn");
+  if(cameraBtn){cameraBtn.textContent="📷";cameraBtn.title=teacherStream?(en?"Turn camera off":"Desligar câmera"):(en?"Turn camera on":"Ligar câmera");cameraBtn.setAttribute("aria-pressed",teacherStream?"true":"false");}
+  if(micBtn){micBtn.textContent="🎙";micBtn.title=teacherAudioStream?(en?"Turn microphone off":"Desligar microfone"):(en?"Turn microphone on":"Ligar microfone");micBtn.setAttribute("aria-pressed",teacherAudioStream?"true":"false");}
   const camStatus=document.getElementById("camStatus");if(camStatus)camStatus.textContent=teacherStream?(en?"On":"Ligada"):(en?"Off":"Desligada");const mediaStatus=document.getElementById("teacherMediaStatus");if(mediaStatus){const cam=teacherStream?(en?"on":"ligada"):(en?"off":"desligada"),mic=teacherAudioStream?(en?"on":"ligado"):(en?"off":"desligado");mediaStatus.textContent=en?"Camera: "+cam+" · Microphone: "+mic:"Câmera: "+cam+" · Microfone: "+mic}
   const outputLabel=document.querySelector(".azny-audio-output-picker");if(outputLabel&&outputLabel.firstChild)outputLabel.firstChild.textContent=en?"🔊 Audio output ":"🔊 Saída de som ";
   const outputOption=document.querySelector("#aznyAudioOutputSelect option[value='default']");if(outputOption)outputOption.textContent=en?"Automatic output":"Saída automática do dispositivo";
