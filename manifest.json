@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "AZNY — Painel do Professor",
-  "short_name": "AZNY Professor",
-  "description": "Aplicação AZNY para professores: login, painel de controlo, quadro virtual, aulas online, testes, avaliações, supervisão e gestão de planos.",
+  "name": "Remote Work Board",
+  "short_name": "Remote Work",
+  "description": "Remote Work Board: plataforma de colaboração, reuniões e trabalho remoto.",
   "lang": "pt-AO",
   "start_url": "./",
   "scope": "./",
