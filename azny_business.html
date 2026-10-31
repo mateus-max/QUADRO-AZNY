@@ -2292,7 +2292,75 @@ function addEditableWordDocument(name,html){
  Promise.resolve(fontReady).catch(()=>{}).then(()=>{applyStableWordMetrics();scheduleSave();publishLiveBoardState()});
  el.querySelector(".azny-export-docx").onclick=()=>{if(!window.htmlDocx){toast("Exportação Word não está disponível neste momento.");return}downloadBlob(htmlDocx.asBlob(wordBody.innerHTML),"application/vnd.openxmlformats-officedocument.wordprocessingml.document",name.replace(/\.[^.]+$/,"")+".docx")};
  el.querySelector(".azny-export-doc-html").onclick=()=>downloadBlob(wordBody.innerHTML,"text/html;charset=utf-8",name.replace(/\.[^.]+$/,"")+".html");
- el.querySelector(".azny-export-doc-pdf").onclick=()=>{const w=window.open("","_blank");if(!w){toast("Permita janelas pop-up para exportar PDF.");return}w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+escapeHtml(name)+"</title><style>body{font-family:Roboto,Arial,sans-serif}</style></head><body>"+wordBody.innerHTML+"\n\n\n</body></html>");w.document.close();w.focus();w.print()};
+ el.querySelector(".azny-export-doc-pdf").onclick=()=>{const w=window.open("","_blank");if(!w){toast("Permita janelas pop-up para exportar PDF.");return}w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+escapeHtml(name)+"</title><style>body{font-family:Roboto,Arial,sans-serif}</style></head><body>"+wordBody.innerHTML+"\n\n\n
+<style id="remote-work-board-camera-mini-layout">
+/* Remote Work Board: câmara compacta como no exemplo DNAC, no topo da coluna lateral. */
+html body.azny-business-mode .rightbar .camera-panel{
+ position:relative!important;display:flex!important;flex-direction:column!important;
+ align-items:stretch!important;gap:3px!important;padding:4px 5px!important;
+ margin:0!important;flex:0 0 auto!important;overflow:visible!important;
+}
+html body.azny-business-mode .rightbar .camera-panel #teacherCamera{
+ position:relative!important;width:100%!important;height:68px!important;min-height:68px!important;
+ max-height:68px!important;flex:0 0 68px!important;margin:0!important;
+ border-radius:7px!important;overflow:hidden!important;
+}
+html body.azny-business-mode .rightbar #teacherCamera video{
+ width:100%!important;height:100%!important;object-fit:cover!important;
+}
+html body.azny-business-mode .rightbar #teacherCamera .cam-off{
+ gap:2px!important;padding:3px!important;font-size:8px!important;line-height:1.1!important;
+}
+html body.azny-business-mode .rightbar #teacherCamera .cam-off .big{font-size:17px!important}
+html body.azny-business-mode .rightbar #teacherCamera .cam-label,
+html body.azny-business-mode .rightbar #teacherCamera .camera-label{
+ left:4px!important;bottom:3px!important;top:auto!important;padding:2px 5px!important;
+ font-size:8px!important;line-height:1.1!important;border-radius:4px!important;
+}
+html body.azny-business-mode .rightbar #teacherCamera .cam-status{
+ top:3px!important;right:3px!important;padding:2px 4px!important;font-size:7px!important;
+}
+html body.azny-business-mode .rightbar .camera-panel>.cam-buttons{
+ position:static!important;display:flex!important;flex-direction:row!important;
+ justify-content:flex-start!important;align-items:center!important;gap:4px!important;
+ width:100%!important;margin:0!important;padding:0 1px!important;
+ pointer-events:auto!important;flex:0 0 auto!important;
+}
+html body.azny-business-mode .rightbar .camera-panel>.cam-buttons button{
+ position:static!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ flex:0 0 25px!important;width:25px!important;min-width:25px!important;max-width:25px!important;
+ height:23px!important;min-height:23px!important;padding:0!important;
+ border:1px solid #ffffff80!important;border-radius:6px!important;
+ background:#102d49!important;color:#fff!important;font-size:13px!important;
+ box-shadow:none!important;backdrop-filter:none!important;pointer-events:auto!important;
+}
+html body.azny-business-mode .rightbar .camera-panel #teacherMediaStatus,
+html body.azny-business-mode .rightbar .camera-panel .azny-audio-output-picker,
+html body.azny-business-mode .rightbar .camera-panel #aznyAudioOutputStatus{
+ display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;
+}
+html body.azny-business-mode .rightbar .camera-panel .camera-join-requests{
+ margin:0!important;padding:0!important;max-height:42px!important;overflow:auto!important;
+}
+html body.azny-business-mode .rightbar>.sidehead.azny-join-requests-title{
+ min-height:22px!important;padding:3px 6px!important;font-size:9px!important;
+}
+html body.azny-business-mode .rightbar>#students~.sidehead,
+html body.azny-business-mode .rightbar>.sidehead:not(.azny-join-requests-title){
+ min-height:25px!important;padding:4px 6px!important;font-size:10px!important;
+}
+@media(max-width:950px) and (orientation:landscape),(max-height:520px) and (pointer:coarse){
+ html body.azny-business-mode .rightbar .camera-panel #teacherCamera{
+  height:60px!important;min-height:60px!important;max-height:60px!important;flex-basis:60px!important;
+ }
+ html body.azny-business-mode .rightbar .camera-panel>.cam-buttons button{
+  width:23px!important;min-width:23px!important;max-width:23px!important;
+  height:21px!important;min-height:21px!important;flex-basis:23px!important;
+ }
+}
+</style>
+
+</body></html>");w.document.close();w.focus();w.print()};
  wordBody.addEventListener("input",()=>{scheduleSave();publishLiveBoardState()});
  updateHint();scheduleSave();publishLiveBoardState();toast("Documento Word editável carregado no quadro")
 }
