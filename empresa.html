@@ -2,19 +2,56 @@
 <html lang="pt">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#071b33"><title>AZNY Empresas — Reuniões e encontros</title>
+<meta name="theme-color" content="#071b33"><title>Remote Work Board — Área Empresarial</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(135deg,#071b33,#12395c);font-family:Inter,Segoe UI,Arial,sans-serif;color:#172536;padding:24px}
 .wrap{max-width:960px;margin:auto}.brand{color:#fff;font-weight:900;font-size:22px;margin:4px 0 20px}.brand span{color:#65b1ff}.panel{background:#fff;border-radius:18px;padding:clamp(18px,4vw,32px);box-shadow:0 22px 70px #0003}.intro h1{margin:0;color:#0a2542;font-size:clamp(25px,4vw,36px)}.intro p{color:#5d6c7d;line-height:1.6}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.tabs button,.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:800;cursor:pointer}.tabs button{background:#edf3f9;color:#29445f}.tabs button.active,.btn.primary{background:#1677ff;color:#fff}.btn.secondary{background:#e9eff6;color:#183754}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:6px}.password-wrap{position:relative;display:flex;width:100%;align-items:center}.password-wrap input{padding-right:82px!important}.password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;border-radius:7px;background:#e9eff6;color:#183754;font-size:12px;font-weight:800;padding:8px 9px;cursor:pointer;min-width:64px}.field.full{grid-column:1/-1}.field label{font-size:12px;font-weight:800;color:#334e68}.field input,.field select,.field textarea{width:100%;padding:12px;border:1px solid #cbd7e4;border-radius:9px;background:#fff;font:inherit;min-width:0}.field textarea{min-height:80px;resize:vertical}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.msg{min-height:22px;color:#b42318;font-size:13px;margin-top:10px;overflow-wrap:anywhere}.muted{font-size:12px;color:#64748b;line-height:1.5}.hidden{display:none!important}.checkout-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.checkout-method{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:7px;text-align:left;padding:12px;border:2px solid #dbe4ed;border-radius:13px;background:#fff;cursor:pointer}.checkout-method.active{border-color:#f47b00;background:#fff8f0;box-shadow:0 0 0 3px #f47b0018}.checkout-method img{display:block;object-fit:contain;object-position:center;flex-shrink:0}.checkout-method .express-brand-icon{width:100%;height:84px}.checkout-method b{font-size:14px;color:#172536}.checkout-method span:not(.register-bank-icon){font-size:11px;color:#64748b}.register-bank-icon{display:flex;align-items:center;justify-content:center;background:#eaf2ff;color:#164a85;font-size:54px;width:100%;height:84px}.register-pay-detail{border:1px solid #f2d1ad;border-radius:13px;background:linear-gradient(180deg,#fff,#fffaf5);padding:15px;margin:12px 0}.register-pay-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.register-pay-head small{font-size:10px;font-weight:900;letter-spacing:.5px;color:#64748b}.register-pay-head h4{margin:5px 0;color:#10243b}.register-pay-head img{width:76px;height:44px;object-fit:contain}.register-pay-number{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0}.register-pay-number strong{font-size:18px;color:#10243b;overflow-wrap:anywhere}.register-pay-total{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid #f2d1ad;padding-top:12px}.register-pay-total span{font-size:12px;color:#64748b}.register-pay-total strong{font-size:18px;color:#10243b}.activity{border:1px solid #dbe4ed;border-radius:12px;padding:14px;margin:10px 0;background:#fbfdff}.activity h3{margin:0 0 6px;color:#123454}.activity p{margin:4px 0;color:#526579;font-size:13px}.activity .actions{margin-top:10px}.activity a{overflow-wrap:anywhere;font-size:12px}.badge{display:inline-block;background:#e6f2ff;color:#0756a8;border-radius:5px;padding:4px 7px;font-size:11px;font-weight:800;text-transform:capitalize}.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.topline h2{margin:0;color:#0a2542}.org-label{font-size:13px;color:#64748b;margin-top:5px}
 @media(max-width:620px){body{padding:12px}.checkout-methods{grid-template-columns:1fr}.checkout-method{display:grid;grid-template-columns:82px minmax(0,1fr);column-gap:11px;align-items:center}.checkout-method img,.checkout-method .register-bank-icon{grid-row:span 3;width:82px;height:70px}.checkout-method b,.checkout-method span:not(.register-bank-icon){grid-column:2}.register-pay-number{align-items:flex-start;flex-direction:column}.register-pay-number button{width:100%}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.actions .btn{width:100%}}
+
+/* Área Empresarial — identidade visual Remote Work Board */
+body{background:radial-gradient(ellipse at 15% 0%,#123e68 0%,#071b33 48%,#041225 100%)!important;color:#e8f2fc!important;padding:24px 14px}
+.wrap{max-width:1000px}
+.brand{display:flex;align-items:center;gap:10px;color:#f4f9ff;font-size:21px;letter-spacing:.2px;margin:4px 0 18px}
+.brand .brand-icon{font-size:30px;line-height:1}
+.brand span:last-child{margin-left:auto;color:#55b4ff;font-size:12px;letter-spacing:1px}
+.panel{background:linear-gradient(145deg,#0d2948,#081c34)!important;color:#e8f2fc;border:1px solid #245078;border-radius:20px;box-shadow:0 24px 70px #0007}
+.intro h1{color:#fff!important;font-size:clamp(27px,4vw,38px);letter-spacing:-.5px}
+.intro p{color:#c2d4e7!important;line-height:1.65;max-width:800px}
+.eyebrow{color:#45b0ff;font-size:11px;font-weight:900;letter-spacing:1.5px;margin-bottom:9px}
+.company-features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 22px}
+.company-feature{display:flex;align-items:center;gap:10px;min-height:58px;padding:11px 13px;border:1px solid #214d73;border-radius:12px;background:linear-gradient(145deg,#102f50,#0a2340);color:#e7f3ff;font-size:13px}
+.company-feature span{font-size:21px;flex:none}.company-feature b{font-weight:750}
+.tabs{gap:9px;margin:20px 0}
+.tabs button,.btn{border-radius:10px;transition:filter .15s ease,transform .15s ease}
+.tabs button{background:#183958;color:#d5e8fa;border:1px solid #315b7e}
+.tabs button.active,.btn.primary{background:linear-gradient(100deg,#087cff,#0863d4)!important;color:#fff!important;border:1px solid #218cff;box-shadow:0 6px 18px #006de533}
+.btn.secondary{background:#e8f1fa!important;color:#173b5c!important;border:1px solid #c5d8e9}
+.field label{color:#d4e7f8!important}
+.field input,.field select,.field textarea{background:#f8fbff;color:#102a43;border-color:#9fb9d1}
+.muted{color:#a9c1d8!important}
+.msg{color:#ffb8b8}
+.activity{background:#0c2a49;border-color:#2a5579;color:#e6f2ff}
+.activity h3,.topline h2,#dashboardOrg,#paymentOrg{color:#fff!important}
+.activity p,.org-label{color:#bdd0e3!important}
+.checkout-method{background:#f8fbff;color:#172536}
+.register-pay-detail{color:#172536}
+@media(max-width:620px){body{padding:12px 9px}.brand{font-size:16px;gap:7px;flex-wrap:wrap}.brand .brand-icon{font-size:25px}.brand span:last-child{font-size:10px}.panel{border-radius:16px}.company-features{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.company-feature{font-size:11px;min-height:55px;padding:9px}.intro h1{font-size:27px}.tabs button{flex:1}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
-<body><div class="wrap"><div class="brand">REMOTE WORK BOARD  · EMPRESAS</div>
+<body><div class="wrap"><div class="brand"><span class="brand-icon" aria-hidden="true">🏢</span> REMOTE WORK BOARD <span>ÁREA EMPRESARIAL</span></div>
 <section class="panel">
-<div class="intro"><h1>Reuniões profissionais, num quadro próprio.</h1><p>Crie uma conta para a sua organização, prepare reuniões e apresentações e partilhe um link exclusivo para cada atividade. O espaço de cada atividade fica separado dos restantes.</p></div>
+<div class="intro"><div class="eyebrow">ESPAÇO EXCLUSIVO PARA ORGANIZAÇÕES</div><h1>Reuniões profissionais, num espaço próprio.</h1><p>Crie uma conta para a sua organização, prepare reuniões e apresentações e partilhe um link exclusivo para cada atividade. O espaço de cada atividade fica separado dos restantes.</p></div>
+<div class="company-features" aria-label="Funcionalidades empresariais">
+<div class="company-feature"><span aria-hidden="true">🎥</span><b>Sala de reuniões online</b></div>
+<div class="company-feature"><span aria-hidden="true">📊</span><b>Documentos e Excel</b></div>
+<div class="company-feature"><span aria-hidden="true">🧩</span><b>Quadro colaborativo</b></div>
+<div class="company-feature"><span aria-hidden="true">👥</span><b>Gestão de participantes</b></div>
+<div class="company-feature"><span aria-hidden="true">⏺️</span><b>Gravação de reuniões</b></div>
+<div class="company-feature"><span aria-hidden="true">🖥️</span><b>Partilha de ecrã</b></div>
+</div>
 <div id="authArea">
 <div class="tabs"><button id="loginTab" class="active" type="button" onclick="document.getElementById('loginForm').classList.remove('hidden');document.getElementById('registerForm').classList.add('hidden');this.classList.add('active');document.getElementById('registerTab').classList.remove('active')">Iniciar sessão</button><button id="registerTab" type="button" onclick="document.getElementById('registerForm').classList.remove('hidden');document.getElementById('loginForm').classList.add('hidden');this.classList.add('active');document.getElementById('loginTab').classList.remove('active')">Criar conta empresarial</button></div>
 <form id="loginForm">
