@@ -1,8 +1,8 @@
 {
   "id": "./quadro_virtual_azny_quadro.html",
-  "name": "AZNY — Quadro Virtual",
+  "name": "AZNY — Remote Work Board",
   "short_name": "AZNY Quadro",
-  "description": "Quadro virtual interativo para aulas online, com ferramentas do professor e participação dos alunos.",
+  "description": "Remote Work Board interativo para aulas online, com ferramentas do professor e participação dos alunos.",
   "lang": "pt-AO",
   "start_url": "./quadro_virtual_azny_quadro.html",
   "scope": "./",
