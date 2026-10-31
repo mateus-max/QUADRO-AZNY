@@ -1078,30 +1078,72 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style id="azny-teacher-camera-controls-and-refresh-persistence">
-/* Só no quadro do professor: microfone e câmara passam a ficar dentro da janela de vídeo. */
-body:not(.student-mode) .camera{height:clamp(126px,17vh,158px)!important;min-height:126px!important}
-body:not(.student-mode) .camera .camera-label{bottom:72px!important;z-index:3!important}
-body:not(.student-mode) .camera .cam-status{z-index:3!important}
-body:not(.student-mode) .camera .cam-controls-overlay{
- position:absolute!important;left:5px!important;right:5px!important;bottom:5px!important;z-index:8!important;
- display:grid!important;grid-template-columns:1fr!important;gap:3px!important;padding:4px!important;
- background:#071b33e8!important;border:1px solid #ffffff38!important;border-radius:8px!important;
+/* Quadro dos professores: painel lateral igual ao modelo enviado pelo utilizador. */
+body:not(.student-mode) .rightbar .camera-panel{
+  padding:5px 6px 7px!important;display:flex!important;flex-direction:column!important;
+  gap:0!important;min-height:0!important;overflow:hidden!important;
 }
-body:not(.student-mode) .camera .cam-controls-overlay .cam-buttons{
- display:flex!important;flex-direction:row!important;gap:4px!important;margin:0!important;padding:0!important;
+body:not(.student-mode) .rightbar .camera-label{
+  display:block!important;position:static!important;order:0!important;
+  width:100%!important;margin:0 0 4px!important;padding:0 2px!important;
+  background:transparent!important;color:#17212b!important;text-align:center!important;
+  font-size:13px!important;font-weight:800!important;line-height:1.2!important;
 }
-body:not(.student-mode) .camera .cam-controls-overlay button{
- flex:1 1 0!important;min-width:0!important;min-height:27px!important;height:27px!important;padding:3px!important;
- display:flex!important;align-items:center!important;justify-content:center!important;
- font-size:0!important;line-height:1!important;border:1px solid #ffffff48!important;
- border-radius:6px!important;background:#173653!important;color:#fff!important;
+body:not(.student-mode) .rightbar .camera{
+  order:1!important;position:relative!important;width:100%!important;
+  height:clamp(92px,14vh,122px)!important;min-height:92px!important;
+  border:2px solid #23a99b!important;border-radius:15px!important;
+  overflow:hidden!important;background:#091626!important;
 }
-body:not(.student-mode) .camera .cam-controls-overlay #cameraBtn:before{content:"📷";font-size:16px!important}
-body:not(.student-mode) .camera .cam-controls-overlay #cameraStopBtn:before{content:"⏹";font-size:14px!important}
-body:not(.student-mode) .camera .cam-controls-overlay #micBtn:before{content:"🎙";font-size:16px!important}
-body:not(.student-mode) .camera .cam-controls-overlay #micStopBtn:before{content:"🔇";font-size:16px!important}
-body:not(.student-mode) .camera .cam-controls-overlay button:disabled{opacity:.42!important}
-body:not(.student-mode) .camera-panel>.cam-buttons{display:none!important}
+body:not(.student-mode) .rightbar #teacherVideo{
+  display:block!important;width:100%!important;height:100%!important;
+  object-fit:cover!important;transform:scaleX(-1)!important;
+}
+body:not(.student-mode) .rightbar .camera .cam-off{
+  font-size:9px!important;gap:2px!important;padding:4px!important;
+}
+body:not(.student-mode) .rightbar .camera .cam-off .big{font-size:19px!important}
+body:not(.student-mode) .rightbar .camera .cam-status{
+  position:absolute!important;top:5px!important;right:5px!important;bottom:auto!important;
+  z-index:5!important;font-size:8px!important;padding:3px 6px!important;
+  border-radius:10px!important;background:#071b33d9!important;color:#fff!important;
+}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay{
+  position:absolute!important;left:5px!important;right:5px!important;bottom:5px!important;
+  z-index:8!important;display:grid!important;grid-template-columns:1fr 1fr!important;
+  gap:4px!important;padding:4px!important;background:#071b33d9!important;
+  border:1px solid #ffffff45!important;border-radius:10px!important;
+}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay .cam-buttons{
+  display:contents!important;margin:0!important;padding:0!important;
+}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay button{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  min-width:0!important;width:100%!important;height:27px!important;min-height:27px!important;
+  margin:0!important;padding:2px!important;border:1px solid #ffffff55!important;
+  border-radius:7px!important;background:#173653!important;color:#fff!important;
+  font-size:0!important;line-height:1!important;
+}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay #cameraBtn:before{content:"📷";font-size:15px!important}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay #cameraStopBtn:before{content:"⏹";font-size:13px!important}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay #micBtn:before{content:"🎙";font-size:15px!important}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay #micStopBtn:before{content:"🔇";font-size:15px!important}
+body:not(.student-mode) .rightbar .camera .cam-controls-overlay button:disabled{opacity:.42!important}
+body:not(.student-mode) .rightbar .camera-panel>.teacher-media-status,
+body:not(.student-mode) .rightbar .camera-panel>.azny-audio-output-picker,
+body:not(.student-mode) .rightbar .camera-panel>#aznyAudioOutputStatus{display:none!important}
+body:not(.student-mode) .rightbar .camera-join-requests{max-height:55px!important;overflow:auto!important;font-size:9px!important}
+body:not(.student-mode) .rightbar .camera-panel+.sidehead{
+  padding:7px 6px!important;min-height:34px!important;height:auto!important;
+  font-size:12px!important;font-weight:800!important;line-height:1.2!important;
+}
+body:not(.student-mode) .rightbar #students.students{
+  flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;
+  padding:5px!important;gap:5px!important;
+}
+body:not(.student-mode) .rightbar #students #noStudents{
+  font-size:10px!important;padding:10px 6px!important;
+}
 </style>
 </head>
 <body>
@@ -1200,10 +1242,10 @@ body:not(.student-mode) .camera-panel>.cam-buttons{display:none!important}
 <aside class="rightbar">
   <div class="sidehead">Aula / Participantes</div>
   <div class="camera-panel">
+    <div class="camera-label">DR Eduardo</div>
     <div class="camera" id="teacherCamera">
       <div class="cam-off"><div class="big">🎥</div><div>Câmera do professor desligada</div><div>Autorize o acesso à câmera para aparecer aqui.</div></div>
       <video id="teacherVideo" autoplay muted playsinline hidden></video>
-      <div class="camera-label">Professor</div>
       <div class="cam-status" id="camStatus">Desligada</div>
       <div class="cam-controls-overlay" aria-label="Controlos da câmara e do microfone">
         <div class="cam-buttons">
