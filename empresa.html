@@ -57,6 +57,18 @@ body.status-dashboard-mode .brand{display:none!important}
 body.status-dashboard-mode .panel{width:100%;max-width:none;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;min-height:100vh}
 body.status-dashboard-mode #paymentArea{display:block!important;width:100%;min-height:100vh}
 body.status-dashboard-mode #paymentArea>.topline,body.status-dashboard-mode #paymentArea>p{display:none!important}
+/* No ecrã de confirmação, ocultar por completo a página inicial e o formulário de acesso.
+   O painel de ativação passa a ser o único conteúdo visível. */
+body.status-dashboard-mode #companyIntro,
+body.status-dashboard-mode #companyFeatures,
+body.status-dashboard-mode #authArea,
+body.status-dashboard-mode #dashboard,
+body.status-dashboard-mode #companyBrand{display:none!important}
+body.status-dashboard-mode .panel{padding:0!important;margin:0!important}
+body.status-dashboard-mode #paymentArea.status-dashboard{display:block!important}
+body.status-dashboard-mode #paymentArea.status-dashboard #paymentForm,
+body.status-dashboard-mode #paymentArea.status-dashboard #paymentMessage{display:none!important}
+
 body.status-dashboard-mode #paymentStatusBox{display:block!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;overflow:visible!important}
 .rwb-status-header{height:76px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 clamp(18px,4vw,42px);background:linear-gradient(105deg,#041a34,#082b50);border-bottom:1px solid #1c5685;color:#fff}
 .rwb-status-brand{display:flex;align-items:center;gap:13px;font-size:clamp(17px,2.5vw,25px);font-weight:950;letter-spacing:-.5px;white-space:nowrap}
