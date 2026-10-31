@@ -1097,6 +1097,20 @@ body:not(.student-mode) .rightbar .camera-panel+.sidehead{padding:7px 6px!import
 body:not(.student-mode) .rightbar #students.students{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;padding:5px!important;gap:5px!important}
 body:not(.student-mode) .rightbar #students #noStudents{font-size:10px!important;padding:10px 6px!important}
 </style>
+<style id="azny-two-toggle-camera-controls-final">
+/* Override final: exatamente dois botões transparentes na base do vídeo. */
+html body:not(.student-mode) .rightbar #teacherCamera .camera-label{position:static!important;display:block!important;order:0!important;left:auto!important;bottom:auto!important;top:auto!important;width:100%!important;text-align:center!important;margin:0 0 4px!important;padding:0 2px!important;background:transparent!important;color:#17212b!important;font-size:13px!important;font-weight:800!important}
+html body:not(.student-mode) .rightbar #teacherCamera{order:1!important;height:clamp(92px,14vh,122px)!important;min-height:92px!important}
+html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay{position:absolute!important;left:5px!important;right:5px!important;bottom:4px!important;top:auto!important;inset:auto 5px 4px!important;z-index:10!important;display:flex!important;flex-direction:row!important;justify-content:space-between!important;align-items:center!important;width:auto!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay .cam-buttons{display:contents!important;position:static!important;width:auto!important;margin:0!important;padding:0!important}
+html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button{position:static!important;display:flex!important;flex:0 0 32px!important;width:32px!important;min-width:32px!important;height:30px!important;min-height:30px!important;margin:0!important;padding:0!important;align-items:center!important;justify-content:center!important;border:0!important;border-radius:50%!important;background:transparent!important;box-shadow:none!important;color:#fff!important;font-size:19px!important;line-height:1!important;text-shadow:0 1px 4px #000!important}
+html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #micBtn{order:0!important}
+html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #cameraBtn{order:1!important}
+html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #micBtn:before,
+html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #cameraBtn:before{content:none!important;display:none!important}
+html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #cameraStopBtn,
+html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #micStopBtn{display:none!important}
+</style>
 </head>
 <body>
 <div class="app">
