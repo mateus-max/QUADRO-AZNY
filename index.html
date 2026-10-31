@@ -350,6 +350,27 @@ body.teacher-checkout-mode #plansView{display:block!important;width:100%;margin:
 body.teacher-checkout-mode #planDetail.show{display:block!important;width:min(760px,100%);margin:0 auto 14px!important}
 body.teacher-checkout-mode #checkoutBox{display:block!important;width:min(760px,100%);margin:0 auto!important}
 body.teacher-checkout-mode .plan-detail:not(.show){display:none!important}
+
+/* Contraste correto no resumo do plano e no checkout em fundo azul */
+body.teacher-checkout-mode #planDetail,
+body.teacher-checkout-mode #planDetail p,
+body.teacher-checkout-mode #planDetail .plan-detail-item,
+body.teacher-checkout-mode #planDetail .plan-detail-item b{
+ color:#26384b!important;
+}
+body.teacher-checkout-mode #planDetail p{
+ color:#526579!important;
+}
+body.teacher-checkout-mode #planDetail h3{
+ color:#071b33!important;
+}
+body.teacher-checkout-mode #checkoutBox .checkout-title,
+body.teacher-checkout-mode #checkoutBox .checkout-title h3{
+ color:#f8fafc!important;
+}
+body.teacher-checkout-mode #checkoutBox .checkout-title p{
+ color:#cbd5e1!important;
+}
 </style><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#071b33">
