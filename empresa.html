@@ -49,6 +49,75 @@ body.register-mode #registerForm .field input{min-height:49px}
 body.register-mode #registerForm .muted{margin-top:16px}
 body.register-mode #registerForm .actions{margin-top:20px}
 @media(max-width:620px){body.register-mode{padding:10px!important}body.register-mode .panel{min-height:calc(100vh - 20px);padding:22px 17px!important;border-radius:16px}body.register-mode .register-only-title{font-size:23px}}
+
+/* Remote Work Board — painel de confirmação e análise de pagamento */
+body.status-dashboard-mode{margin:0!important;padding:0!important;min-height:100vh;background:#03162b!important;color:#edf6ff!important}
+body.status-dashboard-mode .wrap{max-width:none!important;width:100%;margin:0!important;padding:0!important}
+body.status-dashboard-mode .brand{display:none!important}
+body.status-dashboard-mode .panel{width:100%;max-width:none;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;min-height:100vh}
+body.status-dashboard-mode #paymentArea{display:block!important;width:100%;min-height:100vh}
+body.status-dashboard-mode #paymentArea>.topline,body.status-dashboard-mode #paymentArea>p{display:none!important}
+body.status-dashboard-mode #paymentStatusBox{display:block!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;overflow:visible!important}
+.rwb-status-header{height:76px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 clamp(18px,4vw,42px);background:linear-gradient(105deg,#041a34,#082b50);border-bottom:1px solid #1c5685;color:#fff}
+.rwb-status-brand{display:flex;align-items:center;gap:13px;font-size:clamp(17px,2.5vw,25px);font-weight:950;letter-spacing:-.5px;white-space:nowrap}
+.rwb-status-brand .brand-building{font-size:35px}.rwb-status-brand b{color:#16a9ff}
+.rwb-status-home{border:1px solid #2c6a9b;background:#10385d;color:#eaf6ff;border-radius:10px;padding:9px 13px;text-decoration:none;font-size:13px;font-weight:800}
+.rwb-status-shell{width:min(1180px,calc(100% - 42px));margin:24px auto 38px;padding:0 0 25px;border:1px solid #1c527e;border-radius:22px;background:#061d37;box-shadow:0 24px 65px #0005;overflow:hidden}
+.rwb-status-hero{position:relative;padding:32px 36px 30px;min-height:305px;background-image:linear-gradient(90deg,rgba(2,20,43,.98) 0%,rgba(3,27,55,.94) 48%,rgba(4,30,59,.43) 100%),url('assets/rwb-company-office-bg.jpg');background-size:cover;background-position:center 48%;border-bottom:1px solid #174a73}
+.rwb-status-profile{display:flex;align-items:flex-start;gap:17px;max-width:100%;padding-right:220px}
+.rwb-status-avatar{width:92px;height:92px;flex:none;display:grid;place-items:center;border-radius:50%;background:linear-gradient(145deg,#b6e7ff,#4ca8e9);border:3px solid #9cddff;color:#07539b;font-size:46px;box-shadow:0 8px 24px #001a35a8}
+.rwb-status-profile h1{margin:0 0 4px;color:#fff;font-size:clamp(25px,3vw,34px);overflow-wrap:anywhere}
+.rwb-status-profile p{margin:0 0 10px;color:#c6e2fa;font-size:16px;overflow-wrap:anywhere}
+.rwb-status-account{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:20px;background:#004c3bdb;border:1px solid #078e69;color:#70ffc4;font-size:13px;font-weight:800}
+.rwb-status-logout{position:absolute;right:34px;top:28px;padding:13px 17px;border:1px solid #69baff;border-radius:12px;background:#0c3a66d9;color:#fff;font-weight:850;font-size:14px;cursor:pointer}
+.rwb-status-hero h2{position:relative;margin:35px 0 7px;color:#fff;font-size:clamp(28px,4vw,40px);letter-spacing:-.6px}
+.rwb-status-intro{position:relative;max-width:850px;margin:0;color:#c8e1f7;font-size:clamp(15px,2vw,19px);line-height:1.55}
+.rwb-status-content{padding:24px 25px 4px}
+.rwb-status-card{padding:24px;border:1px solid #12619a;border-radius:20px;background:linear-gradient(145deg,#062747f2,#041c35f7);box-shadow:inset 0 1px #ffffff0a}
+.rwb-status-card-head{display:flex;align-items:center;gap:22px;margin-bottom:20px}
+.rwb-status-check{width:112px;height:112px;flex:none;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 35% 25%,#19e77c,#00a84f 72%);color:#fff;font-size:54px;box-shadow:0 8px 25px #00c46a44}
+.rwb-status-card h3{margin:0 0 7px;color:#fff;font-size:clamp(22px,3vw,32px)}
+.rwb-status-card-head p{margin:0;color:#c4dcef;font-size:clamp(14px,1.8vw,18px);line-height:1.5}
+.rwb-status-details{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;margin:18px 0 25px;padding:19px 21px;border:1px solid #12639b;border-radius:17px;background:#031a32aa;color:#dceeff;font-size:15px}
+.rwb-status-details strong{color:#f5faff}.rwb-status-details .status-label{color:#94c7f0}
+.rwb-review-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:22px;background:#ffc52e;color:#182538;font-weight:900}
+.rwb-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:relative;gap:4px;padding:8px 0 0}
+.rwb-progress:before{content:"";position:absolute;left:10%;right:10%;top:30px;height:4px;background:linear-gradient(90deg,#168cff 0%,#168cff 49%,#f4ba28 68%,#536b85 68%);border-radius:8px}
+.rwb-progress-step{position:relative;z-index:1;display:flex;align-items:center;flex-direction:column;text-align:center;min-width:0;color:#dcecff}
+.rwb-progress-icon{width:56px;height:56px;display:grid;place-items:center;border-radius:50%;border:4px solid #536b85;background:#0b2948;color:#8ba6c1;font-size:25px;font-weight:900;box-shadow:0 0 0 5px #071f3b}
+.rwb-progress-step.done .rwb-progress-icon{background:#087eff;border-color:#1495ff;color:#fff}
+.rwb-progress-step.current .rwb-progress-icon{background:#142c42;border-color:#ffc52e;color:#ffc52e;box-shadow:0 0 0 5px #071f3b,0 0 22px #ffc52e55}
+.rwb-progress-step b{margin-top:12px;font-size:13px;line-height:1.3}.rwb-progress-step small{margin-top:5px;color:#a9c9e5;font-size:12px;line-height:1.35}
+.rwb-status-next{display:flex;gap:18px;margin-top:20px;padding:21px;border:1px solid #12619a;border-radius:17px;background:linear-gradient(110deg,#062747,#082b4b)}
+.rwb-status-info-icon{width:52px;height:52px;flex:none;display:grid;place-items:center;border-radius:50%;background:#087eff;color:#fff;font-size:30px;font-weight:900}
+.rwb-status-next h3{margin:0 0 6px;color:#fff;font-size:20px}.rwb-status-next p{margin:0;color:#c4dcef;font-size:14px;line-height:1.6}
+.rwb-status-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px}
+.rwb-status-actions button,.rwb-status-actions a{min-height:86px;display:flex;align-items:center;gap:13px;padding:15px;border:1px solid #12619a;border-radius:15px;background:#062442;color:#fff;text-align:left;text-decoration:none;font-size:14px;font-weight:800;line-height:1.4;cursor:pointer}
+.rwb-status-actions button:disabled{opacity:.45;cursor:not-allowed}
+.rwb-status-action-icon{width:43px;height:43px;flex:none;display:grid;place-items:center;border-radius:12px;background:#087eff;color:white;font-size:23px}
+.rwb-plan-modal{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:18px;background:#010b18c9}
+.rwb-plan-modal.open{display:flex}.rwb-plan-dialog{width:min(480px,100%);padding:25px;border:1px solid #2b6594;border-radius:18px;background:#082544;color:#eff7ff;box-shadow:0 25px 70px #000a}
+.rwb-plan-dialog h3{margin:0 0 14px;font-size:23px}.rwb-plan-dialog p{margin:8px 0;color:#c5dcef}.rwb-plan-dialog button{margin-top:16px;border:0;border-radius:9px;padding:11px 18px;background:#087cff;color:white;font-weight:850}
+@media(max-width:680px){
+ .rwb-status-header{height:64px;padding:0 14px}.rwb-status-brand{font-size:15px;gap:8px}.rwb-status-brand .brand-building{font-size:27px}.rwb-status-home{font-size:11px;padding:8px}
+ .rwb-status-shell{width:calc(100% - 18px);margin:10px auto 20px;border-radius:17px}
+ .rwb-status-hero{padding:20px 16px 22px;min-height:285px;background-position:60% center}
+ .rwb-status-profile{gap:11px;padding-right:0;max-width:calc(100% - 2px)}
+ .rwb-status-avatar{width:62px;height:62px;font-size:32px}.rwb-status-profile h1{font-size:22px}.rwb-status-profile p{font-size:12px}.rwb-status-account{font-size:10px;padding:5px 8px}
+ .rwb-status-logout{position:static;display:block;margin:14px 0 0 auto;padding:9px 12px;font-size:12px}
+ .rwb-status-hero h2{margin:19px 0 5px;font-size:29px}.rwb-status-intro{font-size:14px;line-height:1.45}
+ .rwb-status-content{padding:13px 11px 2px}.rwb-status-card{padding:14px 12px;border-radius:15px}
+ .rwb-status-card-head{gap:12px;margin-bottom:14px}.rwb-status-check{width:60px;height:60px;font-size:30px}
+ .rwb-status-card h3{font-size:19px}.rwb-status-card-head p{font-size:12px;line-height:1.45}
+ .rwb-status-details{grid-template-columns:92px 1fr;gap:9px 7px;padding:13px 10px;margin:13px 0 18px;font-size:12px}
+ .rwb-review-pill{font-size:11px;padding:6px 9px}
+ .rwb-progress:before{top:23px;left:9%;right:9%;height:3px}
+ .rwb-progress-icon{width:43px;height:43px;border-width:3px;font-size:18px}
+ .rwb-progress-step b{font-size:10px;margin-top:9px}.rwb-progress-step small{font-size:9px;line-height:1.25}
+ .rwb-status-next{gap:11px;padding:14px;margin-top:13px}.rwb-status-info-icon{width:39px;height:39px;font-size:22px}.rwb-status-next h3{font-size:16px}.rwb-status-next p{font-size:12px;line-height:1.5}
+ .rwb-status-actions{grid-template-columns:1fr;gap:8px;margin-top:13px}.rwb-status-actions button,.rwb-status-actions a{min-height:61px;padding:9px 12px;font-size:12px}
+ .rwb-status-action-icon{width:38px;height:38px;font-size:20px}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -228,17 +297,60 @@ function planDetails(plan){const plans={semestral15:{planLabel:"6 meses — até
 $("paymentPlan").addEventListener("change",()=>{const p=planDetails($("paymentPlan").value);$("expressAmount").textContent=p?p.amountKz.toLocaleString("pt-PT").replace(/\\u00a0/g," ")+" Kz":"— Kz";const total=$("bankAmount");if(total)total.textContent=p?p.amountKz.toLocaleString("pt-PT").replace(/\\u00a0/g," ")+" Kz":"— Kz";});
 async function copyPaymentText(value,label){try{await navigator.clipboard.writeText(value);alert(label+" copiado.")}catch(_){prompt("Copie "+label.toLowerCase()+":",value)}}
 $("copyExpress").onclick=()=>copyPaymentText("931 05 77 60","Número Express");$("copyIban").onclick=()=>copyPaymentText("0006 0000 6350 3021 30157","IBAN");
+
+function formatStatusDate(value){if(!value)return "Data não disponível";const date=new Date(Number(value));if(Number.isNaN(date.getTime()))return "Data não disponível";return new Intl.DateTimeFormat("pt-AO",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(date)}
+function renderPendingReviewDashboard(company,submission){
+ const box=$("paymentStatusBox"),sub=company.subscription||{},amount=Number(sub.amountKz||submission?.amountKz||0),planLabel=sub.planLabel||submission?.planLabel||"Plano selecionado",submittedAt=submission?.submittedAt||0,createdAt=company.createdAt||0;
+ const proofReady=!!(submission&&submission.proofData),sentDate=formatStatusDate(submittedAt),createdDate=formatStatusDate(createdAt);
+ const amountText=amount?amount.toLocaleString("pt-AO")+" Kz":"A confirmar";
+ box.innerHTML=`
+ <header class="rwb-status-header"><div class="rwb-status-brand"><span class="brand-building">🏢</span><span>REMOTE WORK <b>BOARD</b></span></div><a class="rwb-status-home" href="index.html">⌂ Página principal</a></header>
+ <main class="rwb-status-shell">
+  <section class="rwb-status-hero">
+   <div class="rwb-status-profile"><div class="rwb-status-avatar">🏢</div><div><h1>${esc(company.organizationName||"Conta empresarial")}</h1><p>${esc(company.organizationEmail||currentUser?.email||"")}</p><span class="rwb-status-account">🛡 Conta empresarial</span></div></div>
+   <button type="button" class="rwb-status-logout" id="statusLogout">⇥ &nbsp;Terminar sessão</button>
+   <h2>Bem-vindo(a)!</h2><p class="rwb-status-intro">A sua conta está em processo de ativação. A conta só terá acesso ao quadro depois da direção confirmar o pagamento.</p>
+  </section>
+  <section class="rwb-status-content">
+   <div class="rwb-status-card">
+    <div class="rwb-status-card-head"><div class="rwb-status-check">▤✓</div><div><h3>Comprovativo enviado</h3><p>A sua conta está pendente de análise pela direção. O quadro ficará disponível depois da aprovação.</p></div></div>
+    <div class="rwb-status-details"><strong>Plano:</strong><span>${esc(planLabel)}</span><strong>Valor:</strong><span>${esc(amountText)}</span><strong>Estado:</strong><span><span class="rwb-review-pill">◷ &nbsp;Em análise</span></span><strong class="status-label">Enviado em:</strong><span>${esc(sentDate)}</span></div>
+    <div class="rwb-progress" aria-label="Progresso da ativação da conta">
+     <div class="rwb-progress-step done"><span class="rwb-progress-icon">✓</span><b>Conta criada</b><small>Concluído<br>${esc(createdDate)}</small></div>
+     <div class="rwb-progress-step done"><span class="rwb-progress-icon">✓</span><b>Comprovativo enviado</b><small>Concluído</small></div>
+     <div class="rwb-progress-step current"><span class="rwb-progress-icon">◷</span><b>Em análise</b><small>Pela direção</small></div>
+     <div class="rwb-progress-step"><span class="rwb-progress-icon"></span><b>Conta ativada</b><small>Acesso liberado</small></div>
+    </div>
+   </div>
+   <div class="rwb-status-next"><span class="rwb-status-info-icon">i</span><div><h3>O que acontece agora?</h3><p>A nossa equipa vai analisar o seu pagamento. Assim que for aprovado, a sua conta será ativada e poderá entrar no painel empresarial para criar reuniões, partilhar documentos e colaborar com a sua equipa.</p></div></div>
+   <div class="rwb-status-actions">
+    <button type="button" id="statusViewProof" ${proofReady?"":"disabled"}><span class="rwb-status-action-icon">✉</span><span>Ver comprovativo<br>enviado</span><b>›</b></button>
+    <a href="mailto:suporte@apsanlda.com?subject=Ajuda%20-%20Ativa%C3%A7%C3%A3o%20da%20conta%20empresarial"><span class="rwb-status-action-icon">?</span><span>Precisa de ajuda?</span><b>›</b></a>
+    <button type="button" id="statusPlanDetails"><span class="rwb-status-action-icon">▤</span><span>Ver detalhes<br>do plano</span><b>›</b></button>
+   </div>
+  </section>
+ </main>
+ <div class="rwb-plan-modal" id="rwbPlanModal" role="dialog" aria-modal="true" aria-labelledby="rwbPlanTitle"><div class="rwb-plan-dialog"><h3 id="rwbPlanTitle">Detalhes do plano</h3><p><b>Plano:</b> ${esc(planLabel)}</p><p><b>Valor:</b> ${esc(amountText)}</p><p><b>Participantes incluídos:</b> ${esc(String(sub.maxParticipants||submission?.maxParticipants||"Conforme o plano"))}</p><p><b>Duração:</b> ${esc(String(sub.durationMonths||submission?.durationMonths||"A confirmar"))} ${sub.durationMonths||submission?.durationMonths?"meses":""}</p><p><b>Forma de pagamento:</b> ${esc(sub.method||submission?.method||"Não indicada")}</p><button type="button" id="rwbPlanClose">Fechar</button></div></div>
+ `;
+ const logout=$("statusLogout");if(logout)logout.onclick=async()=>{await auth.signOut();location.reload()};
+ const proof=$("statusViewProof");if(proof)proof.onclick=()=>{if(!submission?.proofData){alert("O ficheiro do comprovativo não está disponível nesta consulta.");return}try{const parts=submission.proofData.split(",");const mime=submission.proofType||"application/octet-stream";const raw=atob(parts[1]||"");const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);const url=URL.createObjectURL(new Blob([bytes],{type:mime}));const opened=window.open(url,"_blank","noopener");if(!opened){const a=document.createElement("a");a.href=url;a.download=submission.proofName||"comprovativo";a.click()}setTimeout(()=>URL.revokeObjectURL(url),60000)}catch(err){alert("Não foi possível abrir o comprovativo. Tente novamente.")}};
+ const modal=$("rwbPlanModal");$("statusPlanDetails").onclick=()=>modal.classList.add("open");$("rwbPlanClose").onclick=()=>modal.classList.remove("open");modal.onclick=e=>{if(e.target===modal)modal.classList.remove("open")};document.addEventListener("keydown",function closePlanModal(e){if(e.key==="Escape"&&modal.classList.contains("open"))modal.classList.remove("open")},{once:false});
+}
 async function loadDashboard(){if(!currentUser)return;try{const snap=await db.ref("aznyCompanies/"+currentUser.uid+"/profile").once("value");profile=snap.val();if(!profile){msg("Esta conta não tem um perfil empresarial associado. Contacte o suporte.");await auth.signOut();return}
 $("authArea").classList.add("hidden");$("dashboard").classList.add("hidden");$("paymentArea").classList.add("hidden");
 if(profile.status!=="approved"){
   $("paymentArea").classList.remove("hidden");$("paymentOrg").textContent=profile.organizationName||"Ativar conta empresarial";$("paymentEmail").textContent=profile.organizationEmail||currentUser.email;
   const form=$("paymentForm"),box=$("paymentStatusBox"),m=$("paymentMessage");
-  if(profile.status==="pending_review"){form.classList.add("hidden");box.classList.remove("hidden");box.innerHTML="<h3>Comprovativo enviado</h3><p>A sua conta está pendente de análise pela direção. O quadro ficará disponível depois da aprovação.</p><p><b>Plano:</b> "+esc(profile.subscription?.planLabel||"Selecionado")+"</p><p><b>Estado:</b> Em análise</p>"}
+  if(profile.status==="pending_review"){
+  form.classList.add("hidden");box.classList.remove("hidden");$("paymentArea").classList.add("status-dashboard");document.body.classList.add("status-dashboard-mode");
+  let submission=null;try{const paymentSnap=await db.ref("aznyCompanies/"+currentUser.uid+"/paymentSubmission").once("value");submission=paymentSnap.val()}catch(paymentReadError){console.warn("Remote Work Board: não foi possível ler os dados do comprovativo",paymentReadError)}
+  renderPendingReviewDashboard(profile,submission);
+}
   else if(profile.status==="rejected"){form.classList.remove("hidden");box.classList.remove("hidden");box.innerHTML="<h3>Pagamento não aprovado</h3><p>O comprovativo não foi aprovado. Reveja os dados e envie um novo comprovativo ou contacte a direção.</p>"}
   else {form.classList.remove("hidden");box.classList.add("hidden");m.textContent=""}
   return;
 }
-$("paymentArea").classList.add("hidden");$("dashboard").classList.remove("hidden");$("dashboardOrg").textContent=profile.organizationName;$("dashboardEmail").textContent=profile.organizationEmail;await loadActivities()}catch(err){console.error("AZNY loadDashboard:",err);if(currentUser&&profile&&profile.uid===currentUser.uid&&profile.status!=="approved"){$("authArea").classList.add("hidden");$("dashboard").classList.add("hidden");$("paymentArea").classList.remove("hidden");$("paymentOrg").textContent=profile.organizationName||"Ativar conta empresarial";$("paymentEmail").textContent=profile.organizationEmail||currentUser.email;$("paymentForm").classList.remove("hidden");$("paymentStatusBox").classList.add("hidden");$("paymentMessage").textContent="O perfil foi criado, mas não foi possível voltar a lê-lo. Pode tentar escolher o plano; se o envio do comprovativo falhar, será necessário corrigir as regras do Firebase.";return}msg("Não foi possível carregar o perfil empresarial: "+errorText(err)+". Se a conta já foi criada, inicie sessão com o mesmo e-mail; não crie outra.")}}
+$("paymentArea").classList.add("hidden");$("dashboard").classList.remove("hidden");$("dashboardOrg").textContent=profile.organizationName;$("dashboardEmail").textContent=profile.organizationEmail;await loadActivities()}catch(err){console.error("AZNY loadDashboard:",err);if(currentUser&&profile&&profile.uid===currentUser.uid&&profile.status!=="approved"){document.body.classList.remove("status-dashboard-mode");$("paymentArea").classList.remove("status-dashboard");$("authArea").classList.add("hidden");$("dashboard").classList.add("hidden");$("paymentArea").classList.remove("hidden");$("paymentOrg").textContent=profile.organizationName||"Ativar conta empresarial";$("paymentEmail").textContent=profile.organizationEmail||currentUser.email;$("paymentForm").classList.remove("hidden");$("paymentStatusBox").classList.add("hidden");$("paymentMessage").textContent="O perfil foi criado, mas não foi possível voltar a lê-lo. Pode tentar escolher o plano; se o envio do comprovativo falhar, será necessário corrigir as regras do Firebase.";return}msg("Não foi possível carregar o perfil empresarial: "+errorText(err)+". Se a conta já foi criada, inicie sessão com o mesmo e-mail; não crie outra.")}}
 async function loadActivities(){if(!currentUser||profile?.status!=="approved")return;const snap=await db.ref("aznyCompanies/"+currentUser.uid+"/activities").once("value");activities=snap.val()||{};const list=$("activitiesList");const entries=Object.values(activities).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));if(!entries.length){list.innerHTML='<p class="muted">Ainda não criou atividades. Clique em «Criar atividade» para começar.</p>';return}
 list.innerHTML=entries.map(a=>{const link=makeParticipantUrl(a);const type=({reuniao:"Reunião",encontro:"Encontro",apresentacao:"Apresentação",formacao:"Formação"})[a.type]||"Reunião";return '<article class="activity"><span class="badge">'+esc(type)+'</span><h3>'+esc(a.title)+'</h3><p><b>Responsável:</b> '+esc(profile.managerName)+' · '+esc(a.managerRole||profile.managerRole)+'</p>'+(a.date?'<p><b>Data:</b> '+esc(a.date.replace("T"," "))+'</p>':"")+(a.description?'<p>'+esc(a.description)+'</p>':"")+'<p><b>Link dos participantes:</b><br><a href="'+esc(link)+'" target="_blank" rel="noopener">'+esc(link)+'</a></p><div class="actions"><button class="btn primary" type="button" data-open="'+esc(a.id)+'">Abrir quadro</button><button class="btn secondary" type="button" data-copy="'+esc(a.id)+'">Copiar link</button><button class="btn secondary" type="button" data-wa="'+esc(a.id)+'">WhatsApp</button></div></article>'}).join("");
 list.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{const a=activities[b.dataset.open];location.href=makeBoardUrl(a)});
@@ -246,7 +358,7 @@ list.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{const a=acti
 list.querySelectorAll("[data-wa]").forEach(b=>b.onclick=()=>{const a=activities[b.dataset.wa],link=makeParticipantUrl(a);window.open("https://wa.me/?text="+encodeURIComponent("Convite para "+a.title+" — "+profile.organizationName+". "+link),"_blank","noopener,noreferrer")});
 }
 $("paymentForm").addEventListener("submit",async e=>{e.preventDefault();if(!currentUser||!profile)return;const plan=$("paymentPlan").value,details=planDetails(plan),file=$("paymentProof").files[0];if(!plan||!details||!selectedPaymentMethod||!file){$("paymentMessage").textContent="Selecione o plano, a forma de pagamento e o comprovativo.";return}if(file.size>2*1024*1024){$("paymentMessage").textContent="O ficheiro excede 2 MB. Escolha um ficheiro menor.";return}if(!["application/pdf"].includes(file.type)&&!file.type.startsWith("image/")){$("paymentMessage").textContent="Envie uma imagem ou um ficheiro PDF.";return}$("paymentMessage").textContent="A preparar comprovativo...";try{const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file)});const planLabel=details.planLabel+" — "+details.amountKz.toLocaleString("pt-PT")+" Kz";await db.ref("aznyCompanies/"+currentUser.uid+"/paymentSubmission").set({plan,planLabel,amountKz:details.amountKz,durationMonths:details.durationMonths,maxParticipants:details.maxParticipants,method:selectedPaymentMethod,reference:$("paymentReference").value.trim(),proofName:file.name,proofType:file.type,proofData:data,submittedAt:firebase.database.ServerValue.TIMESTAMP,status:"pending_review"});await db.ref("aznyCompanies/"+currentUser.uid+"/profile").update({status:"pending_review",subscription:{plan,planLabel,amountKz:details.amountKz,durationMonths:details.durationMonths,maxParticipants:details.maxParticipants,method:selectedPaymentMethod}});profile.status="pending_review";profile.subscription={plan,planLabel,amountKz:details.amountKz,durationMonths:details.durationMonths,maxParticipants:details.maxParticipants,method:selectedPaymentMethod};await loadDashboard()}catch(err){$("paymentMessage").textContent="Não foi possível enviar o comprovativo: "+errorText(err)}});
-auth.onAuthStateChanged(async user=>{if(registrationInProgress)return;currentUser=user;if(!user){$("authArea").classList.remove("hidden");$("dashboard").classList.add("hidden");$("paymentArea").classList.add("hidden");return}await loadDashboard()});
+auth.onAuthStateChanged(async user=>{if(registrationInProgress)return;currentUser=user;if(!user){document.body.classList.remove("status-dashboard-mode");$("paymentArea").classList.remove("status-dashboard");$("authArea").classList.remove("hidden");$("dashboard").classList.add("hidden");$("paymentArea").classList.add("hidden");return}await loadDashboard()});
 if(new URLSearchParams(location.search).get("registar")==="1")tab("register");
 })();
 </script></body></html>
