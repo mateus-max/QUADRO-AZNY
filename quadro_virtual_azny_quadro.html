@@ -1111,6 +1111,19 @@ html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #cam
 html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #cameraStopBtn,
 html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #micStopBtn{display:none!important}
 </style>
+<style id="azny-teacher-camera-header-and-two-toggle-layout">
+/* Quadro dos professores: retirar o cabeçalho redundante e elevar a câmera. */
+body:not(.student-mode) .rightbar>.sidehead:first-child{display:none!important}
+body:not(.student-mode) .rightbar .camera-panel{padding:5px 6px 6px!important;margin-top:0!important;gap:0!important}
+body:not(.student-mode) .rightbar #teacherCameraLabel{display:block!important;position:static!important;order:0!important;margin:0 0 4px!important;padding:0!important;background:transparent!important;color:#17212b!important;text-align:center!important;font-size:13px!important;font-weight:800!important;line-height:1.2!important}
+body:not(.student-mode) .rightbar #teacherCamera{order:1!important;position:relative!important;width:100%!important;height:clamp(92px,14vh,122px)!important;min-height:92px!important;margin:0!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay{position:absolute!important;left:5px!important;right:5px!important;bottom:4px!important;top:auto!important;inset:auto 5px 4px!important;z-index:10!important;display:flex!important;justify-content:space-between!important;align-items:center!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay .cam-buttons{display:contents!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button{display:flex!important;position:static!important;align-items:center!important;justify-content:center!important;flex:0 0 32px!important;width:32px!important;min-width:32px!important;height:30px!important;min-height:30px!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#fff!important;font-size:19px!important;line-height:1!important;text-shadow:0 1px 4px #000!important;opacity:1!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #micBtn{order:0!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #cameraBtn{order:1!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:disabled{opacity:.55!important}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1206,9 +1219,8 @@ html body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #mic
 </main>
 
 <aside class="rightbar">
-  <div class="sidehead">Aula / Participantes</div>
   <div class="camera-panel">
-    <div class="camera-label">DR Eduardo</div>
+    <div class="camera-label" id="teacherCameraLabel">Professor</div>
     <div class="camera" id="teacherCamera">
       <div class="cam-off"><div class="big">🎥</div><div>Câmera do professor desligada</div><div>Autorize o acesso à câmera para aparecer aqui.</div></div>
       <video id="teacherVideo" autoplay muted playsinline hidden></video>
@@ -2523,7 +2535,7 @@ function addStudentVideoCard(id,name,stream,track){
 function removeStudentVideoCard(id){const pc=window.aznyTeacherPeers?.[id];if(pc){try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}if(window.aznyTeacherPeers[id]===pc)delete window.aznyTeacherPeers[id]}const card=document.getElementById("student-"+id);if(card){card.querySelectorAll("video,audio").forEach(el=>{try{el.pause?.()}catch(_){}try{el.srcObject=null}catch(_){}try{el.removeAttribute("src");el.load?.()}catch(_){}});card.remove()}if(!document.querySelector("#students .student"))document.getElementById("students").innerHTML='<div class="no-students" id="noStudents">Nenhum aluno entrou na aula.</div>'}
 let aznyTeacherDisplayName="Professor";
 function prepareJoinVoice(){try{if(!("speechSynthesis" in window))return;const unlock=()=>{try{const en=document.documentElement.lang==="en",u=new SpeechSynthesisUtterance(en?"Class notifications are enabled.":"Notificações de entrada ativadas.");u.lang=en?"en-GB":"pt-PT";u.volume=0;speechSynthesis.speak(u)}catch(_){}};document.addEventListener("pointerdown",unlock,{once:true});document.addEventListener("keydown",unlock,{once:true})}catch(_){}}
-async function loadTeacherDisplayName(){try{if(!AZNY_DB||!AZNY_ACCESS_TOKEN)return;const snap=await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).once("value");const d=snap.val()||{};aznyTeacherDisplayName=d.teacherName||d.name||d.fullName||d.nome||"Professor"}catch(e){console.warn("AZNY teacher name:",e)}}
+async function loadTeacherDisplayName(){try{if(AZNY_DB&&AZNY_ACCESS_TOKEN){const snap=await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).once("value");const d=snap.val()||{};aznyTeacherDisplayName=d.teacherName||d.name||d.fullName||d.nome||"Professor"}const label=document.getElementById("teacherCameraLabel");if(label)label.textContent=(document.documentElement.lang==="en"?"Teacher ":"Professor ")+String(aznyTeacherDisplayName||"").replace(/^\s*(dr\.?|professor(a)?\.?|teacher)\s+/i,"").trim()}catch(e){console.warn("AZNY teacher name:",e)}}
 function aznyPersonType(fullName){const first=String(fullName||"").trim().split(/\s+/)[0]||"";return /a$/i.test(first)?"aluna":"aluno"}
 function aznySpeakTeacherNotice(message){try{if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;const speak=()=>{try{const en=document.documentElement.lang==="en",u=new SpeechSynthesisUtterance(message);u.lang=en?"en-GB":"pt-PT";u.volume=1;u.rate=0.9;u.pitch=1;const voices=speechSynthesis.getVoices();const v=en?(voices.find(x=>/^en(-|_)(GB|US|AU|IE)/i.test(x.lang))||voices.find(x=>/^en/i.test(x.lang))):(voices.find(x=>/^pt(-|_)(PT|BR)/i.test(x.lang))||voices.find(x=>/^pt/i.test(x.lang)));if(v)u.voice=v;speechSynthesis.speak(u)}catch(e){console.warn("AZNY voice:",e)}};if(speechSynthesis.getVoices().length)speak();else{const previous=speechSynthesis.onvoiceschanged;speechSynthesis.onvoiceschanged=()=>{speechSynthesis.onvoiceschanged=previous||null;speak()};setTimeout(speak,600)}}catch(e){console.warn("AZNY announcement:",e)}}
 function announceJoinRequest(studentName,requestId){try{if(isStudent||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;let said=[];try{said=JSON.parse(sessionStorage.getItem("azny-join-voice-"+String(classSessionId))||"[]")}catch(_){}if(said.includes(requestId))return;said.push(requestId);try{sessionStorage.setItem("azny-join-voice-"+String(classSessionId),JSON.stringify(said.slice(-100)))}catch(_){}const en=document.documentElement.lang==="en",person=aznyPersonType(studentName);const message=en?"Attention, Teacher "+aznyTeacherDisplayName+". Student "+studentName+" is requesting permission to join the class.":"Atenção, senhor "+aznyTeacherDisplayName+". O "+person+" "+studentName+" está à espera da sua autorização para entrar na aula.";aznySpeakTeacherNotice(message)}catch(e){console.warn("AZNY join announcement:",e)}}
