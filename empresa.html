@@ -36,15 +36,28 @@ body{background:radial-gradient(ellipse at 15% 0%,#123e68 0%,#071b33 48%,#041225
 .checkout-method{background:#f8fbff;color:#172536}
 .register-pay-detail{color:#172536}
 @media(max-width:620px){body{padding:12px 9px}.brand{font-size:16px;gap:7px;flex-wrap:wrap}.brand .brand-icon{font-size:25px}.brand span:last-child{font-size:10px}.panel{border-radius:16px}.company-features{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.company-feature{font-size:11px;min-height:55px;padding:9px}.intro h1{font-size:27px}.tabs button{flex:1}}
+
+/* Fluxo focado de registo: mostrar apenas o formulário */
+.register-only-title{margin:0 0 5px;color:#fff;font-size:25px}
+.register-only-subtitle{margin:0 0 18px;color:#bfd4e8;font-size:14px;line-height:1.5}
+body.register-mode .brand,body.register-mode #companyIntro,body.register-mode #companyFeatures,body.register-mode #loginTab,body.register-mode #registerTab{display:none!important}
+body.register-mode .wrap{max-width:680px;padding-top:10px}
+body.register-mode .panel{margin-top:0;min-height:70vh;display:flex;flex-direction:column;justify-content:center}
+body.register-mode #authArea{width:100%}
+body.register-mode #registerForm{display:block!important}
+body.register-mode #registerForm .field input{min-height:49px}
+body.register-mode #registerForm .muted{margin-top:16px}
+body.register-mode #registerForm .actions{margin-top:20px}
+@media(max-width:620px){body.register-mode{padding:10px!important}body.register-mode .panel{min-height:calc(100vh - 20px);padding:22px 17px!important;border-radius:16px}body.register-mode .register-only-title{font-size:23px}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
-<body><div class="wrap"><div class="brand"><span class="brand-icon" aria-hidden="true">🏢</span> REMOTE WORK BOARD <span>ÁREA EMPRESARIAL</span></div>
+<body><div class="wrap"><div class="brand" id="companyBrand"><span class="brand-icon" aria-hidden="true">🏢</span> REMOTE WORK BOARD <span>ÁREA EMPRESARIAL</span></div>
 <section class="panel">
-<div class="intro"><div class="eyebrow">ESPAÇO EXCLUSIVO PARA ORGANIZAÇÕES</div><h1>Reuniões profissionais, num espaço próprio.</h1><p>Crie uma conta para a sua organização, prepare reuniões e apresentações e partilhe um link exclusivo para cada atividade. O espaço de cada atividade fica separado dos restantes.</p></div>
-<div class="company-features" aria-label="Funcionalidades empresariais">
+<div class="intro" id="companyIntro"><div class="eyebrow">ESPAÇO EXCLUSIVO PARA ORGANIZAÇÕES</div><h1>Reuniões profissionais, num espaço próprio.</h1><p>Crie uma conta para a sua organização, prepare reuniões e apresentações e partilhe um link exclusivo para cada atividade. O espaço de cada atividade fica separado dos restantes.</p></div>
+<div class="company-features" id="companyFeatures" aria-label="Funcionalidades empresariais">
 <div class="company-feature"><span aria-hidden="true">🎥</span><b>Sala de reuniões online</b></div>
 <div class="company-feature"><span aria-hidden="true">📊</span><b>Documentos e Excel</b></div>
 <div class="company-feature"><span aria-hidden="true">🧩</span><b>Quadro colaborativo</b></div>
@@ -59,6 +72,8 @@ body{background:radial-gradient(ellipse at 15% 0%,#123e68 0%,#071b33 48%,#041225
 <div class="actions"><button class="btn primary" type="submit">Entrar no painel empresarial</button><a class="btn secondary" href="index.html" style="text-decoration:none">Voltar</a></div>
 </form>
 <form id="registerForm" class="hidden">
+<h2 class="register-only-title">Criar conta empresarial</h2>
+<p class="register-only-subtitle">Preencha os dados da sua organização para continuar para o pagamento.</p>
 <div class="grid">
 <div class="field full"><label for="orgName">Nome da empresa ou organização *</label><input id="orgName" required maxlength="120" autocomplete="organization" placeholder="Ex.: Empresa ABC, Lda."></div>
 <div class="field"><label for="orgEmail">E-mail empresarial *</label><input id="orgEmail" type="email" required autocomplete="email" placeholder="nome@empresa.ao"></div>
@@ -68,7 +83,7 @@ body{background:radial-gradient(ellipse at 15% 0%,#123e68 0%,#071b33 48%,#041225
 <div class="field"><label for="registerPassword2">Confirmar palavra-passe *</label><input id="registerPassword2" type="password" required minlength="6" autocomplete="new-password"></div>
 </div>
 <p class="muted">Depois de criar a conta, escolha um plano, efetue o pagamento e envie o comprovativo. O acesso ao quadro só será ativado após análise e aprovação da direção.</p>
-<div class="actions"><button class="btn primary" type="submit">Criar conta empresarial</button><button class="btn secondary" type="button" id="cancelRegister">Cancelar</button></div>
+<div class="actions"><button class="btn primary" type="submit">Criar conta empresarial</button><button class="btn secondary" type="button" id="cancelRegister">Voltar</button></div>
 </form><div class="msg" id="authMessage" role="status" aria-live="polite"></div>
 </div>
 <div id="paymentArea" class="hidden">
@@ -132,7 +147,7 @@ function addPasswordToggle(id){
 let currentUser=null,profile=null,activities={},selectedPaymentMethod="",registrationInProgress=false;
 function msg(s,ok=false){$("authMessage").textContent=s;$("authMessage").style.color=ok?"#137547":"#b42318"}
 function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function tab(which){const reg=which==="register";$("loginForm").classList.toggle("hidden",reg);$("registerForm").classList.toggle("hidden",!reg);$("loginTab").classList.toggle("active",!reg);$("registerTab").classList.toggle("active",reg);msg("")}
+function tab(which){const reg=which==="register";document.body.classList.toggle("register-mode",reg);$("loginForm").classList.toggle("hidden",reg);$("registerForm").classList.toggle("hidden",!reg);$("loginTab").classList.toggle("active",!reg);$("registerTab").classList.toggle("active",reg);msg("")}
 $("loginTab").onclick=()=>tab("login");$("registerTab").onclick=()=>tab("register");$("cancelRegister").onclick=()=>tab("login");
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();msg("A iniciar sessão...");try{await auth.signInWithEmailAndPassword($("loginEmail").value.trim(),$("loginPassword").value);msg("",true)}catch(err){msg(errorText(err))}});
 $("registerForm").addEventListener("submit",async e=>{
@@ -184,7 +199,8 @@ $("registerForm").addEventListener("submit",async e=>{
        }
      }
    }
-   msg("Conta empresarial criada ou recuperada. A abrir o painel e o checkout...",true);
+   msg("Dados da empresa recebidos. A preparar o checkout de pagamento...",true);
+   await new Promise(resolve=>setTimeout(resolve,3000));
    await loadDashboard();
  }catch(err){
    console.error("AZNY — erro no registo empresarial:",err);
