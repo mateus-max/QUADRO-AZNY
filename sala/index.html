@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#071b33">
-<meta name="description" content="Quadro Virtual AZNY para aulas online interativas.">
+<meta name="description" content="Remote Work Board para aulas online interativas.">
 <link rel="manifest" href="/manifest-quadro.webmanifest">
 <link rel="icon" href="/icons/azny-board.svg?v=2" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/azny-board.svg?v=2">
-<title>Quadro Virtual AZNY</title>
+<title>Remote Work Board</title>
 <style>
 *{box-sizing:border-box}
 /* AZNY touch drawing: stop browser gestures from stealing pen/lupa strokes. */
@@ -1209,7 +1209,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 <label id="studentLanguageLabel" for="studentLanguageSelect" style="display:block;margin:10px 0 4px;font-weight:750;text-align:left">Idioma do quadro / Board language</label><select id="studentLanguageSelect" class="azny-entry-language" aria-label="Idioma do quadro" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:10px"><option value="pt">🇦🇴 Português</option><option value="en">🇬🇧 English</option></select><input id="studentNameInput" placeholder="Digite o seu nome" autocomplete="name"><div class="waiting" id="studentWaiting" style="display:none">Pedido enviado. Aguarde a aprovação do professor.</div>
 <div class="card-actions" style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary" id="studentJoinBtn" type="button">Pedir entrada</button><button id="studentResumeBtn" type="button" style="background:#e8f1ff;color:#0e2c4c;border:1px solid #9bbce8;border-radius:8px;padding:10px 14px;font-weight:750">Voltar à aula</button></div></div></div>
 <div class="modal" id="helpModal"><div class="card">
-<h3>Quadro Virtual AZNY</h3>
+<h3>Remote Work Board</h3>
 <p><b>Texto:</b> selecione Texto e clique diretamente no local desejado. O cursor entra naquele ponto.</p>
 <p><b>Formatação:</b> todo o texto novo começa em branco. Para mudar a cor, selecione a escrita existente e escolha a cor no controlo de cor; a alteração aplica-se à seleção. Tamanho, fonte, negrito, itálico e sublinhado também podem ser aplicados à seleção.</p>
 <p><b>Objetos:</b> imagens e documentos podem ser selecionados, movidos, redimensionados e eliminados.</p>
@@ -2975,7 +2975,7 @@ async function copyClassLink(){
 }
 function shareWhatsApp(){
  const link=getClassLink();if(!link)return;const title=document.getElementById("boardTitle").value.trim()||"Aula";
- const text="Convite para a aula \""+title+"\" no Quadro Virtual AZNY: "+link;
+ const text="Convite para a aula \""+title+"\" no Remote Work Board: "+link;
  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");
 }
 function shareFacebook(){
@@ -3012,7 +3012,7 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
   set("#teacherCamera .cam-off div:nth-child(2)",en?"Teacher camera is off":"Câmera do professor desligada");
   set("#teacherCamera .cam-off div:nth-child(3)",en?"Allow camera access to appear here.":"Autorize o acesso à câmera para aparecer aqui.");
   set("#teacherCamera .camera-label",en?"Teacher":"Professor");set("#noStudents",en?"No students have joined the class.":"Nenhum aluno entrou na aula.");
-  const help=document.querySelector("#helpModal h3");if(help)help.textContent="Quadro Virtual AZNY";
+  const help=document.querySelector("#helpModal h3");if(help)help.textContent="Remote Work Board";
   const helpPs=document.querySelectorAll("#helpModal .card p");
   const helpTexts=en?["<b>Text:</b> choose Text and click directly where you want to write.","<b>Formatting:</b> new text starts in white. Select existing text to change its colour, size, font, bold, italic or underline.","<b>Objects:</b> images and documents can be selected, moved, resized and deleted.","<b>Camera:</b> the teacher camera appears when access is allowed and it is switched on. The student area stays empty until someone joins.","<b>Note:</b> cameras require HTTPS or localhost in Chrome; opening a file directly may block camera access."]:["<b>Texto:</b> selecione Texto e clique diretamente no local desejado. O cursor entra naquele ponto.","<b>Formatação:</b> todo o texto novo começa em branco. Para mudar a cor, selecione a escrita existente e escolha a cor no controlo de cor; a alteração aplica-se à seleção. Tamanho, fonte, negrito, itálico e sublinhado também podem ser aplicados à seleção.","<b>Objetos:</b> imagens e documentos podem ser selecionados, movidos, redimensionados e eliminados.","<b>Câmera:</b> a câmera do professor só aparece quando for autorizada e ligada. A área dos alunos permanece vazia até existir um participante.","<b>Nota:</b> câmeras reais exigem uma página HTTPS ou localhost no Chrome; abrir diretamente como <code>file://</code> pode impedir o acesso à câmera."];
   helpPs.forEach((p,i)=>{if(helpTexts[i])p.innerHTML=helpTexts[i]});
@@ -3184,7 +3184,7 @@ if(!isStudent)load();setTimeout(()=>{setZoom(1);updateZoomExtent();resizeCanvas(
 </script>
 
 <script>
-/* Instalação PWA do Quadro Virtual AZNY */
+/* Instalação PWA do Remote Work Board */
 if ("serviceWorker" in navigator && location.protocol === "https:") {
  window.addEventListener("load", () => {
   navigator.serviceWorker.register("service-worker.js", {scope:"./"})
