@@ -332,7 +332,7 @@ async function createTeacherAccount(){
  btn.disabled=true;btn.textContent="A criar conta...";
  try{
   await AZNY_REMOTE_READY;
-  if(googleUser){const user=firebase.auth().currentUser;if(!user)throw new Error("A sessão Google expirou. Volte a selecionar a conta Google.");if(user.displayName!==name)await user.updateProfile({displayName:name)}
+  if(googleUser){const user=firebase.auth().currentUser;if(!user)throw new Error("A sessão Google expirou. Volte a selecionar a conta Google.");if(user.displayName!==name)await user.updateProfile({displayName:name})
   }else{const cred=await firebase.auth().createUserWithEmailAndPassword(email,password);await cred.user.updateProfile({displayName:name}).catch(()=>{})}
   try{sessionStorage.setItem("rwb_teacher_registration",JSON.stringify({name,email,phone,createdAt:new Date().toISOString(),provider:googleUser?"google":"password"}))}catch(_){}
   box.style.color="#137547";box.textContent="Conta criada com sucesso. A preparar a escolha do plano e o checkout...";
