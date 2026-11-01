@@ -2753,10 +2753,17 @@ async function startClass(){
 
 function restoreLocalTeacherTimer(){
  if(isStudent)return;
- let started=0;
- try{started=Number(localStorage.getItem("azny-business-started-at-"+aznyRoomKey()))||0}catch(_){}
- if(!started)return;
- classSessionId="ROOM-"+String(roomId).replace(/[.#$\\[\\]\\/]/g,"_");
+ const key=aznyRoomKey();
+ let started=0,storedSession="";
+ try{
+  started=Number(localStorage.getItem("azny-business-started-at-"+key))||0;
+  storedSession=localStorage.getItem("azny-business-active-session-"+key)||"";
+ }catch(_){}
+ const expectedSession="ROOM-"+key;
+ if(!started||storedSession!==expectedSession)return;
+ // Reuse the exact same Firebase session path used by startClass(); never
+ // reconstruct it with a second, potentially different room-id sanitizer.
+ classSessionId=expectedSession;
  classStarted=true;aznyObservedClassStatus="active";classStartTime=started;
  const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn");
  if(startBtn){startBtn.disabled=true;startBtn.removeAttribute("aria-busy")}
@@ -2772,7 +2779,9 @@ async function restoreActiveTeacherSession(){
   const session=snap?.val();
   if(!session||session.status!=="active")return;
   // Prefer the client timestamp written at start; the server timestamp may still be unresolved during reconnect.
-  const startedAt=Number(session.startedAtClient)||Number(session.startedAt)||Date.now();
+  let locallyStoredStart=0;
+  try{locallyStoredStart=Number(localStorage.getItem("azny-business-started-at-"+aznyRoomKey()))||0}catch(_){}
+  const startedAt=locallyStoredStart||Number(session.startedAtClient)||Number(session.startedAt)||Date.now();
   classStarted=true;aznyObservedClassStatus="active";classStartTime=startedAt;
   const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn");
   if(startBtn){startBtn.disabled=true;startBtn.removeAttribute("aria-busy")}
