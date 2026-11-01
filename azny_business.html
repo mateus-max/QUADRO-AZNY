@@ -1839,11 +1839,20 @@ function restore(s){
  // Versões anteriores criavam também um documento vazio com o mesmo ID
  // de cada folha Excel. Não restaurar esses duplicados legados.
  const spreadsheetIds=new Set(storedObjects.filter(o=>o.kind==="spreadsheet"&&o.id).map(o=>String(o.id)));
- const restoredIds=new Set();
+ const restoredIds=new Set(),restoredSpreadsheetCopies=new Set();
  storedObjects.forEach((o,i)=>{
   const id=String(o.id||"");
   if(id&&restoredIds.has(id))return;
   if(o.kind==="doc"&&id&&spreadsheetIds.has(id))return;
+  // Evitar restaurar a mesma folha Excel duas vezes na mesma posição.
+  if(o.kind==="spreadsheet"){
+   const copyKey=JSON.stringify([
+    o.name||"Folha Excel",o.sheetName||"Sheet1",o.sheetData||[],
+    Number(o.left)||0,Number(o.top)||0,Number(o.width)||0,Number(o.height)||0
+   ]);
+   if(restoredSpreadsheetCopies.has(copyKey))return;
+   restoredSpreadsheetCopies.add(copyKey);
+  }
   if(id)restoredIds.add(id);
   createFromData(o);
   const el=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===id);
