@@ -3932,26 +3932,45 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 }
 function setupAznyContextMenu(){if(document.getElementById("aznyContextMenu"))return;const menu=document.createElement("div");menu.id="aznyContextMenu";menu.innerHTML='<div class="ctx-title">Ferramentas do quadro</div><div class="ctx-items"></div>';document.body.appendChild(menu);const close=()=>menu.classList.remove("open");document.addEventListener("click",e=>{if(!menu.contains(e.target))close()});document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});document.addEventListener("contextmenu",e=>{const obj=e.target.closest?.(".object");const onBoard=e.target.closest?.("#board");if(!onBoard&&!obj)return;e.preventDefault();if(obj)selectObject(obj);const items=menu.querySelector(".ctx-items");items.innerHTML="";const buttons=[...document.querySelectorAll(".toolbar button")].filter(b=>!b.disabled&&b.id!=="teacherDashboardBtn");buttons.forEach(original=>{const item=document.createElement("button");item.type="button";item.textContent=(original.title||original.getAttribute("aria-label")||original.innerText||original.textContent||original.id||"Ferramenta").trim();if(!item.textContent)item.textContent=original.id||"Ferramenta";item.onclick=()=>{close();if(obj&&obj.isConnected)selectObject(obj);original.click()};items.appendChild(item)});if(selected&&selected.isConnected){const sep=document.createElement("div");sep.className="ctx-title";sep.textContent="Objeto selecionado";items.appendChild(sep);[["Minimizar / restaurar",minimizeSelectedObject],["Duplicar",duplicateSelectedObject],["Trazer para a frente",()=>changeSelectedLayer(1)],["Enviar para trás",()=>changeSelectedLayer(-1)],["Eliminar",deleteSelected]].forEach(([label,fn])=>{const b=document.createElement("button");b.textContent=label;b.onclick=()=>{close();fn()};items.appendChild(b)})}menu.style.left=Math.min(e.clientX,innerWidth-310)+"px";menu.style.top=Math.min(e.clientY,innerHeight-menu.scrollHeight-12)+"px";menu.classList.add("open")})}
 setupAznyContextMenu();
-function forceRefreshBoard(forStudent){
- // Guardar primeiro o estado local; nenhuma operação de rede pode bloquear o refresh.
- if(!forStudent){try{persistBoardBeforeNavigation()}catch(e){console.warn("AZNY save before refresh:",e)}}
+async function forceRefreshBoard(forStudent){
+ // Guardar o quadro e a referência da reunião antes de qualquer atualização/recarregamento.
+ if(!forStudent)persistBoardBeforeNavigation();
  const btn=document.getElementById(forStudent?"studentRefreshBoardBtn":"refreshBoardBtn");
- if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");btn.textContent=document.documentElement.lang==="en"?"Refreshing…":"A atualizar…"}
- try{sessionStorage.setItem("azny-soft-refresh-in-progress","1")}catch(_){}
- // Notificações e atualização do Service Worker decorrem em segundo plano.
+ const originalLabel=btn?.textContent||"⟳";
+ if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");btn.textContent=document.documentElement.lang==="en"?"Refreshing app…":"A atualizar a aplicação…"}
+ const en=document.documentElement.lang==="en";
  try{
+  /* Notify students when synchronization is available, but never block the browser reload on it. */
   if(!forStudent){
-   if(AZNY_DB)aznyRoomRef().child("board").child("teacherRefreshAt").set(Date.now()).catch(e=>console.warn("AZNY refresh notification:",e));
-   Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(JSON.stringify({type:"board-request"}))}catch(_){}}});
-  }else if(studentApproved&&studentBoardChannel?.readyState==="open"){
-   try{studentBoardChannel.send(JSON.stringify({type:"board-request"}))}catch(_){}
+   try{
+    if(AZNY_DB)await aznyRoomRef().child("board").child("teacherRefreshAt").set(Date.now());
+    Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(JSON.stringify({type:"board-request"}))}catch(_){}}});
+   }catch(signalError){console.warn("AZNY refresh notification:",signalError)}
+  }else if(studentApproved){
+   try{
+    if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected")studentBoardChannel.send(JSON.stringify({type:"board-request"}));
+    else{await aznyReconnectStudentMedia();if(studentBoardChannel?.readyState==="open")studentBoardChannel.send(JSON.stringify({type:"board-request"}))}
+   }catch(reconnectError){console.warn("AZNY refresh reconnect:",reconnectError)}
   }
- }catch(e){console.warn("AZNY refresh signal:",e)}
- if("serviceWorker" in navigator){
-  navigator.serviceWorker.getRegistrations().then(list=>list.forEach(reg=>reg.update().catch(()=>{}))).catch(e=>console.warn("AZNY service worker update:",e));
+  try{sessionStorage.setItem("azny-soft-refresh-in-progress","1")}catch(_){}
+  /* Match the browser's refresh button: reload this exact page in-place.
+     Ask the PWA service worker to check for a newer deployed version first. */
+  // O refresh não pode ficar preso à verificação do service worker.
+  // A atualização do cache corre em segundo plano; a página recarrega sempre.
+  try{
+   if("serviceWorker" in navigator){
+    const registrations=await Promise.race([
+     navigator.serviceWorker.getRegistrations().then(list=>Promise.all(list.map(reg=>reg.update().catch(()=>{})))),
+     new Promise(resolve=>setTimeout(resolve,1200))
+    ]);
+   }
+  }catch(updateError){console.warn("AZNY service worker update check:",updateError)}
+  window.location.reload();
+ }catch(e){
+  console.warn("AZNY app refresh:",e);
+  if(btn){btn.disabled=false;btn.removeAttribute("aria-busy");btn.textContent=originalLabel}
+  toast(en?"Could not refresh the app. Check your connection and try again.":"Não foi possível atualizar a aplicação. Verifique a ligação e tente novamente.");
  }
- // Recarregar a página atual sem esperar Firebase, reconexão ou Service Worker.
- window.setTimeout(()=>window.location.reload(),120);
 }
 document.getElementById("refreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(false)});
 document.getElementById("studentRefreshBoardBtn")?.addEventListener("click",e=>{e.preventDefault();forceRefreshBoard(true)});
