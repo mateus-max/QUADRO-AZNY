@@ -1747,7 +1747,7 @@ function handleBoardChannelMessage(raw){
     return;
    }
    const p=document.getElementById("livePointer");
-   if(p){const px=Number.isFinite(Number(m.nx))?Number(m.nx)*board.clientWidth:Number(m.x)*(board.clientWidth/(Number(m.boardWidth)||board.clientWidth)),py=Number.isFinite(Number(m.ny))?Number(m.ny)*board.clientHeight:Number(m.y)*(board.clientHeight/(Number(m.boardHeight)||board.clientHeight));p.style.transform="translate("+(px-44)+"px,"+(py-2)+"px)";p.classList.toggle("active",!!m.visible)}
+   if(p){const px=Number.isFinite(Number(m.nx))?Number(m.nx)*board.clientWidth:Number(m.x)*(board.clientWidth/(Number(m.boardWidth)||board.clientWidth)),py=Number.isFinite(Number(m.ny))?Number(m.ny)*board.clientHeight:Number(m.y)*(board.clientHeight/(Number(m.boardHeight)||board.clientHeight));p.style.transform="translate("+(px-5)+"px,"+(py-3)+"px)";p.classList.toggle("active",!!m.visible)}
    return;
   }
   if(m.type==="text-live"){
@@ -1858,20 +1858,34 @@ function setPointerMode(on){
  ["excel","word"].forEach(surface=>sendPacket({type:"live-pointer",surface,x:0,y:0,boardWidth:0,boardHeight:0,visible:false}));
 }
 let lastPointerPacketAt=0;
+function boardPointFromClient(clientX,clientY){
+ const r=board.getBoundingClientRect(),cs=getComputedStyle(board);
+ const borderL=parseFloat(cs.borderLeftWidth)||0,borderR=parseFloat(cs.borderRightWidth)||0;
+ const borderT=parseFloat(cs.borderTopWidth)||0,borderB=parseFloat(cs.borderBottomWidth)||0;
+ const innerW=Math.max(1,r.width-borderL-borderR),innerH=Math.max(1,r.height-borderT-borderB);
+ const x=(clientX-r.left-borderL)*(board.clientWidth/innerW);
+ const y=(clientY-r.top-borderT)*(board.clientHeight/innerH);
+ return {x,y};
+}
+function placeSharedPointer(x,y){
+ const p=document.getElementById("livePointer");
+ // A ponta do SVG está em (5,3); alinhar esse ponto à coordenada real do toque/rato.
+ p.style.transform=`translate(${x-5}px,${y-3}px)`;
+ p.classList.remove("touch-pointer");p.classList.add("active");
+}
 function updateLivePointer(e){
  if(e.target?.closest?.("#aznyExcelWorkspace,#aznyWebWorkspace"))return;
- if(!board.contains(e.target)&&!pointerMode)return;
- const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width)*board.clientWidth,y=(e.clientY-r.top)/Math.max(1,r.height)*board.clientHeight;
- const p=document.getElementById("livePointer");
- if(pointerMode){p.style.transform=`translate(${x-44}px,${y-2}px)`;p.classList.remove("touch-pointer");p.classList.add("active")}
- {
-  const now=performance.now();
-  if(now-lastPointerPacketAt>=16){
-   lastPointerPacketAt=now;
-   const packet=JSON.stringify({type:"live-pointer",x,y,nx:x/Math.max(1,board.clientWidth),ny:y/Math.max(1,board.clientHeight),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode});
-   if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}
-   else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});
-  }
+ const r=board.getBoundingClientRect();
+ const inside=e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+ if(!inside){if(pointerMode)document.getElementById("livePointer")?.classList.remove("active");return}
+ const {x,y}=boardPointFromClient(e.clientX,e.clientY);
+ if(pointerMode)placeSharedPointer(x,y);
+ const now=performance.now();
+ if(now-lastPointerPacketAt>=16){
+  lastPointerPacketAt=now;
+  const packet=JSON.stringify({type:"live-pointer",x,y,nx:x/Math.max(1,board.clientWidth),ny:y/Math.max(1,board.clientHeight),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode});
+  if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}
+  else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});
  }
 }
 function setTool(t){
@@ -1914,7 +1928,7 @@ stage.addEventListener("pointermove",moveStudentPointer,{passive:false});
 function endStudentPointerDrag(e){if(aznyPointerDragId===null||(e.pointerId!==undefined&&e.pointerId!==aznyPointerDragId))return;aznyPointerDragId=null;try{if(e.pointerId!==undefined&&stage.hasPointerCapture(e.pointerId))stage.releasePointerCapture(e.pointerId)}catch(_){}if(pointerMode){const p=document.getElementById("livePointer");if(p)p.classList.add("active")}}
 stage.addEventListener("pointerup",endStudentPointerDrag);
 stage.addEventListener("pointercancel",endStudentPointerDrag);
-stage.addEventListener("pointermove",updateLivePointer,{passive:true});
+document.addEventListener("pointermove",updateLivePointer,{passive:true});
 function sendAZNYSurfacePointer(e){
  if(!pointerMode)return;
  const excel=e.target?.closest?.("#aznyExcelWorkspace"),word=e.target?.closest?.("#aznyWebWorkspace");
@@ -4720,7 +4734,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    body.azny-business-mode .azny-business-template{display:none!important}
    body.azny-business-mode .azny-business-template{position:absolute;inset:0;z-index:0;pointer-events:none;padding:clamp(12px,2.4%,30px);background:linear-gradient(135deg,#fff 0%,#f8fbff 100%);color:#102b50;overflow:hidden;font-family:Arial,sans-serif}
    body.azny-business-mode #drawLayer{position:absolute;z-index:2!important;pointer-events:none}
-   body.azny-business-mode #livePointer{z-index:4!important}
+   body.azny-business-mode #livePointer{z-index:2147483647!important}
    body.azny-business-mode .biz-template-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:2px solid #d9e8fa;padding-bottom:12px;margin-bottom:14px}
    body.azny-business-mode .biz-template-head h2{font-size:clamp(17px,2.2vw,30px);margin:0;color:#102b50}
    body.azny-business-mode .biz-template-head p{margin:5px 0 0;color:#647b98;font-size:clamp(10px,1.15vw,15px)}
@@ -4746,7 +4760,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    body.azny-business-mode #board{border:1px solid #c7d7e9!important;border-radius:3px!important}
    body.azny-business-mode #drawLayer{z-index:2!important;background:transparent!important}
    body.azny-business-mode .azny-business-template{z-index:0}
-   body.azny-business-mode #livePointer{z-index:4!important}
+   body.azny-business-mode #livePointer{z-index:2147483647!important}
    body.azny-business-mode .student-mode .topbar{display:flex!important}
    body.student-mode.azny-business-mode .topbar{display:flex!important;min-height:54px!important;padding:6px 8px!important;flex-wrap:wrap}
    /* Participantes: manter a marca REMOTE WORK BOARD no canto superior esquerdo, tal como no anfitrião. */
