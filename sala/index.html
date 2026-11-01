@@ -1647,19 +1647,25 @@ function updateLivePointer(e){
  }
 }
 function setTool(t){
- tool=t;
- document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===t));
- // In drawing/erasing mode, raise the transparent drawing layer above every
- // object and temporarily let pointer events pass through objects. This makes
- // the pen/eraser work visually and interactively over images, PDFs, charts,
- // music staves, notes, keyboards and any other object on the board.
- board.classList.toggle("drawing-active",t==="pen"||t==="eraser");
+ // Cada ferramenta de modo funciona como um interruptor: voltar a tocar
+ // na ferramenta ativa desliga-a, deixando o quadro sem modo de edição.
+ tool=(tool===t)?null:t;
+ document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",!!tool&&b.dataset.tool===tool));
+ // A caneta e a borracha mantêm o comportamento próprio da camada de desenho.
+ board.classList.toggle("drawing-active",tool==="pen"||tool==="eraser");
  if(pointerMode)setPointerMode(false);
- else stage.style.cursor=t==="text"?"text":(t==="pen"||t==="eraser"?"crosshair":"default");
+ stage.style.cursor=pointerMode?"none":(tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default"));
 }
 
-document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{if((b.dataset.tool==="eraser"||b.id==="deleteTool")&&window.aznyClearActiveWorkspace&&window.aznyClearActiveWorkspace("selected"))return;setTool(b.dataset.tool)});
-document.getElementById("pointerTool").onclick=()=>setPointerMode(!pointerMode);
+document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
+ if(!b.dataset.tool)return;
+ setTool(b.dataset.tool);
+});
+document.getElementById("pointerTool").onclick=()=>{
+ const activate=!pointerMode;
+ if(activate)setTool(null);
+ setPointerMode(activate);
+};
 /* Touch-drag pointer for student: capture pointer until finger is released. */
 let aznyPointerDragId=null,lastStudentPointerSend=0;
 function moveStudentPointer(e){
