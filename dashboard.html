@@ -79,7 +79,7 @@ sessionStorage.setItem("azny_access_token",token);$("hello").textContent="Bem-vi
 db.ref("assessments").orderByChild("ownerToken").equalTo(token).on("value",s=>{const d=s.val()||{};const items=Object.entries(d).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).slice(0,5);$("recentAssessments").innerHTML=items.length?items.map(([id,x])=>'<div class="activity"><strong>'+escapeHtml(x.title||"Avaliação")+'</strong><span class="small">'+escapeHtml(x.status||"Rascunho")+'</span><button class="btn" data-view="'+id+'">Abrir</button></div>').join(""):"Ainda não criou avaliações.";document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>location.href="avaliacoes/?professor=1&acesso="+encodeURIComponent(token)+"&id="+encodeURIComponent(b.dataset.view))});
 }catch(e){$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Não foi possível validar a licença";console.error(e)}}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-$("openBoard").onclick=()=>location.href="aulas/?acesso="+encodeURIComponent(token);
+$("openBoard").onclick=async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(e){console.info("Landscape will be retried when the board opens:",e)}location.href="aulas/?acesso="+encodeURIComponent(token)};
 $("openAssessments").onclick=()=>location.href="avaliacao.html?professor=1&acesso="+encodeURIComponent(token);
 $("managePlan").onclick=()=>{$("planSection").classList.remove("hidden");$("planSection").scrollIntoView({behavior:"smooth"})};
 $("cancelPlan").onclick=()=>$("planSection").classList.add("hidden");$("nextPlan").onchange=planPrice;$("period").onchange=planPrice;
