@@ -471,7 +471,7 @@ body.teacher-payment-status-mode #homeIntro{display:block!important}
 /* Final mobile composition: natural card height ends immediately after the footer. */
 @media(max-width:620px){
   .azny-home{min-height:100dvh!important;align-items:flex-start!important;padding:8px 7px 18px!important}
-  .azny-home-card{height:auto!important;min-height:0!important;justify-content:flex-start!important;}
+  .azny-home-card{height:100%!important;min-height:100%!important;display:flex!important;flex-direction:column!important;justify-content:flex-start!important;}
   .rwb-topbar{height:60px!important;min-height:60px!important;padding:0 17px!important}
   .rwb-brand img{width:46px!important;height:46px!important;flex-basis:46px!important}
   .rwb-brand{font-size:17px!important;gap:9px!important}
@@ -489,7 +489,7 @@ body.teacher-payment-status-mode #homeIntro{display:block!important}
   .rwb-install #homeInstall{min-height:48px!important;padding:9px!important;font-size:14px!important}
   .rwb-bottom-links{margin:0 22px 12px!important;font-size:11px!important}
   .azny-home-card>.feedback-footer{margin:0 18px!important;padding:10px 0!important}
-  .azny-home-card>.azny-site-footer{margin:8px 18px 0!important;padding:10px 8px 12px!important;font-size:12px!important}
+  .azny-home-card>.azny-site-footer{margin: auto 18px 0!important;padding:10px 8px calc(12px + env(safe-area-inset-bottom,0px))!important;font-size:12px!important}
   .azny-home-card .azny-footer-flag{font-size:30px!important}
   .azny-home-card .azny-footer-email{margin-top:4px!important}
   .azny-home-card .azny-footer-rights{margin-top:3px!important;font-size:11px!important}
