@@ -459,12 +459,20 @@ body.teacher-payment-status-mode #homeIntro{display:block!important}
  .rwb-accounting-total span{color:#536e83}.rwb-accounting-total b{font-size:clamp(6px,1.5vw,8px);color:#0a4d79}.rwb-accounting-total em{padding:2px 3px;background:#d5f2e4;color:#087448;font-style:normal;font-weight:800}
  .rwb-finance-full{overflow-y:auto;scrollbar-width:none}.rwb-finance-full::-webkit-scrollbar{display:none}
 }
+
+/* Remote Work Board: use the official logo in the homepage header and seat the footer at the bottom edge. */
+.rwb-brand img{width:46px;height:46px;flex:0 0 46px;object-fit:contain;display:block;border-radius:8px}
+.azny-home{min-height:100vh;min-height:100dvh;padding-bottom:0!important;align-items:stretch!important}
+.azny-home-card{min-height:calc(100vh - 22px);min-height:calc(100dvh - 22px);display:flex;flex-direction:column}
+.azny-home-card>.azny-site-footer{margin-top:auto!important;margin-bottom:0!important;padding-bottom:12px!important}
+.azny-home-card>.feedback-footer{flex:0 0 auto}
+@media(max-width:620px){.azny-home{padding:8px 7px 0!important;min-height:100dvh!important}.azny-home-card{min-height:calc(100dvh - 8px)!important}.rwb-brand img{width:40px;height:40px;flex-basis:40px}.rwb-brand{gap:8px}}
 </style><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#071b33">
 <link rel="icon" href="icons/remote-work-board-192.png?v=20261101b" type="image/png">
 <link rel="apple-touch-icon" href="icons/remote-work-board-192.png?v=20261101b">
-</head><body><main class="azny-home"><section class="azny-home-card"><header class="rwb-topbar"><div class="rwb-brand"><svg viewBox="0 0 48 40" aria-hidden="true"><circle cx="13" cy="12" r="7" fill="#08a9ff"/><circle cx="25" cy="9" r="8" fill="#1687ff"/><circle cx="37" cy="13" r="6" fill="#08a9ff"/><path d="M1 35c0-8 5-13 12-13s12 5 12 13v2H1zm17 2v-3c0-8 5-13 12-13s12 5 12 13v3z" fill="#1687ff"/></svg><span>REMOTE WORK <b>BOARD</b></span></div><button class="rwb-menu" id="rwbMenuOpen" type="button" aria-label="Abrir menu de navegação" aria-expanded="false">⋮</button></header><section class="rwb-hero"><div class="rwb-hero-copy"><h1>Equipa conectada,<br><span>resultados reais.</span></h1><p>Reuniões, colaboração, projetos e muito mais para a sua empresa ou para o ensino.</p></div><div class="rwb-meeting-preview rwb-two-previews" aria-label="Duas prévias landscape: quadro de ensino e quadro empresarial">
+</head><body><main class="azny-home"><section class="azny-home-card"><header class="rwb-topbar"><div class="rwb-brand"><img src="icons/remote-work-board.svg?v=20261101c" alt="Logótipo Remote Work Board"><span>REMOTE WORK <b>BOARD</b></span></div><button class="rwb-menu" id="rwbMenuOpen" type="button" aria-label="Abrir menu de navegação" aria-expanded="false">⋮</button></header><section class="rwb-hero"><div class="rwb-hero-copy"><h1>Equipa conectada,<br><span>resultados reais.</span></h1><p>Reuniões, colaboração, projetos e muito mais para a sua empresa ou para o ensino.</p></div><div class="rwb-meeting-preview rwb-two-previews" aria-label="Duas prévias landscape: quadro de ensino e quadro empresarial">
  <section class="rwb-preview-card rwb-teaching-preview">
   <div class="rwb-preview-head"><b>REMOTE WORK <i>BOARD</i></b><span>● AULA EM ANDAMENTO</span><small>00:38:42</small></div>
   <div class="rwb-preview-layout">
