@@ -4318,41 +4318,33 @@ html body:not(.student-mode) .rightbar .camera-panel #aznyAudioOutputStatus{
 
 
 <script>
-/* AZNY teacher auto-landscape: enter the board in landscape on touch devices. */
+/* AZNY teacher-only orientation: lock landscape without requesting browser fullscreen.
+   Avoids Android's native 'swipe to exit fullscreen' notification. */
 (function(){
  "use strict";
  const body=document.body;
  if(body.classList.contains("student-mode")||!matchMedia("(pointer:coarse)").matches||!matchMedia("(max-width:950px)").matches)return;
- let requested=false;
- async function enterTeacherLandscape(){
-  if(requested||body.classList.contains("student-mode"))return;
-  requested=true;
-  try{
-   if(!document.fullscreenElement&&document.documentElement.requestFullscreen){
-    try{await document.documentElement.requestFullscreen({navigationUI:"hide"})}
-    catch(_){await document.documentElement.requestFullscreen()}
-   }
-  }catch(err){console.info("AZNY teacher fullscreen is not available:",err)}
+ let locked=false;
+ async function lockTeacherLandscape(){
+  if(locked||body.classList.contains("student-mode"))return;
   try{
    if(screen.orientation&&typeof screen.orientation.lock==="function"){
     await screen.orientation.lock("landscape");
+    locked=true;
+    body.classList.add("azny-teacher-landscape-requested");
+    setTimeout(()=>{try{resizeCanvas();window.dispatchEvent(new Event("resize"))}catch(_){}},80);
    }
-  }catch(err){console.info("AZNY teacher landscape lock is not available:",err)}
-  body.classList.add("azny-teacher-landscape-requested");
-  setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},250);
-  window.removeEventListener("pointerdown",enterTeacherLandscape,true);
-  window.removeEventListener("keydown",enterTeacherLandscape,true);
+  }catch(err){console.info("Landscape lock will be retried after entry interaction:",err)}
  }
- /* Browsers require a real user gesture before entering fullscreen or locking orientation.
-    The first teacher interaction requests both automatically; no rotation prompt/button is shown. */
- window.addEventListener("pointerdown",enterTeacherLandscape,{capture:true,once:true});
- window.addEventListener("keydown",enterTeacherLandscape,{capture:true,once:true});
-/* Release the orientation lock as soon as the teacher leaves this board page. */
+ /* Try immediately at page startup; if the browser requires a user gesture,
+    retry on the very first interaction. No fullscreen request is made. */
+ lockTeacherLandscape();
+ window.addEventListener("pointerdown",lockTeacherLandscape,{capture:true,once:true});
+ window.addEventListener("keydown",lockTeacherLandscape,{capture:true,once:true});
  window.addEventListener("pagehide",()=>{
   try{screen.orientation?.unlock?.()}catch(_){}
-  try{if(document.fullscreenElement)document.exitFullscreen?.()}catch(_){}
  });
- })();
+})();
 </script>
 </body>
 </html>
