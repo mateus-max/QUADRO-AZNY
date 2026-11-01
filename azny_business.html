@@ -2284,15 +2284,17 @@ function addDoc(file){
    try{
     const wb=XLSX.read(reader.result,{type:"array"});
     if(!wb.SheetNames.length)throw new Error("O ficheiro não contém folhas.");
+    // Um ficheiro selecionado cria apenas um objeto no quadro.
+    // Se o livro tiver várias folhas, abrir a primeira; as restantes não
+    // devem ser despejadas simultaneamente no quadro.
+    const sheetName=wb.SheetNames[0];
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,defval:""});
+    const data=rows.map(row=>Array.from(row||[],v=>String(v??"")));
     pushHistory();
-    wb.SheetNames.forEach((sheetName,index)=>{
-     const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,defval:""});
-     const data=rows.map(row=>Array.from(row||[],v=>String(v??"")));
-     const el=createAZNYVirtualSheetObject(file.name,sheetName,data);
-     Object.assign(el.style,{left:(70+index*26)+"px",top:(60+index*26)+"px"});
-     board.appendChild(el);makeInteractive(el);if(index===0)selectObject(el);
-    });
-    updateHint();scheduleSave();publishLiveBoardState();toast(wb.SheetNames.length+" folha(s) Excel carregada(s) para edição colaborativa");
+    const el=createAZNYVirtualSheetObject(file.name,sheetName,data);
+    Object.assign(el.style,{left:"70px",top:"60px"});
+    board.appendChild(el);makeInteractive(el);selectObject(el);
+    updateHint();scheduleSave();publishLiveBoardState();toast("Uma folha Excel carregada para edição colaborativa");
    }catch(err){console.error(err);toast("Não foi possível abrir esta folha Excel.")}
   };reader.readAsArrayBuffer(file);return
  }
@@ -3953,13 +3955,17 @@ async function forceRefreshBoard(forStudent){
   try{sessionStorage.setItem("azny-soft-refresh-in-progress","1")}catch(_){}
   /* Match the browser's refresh button: reload this exact page in-place.
      Ask the PWA service worker to check for a newer deployed version first. */
+  // O refresh não pode ficar preso à verificação do service worker.
+  // A atualização do cache corre em segundo plano; a página recarrega sempre.
   try{
    if("serviceWorker" in navigator){
-    const registrations=await navigator.serviceWorker.getRegistrations();
-    await Promise.all(registrations.map(reg=>reg.update().catch(()=>{})));
+    const registrations=await Promise.race([
+     navigator.serviceWorker.getRegistrations().then(list=>Promise.all(list.map(reg=>reg.update().catch(()=>{})))),
+     new Promise(resolve=>setTimeout(resolve,1200))
+    ]);
    }
   }catch(updateError){console.warn("AZNY service worker update check:",updateError)}
-  setTimeout(()=>window.location.reload(),150);
+  window.location.reload();
  }catch(e){
   console.warn("AZNY app refresh:",e);
   if(btn){btn.disabled=false;btn.removeAttribute("aria-busy");btn.textContent=originalLabel}
