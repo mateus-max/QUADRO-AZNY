@@ -1359,6 +1359,16 @@ body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!im
       <input class="color" type="color" id="textColor" value="#ffffff" title="Mudar a cor do texto selecionado">
       <button class="mini" id="alignLeft">≡</button><button class="mini" id="alignCenter">≡</button><button class="mini" id="alignRight">≡</button>
     </div>
+    <div class="group azny-pen-colors" id="aznyPenColors" aria-label="Cores da caneta">
+      <span class="azny-pen-color-label">Caneta:</span>
+      <button type="button" class="azny-pen-swatch active" data-pen-color="#1f2937" style="--swatch:#1f2937" aria-label="Caneta preta" title="Caneta preta"></button>
+      <button type="button" class="azny-pen-swatch" data-pen-color="#ffffff" style="--swatch:#ffffff" aria-label="Caneta branca" title="Caneta branca"></button>
+      <button type="button" class="azny-pen-swatch" data-pen-color="#e53935" style="--swatch:#e53935" aria-label="Caneta vermelha" title="Caneta vermelha"></button>
+      <button type="button" class="azny-pen-swatch" data-pen-color="#1e88e5" style="--swatch:#1e88e5" aria-label="Caneta azul" title="Caneta azul"></button>
+      <button type="button" class="azny-pen-swatch" data-pen-color="#43a047" style="--swatch:#43a047" aria-label="Caneta verde" title="Caneta verde"></button>
+      <button type="button" class="azny-pen-swatch" data-pen-color="#fdd835" style="--swatch:#fdd835" aria-label="Caneta amarela" title="Caneta amarela"></button>
+      <input type="color" id="aznyPenCustomColor" value="#1f2937" aria-label="Escolher outra cor para a caneta" title="Escolher outra cor para a caneta">
+    </div>
     <div class="group">
       <button class="mini" id="zoomOut" title="Diminuir zoom">−</button><span class="zoomlabel" id="zoomLabel">100%</span><button class="mini" id="zoomIn" title="Aumentar zoom">＋</button><button class="mini" id="zoomReset" title="Repor zoom">100%</button>
     </div>
@@ -1744,6 +1754,8 @@ function handleBoardChannelMessage(raw){
   const m=JSON.parse(raw);
   if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}return;}
   if(m.type==="live-pointer"){
+   /* Se o ponteiro vier de um participante, retransmitir aos restantes participantes. */
+   if(!isStudent){const relay=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const peerChannel=pc?pc._aznyBoardChannel:null;if(peerChannel?.readyState==="open"&&peerChannel.bufferedAmount<65536){try{peerChannel.send(relay)}catch(_){}}})}
    if(m.surface==="excel"||m.surface==="word"){
     const p=document.getElementById(m.surface==="excel"?"aznyExcelLivePointer":"aznyWordLivePointer");
     const host=document.getElementById(m.surface==="excel"?"aznyExcelWorkspace":"aznyWebWorkspace");
@@ -1836,6 +1848,8 @@ function restore(s){
  board.querySelectorAll(".object").forEach(e=>e.remove());
  selected=null;strokes=s?.strokes||[];let maxId=0;
  const storedObjects=(s?.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o)));
+ const restoredDocumentCopies=new Set();
+ const contentFingerprint=value=>{const str=String(value||"");let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16)+":"+str.length};
  // Versões anteriores criavam também um documento vazio com o mesmo ID
  // de cada folha Excel. Não restaurar esses duplicados legados.
  const spreadsheetIds=new Set(storedObjects.filter(o=>o.kind==="spreadsheet"&&o.id).map(o=>String(o.id)));
@@ -1844,6 +1858,11 @@ function restore(s){
   const id=String(o.id||"");
   if(id&&restoredIds.has(id))return;
   if(o.kind==="doc"&&id&&spreadsheetIds.has(id))return;
+  if(o.kind==="doc"){
+   const copyKey=[o.name||"",Number(o.left)||0,Number(o.top)||0,contentFingerprint(o.pdf||""),contentFingerprint(o.html||""),contentFingerprint(o.content||"")].join("|");
+   if(restoredDocumentCopies.has(copyKey))return;
+   restoredDocumentCopies.add(copyKey);
+  }
   // Evitar restaurar a mesma folha Excel duas vezes na mesma posição.
   if(o.kind==="spreadsheet"){
    const copyKey=JSON.stringify([
@@ -2314,6 +2333,9 @@ function aznyApplySheetCell(m){
 }
 function addDoc(file){
  if(!file){toast("Selecione um documento primeiro.");return}
+ if(window.__aznyDocumentUploadBusy){toast("Aguarde o carregamento do documento atual terminar.");return}
+ window.__aznyDocumentUploadBusy=true;
+ const finishUpload=()=>{window.__aznyDocumentUploadBusy=false};
  const ext=(String(file.name||"").split(".").pop()||"").toLowerCase();
  const closeBoardWorkspaces=()=>{
   document.getElementById("aznyExcelWorkspace")?.classList.remove("azny-excel-open");
@@ -2324,7 +2346,7 @@ function addDoc(file){
  const readerError=label=>toast("Falha ao ler "+label+". Verifique o ficheiro e tente novamente.");
  if(["xlsx","xls"].includes(ext)){
   if(!window.XLSX){toast("Biblioteca Excel indisponível. Verifique a ligação à internet.");return}
-  const reader=new FileReader();reader.onerror=()=>readerError("a folha Excel");
+  const reader=new FileReader();reader.onerror=()=>{readerError("a folha Excel");finishUpload()};
   reader.onload=()=>{
    try{
     const wb=XLSX.read(reader.result,{type:"array"});
@@ -2337,17 +2359,18 @@ function addDoc(file){
     board.appendChild(el);makeInteractive(el);selectObject(el);
     updateHint();scheduleSave();publishLiveBoardState();toast("Uma folha Excel carregada para edição colaborativa");
    }catch(err){console.error("AZNY Excel upload:",err);toast("Não foi possível abrir esta folha Excel.")}
+   finally{finishUpload()}
   };reader.readAsArrayBuffer(file);return;
  }
  if(ext==="docx"){
   if(!window.mammoth){toast("Biblioteca Word indisponível. Verifique a ligação à internet.");return}
-  const reader=new FileReader();reader.onerror=()=>readerError("o documento Word");
-  reader.onload=async()=>{try{const result=await mammoth.convertToHtml({arrayBuffer:reader.result});closeBoardWorkspaces();addEditableWordDocument(file.name,result.value||"<p></p>")}catch(err){console.error("AZNY Word upload:",err);toast("Não foi possível abrir este Word.")}};
+  const reader=new FileReader();reader.onerror=()=>{readerError("o documento Word");finishUpload()};
+  reader.onload=async()=>{try{const result=await mammoth.convertToHtml({arrayBuffer:reader.result});closeBoardWorkspaces();addEditableWordDocument(file.name,result.value||"<p></p>")}catch(err){console.error("AZNY Word upload:",err);toast("Não foi possível abrir este Word.")}finally{finishUpload()}};
   reader.readAsArrayBuffer(file);return;
  }
- if(ext==="doc"){toast("Este ficheiro está no formato Word antigo (.doc). Guarde-o como .docx e volte a carregá-lo.");return}
+ if(ext==="doc"){finishUpload();toast("Este ficheiro está no formato Word antigo (.doc). Guarde-o como .docx e volte a carregá-lo.");return}
  if(ext==="pdf"||file.type==="application/pdf"){
-  const reader=new FileReader();reader.onerror=()=>readerError("o PDF");
+  const reader=new FileReader();reader.onerror=()=>{readerError("o PDF");finishUpload()};
   reader.onload=()=>{
    try{
     closeBoardWorkspaces();pushHistory();
@@ -2356,13 +2379,15 @@ function addDoc(file){
     el.appendChild(createAZNYPdfViewer(reader.result));Object.assign(el.style,{left:"100px",top:"80px",width:"620px",height:"450px"});
     board.appendChild(el);makeInteractive(el);selectObject(isStudent?null:el);updateHint();scheduleSave();publishLiveBoardState();toast("PDF aberto no quadro");
    }catch(err){console.error("AZNY PDF upload:",err);toast("Não foi possível abrir este PDF.")}
+   finally{finishUpload()}
   };reader.readAsDataURL(file);return;
  }
  if(["txt","md","csv","json","html","htm"].includes(ext)){
-  const reader=new FileReader();reader.onerror=()=>readerError("o documento");
-  reader.onload=()=>{try{closeBoardWorkspaces();addEditableWordDocument(file.name,'<p>'+escapeHtml(String(reader.result||"")).replace(/\n/g,"<br>")+'</p>')}catch(err){console.error("AZNY text upload:",err);toast("Não foi possível abrir este documento.")}};
+  const reader=new FileReader();reader.onerror=()=>{readerError("o documento");finishUpload()};
+  reader.onload=()=>{try{closeBoardWorkspaces();addEditableWordDocument(file.name,'<p>'+escapeHtml(String(reader.result||"")).replace(/\n/g,"<br>")+'</p>')}catch(err){console.error("AZNY text upload:",err);toast("Não foi possível abrir este documento.")}finally{finishUpload()}};
   reader.readAsText(file);return;
  }
+ finishUpload();
  toast("Formato não suportado. Utilize PDF, DOCX, XLSX, XLS, TXT, CSV, HTML ou MD.");
 }
 function addEditableWordDocument(name,html){
@@ -2455,7 +2480,8 @@ function resizeCanvas(){const w=Math.max(1,board.clientWidth),h=Math.max(1,board
 function objectAtPoint(p){const els=[...board.querySelectorAll('.object')].reverse();for(const el of els){const b=anchorBox(el);if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return el}return null}
 function eraseAt(p){const radius=18;strokes=strokes.filter(s=>!strokePoints(s).some(q=>Math.hypot(q.x-p.x,q.y-p.y)<radius))}
 function broadcastLiveStroke(done=false){if(!currentStroke||!aznyLiveStrokeId)return;const points=currentStroke.anchorId?strokePoints(currentStroke):currentStroke.points;const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,done});const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}};if(isStudent){send(studentBoardChannel);return}Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null))}
-function drawDown(e){if(tool!=="pen"&&tool!=="eraser")return;if(e.cancelable)e.preventDefault();clearTimeout(window.aznyDrawingReleaseTimer);drawing=true;localBoardEditing=true;pushHistory();const p=localPoint(e);if(tool==="pen"){const anchor=objectAtPoint(p);currentStroke={color:document.getElementById("textColor").value||"#111111",width:3,points:[],anchorId:anchor?.dataset?.id||null};aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}else currentStroke.points.push(p);strokes.push(currentStroke);broadcastLiveStroke()}else eraseAt(p);redraw();publishLiveBoardState()}
+let aznyPenColor="#1f2937";
+function drawDown(e){if(tool!=="pen"&&tool!=="eraser")return;if(e.cancelable)e.preventDefault();clearTimeout(window.aznyDrawingReleaseTimer);drawing=true;localBoardEditing=true;pushHistory();const p=localPoint(e);if(tool==="pen"){const anchor=objectAtPoint(p);currentStroke={color:aznyPenColor,width:3,points:[],anchorId:anchor?.dataset?.id||null};aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}else currentStroke.points.push(p);strokes.push(currentStroke);broadcastLiveStroke()}else eraseAt(p);redraw();publishLiveBoardState()}
 function drawMove(e){if(!drawing)return;const p=localPoint(e);if(tool==="pen"){if(currentStroke?.anchorId){const anchor=document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]');if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}}else if(currentStroke)currentStroke.points.push(p);redraw();broadcastLiveStroke()}else{eraseAt(p);redraw()}publishLiveBoardState()}
 function drawUp(){if(!drawing)return;if(currentStroke)broadcastLiveStroke(true);drawing=false;currentStroke=null;aznyLiveStrokeId="";/* Keep remote snapshots from replacing the finished stroke before its save is complete. */scheduleSave();publishLiveBoardState();clearTimeout(window.aznyDrawingReleaseTimer);window.aznyDrawingReleaseTimer=setTimeout(()=>{localBoardEditing=false},900)}
 
@@ -2582,6 +2608,13 @@ document.getElementById("bold").onclick=()=>toggleInlineStyle("fontWeight","700"
 document.getElementById("italic").onclick=()=>toggleInlineStyle("fontStyle","italic","normal");
 document.getElementById("underline").onclick=()=>toggleInlineStyle("textDecoration","underline","none");
 document.getElementById("textColor").oninput=e=>applyInlineStyle("color",e.target.value);
+function setAZNYPenColor(color){
+ aznyPenColor=String(color||"#1f2937");
+ document.querySelectorAll("#aznyPenColors [data-pen-color]").forEach(b=>b.classList.toggle("active",b.dataset.penColor.toLowerCase()===aznyPenColor.toLowerCase()));
+ const custom=document.getElementById("aznyPenCustomColor");if(custom)custom.value=aznyPenColor;
+}
+document.querySelectorAll("#aznyPenColors [data-pen-color]").forEach(b=>b.addEventListener("click",()=>setAZNYPenColor(b.dataset.penColor)));
+document.getElementById("aznyPenCustomColor")?.addEventListener("input",e=>setAZNYPenColor(e.target.value));
 document.getElementById("fontSize").onchange=e=>applyInlineStyle("fontSize",e.target.value+"px");
 document.getElementById("fontFamily").onchange=e=>applyInlineStyle("fontFamily",e.target.value);
 document.getElementById("alignLeft").onclick=()=>{if(selected)selected.style.textAlign="left";scheduleSave()};
@@ -4948,6 +4981,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  const toolLabels=[
   ['[data-tool="select"]','↖ Selecionar objeto','Selecionar e mover elementos da apresentação'],
   ['[data-tool="text"]','T Nota / texto','Adicionar texto, notas e tópicos à reunião'],
+  ['[data-tool="pen"]','✎ Caneta','Desenhar e assinalar conteúdo na apresentação'],
   ['#pointerTool','↖ Ponteiro de apresentação','Apontar para conteúdo durante a conferência'],
   ['#deleteTool','✕ Remover elemento','Eliminar o elemento selecionado'],
   ['#undoSide','↶ Desfazer alteração','Desfazer a última alteração'],
@@ -4958,8 +4992,8 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   ['#pagesBtn','▤ Páginas da reunião','Organizar páginas da apresentação']
  ];
  toolLabels.forEach(([selector,label,title])=>{const el=document.querySelector(selector);if(el){el.textContent=label;el.title=title;el.setAttribute("aria-label",label)}});
- document.querySelectorAll('.tools [data-tool="pen"],.tools [data-tool="eraser"]').forEach(el=>el.remove());
- document.querySelectorAll(".tools .tool").forEach(b=>{const t=(b.textContent||"").trim();if(/partitura|pauta|clave|solfejo|piano|bíblia|música|caneta|borracha/i.test(t))b.remove()});
+ document.querySelectorAll('.tools [data-tool="eraser"]').forEach(el=>el.remove());
+ document.querySelectorAll(".tools .tool").forEach(b=>{const t=(b.textContent||"").trim();if(/partitura|pauta|clave|solfejo|piano|bíblia|música|borracha/i.test(t))b.remove()});
  const topTitle=document.getElementById("boardTitle");
  if(topTitle){topTitle.setAttribute("placeholder","Tema da reunião / conferência");topTitle.setAttribute("aria-label","Tema da reunião ou conferência")}
  const startButton=document.getElementById("startClassBtn");if(startButton)startButton.textContent="▶ Iniciar reunião";
@@ -5314,6 +5348,16 @@ body.azny-business-mode:not(.student-mode) #students .student .azny-student-reco
 /* Com a ferramenta Selecionar desligada, o dedo/roda pode percorrer a imagem dentro das bordas. */
 html body #board.object-scroll-mode .mediaobj{touch-action:pan-y pan-x!important;cursor:default!important}
 #board.object-scroll-mode .mediaobj>.resize{display:none!important;pointer-events:none!important}
+</style>
+
+<style id="azny-pen-palette-and-shared-pointer">
+#aznyPenColors{display:flex!important;align-items:center!important;gap:4px!important;white-space:nowrap!important}
+#aznyPenColors .azny-pen-color-label{font-size:11px;font-weight:800;color:#dce8f6}
+#aznyPenColors .azny-pen-swatch{display:inline-block!important;width:20px!important;height:20px!important;min-width:20px!important;min-height:20px!important;padding:0!important;border:2px solid #aab8c8!important;border-radius:50%!important;background:var(--swatch)!important;box-shadow:0 0 0 1px #172b42!important;cursor:pointer!important}
+#aznyPenColors .azny-pen-swatch.active{outline:2px solid #55aaff!important;outline-offset:2px!important}
+#aznyPenCustomColor{width:25px!important;height:25px!important;min-width:25px!important;padding:1px!important;border:1px solid #aab8c8!important;border-radius:6px!important;background:#fff!important;cursor:pointer!important}
+#livePointer{z-index:2147483001!important;pointer-events:none!important}
+#livePointer.active{display:block!important;visibility:visible!important;opacity:1!important}
 </style>
 
 <style id="azny-final-student-camera-name-no-overlay">
