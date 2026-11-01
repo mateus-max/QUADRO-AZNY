@@ -1903,6 +1903,8 @@ function createText(x,y,anchor){
  constrainTextToBoard(el);
  if(anchor)anchorTextToObject(el,anchor,x,y);
  board.appendChild(el);makeInteractive(el);selectObject(el);
+ /* Abrir o teclado AZNY no mesmo gesto que cria o texto, sem aguardar o ciclo de focus/RAF do Android. */
+ if(!document.body.classList.contains("student-mode")&&matchMedia("(pointer:coarse)").matches&&window.aznyOpenBoardKeyboard)window.aznyOpenBoardKeyboard(el);
  el.focus({preventScroll:true});
  requestAnimationFrame(()=>{
   const r=document.createRange();r.selectNodeContents(el);r.collapse(true);
@@ -3964,6 +3966,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  document.addEventListener("focusin",e=>{
   if(e.target?.classList?.contains("textobj"))openKeyboard(e.target);
  },true);
+ window.aznyOpenBoardKeyboard=el=>{if(el&&el.isConnected)openKeyboard(el)};
  window.aznyCloseBoardKeyboard=()=>closeKeyboard(true);
  /* Keep the student's text object active while the custom keys are tapped;
     mobile browsers can report a transient focusout after every character. */
