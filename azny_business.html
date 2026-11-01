@@ -3619,7 +3619,7 @@ async function toggleStudentOrientation(){
  const active=document.body.classList.toggle("azny-landscape-view");
  if(btn)btn.textContent=active?"↻ Vista normal":"↻ Rodar ecrã";
  /* Apply the layout regardless of orientation-lock support. Locking orientation alone does not reposition the cameras or tools. */
- if(active&&!document.fullscreenElement&&document.documentElement.requestFullscreen){try{await document.documentElement.requestFullscreen()}catch(_){}}
+ /* Browser fullscreen is intentionally not requested; avoid Android exit notice. */
  if(active&&screen.orientation?.lock){try{await screen.orientation.lock("landscape")}catch(_){}}
  setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},180);
  toast(document.documentElement.lang==="en"?(active?"Board view enabled, with tools and cameras on the sides.":"Normal view restored."):(active?"Vista do quadro ativada, com ferramentas e câmeras nas laterais.":"Vista normal restaurada."));
@@ -4076,6 +4076,8 @@ document.getElementById("recordClassBtn").onclick=async()=>{const b=document.get
 })();
 
 function showAznyLandscapePrompt(){
+ /* Replaced by automatic landscape on the business board. */
+ return;
  if(!matchMedia("(pointer:coarse)").matches||document.getElementById("aznyLandscapePrompt"))return;
  const overlay=document.createElement("div");overlay.id="aznyLandscapePrompt";overlay.className="azny-landscape-prompt";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");
  overlay.innerHTML='<div class="azny-landscape-prompt-card"><h2>Antes de entrar na aula / Before joining the class</h2><div class="azny-landscape-prompt-diagram" role="img" aria-label="Telefone em pé com X; telefone na horizontal com sinal de certo / Portrait phone with X; landscape phone with check mark"><div class="azny-landscape-step bad"><svg viewBox="0 0 120 110" aria-hidden="true"><rect x="39" y="5" width="42" height="91" rx="8" fill="#101923" stroke="#d9e8f7" stroke-width="3"/><rect x="44" y="15" width="32" height="68" rx="3" fill="#d9efff"/><circle cx="60" cy="89" r="2.5" fill="#d9e8f7"/><path d="M48 31 L72 55 M72 31 L48 55" stroke="#e63946" stroke-width="7" stroke-linecap="round"/></svg><strong>Em pé / Portrait</strong><span aria-hidden="true" style="font-size:24px;font-weight:900;color:#ff6875">✕</span></div><div class="azny-landscape-step good"><svg viewBox="0 0 150 100" aria-hidden="true"><rect x="7" y="22" width="136" height="58" rx="9" fill="#101923" stroke="#d9e8f7" stroke-width="3"/><rect x="17" y="29" width="116" height="44" rx="3" fill="#d9efff"/><circle cx="137" cy="51" r="2.5" fill="#d9e8f7"/><path d="M43 51 L61 66 L91 36" stroke="#168c55" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><strong>Deitado / Landscape</strong><span aria-hidden="true" style="font-size:24px;font-weight:900;color:#55d99a">✓</span></div></div><div class="landscape-copy"><p><span class="lang-label">PORTUGUÊS:</span> Vire o telefone para a horizontal (deitado) para ver melhor o quadro e participar na aula.</p><p><span class="lang-label">ENGLISH:</span> Turn your phone sideways (landscape) to see the board clearly and join the class.</p></div><button type="button" id="aznyLandscapeContinue">Entendi / I understand — Continuar / Continue</button></div>';
@@ -5492,6 +5494,30 @@ body.azny-business-mode:not(.student-mode) #students .student>.azny-student-devi
 }
 </style>
 
+
+<script>
+/* REMOTE WORK BOARD company auto-landscape: mobile meeting board only. */
+(function(){
+ "use strict";
+ if(!matchMedia("(pointer:coarse)").matches||!matchMedia("(max-width:950px)").matches)return;
+ let locked=false;
+ async function lockBusinessLandscape(){
+  if(locked)return;
+  try{
+   if(screen.orientation&&typeof screen.orientation.lock==="function"){
+    await screen.orientation.lock("landscape");locked=true;
+    try{resizeCanvas()}catch(_){}
+    window.dispatchEvent(new Event("resize"));
+   }
+  }catch(err){console.info("Business landscape lock will retry after interaction:",err)}
+ }
+ /* Try immediately on board entry, retry after the first gesture if required by the browser. */
+ lockBusinessLandscape();
+ window.addEventListener("pointerdown",lockBusinessLandscape,{capture:true,once:true});
+ window.addEventListener("keydown",lockBusinessLandscape,{capture:true,once:true});
+ window.addEventListener("pagehide",()=>{try{screen.orientation?.unlock?.()}catch(_){}});
+})();
+</script>
 </body>
 </html>
 
