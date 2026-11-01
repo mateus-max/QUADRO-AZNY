@@ -1385,7 +1385,7 @@ body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!im
 </main>
 
 <aside class="rightbar">
-  <div class="sidehead">Reunião / Participantes</div>
+  <div class="sidehead" id="hostNameHeading">Anfitrião</div>
   <div class="camera-panel">
     <div class="camera" id="teacherCamera">
       <div class="cam-off"><div class="big">🎥</div><div>Câmera do anfitrião desligada</div><div>Autorize o acesso à câmera para aparecer aqui.</div></div>
@@ -4800,8 +4800,15 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    <div class="biz-demo">MODELO DE DEMONSTRAÇÃO · substitua pelos dados da reunião</div>`;
   board.insertBefore(dashboard,board.firstChild);
  }
- const sideHeadings=document.querySelectorAll(".rightbar .sidehead");
- if(sideHeadings[0])sideHeadings[0].textContent="Reunião / participantes";
+ const hostNameHeading=document.getElementById("hostNameHeading");
+ const updateHostNameHeading=()=>{
+  const fullName=String(window.aznyTeacherDisplayName||"").trim();
+  const firstName=fullName.split(/\\s+/)[0];
+  if(hostNameHeading)hostNameHeading.textContent=firstName||"Anfitrião";
+ };
+ updateHostNameHeading();
+ if(typeof loadTeacherDisplayName==="function")loadTeacherDisplayName().then(updateHostNameHeading).catch(()=>{});
+
  if(sideHeadings[1])sideHeadings[1].textContent="Pessoas na reunião";
  const cameraLabel=document.querySelector("#teacherCamera .camera-label");
  if(cameraLabel)cameraLabel.textContent=document.body.classList.contains("student-mode")?"Anfitrião":"Anfitrião";
