@@ -2053,7 +2053,7 @@ function aznyNormalizeWordDocument(el){
 function createFromData(o){
  let el;
  if(o.kind==="spreadsheet"){el=createAZNYVirtualSheetObject(o.name||"Folha Excel",o.sheetName||"Sheet1",o.sheetData||[],o.id);Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});}
- if(o.kind==="text"){
+ else if(o.kind==="text"){
   el=document.createElement("div");el.className="object textobj";el.contentEditable="true";el.spellcheck=true;el.innerHTML=o.html||"";
   Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px",fontSize:o.style?.fontSize,fontFamily:o.style?.fontFamily,fontWeight:o.style?.fontWeight,fontStyle:o.style?.fontStyle,textDecoration:o.style?.textDecoration,color:o.style?.color,textAlign:o.style?.textAlign});
   if(o.anchorId){el.dataset.anchorId=o.anchorId;el.dataset.anchorX=o.anchorX??0;el.dataset.anchorY=o.anchorY??0;el.dataset.anchorW=o.anchorW??1;el.dataset.anchorH=o.anchorH??1;el.dataset.anchorFontSize=(o.anchorFontSize??parseFloat(el.style.fontSize)??16);}
