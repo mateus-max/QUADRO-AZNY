@@ -2403,10 +2403,7 @@ function addEditableWordDocument(name,html){
  Promise.resolve(fontReady).catch(()=>{}).then(()=>{applyStableWordMetrics();scheduleSave();publishLiveBoardState()});
  el.querySelector(".azny-export-docx").onclick=()=>{if(!window.htmlDocx){toast("Exportação Word não está disponível neste momento.");return}downloadBlob(htmlDocx.asBlob(wordBody.innerHTML),"application/vnd.openxmlformats-officedocument.wordprocessingml.document",name.replace(/\.[^.]+$/,"")+".docx")};
  el.querySelector(".azny-export-doc-html").onclick=()=>downloadBlob(wordBody.innerHTML,"text/html;charset=utf-8",name.replace(/\.[^.]+$/,"")+".html");
- el.querySelector(".azny-export-doc-pdf").onclick=()=>{const w=window.open("","_blank");if(!w){toast("Permita janelas pop-up para exportar PDF.");return}w.document.write("<!doctype html><html><head><meta charset=utf-8><title>"+escapeHtml(name)+"</title><style>body{font-family:Roboto,Arial,sans-serif}</style></head><body>"+wordBody.innerHTML+"
-
-
-</body></html>");w.document.close();w.focus();w.print()};
+ el.querySelector(".azny-export-doc-pdf").onclick=()=>{const w=window.open("","_blank");if(!w){toast("Permita janelas pop-up para exportar PDF.");return}w.document.write("<!doctype html><html><head><meta charset=utf-8><title>"+escapeHtml(name)+"</title><style>body{font-family:Roboto,Arial,sans-serif}</style></head><body>"+wordBody.innerHTML+"</body></html>");w.document.close();w.focus();w.print()};
  wordBody.addEventListener("input",()=>{scheduleSave();publishLiveBoardState()});
  updateHint();scheduleSave();publishLiveBoardState();toast("Documento Word editável carregado no quadro")
 }
