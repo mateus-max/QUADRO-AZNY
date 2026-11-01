@@ -3910,14 +3910,22 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   }
   renderCase();
  }
- /* Construir o teclado uma vez; abrir passa a ser apenas mostrar e posicionar. */
+ /* Construir e anexar o teclado antes do primeiro toque.
+    Assim, ao focar um texto, abrir é apenas ativar a camada já pronta. */
  build();
+ wrap.appendChild(keyboard);
+ function positionKeyboard(){
+  const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();
+  keyboard.style.left=Math.max(0,r.left-w.left)+"px";
+  keyboard.style.width=Math.max(0,Math.min(r.width,w.right-r.left))+"px";
+ }
+ positionKeyboard();
+ window.addEventListener("resize",positionKeyboard,{passive:true});
+ window.visualViewport?.addEventListener("resize",positionKeyboard,{passive:true});
  function openKeyboard(el){
   if(!mobile())return;
   active=el;
-  /* No telefone do aluno, usar o teclado nativo do Android/iPhone. É ele que
-     mantém a composição, o cursor e a tecla Enter como num SMS/WhatsApp.
-     O teclado desenhado dentro do quadro continua reservado ao professor. */
+  /* No telefone do aluno, manter o teclado nativo do Android/iPhone. */
   if(body.classList.contains("student-mode")){
    body.classList.remove("azny-custom-keyboard");
    body.classList.add("azny-student-native-keyboard");
@@ -3925,19 +3933,13 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
    saveSelection();
    return;
   }
-  const sameTarget=active===el&&keyboard.isConnected&&body.classList.contains("azny-custom-keyboard");
   active.setAttribute("inputmode","none");
   body.classList.remove("azny-student-native-keyboard");
-  body.classList.add("azny-custom-keyboard");
-  if(!keyboard.isConnected)wrap.appendChild(keyboard);
-  /* Teclado pré-montado: não reconstruir no toque. */
+  /* Posicionar antes de mostrar: não esperar um frame para abrir o teclado. */
+  positionKeyboard();
   saveSelection();
-  requestAnimationFrame(()=>{
-   const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();
-   keyboard.style.left=Math.max(0,r.left-w.left)+"px";
-   keyboard.style.width=Math.min(r.width,w.right-r.left)+"px";
-   keepTextAboveKeyboard();
-  });
+  body.classList.add("azny-custom-keyboard");
+  requestAnimationFrame(keepTextAboveKeyboard);
  }
  function keepTextAboveKeyboard(){
   if(!active||!active.isConnected||!body.classList.contains("azny-custom-keyboard"))return;
