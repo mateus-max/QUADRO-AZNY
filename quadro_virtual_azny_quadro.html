@@ -1701,6 +1701,7 @@ function setTool(t){
 }
 
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
+ if((b.dataset.tool==="eraser"||b.id==="deleteTool")&&window.aznyClearActiveWorkspace&&window.aznyClearActiveWorkspace("selected"))return;
  if(!b.dataset.tool)return;
  setTool(b.dataset.tool);
 });
