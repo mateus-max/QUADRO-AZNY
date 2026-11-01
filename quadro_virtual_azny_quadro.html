@@ -1810,6 +1810,8 @@ function setTool(t){
  // Cada ferramenta de modo funciona como um interruptor: voltar a tocar
  // na ferramenta ativa desliga-a, deixando o quadro sem modo de edição.
  tool=(tool===t)?null:t;
+ /* Desligar a ferramenta Texto fecha o teclado do professor imediatamente. */
+ if(tool!=="text"&&!document.body.classList.contains("student-mode")&&window.aznyCloseBoardKeyboard)window.aznyCloseBoardKeyboard();
  document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",!!tool&&b.dataset.tool===tool));
  // A caneta e a borracha mantêm o comportamento próprio da camada de desenho.
  board.classList.toggle("drawing-active",tool==="pen"||tool==="eraser");
@@ -3908,6 +3910,8 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   }
   renderCase();
  }
+ /* Construir o teclado uma vez; abrir passa a ser apenas mostrar e posicionar. */
+ build();
  function openKeyboard(el){
   if(!mobile())return;
   active=el;
@@ -3926,8 +3930,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   body.classList.remove("azny-student-native-keyboard");
   body.classList.add("azny-custom-keyboard");
   if(!keyboard.isConnected)wrap.appendChild(keyboard);
-  /* Rebuild only when opening or switching text objects, never on each caret focus. */
-  if(!sameTarget)build();
+  /* Teclado pré-montado: não reconstruir no toque. */
   saveSelection();
   requestAnimationFrame(()=>{
    const r=board.getBoundingClientRect(),w=wrap.getBoundingClientRect();
@@ -3950,9 +3953,16 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   if(active)active.style.removeProperty("scroll-margin-bottom");
   active=null;savedRange=null;
  }
+ /* Abrir no pointerdown: resposta imediata, sem esperar o click/focus do Android. */
+ document.addEventListener("pointerdown",e=>{
+  if(!mobile()||body.classList.contains("student-mode"))return;
+  const target=e.target?.closest?.(".textobj[contenteditable='true']");
+  if(target)openKeyboard(target);
+ },true);
  document.addEventListener("focusin",e=>{
   if(e.target?.classList?.contains("textobj"))openKeyboard(e.target);
  },true);
+ window.aznyCloseBoardKeyboard=()=>closeKeyboard(true);
  /* Keep the student's text object active while the custom keys are tapped;
     mobile browsers can report a transient focusout after every character. */
  document.addEventListener("focusout",e=>{
