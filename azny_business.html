@@ -3849,10 +3849,10 @@ async function copyClassLink(){
  try{await navigator.clipboard.writeText(link);toast(document.documentElement.lang==="en"?"Class link copied":"Link da aula copiado")}
  catch(e){prompt("Copie o link da aula:",link)}
 }
-function shareWhatsApp(){
- const link=getClassLink();if(!link)return;const title=document.getElementById("boardTitle").value.trim()||"Aula";
- const text="Convite para a aula \""+title+"\" no Remote Work Board: "+link;
- window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");
+async function shareWhatsApp(){
+ const popup=window.open("about:blank","_blank");const link=await getClassLink();if(!link){popup?.close();return}const title=document.getElementById("boardTitle").value.trim()||"Aula";
+ const text="Convite para a aula \\""+title+"\\" no Remote Work Board: "+link;
+ if(popup)popup.location.href="https://wa.me/?text="+encodeURIComponent(text);else toast("Permita pop-ups para abrir o WhatsApp.");
 }
 async function shareFacebook(){
  const popup=window.open("about:blank","_blank");const link=await getClassLink();if(!link){popup?.close();return}
