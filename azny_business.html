@@ -1910,6 +1910,17 @@ function setTool(t){
  // Assim Texto/Caneta/Borracha nunca ficam presos ativos.
  const previousTool=tool;
  tool=(previousTool===t)?"view":t;
+ // Ao sair da Caneta/Borracha, terminar qualquer gesto pendente e limpar
+ // apenas o estado temporário do traço; não o conteúdo legítimo do quadro.
+ if((previousTool==="pen"||previousTool==="eraser")&&tool!==previousTool){
+  if(drawing)drawUp();
+  drawing=false;
+  currentStroke=null;
+  aznyLiveStrokeId="";
+  clearTimeout(window.aznyDrawingReleaseTimer);
+  localBoardEditing=false;
+  redraw();
+ }
  if(previousTool==="text"&&tool!=="text"){
   const focused=document.activeElement;
   if(focused?.classList?.contains("textobj"))focused.blur();
