@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "icons/azny-board.svg"
+      - "icons/remote-work-board.svg"
       - ".github/workflows/generate-pwa-icons.yml"
 permissions:
   contents: write
@@ -22,17 +23,18 @@ jobs:
           import cairosvg
           from PIL import Image
           from io import BytesIO
-          source = open("icons/azny-board.svg", "rb").read()
-          for size in (192, 512):
-              png = cairosvg.svg2png(bytestring=source, output_width=size, output_height=size)
-              image = Image.open(BytesIO(png)).convert("RGBA")
-              image.save(f"icons/azny-board-{size}.png", format="PNG", optimize=True)
+          for name in ("azny-board", "remote-work-board"):
+              source = open(f"icons/{name}.svg", "rb").read()
+              for size in (192, 512):
+                  png = cairosvg.svg2png(bytestring=source, output_width=size, output_height=size)
+                  image = Image.open(BytesIO(png)).convert("RGBA")
+                  image.save(f"icons/{name}-{size}.png", format="PNG", optimize=True)
           PY
       - name: Commit generated icons
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add icons/azny-board-192.png icons/azny-board-512.png
+          git add icons/azny-board-192.png icons/azny-board-512.png icons/remote-work-board-192.png icons/remote-work-board-512.png
           if ! git diff --cached --quiet; then
             git commit -m "Generate AZNY PWA PNG icons"
             git push
