@@ -495,14 +495,6 @@ body.teacher-payment-status-mode #homeIntro{display:block!important}
   .azny-home-card .azny-footer-rights{margin-top:3px!important;font-size:11px!important}
 }
 
-/* Continuous information ribbon directly beneath the Remote Work Board header. */
-.rwb-info-ticker{width:100%;height:34px;display:flex;align-items:center;overflow:hidden;white-space:nowrap;background:linear-gradient(90deg,#082441,#0b3154 50%,#082441);border-bottom:1px solid #16466c;border-top:1px solid #123553;color:#cceaff;}
-.rwb-info-track{display:flex;align-items:center;width:max-content;min-width:max-content;animation:rwbTickerFlow 42s linear infinite;will-change:transform}
-.rwb-info-group{display:flex;align-items:center;flex:none;gap:22px;padding-right:22px;font-size:11px;font-weight:650;letter-spacing:.2px}
-.rwb-info-group i{font-style:normal;color:#08a9ff;font-size:13px}
-@keyframes rwbTickerFlow{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@media(max-width:620px){.rwb-info-ticker{height:30px}.rwb-info-group{font-size:10px;gap:16px;padding-right:16px}.rwb-info-track{animation-duration:38s}}
-@media(prefers-reduced-motion:reduce){.rwb-info-track{animation:none;transform:none}}
 
 /* Lock the home screen in place: no vertical or horizontal page dragging. */
 html:has(main.azny-home),body:has(main.azny-home){width:100%;height:100%;overflow:hidden!important;overscroll-behavior:none!important;}
@@ -618,7 +610,7 @@ try{
  });;
 }catch(e){console.warn("Não foi possível inicializar o histórico interno:",e)}
 
-function showHome(){rwbPushView("home");try{sessionStorage.setItem('rwb_index_view','home')}catch(_){}document.body.classList.remove('teacher-login-mode','teacher-register-mode');document.querySelectorAll('.home-view').forEach(x=>x.classList.remove('show'));document.getElementById('homeIntro').textContent='Entre na sua conta aprovada ou escolha um plano para começar.'}
+function showHome(){rwbPushView("home");try{sessionStorage.setItem('rwb_index_view','home')}catch(_){}document.body.classList.remove('teacher-login-mode','teacher-register-mode');document.querySelectorAll('.home-view').forEach(x=>x.classList.remove('show'));document.getElementById('homeIntro').textContent=''}
 function setLoginLanguage(lang){lang=lang==="en"?"en":"pt";try{localStorage.setItem("azny-quadro-ui-language",lang)}catch(_){}document.documentElement.lang=lang;const en=lang==="en";const put=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value};put("loginHeading",en?"🔑 Sign in":"🔑 Entrar");put("loginInstructions",en?"Sign in with your registered email and password, or continue with Google. Access is available only after payment review and management approval.":"Entre com o seu e-mail e senha, ou continue com Google. O acesso só é liberado após a análise do pagamento e a aprovação da direção.");put("loginLanguageLabel",en?"Board language":"Idioma do quadro");put("loginBack",en?"Back":"Voltar");put("firstAccess",en?"First access":"Primeiro acesso");put("loginSubmit",en?"Sign in":"Entrar");const phone=document.getElementById("loginPhone"),pass=document.getElementById("loginPassword"),sel=document.getElementById("loginLanguage");const email=document.getElementById("loginEmail");if(email)email.placeholder=en?"Email address":"E-mail";if(pass)pass.placeholder=en?"Password":"Senha";if(sel)sel.value=lang}
 function showLogin(){rwbPushView("login");try{sessionStorage.setItem('rwb_index_view','login')}catch(_){}document.body.classList.remove('teacher-register-mode');document.body.classList.add('teacher-login-mode');document.querySelectorAll('.home-view').forEach(x=>x.classList.remove('show'));document.getElementById('loginView').classList.add('show');document.getElementById('loginMessage').textContent='';setTimeout(()=>document.getElementById('loginEmail').focus(),50)}
 function showPlans(){rwbPushView("register");try{sessionStorage.setItem('rwb_index_view','register')}catch(_){}document.body.classList.remove('teacher-login-mode','teacher-checkout-mode');document.body.classList.add('teacher-register-mode');document.querySelectorAll('.home-view').forEach(x=>x.classList.remove('show'));document.getElementById('plansView').classList.add('show');document.getElementById('teacherRegisterStep').style.display='block';document.getElementById('teacherPlanCards').style.display='none';document.getElementById('planDetail').classList.remove('show');document.getElementById('checkoutBox').style.display='none';window.scrollTo({top:0,behavior:'smooth'})}
