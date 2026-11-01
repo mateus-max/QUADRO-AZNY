@@ -1602,7 +1602,7 @@ function bindTeacherPresenceWatchForStudent(){
 }
 
 function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove("show"),1000)}
-function localPoint(e){const r=board.getBoundingClientRect(),scale=zoom*(isStudent?(Number(aznyRemoteFitScale)||1):1);return{x:(e.clientX-r.left)/scale,y:(e.clientY-r.top)/scale}}
+function localPoint(e){const r=board.getBoundingClientRect();const sx=board.clientWidth/Math.max(1,r.width),sy=board.clientHeight/Math.max(1,r.height);return{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy}}
 function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds]}}
 function serializeObject(el){
  const docScroller=el.querySelector(".docpdf-pages,.docbody,.azny-sheet-viewport,.azny-editable-word");const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:el.offsetWidth,height:el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null,imageZoom:el.classList.contains("mediaobj")?(Number(el.dataset.imageZoom)||1):undefined,docScrollTop:docScroller?.scrollTop||0,docScrollLeft:docScroller?.scrollLeft||0};
