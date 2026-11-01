@@ -4347,7 +4347,12 @@ html body:not(.student-mode) .rightbar .camera-panel #aznyAudioOutputStatus{
     The first teacher interaction requests both automatically; no rotation prompt/button is shown. */
  window.addEventListener("pointerdown",enterTeacherLandscape,{capture:true,once:true});
  window.addEventListener("keydown",enterTeacherLandscape,{capture:true,once:true});
-})();
+/* Release the orientation lock as soon as the teacher leaves this board page. */
+ window.addEventListener("pagehide",()=>{
+  try{screen.orientation?.unlock?.()}catch(_){}
+  try{if(document.fullscreenElement)document.exitFullscreen?.()}catch(_){}
+ });
+ })();
 </script>
 </body>
 </html>
