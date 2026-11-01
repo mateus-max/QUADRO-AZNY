@@ -1333,7 +1333,7 @@ body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!im
     <button class="tool" id="undoSide">↶ Desfazer</button>
     <button class="tool" id="redoSide">↷ Refazer</button>
     <button class="tool" id="imageBtn">🖼 Carregar imagem</button>
-    <button class="tool" id="docBtn">📄 Carregar documento</button>
+    <button type="button" class="tool" id="docBtn">📄 Carregar documento</button>
     <button class="tool" id="chartsBtn">📊 Gráficos</button>
     <button class="tool" id="pagesBtn">📑 Páginas do quadro</button>
   </div>
@@ -2596,8 +2596,19 @@ document.getElementById("clearBtn").onclick=()=>{if(window.aznyClearActiveWorksp
 document.getElementById("imageBtn").onclick=()=>document.getElementById("imageInput").click();
 const aznyDocButton=document.getElementById("docBtn"),aznyDocPicker=document.getElementById("docInput");
 if(aznyDocButton&&aznyDocPicker){
- aznyDocButton.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();aznyDocPicker.value="";try{if(typeof aznyDocPicker.showPicker==="function")aznyDocPicker.showPicker();else aznyDocPicker.click()}catch(_){aznyDocPicker.click()}},{capture:true});
- aznyDocPicker.addEventListener("change",e=>{const file=e.target.files?.[0];if(!file)return;try{addDoc(file)}catch(err){console.error("AZNY document upload:",err);toast("Não foi possível carregar o documento. Tente novamente.")}finally{aznyDocPicker.value=""}});
+ aznyDocButton.type="button";
+ aznyDocButton.onclick=e=>{
+  e.preventDefault();
+  aznyDocPicker.value="";
+  aznyDocPicker.click();
+ };
+ aznyDocPicker.onchange=e=>{
+  const file=e.target.files&&e.target.files[0];
+  if(!file)return;
+  try{addDoc(file)}
+  catch(err){console.error("AZNY document upload:",err);toast("Não foi possível carregar o documento. Tente novamente.")}
+  finally{e.target.value=""}
+ };
 }
 document.getElementById("imageInput").onchange=e=>{if(e.target.files[0])addImage(e.target.files[0]);e.target.value=""};
 document.getElementById("pagesBtn").onclick=()=>{updatePageLabel();document.getElementById("pagesModal").classList.add("show")};
