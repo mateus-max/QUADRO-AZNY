@@ -4771,7 +4771,12 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  const title=document.getElementById("boardTitle");
  if(title){title.value=activity;title.setAttribute("placeholder","Nome da "+kind.toLowerCase());title.setAttribute("aria-label","Título da "+kind.toLowerCase())}
  const logo=document.querySelector(".logo");
- if(logo)logo.innerHTML='<span style="color:#fff">REMOTE WORK</span> <span style="color:#65b1ff">BOARD</span>';
+ if(logo){
+  logo.innerHTML='<span style="color:#fff">REMOTE WORK</span> <span style="color:#65b1ff">BOARD</span>';
+  /* Forçar no próprio elemento: vence regras globais posteriores do quadro base. */
+  [["display","block"],["flex","0 0 170px"],["width","170px"],["min-width","170px"],["max-width","170px"],["font-size","10px"],["line-height","1"],["letter-spacing","-.45px"],["white-space","nowrap"],["overflow","visible"],["padding-right","2px"]].forEach(([k,v])=>logo.style.setProperty(k,v,"important"));
+  logo.querySelectorAll("span").forEach(s=>{s.style.setProperty("font-size","10px","important");s.style.setProperty("white-space","nowrap","important")});
+}
  const side=document.querySelector(".leftbar .sidehead");
  if(side)side.textContent="Ferramentas de trabalho";
  const music=document.getElementById("musicBtn");if(music)music.remove();
