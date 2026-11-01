@@ -2684,7 +2684,7 @@ async function startClass(){
  if(endBtn)endBtn.disabled=false;
  if(timer)timer.textContent="00:00:00";
  clearInterval(classTimerHandle);classTimerHandle=setInterval(()=>{if(classStarted)updateClassTimer()},1000);updateClassTimer();
- try{localStorage.setItem("azny-business-active-session-"+aznyRoomKey(),classSessionId)}catch(_){}
+ try{localStorage.setItem("azny-business-active-session-"+aznyRoomKey(),classSessionId);localStorage.setItem("azny-business-started-at-"+aznyRoomKey(),String(startedAt))}catch(_){}
  const title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
  try{roomChannel?.postMessage({type:"business-meeting-started",title,session:classSessionId,startedAt})}catch(_){}
  toast("Reunião iniciada. O cronómetro está a contar.");
@@ -2751,6 +2751,20 @@ async function startClass(){
  };
 })(); 
 
+function restoreLocalTeacherTimer(){
+ if(isStudent)return;
+ let started=0;
+ try{started=Number(localStorage.getItem("azny-business-started-at-"+aznyRoomKey()))||0}catch(_){}
+ if(!started)return;
+ classSessionId="ROOM-"+String(roomId).replace(/[.#$\\[\\]\\/]/g,"_");
+ classStarted=true;aznyObservedClassStatus="active";classStartTime=started;
+ const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn");
+ if(startBtn){startBtn.disabled=true;startBtn.removeAttribute("aria-busy")}
+ if(endBtn)endBtn.disabled=false;
+ clearInterval(classTimerHandle);
+ classTimerHandle=setInterval(()=>{if(classStarted)updateClassTimer()},1000);
+ updateClassTimer();
+}
 async function restoreActiveTeacherSession(){
  if(isStudent||!classSessionId||!AZNY_DB)return;
  try{
@@ -2782,6 +2796,7 @@ async function endClass(){
  const startBtn=document.getElementById("startClassBtn"),endBtn=document.getElementById("endClassBtn"),timer=document.getElementById("classTimer");
  // Encerramento local imediato: a interface, o cronómetro e as ligações param sem esperar pela rede.
  classStarted=false;aznyObservedClassStatus="ended";
+ try{localStorage.removeItem("azny-business-active-session-"+aznyRoomKey());localStorage.removeItem("azny-business-started-at-"+aznyRoomKey())}catch(_){}
  clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;
  if(timer)timer.textContent="00:00:00";
  if(startBtn){startBtn.disabled=false;startBtn.removeAttribute("aria-busy")}
@@ -3881,7 +3896,7 @@ function showTeacherReloadNotice(){
  showNetworkNotice(en?"The teacher's class is back. Reconnecting automatically…":"O professor recuperou a aula. A restabelecer a ligação automaticamente…","good");
  aznyScheduleStudentReconnect("teacher-page-restored",300);
 }
-setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(async ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}if(ready&&!isStudent)await restoreActiveTeacherSession()}).catch(e=>console.error(e));
+restoreLocalTeacherTimer();setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(async ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}if(ready&&!isStudent)await restoreActiveTeacherSession()}).catch(e=>console.error(e));
 function persistBoardBeforeNavigation(){
  if(isStudent)return;
  try{clearTimeout(saveTimer);save();}catch(e){console.warn("AZNY: falha ao guardar antes de atualizar",e)}
