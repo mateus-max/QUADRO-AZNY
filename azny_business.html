@@ -2919,7 +2919,7 @@ async function startClass(){
  };
  if(wa)wa.onclick=async function(){
   const popup=window.open("about:blank","_blank"),link=await getClassLink(),title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
-  if(popup)popup.location.href="https://wa.me/?text="+encodeURIComponent("Convite para a reunião empresarial \\""+title+"\\" no REMOTE WORK BOARD: "+link);
+  if(popup)popup.location.href="https://wa.me/?text="+encodeURIComponent("Convite para a reunião empresarial \""+title+"\" no REMOTE WORK BOARD: "+link);
   else toast("Permita janelas pop-up para abrir o WhatsApp.");
  };
  if(fb)fb.onclick=async function(){
