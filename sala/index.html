@@ -3083,30 +3083,20 @@ async function leaveStudentClass(){
 }
 function showClassEnded(){if(!isStudent)return;let endedNotice=document.getElementById("aznyClassEndedNotice");if(!endedNotice){endedNotice=document.createElement("div");endedNotice.id="aznyClassEndedNotice";endedNotice.setAttribute("role","alert");endedNotice.setAttribute("aria-live","assertive");endedNotice.style.cssText="position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(5,16,31,.94);color:#fff;text-align:center;font-size:clamp(30px,6vw,64px);font-weight:900;line-height:1.2";endedNotice.textContent="A AULA FOI ENCERRADA PELO PROFESSOR";document.body.appendChild(endedNotice)}endedNotice.style.display="flex";aznyStopStudentMesh();studentApproved=false;try{studentPeer?.close()}catch(_){}studentPeer=null;try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}studentLocalStream=null;document.getElementById("studentControls").style.display="none";document.getElementById("studentNameModal").classList.add("show");document.getElementById("studentJoinBtn").disabled=false;document.getElementById("studentWaiting").textContent="A aula foi encerrada. Pode voltar a entrar por este mesmo link quando o professor iniciar outra aula.";document.getElementById("studentWaiting").style.display="block";const remoteVideo=document.getElementById("studentTeacherVideo");if(remoteVideo){remoteVideo.pause?.();remoteVideo.srcObject=null;remoteVideo.removeAttribute("src");remoteVideo.load?.();remoteVideo.style.display="none"}const remoteCard=remoteVideo?.closest(".student-video-card");if(remoteCard)remoteCard.classList.add("teacher-camera-ended");toast(document.documentElement.lang==="en"?"The teacher has ended the class.":"A aula foi encerrada pelo professor.")}
 function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;const endedNotice=document.getElementById("aznyClassEndedNotice");if(endedNotice)endedNotice.style.display="none";document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo professor");startStudentWebRTC()}else{document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended"&&m.session===classSessionId)showClassEnded()}}
-function getClassLink(){
-  /* O link partilhado durante a aula abre diretamente o quadro em modo aluno.
-     Não passa pela página de escolha (aulas/avaliações). */
-  const link=new URL("quadro_virtual_azny_quadro.html",location.href);
-  const permanentSession="ROOM-"+String(roomId).replace(/[.#$\/\[\]]/g,"_");
-  link.searchParams.set("aluno","1");
-  link.searchParams.set("sala",roomId);
-  link.searchParams.set("sess",permanentSession);
-  return link.href;
+async function getClassLink(){
+ /* Endereço curto e profissional para participantes; o ficheiro HTML fica oculto. */
+ const target=new URL("quadro_virtual_azny_quadro.html",location.href);
+ const permanentSession="ROOM-"+String(roomId).replace(/[.#$\/\[\]]/g,"_");
+ target.searchParams.set("aluno","1");target.searchParams.set("sala",roomId);target.searchParams.set("sess",permanentSession);
+ const currentParams=new URLSearchParams(location.search);
+ if(currentParams.get("modo")==="empresa"){target.searchParams.set("modo","empresa");target.searchParams.set("empresa",currentParams.get("empresa")||"Organização");target.searchParams.set("atividade",document.getElementById("boardTitle")?.value?.trim()||currentParams.get("atividade")||"Reunião de negócios");target.searchParams.set("tipo",currentParams.get("tipo")||"reuniao");}
+ const code=aznyHashKey("class:"+roomId).toUpperCase().padStart(7,"0").slice(-7);
+ try{if(!AZNY_DB)throw new Error("Firebase indisponível");const ref=AZNY_DB.ref("aznyShortLinks/"+code);const result=await ref.transaction(current=>current||{target:target.href,type:"class",createdAt:firebase.database.ServerValue.TIMESTAMP});const value=result.snapshot.val();if(result.committed&&value&&value.target===target.href)return location.origin+"/c/"+code;throw new Error("Código curto em conflito.");}
+ catch(err){console.error("Link curto da aula:",err);toast("Não foi possível gerar o link curto. Verifique a ligação e tente novamente.");return "";}
 }
-async function copyClassLink(){
- const link=getClassLink();if(!link)return;
- try{await navigator.clipboard.writeText(link);toast(document.documentElement.lang==="en"?"Class link copied":"Link da aula copiado")}
- catch(e){prompt("Copie o link da aula:",link)}
-}
-function shareWhatsApp(){
- const link=getClassLink();if(!link)return;const title=document.getElementById("boardTitle").value.trim()||"Aula";
- const text="Convite para a aula \""+title+"\" no Remote Work Board: "+link;
- window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");
-}
-function shareFacebook(){
- const link=getClassLink();if(!link)return;
- window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link),"_blank","noopener,noreferrer,width=700,height=600");
-}
+async function copyClassLink(){const link=await getClassLink();if(!link)return;try{await navigator.clipboard.writeText(link);toast(document.documentElement.lang==="en"?"Class link copied":"Link da aula copiado")}catch(e){prompt("Copie o link da aula:",link)}}
+async function shareWhatsApp(){const link=await getClassLink();if(!link)return;const title=document.getElementById("boardTitle").value.trim()||"Aula";const text="Convite para a aula \""+title+"\" no Remote Work Board: "+link;window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");}
+async function shareFacebook(){const link=await getClassLink();if(!link)return;window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link),"_blank","noopener,noreferrer,width=700,height=600");}
 const dashboardBtn=document.getElementById("teacherDashboardBtn");if(dashboardBtn)dashboardBtn.onclick=()=>{if(!isStudent)location.href="dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN)};
 const aznyFullscreenBtn=document.getElementById("aznyFullscreenBtn");if(aznyFullscreenBtn){aznyFullscreenBtn.onclick=async()=>{try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen();aznyFullscreenBtn.textContent="⤢";aznyFullscreenBtn.title="Sair do ecrã inteiro"}else{await document.exitFullscreen();aznyFullscreenBtn.textContent="⛶";aznyFullscreenBtn.title="Ecrã inteiro"}}catch(e){toast(document.documentElement.lang==="en"?"The browser could not enter full-screen mode. To hide the address bar, install AZNY on your home screen and open it from its icon.":"O navegador não permitiu o modo de ecrã inteiro. Para ocultar também a barra de endereço, instale o AZNY no ecrã inicial e abra-o pelo ícone.");}};document.addEventListener("fullscreenchange",()=>{if(aznyFullscreenBtn){const on=!!document.fullscreenElement;aznyFullscreenBtn.textContent=on?"⤢":"⛶";aznyFullscreenBtn.title=on?"Sair do ecrã inteiro":"Ecrã inteiro"}})}
 document.getElementById("copyClassLink").onclick=copyClassLink;
