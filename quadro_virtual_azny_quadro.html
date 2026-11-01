@@ -1077,7 +1077,7 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 .azny-live-surface-pointer .azny-pointer-glass{fill:#e11;stroke:#fff;stroke-width:1.4}
 
 /* Navegador de pesquisa integrado — camada independente do quadro, sem alterar o canvas. */
-#aznySharedBrowser{position:absolute;z-index:120;inset:12px 12px 12px 12px;display:none;flex-direction:column;min-width:0;min-height:0;background:#f7f9fc;border:2px solid #76502f;border-radius:12px;box-shadow:0 12px 40px #0008;overflow:hidden;color:#14283d}
+#aznySharedBrowser{position:fixed;z-index:120;inset:12px 12px 12px 12px;display:none;flex-direction:column;min-width:0;min-height:0;background:#f7f9fc;border:2px solid #76502f;border-radius:12px;box-shadow:0 12px 40px #0008;overflow:hidden;color:#14283d}
 #aznySharedBrowser.open{display:flex}
 #aznySharedBrowser .azny-browser-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px;background:#0b2340;color:#fff}
 #aznySharedBrowser .azny-browser-title{font-weight:850;margin-right:auto}
@@ -1619,7 +1619,7 @@ function aznySendBrowserState(url,action="navigate"){
  const state={type:"shared-browser",url,action,at:Date.now()};
  const raw=JSON.stringify(state);
  Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(raw)}catch(_){}}});
- if(AZNY_DB)aznyRoomRef().child("sharedBrowser").set({url,action,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY browser sync:",e));
+ if(AZNY_DB)aznyRoomRef().child("sharedBrowser").set({url,action,open:true,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY browser sync:",e));
 }
 function aznyNavigateBrowser(value,action="navigate",remote=false){
  const url=aznyNormalizeBrowserUrl(value);if(!url){toast("Introduza uma pesquisa ou um endereço válido.");return}
@@ -1627,12 +1627,17 @@ function aznyNavigateBrowser(value,action="navigate",remote=false){
  aznyApplyBrowserState({url});
  if(!remote)aznySendBrowserState(url,action);
 }
-function aznyCloseSharedBrowser(){
- aznyBrowserPanel.classList.remove("open");aznyBrowserPanel.setAttribute("aria-hidden","true");
-}
+function aznyCloseSharedBrowser(remote=false){
+  aznyBrowserPanel.classList.remove("open");aznyBrowserPanel.setAttribute("aria-hidden","true");
+  if(!remote&&!isStudent){
+   const msg=JSON.stringify({type:"shared-browser-close"});
+   Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(msg)}catch(_){}}});
+   if(AZNY_DB)aznyRoomRef().child("sharedBrowser").update({open:false,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});
+  }
+ }
 document.getElementById("internetSearchBtn")?.addEventListener("click",()=>{
  aznyBrowserPanel.classList.toggle("open");const open=aznyBrowserPanel.classList.contains("open");aznyBrowserPanel.setAttribute("aria-hidden",String(!open));
- if(open&&!aznyBrowserFrame.dataset.currentUrl){if(!isStudent){aznyBrowserAddress.value="";aznyBrowserAddress.focus()}else aznyBrowserFrame.src="https://www.google.com/search?igu=1"}
+ if(open&&!isStudent&&!aznyBrowserFrame.dataset.currentUrl){aznyBrowserAddress.value="";aznyBrowserAddress.focus()}
 });
 document.getElementById("aznyBrowserForm")?.addEventListener("submit",e=>{e.preventDefault();aznyNavigateBrowser(aznyBrowserAddress.value)});
 document.getElementById("aznyBrowserClose")?.addEventListener("click",aznyCloseSharedBrowser);
@@ -1643,6 +1648,7 @@ document.getElementById("aznyBrowserForward")?.addEventListener("click",()=>{if(
 function handleBoardChannelMessage(raw){
  try{
   const m=JSON.parse(raw);
+  if(m.type==="shared-browser-close"){if(isStudent)aznyCloseSharedBrowser(true);return;}
   if(m.type==="shared-browser"){if(isStudent){aznyBrowserApplyingRemote=true;aznyApplyBrowserState(m);aznyBrowserApplyingRemote=false}return;}
   if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}return;}
   if(m.type==="live-pointer"){
@@ -1723,7 +1729,7 @@ function setupBoardRealtime(){
  });
  // Estado de navegação partilhada, separado dos dados do quadro para não provocar redesenhos.
  aznyRoomRef().child("sharedBrowser").on("value",snap=>{
-  const state=snap.val();if(isStudent&&state?.url){aznyBrowserApplyingRemote=true;aznyApplyBrowserState(state);aznyBrowserApplyingRemote=false}
+  const state=snap.val();if(isStudent&&state?.open===false){aznyCloseSharedBrowser(true)}else if(isStudent&&state?.url){aznyBrowserApplyingRemote=true;aznyApplyBrowserState(state);aznyBrowserApplyingRemote=false}
  });
  /* Do not publish local state on startup: it could overwrite the last saved board before the remote state arrives. */
 }
