@@ -4090,7 +4090,21 @@ function persistBoardBeforeNavigation(){
 }
 window.addEventListener("beforeunload",()=>{persistBoardBeforeNavigation();if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Navegar/atualizar nunca encerra a reunião nem limpa o quadro. */});
 window.addEventListener("pagehide",persistBoardBeforeNavigation);
-window.addEventListener("resize",resizeCanvas);
+window.addEventListener("resize",()=>requestAnimationFrame(resizeCanvas),{passive:true});
+window.addEventListener("orientationchange",()=>setTimeout(resizeCanvas,180),{passive:true});
+/* Remote Work Board: manter a superfície de desenho com a mesma dimensão real
+   do quadro, mesmo quando as barras laterais e o layout móvel mudam de largura. */
+let aznyDrawingSurfaceObserver=null;
+if(window.ResizeObserver){
+ aznyDrawingSurfaceObserver=new ResizeObserver(()=>{
+  if(window.aznyDrawingSurfaceResizeFrame)return;
+  window.aznyDrawingSurfaceResizeFrame=requestAnimationFrame(()=>{
+   window.aznyDrawingSurfaceResizeFrame=0;
+   resizeCanvas();
+  });
+ });
+ [board,stage,document.getElementById("canvasWrap")].filter(Boolean).forEach(el=>aznyDrawingSurfaceObserver.observe(el));
+}
 if(!isStudent)load();setTimeout(()=>{setZoom(1);updateZoomExtent();resizeCanvas()},80);
 
 })();
