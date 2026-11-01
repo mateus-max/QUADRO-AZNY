@@ -1876,17 +1876,26 @@ function updateLivePointer(e){
  }
 }
 function setTool(t){
- // Clicar novamente na ferramenta ativa desliga-a; não deixa nenhum botão preso.
- tool=(tool===t)?null:t;
- document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",!!tool&&b.dataset.tool===tool));
- // In drawing/erasing mode, raise the transparent drawing layer above every
- // object and temporarily let pointer events pass through objects. This makes
- // the pen/eraser work visually and interactively over images, PDFs, charts,
- // music staves, notes, keyboards and any other object on the board.
- board.classList.toggle("drawing-active",tool==="pen"||tool==="eraser");
+ // Tocar novamente na ferramenta ativa regressa ao modo Selecionar.
+ // Assim Texto/Caneta/Borracha nunca ficam presos ativos.
+ const previousTool=tool;
+ tool=(previousTool===t)?"select":t;
+ if(previousTool==="text"&&tool!=="text"){
+  const focused=document.activeElement;
+  if(focused?.classList?.contains("textobj"))focused.blur();
+  document.body.classList.remove("azny-custom-keyboard","azny-student-native-keyboard");
+ }
+ document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===tool));
+ const drawingTool=tool==="pen"||tool==="eraser";
+ board.classList.toggle("drawing-active",drawingTool);
  board.classList.toggle("object-scroll-mode",tool!=="select");
+ // O tema empresarial define #drawLayer com pointer-events:none. Forçar aqui
+ // o estado correto no próprio canvas é essencial para a Caneta/Borracha tátil.
+ canvas.style.setProperty("pointer-events",drawingTool?"auto":"none","important");
+ canvas.style.setProperty("touch-action",drawingTool?"none":"auto","important");
+ canvas.style.setProperty("z-index",drawingTool?"2147483000":"2","important");
  if(pointerMode)setPointerMode(false);
- else stage.style.cursor=tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default");
+ stage.style.cursor=tool==="text"?"text":(drawingTool?"crosshair":"default");
 }
 
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{if((b.dataset.tool==="eraser"||b.id==="deleteTool")&&window.aznyClearActiveWorkspace&&window.aznyClearActiveWorkspace("selected"))return;setTool(b.dataset.tool)});
