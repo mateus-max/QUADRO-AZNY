@@ -3823,7 +3823,7 @@ function showClassEnded(){if(!isStudent)return;let endedNotice=document.getEleme
 function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;const endedNotice=document.getElementById("aznyClassEndedNotice");if(endedNotice)endedNotice.style.display="none";document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo anfitrião");startStudentWebRTC()}else{document.getElementById("studentWaiting").textContent="O anfitrião recusou o pedido de entrada na reunião.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended"&&m.session===classSessionId)showClassEnded()}}
 function getClassTarget(){
   const link=new URL("azny_business.html",location.href);
-  const permanentSession="ROOM-"+String(roomId).replace(/[.#$\\/\\[\\]]/g,"_");
+  const permanentSession="ROOM-"+String(roomId).replace(/[.#$]/g,"_").replaceAll("/","_").replaceAll("[","_").replaceAll("]","_");
   link.searchParams.set("aluno","1");link.searchParams.set("sala",roomId);link.searchParams.set("sess",permanentSession);
   const currentParams=new URLSearchParams(location.search);
   link.searchParams.set("modo","empresa");
@@ -3851,7 +3851,7 @@ async function copyClassLink(){
 }
 async function shareWhatsApp(){
  const popup=window.open("about:blank","_blank");const link=await getClassLink();if(!link){popup?.close();return}const title=document.getElementById("boardTitle").value.trim()||"Aula";
- const text="Convite para a aula \\""+title+"\\" no Remote Work Board: "+link;
+ const text='Convite para a aula "'+title+'" no Remote Work Board: '+link;
  if(popup)popup.location.href="https://wa.me/?text="+encodeURIComponent(text);else toast("Permita pop-ups para abrir o WhatsApp.");
 }
 async function shareFacebook(){
