@@ -3967,6 +3967,9 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   if(e.target?.classList?.contains("textobj"))openKeyboard(e.target);
  },true);
  window.aznyOpenBoardKeyboard=el=>{if(el&&el.isConnected)openKeyboard(el)};
+ /* Synchronous public hook used by createText() so the keyboard opens in the
+    same tap that creates the text object, without waiting for another focus cycle. */
+ window.aznyOpenBoardKeyboard=(el)=>{if(el&&el.isConnected)openKeyboard(el)};
  window.aznyCloseBoardKeyboard=()=>closeKeyboard(true);
  /* Keep the student's text object active while the custom keys are tapped;
     mobile browsers can report a transient focusout after every character. */
