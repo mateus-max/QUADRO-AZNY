@@ -2345,7 +2345,7 @@ function addDoc(file){
  };
  const readerError=label=>toast("Falha ao ler "+label+". Verifique o ficheiro e tente novamente.");
  if(["xlsx","xls"].includes(ext)){
-  if(!window.XLSX){toast("Biblioteca Excel indisponível. Verifique a ligação à internet.");return}
+  if(!window.XLSX){finishUpload();toast("Biblioteca Excel indisponível. Verifique a ligação à internet.");return}
   const reader=new FileReader();reader.onerror=()=>{readerError("a folha Excel");finishUpload()};
   reader.onload=()=>{
    try{
@@ -2363,7 +2363,7 @@ function addDoc(file){
   };reader.readAsArrayBuffer(file);return;
  }
  if(ext==="docx"){
-  if(!window.mammoth){toast("Biblioteca Word indisponível. Verifique a ligação à internet.");return}
+  if(!window.mammoth){finishUpload();toast("Biblioteca Word indisponível. Verifique a ligação à internet.");return}
   const reader=new FileReader();reader.onerror=()=>{readerError("o documento Word");finishUpload()};
   reader.onload=async()=>{try{const result=await mammoth.convertToHtml({arrayBuffer:reader.result});closeBoardWorkspaces();addEditableWordDocument(file.name,result.value||"<p></p>")}catch(err){console.error("AZNY Word upload:",err);toast("Não foi possível abrir este Word.")}finally{finishUpload()}};
   reader.readAsArrayBuffer(file);return;
