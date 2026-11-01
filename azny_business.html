@@ -1917,8 +1917,8 @@ document.getElementById("pointerTool").onclick=()=>setPointerMode(!pointerMode);
 let aznyPointerDragId=null,lastStudentPointerSend=0;
 function moveStudentPointer(e){
  if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
- const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width)*board.clientWidth,y=(e.clientY-r.top)/Math.max(1,r.height)*board.clientHeight;
- const p=document.getElementById("livePointer");p.style.transform="translate("+(x-44)+"px,"+(y-2)+"px)";p.classList.remove("touch-pointer");p.classList.add("active");
+ const {x,y}=boardPointFromClient(e.clientX,e.clientY);
+ placeSharedPointer(x,y);
  const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
  const packet=JSON.stringify({type:"live-pointer",x,y,nx:x/Math.max(1,board.clientWidth),ny:y/Math.max(1,board.clientHeight),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
  const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
