@@ -1091,6 +1091,11 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 body.student-mode #aznySharedBrowser .teacher-only-browser{display:none!important}
 @media(max-width:650px){#aznySharedBrowser{inset:5px;border-radius:8px}#aznySharedBrowser .azny-browser-head{gap:5px;padding:6px}#aznySharedBrowser button{padding:7px 8px;font-size:12px}#aznySharedBrowser .azny-browser-title{font-size:13px}}
 
+
+/* Camada transparente de captura para manter o cursor ativo sobre documentos e objetos incorporados. */
+#aznyPointerCaptureLayer{position:absolute;inset:0;z-index:35;display:none;background:transparent;pointer-events:none;touch-action:none}
+#board.azny-pointer-mode #aznyPointerCaptureLayer{display:block;pointer-events:auto;cursor:none;touch-action:none}
+#board #livePointer{z-index:40!important;pointer-events:none!important}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -1179,7 +1184,7 @@ body.student-mode #aznySharedBrowser .teacher-only-browser{display:none!importan
       <div contenteditable="true" id="aznyWebEditor" spellcheck="true" style="flex:1;overflow:auto;padding:24px;outline:none;line-height:1.6;min-height:0" data-placeholder="Escrevam aqui em conjunto. As alterações serão sincronizadas com os participantes."></div>
       <div class="azny-excel-status" id="aznyWebStatus">Documento colaborativo: alterações sincronizadas em tempo real durante a aula.</div>
     </section>
-    <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
+    <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="aznyPointerCaptureLayer" aria-hidden="true"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
 <svg viewBox="0 0 48 56" aria-hidden="true">
   <path class="arrow" d="M44 2 L25 9 L34 18 L12 40 L18 46 L40 24 L47 33 Z"/>
   <path d="M15 37 L5 49" fill="none" stroke="#e11" stroke-width="5" stroke-linecap="round"/>
@@ -1733,7 +1738,7 @@ function updateHint(){hint.style.display=board.querySelector(".object")||strokes
 function setPointerMode(on){
  pointerMode=!!on;
  const p=document.getElementById("livePointer"),b=document.getElementById("pointerTool");
- p.classList.toggle("active",pointerMode);b.classList.toggle("pointer-tool-on",pointerMode);
+ p.classList.toggle("active",pointerMode);b.classList.toggle("pointer-tool-on",pointerMode);board.classList.toggle("azny-pointer-mode",pointerMode);
  document.getElementById("aznyExcelLivePointer")?.classList.remove("active");
  document.getElementById("aznyWordLivePointer")?.classList.remove("active");
  stage.style.cursor=pointerMode?"none":(tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default"));
@@ -1745,7 +1750,7 @@ let lastPointerPacketAt=0;
 function updateLivePointer(e){
  if(e.target?.closest?.("#aznyExcelWorkspace,#aznyWebWorkspace"))return;
  if(!board.contains(e.target)&&!pointerMode)return;
- const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
+ const r=board.getBoundingClientRect(),sx=board.clientWidth/(r.width||board.clientWidth),sy=board.clientHeight/(r.height||board.clientHeight),x=(e.clientX-r.left)*sx,y=(e.clientY-r.top)*sy;
  const p=document.getElementById("livePointer");
  if(pointerMode){const touchOffset=e.pointerType==="touch";const tipX=x+(touchOffset?39:0),tipY=y+(touchOffset?-47:0);p.style.transform=`translate(${tipX-44}px,${tipY-2}px)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
  {
@@ -1795,6 +1800,7 @@ function endStudentPointerDrag(e){if(aznyPointerDragId===null||(e.pointerId!==un
 stage.addEventListener("pointerup",endStudentPointerDrag);
 stage.addEventListener("pointercancel",endStudentPointerDrag);
 stage.addEventListener("pointermove",updateLivePointer,{passive:true});
+document.addEventListener("pointermove",e=>{if(pointerMode&&board.contains(e.target))updateLivePointer(e)},{capture:true,passive:true});
 function sendAZNYSurfacePointer(e){
  if(!pointerMode)return;
  const excel=e.target?.closest?.("#aznyExcelWorkspace"),word=e.target?.closest?.("#aznyWebWorkspace");
@@ -2829,7 +2835,7 @@ async function connectStudentPeer(id,d){
   pc._aznyBoardChannel=ch;ch.bufferedAmountLowThreshold=65536;
   ch.onopen=()=>sendBoardSnapshotToChannel(ch);
   ch.onmessage=ev=>{
-   try{const m=JSON.parse(ev.data);if(m.type==="board-request"){sendBoardSnapshotToChannel(ch);return}handleBoardChannelMessage(ev.data)}catch(err){console.warn("AZNY student board packet:",err)}
+   try{const m=JSON.parse(ev.data);if(m.type==="board-request"){sendBoardSnapshotToChannel(ch);return}handleBoardChannelMessage(ev.data);if(m.type==="live-pointer"){const packet=ev.data;Object.values(window.aznyTeacherPeers||{}).forEach(other=>{const out=other?other._aznyBoardChannel:null;if(other!==pc&&out?.readyState==="open"&&out.bufferedAmount<65536){try{out.send(packet)}catch(_){}}})}}catch(err){console.warn("AZNY student board packet:",err)}
   };
   ch.onclose=()=>{if(pc._aznyBoardChannel===ch)pc._aznyBoardChannel=null};
  };
