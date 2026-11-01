@@ -1325,7 +1325,7 @@ body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!im
     <button class="tool" data-tool="pen">✎ Caneta</button>
     <button class="tool" data-tool="eraser">⌫ Borracha</button>
     <button class="tool" id="deleteTool">✕ Apagar</button>
-    <button class="tool" id="pointerTool">🔎 Cursor / Lupa</button>
+    <button class="tool" id="pointerTool">↖ Ponteiro</button>
     <button class="tool" id="undoSide">↶ Desfazer</button>
     <button class="tool" id="redoSide">↷ Refazer</button>
     <button class="tool" id="imageBtn">🖼 Carregar imagem</button>
@@ -1377,8 +1377,7 @@ body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!im
     </section>
     <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
 <svg viewBox="0 0 48 56" aria-hidden="true">
-  <path class="arrow" d="M44 2 L25 9 L34 18 L12 40 L18 46 L40 24 L47 33 Z"/>
-  <path d="M15 37 L5 49" fill="none" stroke="#e11" stroke-width="5" stroke-linecap="round"/>
+  <path class="arrow" d="M5 3 L5 43 L16 32 L25 51 L32 48 L23 29 L40 29 Z"/>
 </svg>
 </span></div></div></div>
   </div>
@@ -3689,8 +3688,8 @@ document.getElementById("recordClassBtn").onclick=async()=>{const b=document.get
 /* AZNY bilingual toolbar: Portuguese / English, available to teacher and student. */
 (function setupAZNYLanguageSwitcher(){
  const KEY="azny-quadro-ui-language";
- const pt={undo:"↶ Desfazer",redo:"↷ Refazer",pagePrev:"◀ Página anterior",pageNext:"Página seguinte ▶",deleteTool:"✕ Apagar",pointerTool:"🔎 Cursor / Lupa",undoSide:"↶ Desfazer",redoSide:"↷ Refazer",imageBtn:"🖼 Carregar imagem",docBtn:"📄 Carregar documento",chartsBtn:"📊 Gráficos",musicBtn:"🎵 Música",pagesBtn:"📑 Páginas do quadro",shareWhatsApp:"🟢 Partilhar no WhatsApp",copyClassLink:"🔗 Copiar link da reunião",shareFacebook:"🔵 Partilhar no Facebook",startClassBtn:"▶ Iniciar reunião",endClassBtn:"⏹ Encerrar reunião",recordClassBtn:"⏺ Gravar reunião",teacherScreenShareBtn:"▣ Partilhar ecrã",studentPointerBtn:"🔎 Lupa",studentSelectBtn:"↖ Selecionar",studentDeleteBtn:"🗑 Eliminar",studentTextBtn:"T Texto",studentEraseBtn:"⌫ Apagar",studentUploadImageBtn:"🖼 Imagem",studentUploadDocBtn:"📄 Documento",studentRecordBtn:"⏺ Gravar",studentScreenShareBtn:"▣ Partilhar ecrã",studentRaiseHandBtn:"✋ Levantar mão",studentLeaveClassBtn:"↩ Sair da aula"};
- const en={undo:"↶ Undo",redo:"↷ Redo",pagePrev:"◀ Previous page",pageNext:"Next page ▶",deleteTool:"✕ Delete",pointerTool:"🔎 Pointer / Magnifier",undoSide:"↶ Undo",redoSide:"↷ Redo",imageBtn:"🖼 Upload image",docBtn:"📄 Upload document",chartsBtn:"📊 Charts",musicBtn:"🎵 Music",pagesBtn:"📑 Board pages",shareWhatsApp:"🟢 Share on WhatsApp",copyClassLink:"🔗 Copy meeting link",shareFacebook:"🔵 Share on Facebook",startClassBtn:"▶ Start meeting",endClassBtn:"⏹ End meeting",recordClassBtn:"⏺ Record meeting",teacherScreenShareBtn:"▣ Share screen",studentPointerBtn:"🔎 Magnifier",studentSelectBtn:"↖ Select",studentDeleteBtn:"🗑 Delete",studentTextBtn:"T Text",studentEraseBtn:"⌫ Eraser",studentUploadImageBtn:"🖼 Image",studentUploadDocBtn:"📄 Document",studentRecordBtn:"⏺ Record",studentScreenShareBtn:"▣ Share screen",studentRaiseHandBtn:"✋ Raise hand",studentLeaveClassBtn:"↩ Leave class"};
+ const pt={undo:"↶ Desfazer",redo:"↷ Refazer",pagePrev:"◀ Página anterior",pageNext:"Página seguinte ▶",deleteTool:"✕ Apagar",pointerTool:"↖ Ponteiro",undoSide:"↶ Desfazer",redoSide:"↷ Refazer",imageBtn:"🖼 Carregar imagem",docBtn:"📄 Carregar documento",chartsBtn:"📊 Gráficos",musicBtn:"🎵 Música",pagesBtn:"📑 Páginas do quadro",shareWhatsApp:"🟢 Partilhar no WhatsApp",copyClassLink:"🔗 Copiar link da reunião",shareFacebook:"🔵 Partilhar no Facebook",startClassBtn:"▶ Iniciar reunião",endClassBtn:"⏹ Encerrar reunião",recordClassBtn:"⏺ Gravar reunião",teacherScreenShareBtn:"▣ Partilhar ecrã",studentPointerBtn:"🔎 Lupa",studentSelectBtn:"↖ Selecionar",studentDeleteBtn:"🗑 Eliminar",studentTextBtn:"T Texto",studentEraseBtn:"⌫ Apagar",studentUploadImageBtn:"🖼 Imagem",studentUploadDocBtn:"📄 Documento",studentRecordBtn:"⏺ Gravar",studentScreenShareBtn:"▣ Partilhar ecrã",studentRaiseHandBtn:"✋ Levantar mão",studentLeaveClassBtn:"↩ Sair da aula"};
+ const en={undo:"↶ Undo",redo:"↷ Redo",pagePrev:"◀ Previous page",pageNext:"Next page ▶",deleteTool:"✕ Delete",pointerTool:"↖ Pointer",undoSide:"↶ Undo",redoSide:"↷ Redo",imageBtn:"🖼 Upload image",docBtn:"📄 Upload document",chartsBtn:"📊 Charts",musicBtn:"🎵 Music",pagesBtn:"📑 Board pages",shareWhatsApp:"🟢 Share on WhatsApp",copyClassLink:"🔗 Copy meeting link",shareFacebook:"🔵 Share on Facebook",startClassBtn:"▶ Start meeting",endClassBtn:"⏹ End meeting",recordClassBtn:"⏺ Record meeting",teacherScreenShareBtn:"▣ Share screen",studentPointerBtn:"🔎 Magnifier",studentSelectBtn:"↖ Select",studentDeleteBtn:"🗑 Delete",studentTextBtn:"T Text",studentEraseBtn:"⌫ Eraser",studentUploadImageBtn:"🖼 Image",studentUploadDocBtn:"📄 Document",studentRecordBtn:"⏺ Record",studentScreenShareBtn:"▣ Share screen",studentRaiseHandBtn:"✋ Raise hand",studentLeaveClassBtn:"↩ Leave class"};
  const toolPt={select:"↖ Selecionar",text:"T Texto",pen:"✎ Caneta",eraser:"⌫ Borracha"},toolEn={select:"↖ Select",text:"T Text",pen:"✎ Pen",eraser:"⌫ Eraser"};
  function applyAdditionalLanguage(lang){
   const en=lang==="en",heads=document.querySelectorAll(".sidehead");
@@ -4831,7 +4830,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  const toolLabels=[
   ['[data-tool="select"]','↖ Selecionar objeto','Selecionar e mover elementos da apresentação'],
   ['[data-tool="text"]','T Nota / texto','Adicionar texto, notas e tópicos à reunião'],
-  ['#pointerTool','⌖ Cursor de apresentação','Apontar para conteúdo durante a conferência'],
+  ['#pointerTool','↖ Ponteiro de apresentação','Apontar para conteúdo durante a conferência'],
   ['#deleteTool','✕ Remover elemento','Eliminar o elemento selecionado'],
   ['#undoSide','↶ Desfazer alteração','Desfazer a última alteração'],
   ['#redoSide','↷ Repetir alteração','Repetir a última alteração'],
