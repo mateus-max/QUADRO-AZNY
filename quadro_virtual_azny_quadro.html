@@ -1903,13 +1903,11 @@ function createText(x,y,anchor){
  constrainTextToBoard(el);
  if(anchor)anchorTextToObject(el,anchor,x,y);
  board.appendChild(el);makeInteractive(el);selectObject(el);
- /* Abrir o teclado AZNY no mesmo gesto que cria o texto, sem aguardar o ciclo de focus/RAF do Android. */
- if(!document.body.classList.contains("student-mode")&&matchMedia("(pointer:coarse)").matches&&window.aznyOpenBoardKeyboard)window.aznyOpenBoardKeyboard(el);
+ /* Preparar o ponto de inserção antes do foco. O focusin abre o teclado já
+    preparado no mesmo gesto, sem o abrir duas vezes nem esperar por RAF. */
+ const r=document.createRange();r.selectNodeContents(el);r.collapse(true);
+ const sel=getSelection();if(sel){sel.removeAllRanges();sel.addRange(r);savedRange=r.cloneRange();}
  el.focus({preventScroll:true});
- requestAnimationFrame(()=>{
-  const r=document.createRange();r.selectNodeContents(el);r.collapse(true);
-  const sel=getSelection();sel.removeAllRanges();sel.addRange(r);savedRange=r.cloneRange();
- });
  updateHint();scheduleSave();
 }
 function selectObject(el){document.querySelectorAll(".object.selected").forEach(x=>x.classList.remove("selected"));selected=el;if(el)el.classList.add("selected");updateObjectActions()}
