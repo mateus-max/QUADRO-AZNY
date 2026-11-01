@@ -2313,41 +2313,57 @@ function aznyApplySheetCell(m){
  }
 }
 function addDoc(file){
- const ext=(file.name.split(".").pop()||"").toLowerCase();
+ if(!file){toast("Selecione um documento primeiro.");return}
+ const ext=(String(file.name||"").split(".").pop()||"").toLowerCase();
+ const closeBoardWorkspaces=()=>{
+  document.getElementById("aznyExcelWorkspace")?.classList.remove("azny-excel-open");
+  document.getElementById("aznyWebWorkspace")?.classList.remove("azny-web-open");
+  const excel=document.getElementById("aznyExcelWorkspace"),word=document.getElementById("aznyWebWorkspace");
+  if(excel)excel.style.display="none";if(word)word.style.display="none";
+ };
+ const readerError=label=>toast("Falha ao ler "+label+". Verifique o ficheiro e tente novamente.");
  if(["xlsx","xls"].includes(ext)){
   if(!window.XLSX){toast("Biblioteca Excel indisponível. Verifique a ligação à internet.");return}
-  const reader=new FileReader();
+  const reader=new FileReader();reader.onerror=()=>readerError("a folha Excel");
   reader.onload=()=>{
    try{
     const wb=XLSX.read(reader.result,{type:"array"});
     if(!wb.SheetNames.length)throw new Error("O ficheiro não contém folhas.");
-    // Um ficheiro selecionado cria apenas um objeto no quadro.
-    // Se o livro tiver várias folhas, abrir a primeira; as restantes não
-    // devem ser despejadas simultaneamente no quadro.
-    const sheetName=wb.SheetNames[0];
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,defval:""});
+    const sheetName=wb.SheetNames[0],rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,defval:""});
     const data=rows.map(row=>Array.from(row||[],v=>String(v??"")));
-    pushHistory();
+    closeBoardWorkspaces();pushHistory();
     const el=createAZNYVirtualSheetObject(file.name,sheetName,data);
     Object.assign(el.style,{left:"70px",top:"60px"});
     board.appendChild(el);makeInteractive(el);selectObject(el);
     updateHint();scheduleSave();publishLiveBoardState();toast("Uma folha Excel carregada para edição colaborativa");
-   }catch(err){console.error(err);toast("Não foi possível abrir esta folha Excel.")}
-  };reader.readAsArrayBuffer(file);return
+   }catch(err){console.error("AZNY Excel upload:",err);toast("Não foi possível abrir esta folha Excel.")}
+  };reader.readAsArrayBuffer(file);return;
  }
- if(["docx"].includes(ext)){
+ if(ext==="docx"){
   if(!window.mammoth){toast("Biblioteca Word indisponível. Verifique a ligação à internet.");return}
-  const reader=new FileReader();reader.onload=async()=>{
+  const reader=new FileReader();reader.onerror=()=>readerError("o documento Word");
+  reader.onload=async()=>{try{const result=await mammoth.convertToHtml({arrayBuffer:reader.result});closeBoardWorkspaces();addEditableWordDocument(file.name,result.value||"<p></p>")}catch(err){console.error("AZNY Word upload:",err);toast("Não foi possível abrir este Word.")}};
+  reader.readAsArrayBuffer(file);return;
+ }
+ if(ext==="doc"){toast("Este ficheiro está no formato Word antigo (.doc). Guarde-o como .docx e volte a carregá-lo.");return}
+ if(ext==="pdf"||file.type==="application/pdf"){
+  const reader=new FileReader();reader.onerror=()=>readerError("o PDF");
+  reader.onload=()=>{
    try{
-    const result=await mammoth.convertToHtml({arrayBuffer:reader.result});
-    addEditableWordDocument(file.name,result.value||"<p></p>");
-   }catch(err){console.error(err);toast("Não foi possível abrir este Word.")}
-  };reader.readAsArrayBuffer(file);return
+    closeBoardWorkspaces();pushHistory();
+    const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;if(isStudent)el.dataset.createdBy=studentRequestId;el.dataset.name=file.name;el.dataset.pdf=reader.result;
+    el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(file.name)+'</span></div>';
+    el.appendChild(createAZNYPdfViewer(reader.result));Object.assign(el.style,{left:"100px",top:"80px",width:"620px",height:"450px"});
+    board.appendChild(el);makeInteractive(el);selectObject(isStudent?null:el);updateHint();scheduleSave();publishLiveBoardState();toast("PDF aberto no quadro");
+   }catch(err){console.error("AZNY PDF upload:",err);toast("Não foi possível abrir este PDF.")}
+  };reader.readAsDataURL(file);return;
  }
- if(file.type==="application/pdf"||/\.pdf$/i.test(file.name)){
-  const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;if(isStudent)el.dataset.createdBy=studentRequestId;el.dataset.name=file.name;el.dataset.pdf=reader.result;el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(file.name)+'</span></div>';el.appendChild(createAZNYPdfViewer(reader.result));Object.assign(el.style,{left:"100px",top:"80px",width:"620px",height:"450px"});board.appendChild(el);makeInteractive(el);selectObject(isStudent?null:el);updateHint();scheduleSave();publishLiveBoardState();toast("PDF aberto no quadro")};reader.readAsDataURL(file);return
+ if(["txt","md","csv","json","html","htm"].includes(ext)){
+  const reader=new FileReader();reader.onerror=()=>readerError("o documento");
+  reader.onload=()=>{try{closeBoardWorkspaces();addEditableWordDocument(file.name,'<p>'+escapeHtml(String(reader.result||"")).replace(/\n/g,"<br>")+'</p>')}catch(err){console.error("AZNY text upload:",err);toast("Não foi possível abrir este documento.")}};
+  reader.readAsText(file);return;
  }
- const reader=new FileReader();reader.onload=()=>{addEditableWordDocument(file.name,'<p>'+escapeHtml(String(reader.result||"")).replace(/\n/g,"<br>")+'</p>')};reader.readAsText(file)
+ toast("Formato não suportado. Utilize PDF, DOCX, XLSX, XLS, TXT, CSV, HTML ou MD.");
 }
 function addEditableWordDocument(name,html){
  pushHistory();const el=document.createElement("div");el.className="object docobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;el.dataset.name=name;el.dataset.documentType="word";
@@ -2578,9 +2594,12 @@ document.getElementById("deleteTool").onclick=()=>{if(window.aznyClearActiveWork
 document.getElementById("saveBtn").onclick=()=>{save();toast(document.documentElement.lang==="en"?"Class saved in the browser":"Aula guardada no navegador")};
 document.getElementById("clearBtn").onclick=()=>{if(window.aznyClearActiveWorkspace&&window.aznyClearActiveWorkspace("trash"))return;if(confirm("Limpar todo o quadro?")){pushHistory();board.querySelectorAll(".object").forEach(e=>e.remove());strokes=[];selected=null;redraw();updateHint();scheduleSave();publishLiveBoardState()}};
 document.getElementById("imageBtn").onclick=()=>document.getElementById("imageInput").click();
-document.getElementById("docBtn").onclick=()=>document.getElementById("docInput").click();
+const aznyDocButton=document.getElementById("docBtn"),aznyDocPicker=document.getElementById("docInput");
+if(aznyDocButton&&aznyDocPicker){
+ aznyDocButton.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();aznyDocPicker.value="";try{if(typeof aznyDocPicker.showPicker==="function")aznyDocPicker.showPicker();else aznyDocPicker.click()}catch(_){aznyDocPicker.click()}},{capture:true});
+ aznyDocPicker.addEventListener("change",e=>{const file=e.target.files?.[0];if(!file)return;try{addDoc(file)}catch(err){console.error("AZNY document upload:",err);toast("Não foi possível carregar o documento. Tente novamente.")}finally{aznyDocPicker.value=""}});
+}
 document.getElementById("imageInput").onchange=e=>{if(e.target.files[0])addImage(e.target.files[0]);e.target.value=""};
-document.getElementById("docInput").onchange=e=>{if(e.target.files[0])addDoc(e.target.files[0]);e.target.value=""};
 document.getElementById("pagesBtn").onclick=()=>{updatePageLabel();document.getElementById("pagesModal").classList.add("show")};
 document.getElementById("closePages").onclick=()=>document.getElementById("pagesModal").classList.remove("show");
 document.querySelectorAll("#pageChoices [data-page]").forEach(b=>b.onclick=()=>{switchPage(+b.dataset.page);document.getElementById("pagesModal").classList.remove("show")});
