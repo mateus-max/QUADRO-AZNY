@@ -764,4 +764,8 @@ if("serviceWorker" in navigator && location.protocol==="https:"){window.addEvent
  info.addEventListener("click",e=>{if(e.target===info)closeInfo()});try{const savedInfo=sessionStorage.getItem("rwb_info_page");if(savedInfo&&pages[savedInfo])showInfo(savedInfo)}catch(_){}
  document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeInfo();closeMenu()}});
 })();
-</script></body></html>
+</script><script>
+/* Keep the homepage at the true top on every fresh open or return, so the brand header is visible. */
+(function(){function resetHomeTop(){if(document.querySelector("main.azny-home")){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",resetHomeTop,{once:true});}else{resetHomeTop();}window.addEventListener("pageshow",resetHomeTop);})();
+</script>
+</body></html>
