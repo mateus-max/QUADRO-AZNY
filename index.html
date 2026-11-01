@@ -521,6 +521,33 @@ body.teacher-payment-status-mode #homeIntro{display:block!important}
 html:has(main.azny-home),body:has(main.azny-home){width:100%;height:100%;overflow:hidden!important;overscroll-behavior:none!important;}
 main.azny-home{position:fixed!important;inset:0!important;width:100%!important;height:100vh!important;height:100dvh!important;min-height:0!important;overflow:hidden!important;overscroll-behavior:none!important;}
 main.azny-home>.azny-home-card{max-height:100%!important;overflow:hidden!important;}
+
+/* Exceção ao bloqueio da página inicial: os fluxos de registo, pagamento
+   e estado do pedido têm conteúdo comprido e precisam de scroll real.
+   Esta regra fica no fim do CSS para prevalecer sobre o bloqueio geral. */
+html:has(body.teacher-register-mode),
+html:has(body.teacher-checkout-mode),
+html:has(body.teacher-payment-status-mode),
+body.teacher-register-mode,
+body.teacher-checkout-mode,
+body.teacher-payment-status-mode{
+ width:100%!important;height:auto!important;min-height:100%!important;
+ overflow-x:hidden!important;overflow-y:auto!important;
+ overscroll-behavior-y:contain!important;
+}
+body.teacher-register-mode main.azny-home,
+body.teacher-checkout-mode main.azny-home,
+body.teacher-payment-status-mode main.azny-home{
+ position:relative!important;inset:auto!important;
+ width:100%!important;height:auto!important;min-height:100dvh!important;
+ overflow:visible!important;overscroll-behavior:auto!important;
+}
+body.teacher-register-mode main.azny-home>.azny-home-card,
+body.teacher-checkout-mode main.azny-home>.azny-home-card,
+body.teacher-payment-status-mode main.azny-home>.azny-home-card{
+ width:100%!important;height:auto!important;max-height:none!important;
+ min-height:100dvh!important;overflow:visible!important;
+}
 </style><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#071b33">
