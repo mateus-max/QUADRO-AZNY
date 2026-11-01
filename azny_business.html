@@ -1283,13 +1283,14 @@ body:not(.student-mode) #students .student>.azny-student-device-controls button{
 #board .mediaobj.selected{border:2px solid #1677ff!important}
 #board .mediaobj.selected>.resize{display:block!important}
 
-/* Marca do cabeçalho empresarial: tamanho compacto aplicado no CSS principal para evitar corte. */
+/* Cabeçalho empresarial: reservar espaço real à marca antes do cronómetro. */
 body.azny-business-mode .topbar>.logo{
-  display:block!important;flex:0 0 auto!important;width:max-content!important;min-width:max-content!important;
-  max-width:none!important;white-space:nowrap!important;overflow:visible!important;
-  font-size:12px!important;line-height:1.1!important;letter-spacing:-.55px!important;
+ display:block!important;flex:0 0 180px!important;width:180px!important;min-width:180px!important;max-width:180px!important;
+ box-sizing:border-box!important;white-space:nowrap!important;overflow:visible!important;
+ font-size:10px!important;line-height:1.1!important;letter-spacing:-.45px!important;
 }
-body.azny-business-mode .topbar{gap:8px!important;padding-left:10px!important;padding-right:10px!important}
+body.azny-business-mode .topbar>.title{flex:1 1 0!important;min-width:0!important;width:0!important;overflow:hidden!important}
+body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!important}
 </style>
 </head>
 <body class="azny-business-mode">
