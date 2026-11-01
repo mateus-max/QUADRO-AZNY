@@ -77,6 +77,22 @@ body{overflow:auto;background:linear-gradient(135deg,#071b33,#0e2c4c)}
    O limite natural do documento impede avançar para além do último conteúdo. */
 html.azny-page-scroll,html.azny-page-scroll body{overflow-y:auto!important;overscroll-behavior-y:contain}
 html.azny-page-locked,html.azny-page-locked body{overflow-y:hidden!important;overscroll-behavior-y:none}
+/* A página principal tem um bloqueio visual fixo por padrão. Quando o
+   conteúdo excede o ecrã, libertamos o contentor e deixamos o documento rolar. */
+html.azny-page-scroll:has(main.azny-home),
+html.azny-page-scroll body:has(main.azny-home){
+ height:auto!important;min-height:100%!important;overflow-x:hidden!important;
+ overflow-y:auto!important;overscroll-behavior-y:contain!important;
+}
+html.azny-page-scroll main.azny-home{
+ position:relative!important;inset:auto!important;height:auto!important;
+ min-height:100dvh!important;overflow:visible!important;overscroll-behavior:auto!important;
+}
+html.azny-page-scroll main.azny-home>.azny-home-card{
+ height:auto!important;max-height:none!important;min-height:100dvh!important;
+ overflow:visible!important;
+}
+
 
 /* Ajuste responsivo da entrada: os três botões ficam dentro do cartão no telemóvel. */
 .home-actions{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:10px!important;width:100%;}
@@ -816,7 +832,13 @@ if("serviceWorker" in navigator && location.protocol==="https:"){window.addEvent
   const root=document.documentElement;
   const body=document.body;
   if(!body)return;
-  const longPage=Math.max(root.scrollHeight,body.scrollHeight)>window.innerHeight+2;
+  const main=document.querySelector("main.azny-home");
+  const card=main&&main.querySelector(":scope > .azny-home-card");
+  /* A página inicial está intencionalmente fixa; por isso o scrollHeight do
+     documento fica limitado. Medimos também a altura natural do cartão. */
+  const longPage=Math.max(root.scrollHeight,body.scrollHeight,
+    main?main.scrollHeight:0,card?card.scrollHeight:0,
+    card?card.getBoundingClientRect().height:0)>window.innerHeight+2;
   root.classList.toggle("azny-page-scroll",longPage);
   root.classList.toggle("azny-page-locked",!longPage);
  }
