@@ -2474,16 +2474,89 @@ function strokePoints(s){
  }
  return s.points||[];
 }
-function redraw(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;ctx.clearRect(0,0,r.width,r.height);ctx.lineCap="round";ctx.lineJoin="round";for(const s of strokes){const pts=strokePoints(s);if(!pts.length)continue;ctx.strokeStyle=s.color;ctx.lineWidth=s.width;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke()}if(isStudent)aznyRemoteLiveStrokes.forEach(s=>{const pts=s.points||[];if(!pts.length)return;ctx.strokeStyle=s.color||"#000";ctx.lineWidth=Number(s.width)||3;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke()})}
+function redraw(){
+ const r=board.getBoundingClientRect();ctx.clearRect(0,0,board.clientWidth,board.clientHeight);
+ ctx.lineCap="round";ctx.lineJoin="round";
+ const paintStroke=(s,points)=>{
+  if(!points.length)return;
+  ctx.strokeStyle=s.color||"#1f2937";ctx.fillStyle=s.color||"#1f2937";ctx.lineWidth=Number(s.width)||3;
+  if(points.length===1){ctx.beginPath();ctx.arc(points[0].x,points[0].y,Math.max(1,ctx.lineWidth/2),0,Math.PI*2);ctx.fill();return}
+  ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+  for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
+  ctx.stroke();
+ };
+ for(const s of strokes)paintStroke(s,strokePoints(s));
+ if(isStudent)aznyRemoteLiveStrokes.forEach(s=>paintStroke(s,s.points||[]));
+}
 
 function resizeCanvas(){const w=Math.max(1,board.clientWidth),h=Math.max(1,board.clientHeight),d=devicePixelRatio||1;canvas.width=Math.max(1,Math.round(w*d));canvas.height=Math.max(1,Math.round(h*d));canvas.style.width=w+"px";canvas.style.height=h+"px";ctx.setTransform(d,0,0,d,0,0);redraw()}
 function objectAtPoint(p){const els=[...board.querySelectorAll('.object')].reverse();for(const el of els){const b=anchorBox(el);if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return el}return null}
 function eraseAt(p){const radius=18;strokes=strokes.filter(s=>!strokePoints(s).some(q=>Math.hypot(q.x-p.x,q.y-p.y)<radius))}
-function broadcastLiveStroke(done=false){if(!currentStroke||!aznyLiveStrokeId)return;const points=currentStroke.anchorId?strokePoints(currentStroke):currentStroke.points;const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,done});const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}};if(isStudent){send(studentBoardChannel);return}Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null))}
+let aznyLastStrokeBroadcast=0,aznyStrokeBroadcastTimer=0;
+function broadcastLiveStroke(done=false){
+ if(!currentStroke||!aznyLiveStrokeId)return;
+ const now=performance.now();
+ if(!done&&now-aznyLastStrokeBroadcast<32){
+  if(!aznyStrokeBroadcastTimer)aznyStrokeBroadcastTimer=setTimeout(()=>{aznyStrokeBroadcastTimer=0;broadcastLiveStroke(false)},34);
+  return;
+ }
+ aznyLastStrokeBroadcast=now;
+ if(done)clearTimeout(aznyStrokeBroadcastTimer),aznyStrokeBroadcastTimer=0;
+ const points=currentStroke.anchorId?strokePoints(currentStroke):currentStroke.points;
+ const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,done});
+ const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}};
+ if(isStudent){send(studentBoardChannel);return}
+ Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null))
+}
 let aznyPenColor="#1f2937";
-function drawDown(e){if(tool!=="pen"&&tool!=="eraser")return;if(e.cancelable)e.preventDefault();clearTimeout(window.aznyDrawingReleaseTimer);drawing=true;localBoardEditing=true;pushHistory();const p=localPoint(e);if(tool==="pen"){const anchor=objectAtPoint(p);currentStroke={color:aznyPenColor,width:3,points:[],anchorId:anchor?.dataset?.id||null};aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}else currentStroke.points.push(p);strokes.push(currentStroke);broadcastLiveStroke()}else eraseAt(p);redraw();publishLiveBoardState()}
-function drawMove(e){if(!drawing)return;const p=localPoint(e);if(tool==="pen"){if(currentStroke?.anchorId){const anchor=document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]');if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}}else if(currentStroke)currentStroke.points.push(p);redraw();broadcastLiveStroke()}else{eraseAt(p);redraw()}publishLiveBoardState()}
-function drawUp(){if(!drawing)return;if(currentStroke)broadcastLiveStroke(true);drawing=false;currentStroke=null;aznyLiveStrokeId="";/* Keep remote snapshots from replacing the finished stroke before its save is complete. */scheduleSave();publishLiveBoardState();clearTimeout(window.aznyDrawingReleaseTimer);window.aznyDrawingReleaseTimer=setTimeout(()=>{localBoardEditing=false},900)}
+function drawDown(e){
+ if((tool!=="pen"&&tool!=="eraser")||drawing)return;
+ if(e.cancelable)e.preventDefault();
+ clearTimeout(window.aznyDrawingReleaseTimer);
+ drawing=true;localBoardEditing=true;pushHistory();
+ const p=localPoint(e);
+ if(tool==="pen"){
+  const anchor=objectAtPoint(p);
+  currentStroke={color:aznyPenColor,width:3,points:[],anchorId:anchor?.dataset?.id||null};
+  aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);
+  if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}
+  else currentStroke.points.push(p);
+  strokes.push(currentStroke);broadcastLiveStroke();
+ }else eraseAt(p);
+ redraw();publishLiveBoardState()
+}
+function drawMove(e){
+ if(!drawing)return;
+ if(tool==="pen"){
+  const events=typeof e.getCoalescedEvents==="function"?e.getCoalescedEvents():[e];
+  for(const pointEvent of (events.length?events:[e])){
+   const p=localPoint(pointEvent);
+   if(currentStroke?.anchorId){
+    const anchor=document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]');
+    if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}
+   }else if(currentStroke)currentStroke.points.push(p);
+  }
+  redraw();broadcastLiveStroke();
+ }else{
+  const p=localPoint(e);eraseAt(p);redraw();publishLiveBoardState();
+ }
+}
+function drawUp(){
+ if(!drawing)return;
+ if(currentStroke){
+  /* Um toque curto também deixa um ponto visível, em vez de desaparecer. */
+  if(currentStroke.points.length===1){
+   const p=strokePoints(currentStroke)[0];
+   if(p)currentStroke.points.push(currentStroke.anchorId?{...currentStroke.points[0]}:{x:p.x+.01,y:p.y+.01});
+  }
+  broadcastLiveStroke(true);
+ }
+ drawing=false;currentStroke=null;aznyLiveStrokeId="";
+ /* O estado completo só é publicado ao terminar o traço: evita reconstruções a cada movimento. */
+ scheduleSave();publishLiveBoardState();
+ clearTimeout(window.aznyDrawingReleaseTimer);
+ window.aznyDrawingReleaseTimer=setTimeout(()=>{localBoardEditing=false},900);
+}
 
 
 let textPointerTarget=null,textPointerX=0,textPointerY=0,textPointerMoved=false;
@@ -2545,7 +2618,6 @@ stage.addEventListener("pointermove",e=>{if(!drawing)return;if(e.cancelable)e.pr
 stage.addEventListener("pointerup",e=>{if(drawing){if(e.cancelable)e.preventDefault();drawUp()}},{passive:false});
 stage.addEventListener("pointercancel",()=>{if(drawing)drawUp()});
 stage.addEventListener("lostpointercapture",()=>{if(drawing)drawUp()});
-addEventListener("mousemove",drawMove);addEventListener("mouseup",drawUp);
 
 function rememberSelection(){
  const sel=getSelection();
