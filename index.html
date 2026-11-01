@@ -610,6 +610,42 @@ body.teacher-payment-status-mode main.azny-home>.azny-home-card{
  box-sizing:border-box!important;
  padding-bottom:calc(32px + env(safe-area-inset-bottom,0px))!important;
 }
+
+/* Scroll EXCLUSIVO do fluxo de criação de conta do PROFESSOR.
+   A área rolável é o ecrã inteiro; o conteúdo de planos/checkout cresce
+   naturalmente dentro dela. Não altera o fluxo de empresas. */
+html:has(body.teacher-register-mode),
+html:has(body.teacher-checkout-mode){
+ height:100%!important;min-height:100%!important;overflow:hidden!important;
+}
+body.teacher-register-mode,
+body.teacher-checkout-mode{
+ position:fixed!important;inset:0!important;width:100%!important;
+ height:100vh!important;height:100dvh!important;min-height:0!important;
+ overflow-x:hidden!important;overflow-y:auto!important;
+ -webkit-overflow-scrolling:touch!important;
+ overscroll-behavior-y:contain!important;
+ touch-action:pan-y!important;
+}
+body.teacher-register-mode main.azny-home,
+body.teacher-checkout-mode main.azny-home{
+ position:relative!important;inset:auto!important;width:100%!important;
+ height:auto!important;min-height:100%!important;max-height:none!important;
+ overflow:visible!important;overscroll-behavior:auto!important;
+}
+body.teacher-register-mode main.azny-home>.azny-home-card,
+body.teacher-checkout-mode main.azny-home>.azny-home-card{
+ display:block!important;position:relative!important;
+ width:100%!important;height:auto!important;min-height:100dvh!important;
+ max-height:none!important;overflow:visible!important;
+}
+body.teacher-register-mode #plansView,
+body.teacher-checkout-mode #plansView{
+ display:block!important;position:relative!important;
+ width:100%!important;height:auto!important;min-height:100dvh!important;
+ max-height:none!important;overflow:visible!important;
+ padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))!important;
+}
 </style><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#071b33">
