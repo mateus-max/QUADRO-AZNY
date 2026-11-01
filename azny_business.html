@@ -2475,7 +2475,7 @@ function strokePoints(s){
  return s.points||[];
 }
 function redraw(){
- const r=board.getBoundingClientRect();ctx.clearRect(0,0,board.clientWidth,board.clientHeight);
+ const r=board.getBoundingClientRect();ctx.globalCompositeOperation="source-over";ctx.globalAlpha=1;ctx.clearRect(0,0,board.clientWidth,board.clientHeight);
  ctx.lineCap="round";ctx.lineJoin="round";
  const paintStroke=(s,points)=>{
   if(!points.length)return;
@@ -2517,7 +2517,9 @@ function drawDown(e){
  const p=localPoint(e);
  if(tool==="pen"){
   const anchor=objectAtPoint(p);
-  currentStroke={color:aznyPenColor,width:3,points:[],anchorId:anchor?.dataset?.id||null};
+  const activePenSwatch=document.querySelector("#aznyPenColors [data-pen-color].active");
+   const selectedPenColor=activePenSwatch?.dataset?.penColor||aznyPenColor;
+   currentStroke={color:/^#[0-9a-f]{6}$/i.test(selectedPenColor)?selectedPenColor:"#1f2937",width:4,points:[],anchorId:anchor?.dataset?.id||null};
   aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);
   if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}
   else currentStroke.points.push(p);
@@ -2681,7 +2683,8 @@ document.getElementById("italic").onclick=()=>toggleInlineStyle("fontStyle","ita
 document.getElementById("underline").onclick=()=>toggleInlineStyle("textDecoration","underline","none");
 document.getElementById("textColor").oninput=e=>applyInlineStyle("color",e.target.value);
 function setAZNYPenColor(color){
- aznyPenColor=String(color||"#1f2937");
+ const candidate=String(color||"#1f2937").trim();
+ aznyPenColor=/^#[0-9a-f]{6}$/i.test(candidate)?candidate:"#1f2937";
  document.querySelectorAll("#aznyPenColors [data-pen-color]").forEach(b=>b.classList.toggle("active",b.dataset.penColor.toLowerCase()===aznyPenColor.toLowerCase()));
  const custom=document.getElementById("aznyPenCustomColor");if(custom)custom.value=aznyPenColor;
 }
