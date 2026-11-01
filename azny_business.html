@@ -2681,7 +2681,7 @@ document.querySelectorAll("#bold,#italic,#underline,#alignLeft,#alignCenter,#ali
 document.getElementById("bold").onclick=()=>toggleInlineStyle("fontWeight","700","400");
 document.getElementById("italic").onclick=()=>toggleInlineStyle("fontStyle","italic","normal");
 document.getElementById("underline").onclick=()=>toggleInlineStyle("textDecoration","underline","none");
-document.getElementById("textColor").oninput=e=>applyInlineStyle("color",e.target.value);
+document.getElementById("textColor").oninput=e=>{applyInlineStyle("color",e.target.value);if(tool==="pen")setAZNYPenColor(e.target.value)};
 function setAZNYPenColor(color){
  const candidate=String(color||"#1f2937").trim();
  aznyPenColor=/^#[0-9a-f]{6}$/i.test(candidate)?candidate:"#1f2937";
@@ -4091,6 +4091,9 @@ function persistBoardBeforeNavigation(){
 window.addEventListener("beforeunload",()=>{persistBoardBeforeNavigation();if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Navegar/atualizar nunca encerra a reunião nem limpa o quadro. */});
 window.addEventListener("pagehide",persistBoardBeforeNavigation);
 window.addEventListener("resize",resizeCanvas);
+/* O quadro pode mudar de largura depois da montagem das barras laterais. Redimensionar o canvas sempre que a área real mudar evita cortar os traços. */
+let aznyTeacherCanvasResizeObserver=null;
+if(window.ResizeObserver){aznyTeacherCanvasResizeObserver=new ResizeObserver(()=>requestAnimationFrame(resizeCanvas));aznyTeacherCanvasResizeObserver.observe(board)}
 if(!isStudent)load();setTimeout(()=>{setZoom(1);updateZoomExtent();resizeCanvas()},80);
 
 })();
