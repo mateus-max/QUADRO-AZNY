@@ -575,28 +575,27 @@ async function firstAccess(){const box=document.getElementById("loginMessage"),e
 let teacherRegistrationReady=false;
 async function createTeacherAccount(){
  const name=document.getElementById("licenseName").value.trim(),email=String(document.getElementById("licenseEmail").value||"").trim().toLowerCase(),phone=document.getElementById("licensePhone").value.trim(),password=document.getElementById("licensePassword").value,confirm=document.getElementById("licensePasswordConfirm").value;
- const box=document.getElementById("teacherCreateAccountMessage"),btn=document.getElementById("createTeacherAccount"),googleUser=!!(googleRegistrationEmail&&firebase.auth().currentUser&&String(firebase.auth().currentUser.email||"").trim().toLowerCase()===email&&googleRegistrationEmail===email);
+ const box=document.getElementById("teacherCreateAccountMessage"),btn=document.getElementById("createTeacherAccount");
  box.textContent="";
- if(!name||!email||!phone||(!googleUser&&(!password||!confirm))){box.textContent="Preencha todos os campos obrigatórios.";return}
- if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){box.textContent="Introduza um e-mail válido.";return}
- if(!googleUser&&password.length<6){box.textContent="A palavra-passe deve ter pelo menos 6 caracteres.";return}
- if(!googleUser&&password!==confirm){box.textContent="As palavras-passe não coincidem.";return}
- btn.disabled=true;btn.textContent="A criar conta...";
+ if(!name||!email||!phone||!password||!confirm){box.textContent="Preencha todos os campos obrigatórios. Para concluir o registo, envie o comprovativo de pagamento.";return}
+ if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){box.textContent="Introduza um e-mail válido.";return}
+ if(password.length<6){box.textContent="A palavra-passe deve ter pelo menos 6 caracteres.";return}
+ if(password!==confirm){box.textContent="As palavras-passe não coincidem.";return}
+ btn.disabled=true;btn.textContent="A validar dados...";
  try{
   await AZNY_REMOTE_READY;
-  if(googleUser){const user=firebase.auth().currentUser;if(!user)throw new Error("A sessão Google expirou. Volte a selecionar a conta Google.");if(user.displayName!==name)await user.updateProfile({displayName:name})
-  }else{const cred=await firebase.auth().createUserWithEmailAndPassword(email,password);await cred.user.updateProfile({displayName:name}).catch(()=>{})}
-  try{sessionStorage.setItem("rwb_teacher_registration",JSON.stringify({name,email,phone,createdAt:new Date().toISOString(),provider:googleUser?"google":"password"}))}catch(_){}
-  box.style.color="#137547";box.textContent="Registo recebido. A preparar os planos e o checkout de pagamento...";
-  await new Promise(resolve=>setTimeout(resolve,3000));
+  const prior=aznyList(AZNY_REMOTE.payments).find(x=>x&&String(x.email||"").trim().toLowerCase()===email&&x.status!=="rejected");
+  if(prior){showTeacherPaymentStatus(prior);return}
+  try{sessionStorage.setItem("rwb_teacher_registration",JSON.stringify({name,email,phone,provider:"password"}))}catch(_){}
+  box.style.color="#137547";box.textContent="Dados validados. A conta só será criada quando enviar o comprovativo. Escolha agora o plano e conclua o pagamento.";
   teacherRegistrationReady=true;
   document.getElementById("teacherRegisterStep").style.display="none";
   document.getElementById("teacherPlanCards").style.display="";
   document.getElementById("planDetail").classList.remove("show");
   document.getElementById("checkoutBox").style.display="none";
   document.getElementById("teacherPlanCards").scrollIntoView({behavior:"smooth",block:"start"});
- }catch(err){console.error("Erro ao criar conta de professor:",err);box.style.color="#b42318";box.textContent=err&&err.code==="auth/email-already-in-use"?"Este e-mail já tem uma conta. Utilize «Entrar na conta» no ecrã inicial.":err&&err.code==="auth/weak-password"?"A palavra-passe deve ter pelo menos 6 caracteres.":err&&err.code==="auth/operation-not-allowed"?"O registo por e-mail e palavra-passe não está ativado no Firebase. Contacte o suporte.":(err.message||"Não foi possível criar a conta. Tente novamente.")
- }finally{btn.disabled=false;btn.textContent="Criar conta"}
+ }catch(err){console.error("Validação do registo de professor:",err);box.style.color="#b42318";box.textContent=err.message||"Não foi possível validar os dados. Tente novamente."}
+ finally{btn.disabled=false;btn.textContent="Continuar para escolher o plano"}
 }
 function updateRegisterPrice(){if(!selectedPlanKey)return;const p=AZNY_PLANS[selectedPlanKey],period=document.getElementById("billingPeriod").value,months=period==="annual"?12:Math.max(1,Math.min(12,Number(document.getElementById("monthlyMonths").value)||1)),amount=period==="annual"?p.annual:p.monthly*months,monthSelect=document.getElementById("monthlyMonths");monthSelect.style.display=period==="annual"?"none":"";document.getElementById("registerAmount").textContent=amount.toLocaleString("pt-AO")+" Kz";document.getElementById("selectedPlanInfo").innerHTML="<b>Plano selecionado:</b> "+p.name+" · "+p.students+" alunos/aula · "+p.dailyClasses+" aulas/dia<br><b>Duração:</b> "+(period==="annual"?"12 meses (anual)":months+(months===1?" mês":" meses"))+"<br><b>Total a pagar:</b> "+amount.toLocaleString("pt-AO")+" Kz";}
 function selectRegisterMethod(method){if(method!=='Express'){selectedRegisterMethod='Transferência bancária';document.getElementById('registerBankDetail').hidden=false;document.getElementById('registerExpressDetail').hidden=true;document.getElementById('registerExpress').classList.remove('active');document.getElementById('registerExpress').setAttribute('aria-pressed','false');document.getElementById('registerBank').classList.add('active');document.getElementById('registerBank').setAttribute('aria-pressed','true');return}selectedRegisterMethod='Express';document.getElementById('registerExpress').classList.add('active');document.getElementById('registerExpress').setAttribute('aria-pressed','true');document.getElementById('registerBank').classList.remove('active');document.getElementById('registerBank').setAttribute('aria-pressed','false');document.getElementById('registerExpressDetail').hidden=false;document.getElementById('registerBankDetail').hidden=true;document.getElementById('registerAmount').parentElement.style.display='flex'}
