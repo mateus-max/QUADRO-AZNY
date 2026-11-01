@@ -2814,9 +2814,10 @@ async function endClass(){
  });
  window.aznyTeacherPeers={};
  try{if(aznyTeacherScreenTrack){aznyTeacherScreenTrack.stop();aznyTeacherScreenTrack=null}}catch(_){}
- // Limpeza do quadro é secundária e corre em segundo plano; nunca atrasa o fim da reunião.
- Promise.resolve().then(()=>resetBoardForClassLifecycle()).catch(e=>console.warn("AZNY BUSINESS: limpeza do quadro incompleta",e));
- toast("Reunião encerrada. O cronómetro parou e os participantes serão desligados.");
+ // Encerrar a reunião NUNCA apaga o conteúdo do quadro.
+ // O quadro só pode ser limpo pela ação manual "Limpar quadro" do anfitrião.
+ try{save();publishBoardState()}catch(saveError){console.warn("AZNY BUSINESS: não foi possível guardar o quadro ao encerrar",saveError)}
+ toast("Reunião encerrada. O conteúdo do quadro foi preservado.");
 }
 async function aznyToggleScreenShare(forStudent){
  const button=document.getElementById(forStudent?"studentScreenShareBtn":"teacherScreenShareBtn");
@@ -3881,7 +3882,13 @@ function showTeacherReloadNotice(){
  aznyScheduleStudentReconnect("teacher-page-restored",300);
 }
 setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(async ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}if(ready&&!isStudent)await restoreActiveTeacherSession()}).catch(e=>console.error(e));
-window.addEventListener("beforeunload",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Atualizar/fechar o separador não encerra a sessão da aula. */});
+function persistBoardBeforeNavigation(){
+ if(isStudent)return;
+ try{clearTimeout(saveTimer);save();}catch(e){console.warn("AZNY: falha ao guardar antes de atualizar",e)}
+ try{if(classStarted&&classSessionId)localStorage.setItem("azny-business-active-session-"+aznyRoomKey(),classSessionId)}catch(_){}
+}
+window.addEventListener("beforeunload",()=>{persistBoardBeforeNavigation();if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Navegar/atualizar nunca encerra a reunião nem limpa o quadro. */});
+window.addEventListener("pagehide",persistBoardBeforeNavigation);
 window.addEventListener("resize",resizeCanvas);
 if(!isStudent)load();setTimeout(()=>{setZoom(1);updateZoomExtent();resizeCanvas()},80);
 
@@ -3900,6 +3907,8 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 function setupAznyContextMenu(){if(document.getElementById("aznyContextMenu"))return;const menu=document.createElement("div");menu.id="aznyContextMenu";menu.innerHTML='<div class="ctx-title">Ferramentas do quadro</div><div class="ctx-items"></div>';document.body.appendChild(menu);const close=()=>menu.classList.remove("open");document.addEventListener("click",e=>{if(!menu.contains(e.target))close()});document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});document.addEventListener("contextmenu",e=>{const obj=e.target.closest?.(".object");const onBoard=e.target.closest?.("#board");if(!onBoard&&!obj)return;e.preventDefault();if(obj)selectObject(obj);const items=menu.querySelector(".ctx-items");items.innerHTML="";const buttons=[...document.querySelectorAll(".toolbar button")].filter(b=>!b.disabled&&b.id!=="teacherDashboardBtn");buttons.forEach(original=>{const item=document.createElement("button");item.type="button";item.textContent=(original.title||original.getAttribute("aria-label")||original.innerText||original.textContent||original.id||"Ferramenta").trim();if(!item.textContent)item.textContent=original.id||"Ferramenta";item.onclick=()=>{close();if(obj&&obj.isConnected)selectObject(obj);original.click()};items.appendChild(item)});if(selected&&selected.isConnected){const sep=document.createElement("div");sep.className="ctx-title";sep.textContent="Objeto selecionado";items.appendChild(sep);[["Minimizar / restaurar",minimizeSelectedObject],["Duplicar",duplicateSelectedObject],["Trazer para a frente",()=>changeSelectedLayer(1)],["Enviar para trás",()=>changeSelectedLayer(-1)],["Eliminar",deleteSelected]].forEach(([label,fn])=>{const b=document.createElement("button");b.textContent=label;b.onclick=()=>{close();fn()};items.appendChild(b)})}menu.style.left=Math.min(e.clientX,innerWidth-310)+"px";menu.style.top=Math.min(e.clientY,innerHeight-menu.scrollHeight-12)+"px";menu.classList.add("open")})}
 setupAznyContextMenu();
 async function forceRefreshBoard(forStudent){
+ // Guardar o quadro e a referência da reunião antes de qualquer atualização/recarregamento.
+ if(!forStudent)persistBoardBeforeNavigation();
  const btn=document.getElementById(forStudent?"studentRefreshBoardBtn":"refreshBoardBtn");
  const originalLabel=btn?.textContent||"⟳";
  if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");btn.textContent=document.documentElement.lang==="en"?"Refreshing app…":"A atualizar a aplicação…"}
