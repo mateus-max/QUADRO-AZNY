@@ -8,14 +8,14 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#071b33",
+  "background_color": "#ffffff",
   "theme_color": "#071b33",
   "icons": [
     {
-      "src": "icons/remote-work-board.svg",
+      "src": "icons/remote-work-board.svg?v=3",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "categories": ["business", "productivity"],
