@@ -4254,7 +4254,8 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   requested=true;
   try{
    if(!document.fullscreenElement&&document.documentElement.requestFullscreen){
-    await document.documentElement.requestFullscreen({navigationUI:"hide"});
+    try{await document.documentElement.requestFullscreen({navigationUI:"hide"})}
+    catch(_){await document.documentElement.requestFullscreen()}
    }
   }catch(err){console.info("AZNY teacher fullscreen is not available:",err)}
   try{
