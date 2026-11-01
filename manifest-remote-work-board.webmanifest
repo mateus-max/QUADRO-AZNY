@@ -1,0 +1,23 @@
+{
+  "id": "./azny_business.html",
+  "name": "Remote Work Board",
+  "short_name": "Remote Work",
+  "description": "Plataforma empresarial de reuniões, conferências e colaboração remota.",
+  "lang": "pt-AO",
+  "start_url": "./azny_business.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#071b33",
+  "theme_color": "#071b33",
+  "icons": [
+    {
+      "src": "icons/remote-work-board.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false
+}
