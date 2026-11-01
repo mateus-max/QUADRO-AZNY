@@ -2909,20 +2909,19 @@ async function startClass(){
   catch(error){console.error("AZNY BUSINESS end:",error);toast("Não foi possível encerrar a reunião: "+(error?.message||"erro inesperado"));end.disabled=false}
  };
  if(copy)copy.onclick=async function(){
-  const link=getClassLink();
+  const link=await getClassLink();
   try{await navigator.clipboard.writeText(link);toast("Link da reunião copiado.")}
   catch(_){window.prompt("Copie o link da reunião:",link)}
  };
- if(wa)wa.onclick=function(){
-  const link=getClassLink(),title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
-  const url="https://wa.me/?text="+encodeURIComponent("Convite para a reunião empresarial \""+title+"\" no REMOTE WORK BOARD: "+link);
-  const popup=window.open(url,"_blank");
-  if(!popup)toast("Permita janelas pop-up para abrir o WhatsApp.");
+ if(wa)wa.onclick=async function(){
+  const popup=window.open("about:blank","_blank"),link=await getClassLink(),title=document.getElementById("boardTitle")?.value?.trim()||"Reunião empresarial";
+  if(popup)popup.location.href="https://wa.me/?text="+encodeURIComponent("Convite para a reunião empresarial \\""+title+"\\" no REMOTE WORK BOARD: "+link);
+  else toast("Permita janelas pop-up para abrir o WhatsApp.");
  };
- if(fb)fb.onclick=function(){
-  const link=getClassLink();
-  const popup=window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link),"_blank");
-  if(!popup)toast("Permita janelas pop-up para abrir o Facebook.");
+ if(fb)fb.onclick=async function(){
+  const popup=window.open("about:blank","_blank"),link=await getClassLink();
+  if(popup)popup.location.href="https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link);
+  else toast("Permita janelas pop-up para abrir o Facebook.");
  };
  if(record)record.onclick=async function(){
   try{await startRecording(false)}
@@ -3822,25 +3821,31 @@ async function leaveStudentClass(){
 }
 function showClassEnded(){if(!isStudent)return;let endedNotice=document.getElementById("aznyClassEndedNotice");if(!endedNotice){endedNotice=document.createElement("div");endedNotice.id="aznyClassEndedNotice";endedNotice.setAttribute("role","alert");endedNotice.setAttribute("aria-live","assertive");endedNotice.style.cssText="position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(5,16,31,.94);color:#fff;text-align:center;font-size:clamp(30px,6vw,64px);font-weight:900;line-height:1.2";endedNotice.textContent="A REUNIÃO FOI ENCERRADA PELO ANFITRIÃO";document.body.appendChild(endedNotice)}endedNotice.style.display="flex";aznyStopStudentMesh();studentApproved=false;try{studentPeer?.close()}catch(_){}studentPeer=null;try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}studentLocalStream=null;document.getElementById("studentControls").style.display="none";document.getElementById("studentNameModal").classList.add("show");document.getElementById("studentJoinBtn").disabled=false;document.getElementById("studentWaiting").textContent="A reunião foi encerrada pelo anfitrião. Pode voltar a entrar por este link quando o anfitrião iniciar outra reunião.";document.getElementById("studentWaiting").style.display="block";const remoteVideo=document.getElementById("studentTeacherVideo");if(remoteVideo){remoteVideo.pause?.();remoteVideo.srcObject=null;remoteVideo.removeAttribute("src");remoteVideo.load?.();remoteVideo.style.display="none"}const remoteCard=remoteVideo?.closest(".student-video-card");if(remoteCard)remoteCard.classList.add("teacher-camera-ended");toast(document.documentElement.lang==="en"?"The host has ended the meeting.":"A reunião foi encerrada pelo anfitrião.")}
 function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;const endedNotice=document.getElementById("aznyClassEndedNotice");if(endedNotice)endedNotice.style.display="none";document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo anfitrião");startStudentWebRTC()}else{document.getElementById("studentWaiting").textContent="O anfitrião recusou o pedido de entrada na reunião.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended"&&m.session===classSessionId)showClassEnded()}}
-function getClassLink(){
-  /* O link partilhado durante a aula abre diretamente o quadro em modo aluno.
-     Não passa pela página de escolha (aulas/avaliações). */
+function getClassTarget(){
   const link=new URL("azny_business.html",location.href);
-  const permanentSession="ROOM-"+String(roomId).replace(/[.#$\/\[\]]/g,"_");
-  link.searchParams.set("aluno","1");
-  link.searchParams.set("sala",roomId);
-  link.searchParams.set("sess",permanentSession);
+  const permanentSession="ROOM-"+String(roomId).replace(/[.#$\\/\\[\\]]/g,"_");
+  link.searchParams.set("aluno","1");link.searchParams.set("sala",roomId);link.searchParams.set("sess",permanentSession);
   const currentParams=new URLSearchParams(location.search);
-  // O quadro empresarial é independente: todos os convites devem abrir AZNY BUSINESS,
-  // incluindo o nome da organização e o título atual da reunião.
   link.searchParams.set("modo","empresa");
   link.searchParams.set("empresa",currentParams.get("empresa")||"Organização");
   link.searchParams.set("atividade",document.getElementById("boardTitle")?.value?.trim()||currentParams.get("atividade")||"Reunião de negócios");
   link.searchParams.set("tipo",currentParams.get("tipo")||"reuniao");
   return link.href;
 }
+async function getClassLink(){
+ const target=getClassTarget(),code=aznyHashKey("meeting:"+roomId).toUpperCase().padStart(7,"0").slice(-7);
+ try{
+  if(!AZNY_DB)throw new Error("Firebase indisponível");
+  const ref=AZNY_DB.ref("aznyShortLinks/"+code);
+  const result=await ref.transaction(current=>current||{target,type:"meeting",createdAt:firebase.database.ServerValue.TIMESTAMP});
+  const value=result.snapshot.val();
+  if(result.committed&&value&&value.target===target)return location.origin+"/r/"+code;
+  console.warn("Código curto de reunião em conflito; a usar link completo.");
+ }catch(err){console.warn("Não foi possível registar o link curto da reunião:",err)}
+ return target;
+}
 async function copyClassLink(){
- const link=getClassLink();if(!link)return;
+ const link=await getClassLink();if(!link)return;
  try{await navigator.clipboard.writeText(link);toast(document.documentElement.lang==="en"?"Class link copied":"Link da aula copiado")}
  catch(e){prompt("Copie o link da aula:",link)}
 }
@@ -3849,9 +3854,9 @@ function shareWhatsApp(){
  const text="Convite para a aula \""+title+"\" no Remote Work Board: "+link;
  window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");
 }
-function shareFacebook(){
- const link=getClassLink();if(!link)return;
- window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link),"_blank","noopener,noreferrer,width=700,height=600");
+async function shareFacebook(){
+ const popup=window.open("about:blank","_blank");const link=await getClassLink();if(!link){popup?.close();return}
+ if(popup)popup.location.href="https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link);else toast("Permita pop-ups para abrir o Facebook.");
 }
 const dashboardBtn=document.getElementById("teacherDashboardBtn");if(dashboardBtn)dashboardBtn.onclick=()=>{if(!isStudent)location.href="dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN)};
 const aznyFullscreenBtn=document.getElementById("aznyFullscreenBtn");if(aznyFullscreenBtn){aznyFullscreenBtn.onclick=async()=>{try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen();aznyFullscreenBtn.textContent="⤢";aznyFullscreenBtn.title="Sair do ecrã inteiro"}else{await document.exitFullscreen();aznyFullscreenBtn.textContent="⛶";aznyFullscreenBtn.title="Ecrã inteiro"}}catch(e){toast(document.documentElement.lang==="en"?"The browser could not enter full-screen mode. To hide the address bar, install AZNY on your home screen and open it from its icon.":"O navegador não permitiu o modo de ecrã inteiro. Para ocultar também a barra de endereço, instale o AZNY no ecrã inicial e abra-o pelo ícone.");}};document.addEventListener("fullscreenchange",()=>{if(aznyFullscreenBtn){const on=!!document.fullscreenElement;aznyFullscreenBtn.textContent=on?"⤢":"⛶";aznyFullscreenBtn.title=on?"Sair do ecrã inteiro":"Ecrã inteiro"}})}
