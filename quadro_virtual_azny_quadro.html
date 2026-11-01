@@ -1075,6 +1075,22 @@ body.student-mode .textobj{white-space:pre-wrap;overflow-wrap:anywhere;max-width
 .azny-live-surface-pointer svg{width:44px;height:48px;overflow:visible}
 .azny-live-surface-pointer .azny-pointer-arrow{fill:#e11;stroke:#fff;stroke-width:1.4;stroke-linejoin:round}
 .azny-live-surface-pointer .azny-pointer-glass{fill:#e11;stroke:#fff;stroke-width:1.4}
+
+/* Navegador de pesquisa integrado — camada independente do quadro, sem alterar o canvas. */
+#aznySharedBrowser{position:absolute;z-index:120;inset:12px 12px 12px 12px;display:none;flex-direction:column;min-width:0;min-height:0;background:#f7f9fc;border:2px solid #76502f;border-radius:12px;box-shadow:0 12px 40px #0008;overflow:hidden;color:#14283d}
+#aznySharedBrowser.open{display:flex}
+#aznySharedBrowser .azny-browser-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px;background:#0b2340;color:#fff}
+#aznySharedBrowser .azny-browser-title{font-weight:850;margin-right:auto}
+#aznySharedBrowser button{border:1px solid #ffffff40;border-radius:7px;padding:7px 10px;background:#193b5e;color:#fff;font-weight:750;cursor:pointer}
+#aznySharedBrowser button:disabled{opacity:.4;cursor:default}
+#aznySharedBrowser form{display:flex;gap:6px;flex:1 1 320px;min-width:160px}
+#aznySharedBrowser input{flex:1;min-width:80px;border:1px solid #b9c9d9;border-radius:7px;padding:9px 11px;font:14px Arial}
+#aznySharedBrowser .azny-browser-frame{flex:1;min-height:0;width:100%;border:0;background:#fff}
+#aznySharedBrowser .azny-browser-note{padding:7px 11px;background:#eaf3fc;color:#35536f;font-size:12px;line-height:1.4}
+#aznySharedBrowser .azny-browser-note a{color:#075eaa;font-weight:800}
+body.student-mode #aznySharedBrowser .teacher-only-browser{display:none!important}
+@media(max-width:650px){#aznySharedBrowser{inset:5px;border-radius:8px}#aznySharedBrowser .azny-browser-head{gap:5px;padding:6px}#aznySharedBrowser button{padding:7px 8px;font-size:12px}#aznySharedBrowser .azny-browser-title{font-size:13px}}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style id="azny-teacher-camera-controls-and-refresh-persistence">
@@ -1166,6 +1182,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
     <button class="tool" id="chartsBtn">📊 Gráficos</button>
     <button class="tool" id="musicBtn">🎵 Música</button>
     <button class="tool" id="pagesBtn">📑 Páginas do quadro</button>
+    <button class="tool" id="internetSearchBtn" type="button" title="Pesquisar na Internet sem sair do quadro">🌐 Pesquisa na Internet</button>
   </div>
   <input id="imageInput" type="file" accept="image/*" hidden>
   <input id="docInput" type="file" accept=".txt,.md,.csv,.json,.html,.htm,.pdf,.doc,.docx" hidden>
@@ -1216,6 +1233,22 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
 </svg>
 </span></div></div></div>
   </div>
+<div id="aznySharedBrowser" aria-label="Pesquisa na Internet partilhada" aria-hidden="true">
+ <div class="azny-browser-head">
+  <strong class="azny-browser-title">🌐 Navegador de pesquisa partilhado</strong>
+  <button type="button" id="aznyBrowserBack" title="Voltar">◀</button>
+  <button type="button" id="aznyBrowserForward" title="Avançar">▶</button>
+  <button type="button" id="aznyBrowserReload" title="Recarregar página">⟳</button>
+  <form id="aznyBrowserForm" class="teacher-only-browser">
+   <input id="aznyBrowserAddress" type="text" inputmode="url" autocomplete="off" placeholder="Pesquisar no Google ou introduzir um endereço…" aria-label="Pesquisa ou endereço">
+   <button type="submit">Pesquisar</button>
+  </form>
+  <button type="button" id="aznyBrowserClose">✕ Fechar</button>
+ </div>
+ <iframe id="aznyBrowserFrame" class="azny-browser-frame" title="Navegador de pesquisa" referrerpolicy="strict-origin-when-cross-origin" allow="clipboard-read; clipboard-write"></iframe>
+ <div class="azny-browser-note" id="aznyBrowserNote">A navegação é partilhada com os participantes da aula. Alguns sites, incluindo serviços Google, podem bloquear a abertura dentro desta janela. Se isso acontecer, utilize <b>Partilhar ecrã</b> no cabeçalho para mostrar a página aos alunos.</div>
+</div>
+
 </main>
 
 <aside class="rightbar">
@@ -1559,9 +1592,58 @@ function applyRemoteBoardState(d){
  }finally{remoteBoardApplying=false}
 }
 function updatePointerTrail(){/* Intencionalmente sem rasto: a lupa mostra apenas a posição atual. */}
+
+// Pesquisa na Internet dentro do quadro. Apenas o professor controla a navegação;
+// os alunos recebem a mesma URL pelo canal em tempo real e Firebase.
+const aznyBrowserPanel=document.getElementById("aznySharedBrowser");
+const aznyBrowserFrame=document.getElementById("aznyBrowserFrame");
+const aznyBrowserAddress=document.getElementById("aznyBrowserAddress");
+let aznyBrowserHistory=[],aznyBrowserHistoryIndex=-1,aznyBrowserApplyingRemote=false;
+function aznyNormalizeBrowserUrl(value){
+ let v=String(value||"").trim();if(!v)return "";
+ if(!/^https?:\/\//i.test(v)){
+  if(/^(localhost|[\w-]+\.)+[a-z]{2,}([/:?#].*)?$/i.test(v))v="https://"+v;
+  else v="https://www.google.com/search?igu=1&q="+encodeURIComponent(v);
+ }
+ try{const u=new URL(v);if(!["http:","https:"].includes(u.protocol))return "";return u.href}catch(_){return ""}
+}
+function aznyApplyBrowserState(state){
+ if(!state||!state.url)return;
+ const url=aznyNormalizeBrowserUrl(state.url);if(!url)return;
+ if(!aznyBrowserPanel.classList.contains("open")){aznyBrowserPanel.classList.add("open");aznyBrowserPanel.setAttribute("aria-hidden","false")}
+ if(aznyBrowserAddress)aznyBrowserAddress.value=url;
+ if(aznyBrowserFrame.dataset.currentUrl!==url){aznyBrowserFrame.dataset.currentUrl=url;aznyBrowserFrame.src=url}
+}
+function aznySendBrowserState(url,action="navigate"){
+ if(isStudent||!url||aznyBrowserApplyingRemote)return;
+ const state={type:"shared-browser",url,action,at:Date.now()};
+ const raw=JSON.stringify(state);
+ Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(raw)}catch(_){}}});
+ if(AZNY_DB)aznyRoomRef().child("sharedBrowser").set({url,action,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY browser sync:",e));
+}
+function aznyNavigateBrowser(value,action="navigate",remote=false){
+ const url=aznyNormalizeBrowserUrl(value);if(!url){toast("Introduza uma pesquisa ou um endereço válido.");return}
+ if(!remote){aznyBrowserHistory=aznyBrowserHistory.slice(0,aznyBrowserHistoryIndex+1);aznyBrowserHistory.push(url);aznyBrowserHistoryIndex=aznyBrowserHistory.length-1}
+ aznyApplyBrowserState({url});
+ if(!remote)aznySendBrowserState(url,action);
+}
+function aznyCloseSharedBrowser(){
+ aznyBrowserPanel.classList.remove("open");aznyBrowserPanel.setAttribute("aria-hidden","true");
+}
+document.getElementById("internetSearchBtn")?.addEventListener("click",()=>{
+ aznyBrowserPanel.classList.toggle("open");const open=aznyBrowserPanel.classList.contains("open");aznyBrowserPanel.setAttribute("aria-hidden",String(!open));
+ if(open&&!aznyBrowserFrame.dataset.currentUrl){if(!isStudent){aznyBrowserAddress.value="";aznyBrowserAddress.focus()}else aznyBrowserFrame.src="https://www.google.com/search?igu=1"}
+});
+document.getElementById("aznyBrowserForm")?.addEventListener("submit",e=>{e.preventDefault();aznyNavigateBrowser(aznyBrowserAddress.value)});
+document.getElementById("aznyBrowserClose")?.addEventListener("click",aznyCloseSharedBrowser);
+document.getElementById("aznyBrowserReload")?.addEventListener("click",()=>{try{aznyBrowserFrame.contentWindow.location.reload()}catch(_){const u=aznyBrowserFrame.dataset.currentUrl;if(u)aznyNavigateBrowser(u,"reload")}});
+document.getElementById("aznyBrowserBack")?.addEventListener("click",()=>{if(isStudent)return;if(aznyBrowserHistoryIndex>0){aznyBrowserHistoryIndex--;aznyNavigateBrowser(aznyBrowserHistory[aznyBrowserHistoryIndex],"back")}else{try{aznyBrowserFrame.contentWindow.history.back()}catch(_){}}});
+document.getElementById("aznyBrowserForward")?.addEventListener("click",()=>{if(isStudent)return;if(aznyBrowserHistoryIndex<aznyBrowserHistory.length-1){aznyBrowserHistoryIndex++;aznyNavigateBrowser(aznyBrowserHistory[aznyBrowserHistoryIndex],"forward")}else{try{aznyBrowserFrame.contentWindow.history.forward()}catch(_){}}});
+
 function handleBoardChannelMessage(raw){
  try{
   const m=JSON.parse(raw);
+  if(m.type==="shared-browser"){if(isStudent){aznyBrowserApplyingRemote=true;aznyApplyBrowserState(m);aznyBrowserApplyingRemote=false}return;}
   if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}return;}
   if(m.type==="live-pointer"){
    if(m.surface==="excel"||m.surface==="word"){
@@ -1638,6 +1720,10 @@ function setupBoardRealtime(){
    if(remotePage&&Math.max(1,Math.min(5,+d.currentPage||1))===currentPage&&aznySameBoardPage(local,remotePage))return;
   }catch(_){}
   applyRemoteBoardState(d);
+ });
+ // Estado de navegação partilhada, separado dos dados do quadro para não provocar redesenhos.
+ aznyRoomRef().child("sharedBrowser").on("value",snap=>{
+  const state=snap.val();if(isStudent&&state?.url){aznyBrowserApplyingRemote=true;aznyApplyBrowserState(state);aznyBrowserApplyingRemote=false}
  });
  /* Do not publish local state on startup: it could overwrite the last saved board before the remote state arrives. */
 }
