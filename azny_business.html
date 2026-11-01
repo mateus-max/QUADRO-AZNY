@@ -1835,11 +1835,20 @@ function restore(s){
  const selectedId=selected?.dataset?.id||"";
  board.querySelectorAll(".object").forEach(e=>e.remove());
  selected=null;strokes=s?.strokes||[];let maxId=0;
- (s?.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))).forEach((o,i)=>{
+ const storedObjects=(s?.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o)));
+ // Versões anteriores criavam também um documento vazio com o mesmo ID
+ // de cada folha Excel. Não restaurar esses duplicados legados.
+ const spreadsheetIds=new Set(storedObjects.filter(o=>o.kind==="spreadsheet"&&o.id).map(o=>String(o.id)));
+ const restoredIds=new Set();
+ storedObjects.forEach((o,i)=>{
+  const id=String(o.id||"");
+  if(id&&restoredIds.has(id))return;
+  if(o.kind==="doc"&&id&&spreadsheetIds.has(id))return;
+  if(id)restoredIds.add(id);
   createFromData(o);
-  const el=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===String(o.id||""));
+  const el=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===id);
   if(el)el.style.zIndex=String(5+i);
-  const m=String(o.id||"").match(/^o(\d+)$/);if(m)maxId=Math.max(maxId,+m[1]);
+  const m=id.match(/^o(\d+)$/);if(m)maxId=Math.max(maxId,+m[1]);
  });
  objectId=Math.max(objectId,maxId);
  document.getElementById("boardTitle").value=s?.title||"Nova aula";
