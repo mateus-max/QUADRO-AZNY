@@ -1602,7 +1602,7 @@ function bindTeacherPresenceWatchForStudent(){
 }
 
 function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove("show"),1000)}
-function localPoint(e){const r=board.getBoundingClientRect();const sx=board.clientWidth/Math.max(1,r.width),sy=board.clientHeight/Math.max(1,r.height);return{x:(e.clientX-r.left)*sx,y:(e.clientY-r.top)*sy}}
+function localPoint(e){const r=board.getBoundingClientRect();return{x:(e.clientX-r.left)/zoom,y:(e.clientY-r.top)/zoom}}
 function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds]}}
 function serializeObject(el){
  const docScroller=el.querySelector(".docpdf-pages,.docbody,.azny-sheet-viewport,.azny-editable-word");const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:el.offsetWidth,height:el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null,imageZoom:el.classList.contains("mediaobj")?(Number(el.dataset.imageZoom)||1):undefined,docScrollTop:docScroller?.scrollTop||0,docScrollLeft:docScroller?.scrollLeft||0};
@@ -2489,7 +2489,7 @@ function redraw(){
  if(isStudent)aznyRemoteLiveStrokes.forEach(s=>paintStroke(s,s.points||[]));
 }
 
-function resizeCanvas(){const w=Math.max(1,board.clientWidth),h=Math.max(1,board.clientHeight),d=devicePixelRatio||1;canvas.width=Math.max(1,Math.round(w*d));canvas.height=Math.max(1,Math.round(h*d));canvas.style.width=w+"px";canvas.style.height=h+"px";ctx.setTransform(d,0,0,d,0,0);redraw()}
+function resizeCanvas(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));canvas.style.width=r.width+"px";canvas.style.height=r.height+"px";ctx.setTransform(d,0,0,d,0,0);redraw()}
 function objectAtPoint(p){const els=[...board.querySelectorAll('.object')].reverse();for(const el of els){const b=anchorBox(el);if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return el}return null}
 function eraseAt(p){const radius=18;strokes=strokes.filter(s=>!strokePoints(s).some(q=>Math.hypot(q.x-p.x,q.y-p.y)<radius))}
 let aznyLastStrokeBroadcast=0,aznyStrokeBroadcastTimer=0;
@@ -4091,9 +4091,6 @@ function persistBoardBeforeNavigation(){
 window.addEventListener("beforeunload",()=>{persistBoardBeforeNavigation();if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Navegar/atualizar nunca encerra a reunião nem limpa o quadro. */});
 window.addEventListener("pagehide",persistBoardBeforeNavigation);
 window.addEventListener("resize",resizeCanvas);
-/* O quadro pode mudar de largura depois da montagem das barras laterais. Redimensionar o canvas sempre que a área real mudar evita cortar os traços. */
-let aznyTeacherCanvasResizeObserver=null;
-if(window.ResizeObserver){aznyTeacherCanvasResizeObserver=new ResizeObserver(()=>requestAnimationFrame(resizeCanvas));aznyTeacherCanvasResizeObserver.observe(board)}
 if(!isStudent)load();setTimeout(()=>{setZoom(1);updateZoomExtent();resizeCanvas()},80);
 
 })();
