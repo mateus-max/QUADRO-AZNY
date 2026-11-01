@@ -548,6 +548,43 @@ body.teacher-payment-status-mode main.azny-home>.azny-home-card{
  width:100%!important;height:auto!important;max-height:none!important;
  min-height:100dvh!important;overflow:visible!important;
 }
+
+/* Prioridade máxima: estados de registo/pagamento são sempre páginas roláveis.
+   Remove também o bloqueio azny-page-locked que podia ser reaplicado pelo JS. */
+html.azny-page-locked:has(body.teacher-register-mode),
+html.azny-page-locked:has(body.teacher-checkout-mode),
+html.azny-page-locked:has(body.teacher-payment-status-mode),
+html.azny-page-scroll:has(body.teacher-register-mode),
+html.azny-page-scroll:has(body.teacher-checkout-mode),
+html.azny-page-scroll:has(body.teacher-payment-status-mode){
+ height:auto!important;min-height:100%!important;overflow-y:auto!important;overflow-x:hidden!important;
+}
+html.azny-page-locked body.teacher-register-mode,
+html.azny-page-locked body.teacher-checkout-mode,
+html.azny-page-locked body.teacher-payment-status-mode,
+html.azny-page-scroll body.teacher-register-mode,
+html.azny-page-scroll body.teacher-checkout-mode,
+html.azny-page-scroll body.teacher-payment-status-mode{
+ display:block!important;width:100%!important;height:auto!important;min-height:100%!important;
+ overflow-y:visible!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;
+}
+html.azny-page-locked body.teacher-register-mode main.azny-home,
+html.azny-page-locked body.teacher-checkout-mode main.azny-home,
+html.azny-page-locked body.teacher-payment-status-mode main.azny-home,
+html.azny-page-scroll body.teacher-register-mode main.azny-home,
+html.azny-page-scroll body.teacher-checkout-mode main.azny-home,
+html.azny-page-scroll body.teacher-payment-status-mode main.azny-home{
+ position:relative!important;inset:auto!important;width:100%!important;height:auto!important;
+ min-height:100dvh!important;overflow:visible!important;
+}
+html.azny-page-locked body.teacher-register-mode main.azny-home>.azny-home-card,
+html.azny-page-locked body.teacher-checkout-mode main.azny-home>.azny-home-card,
+html.azny-page-locked body.teacher-payment-status-mode main.azny-home>.azny-home-card,
+html.azny-page-scroll body.teacher-register-mode main.azny-home>.azny-home-card,
+html.azny-page-scroll body.teacher-checkout-mode main.azny-home>.azny-home-card,
+html.azny-page-scroll body.teacher-payment-status-mode main.azny-home>.azny-home-card{
+ height:auto!important;max-height:none!important;min-height:100dvh!important;overflow:visible!important;
+}
 </style><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#071b33">
@@ -863,7 +900,10 @@ if("serviceWorker" in navigator && location.protocol==="https:"){window.addEvent
   const card=main&&main.querySelector(":scope > .azny-home-card");
   /* A página inicial está intencionalmente fixa; por isso o scrollHeight do
      documento fica limitado. Medimos também a altura natural do cartão. */
-  const longPage=Math.max(root.scrollHeight,body.scrollHeight,
+  const longFlow=body.classList.contains("teacher-register-mode")||
+    body.classList.contains("teacher-checkout-mode")||
+    body.classList.contains("teacher-payment-status-mode");
+  const longPage=longFlow||Math.max(root.scrollHeight,body.scrollHeight,
     main?main.scrollHeight:0,card?card.scrollHeight:0,
     card?card.getBoundingClientRect().height:0)>window.innerHeight+2;
   root.classList.toggle("azny-page-scroll",longPage);
