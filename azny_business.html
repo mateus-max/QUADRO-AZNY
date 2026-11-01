@@ -1878,7 +1878,7 @@ function setTool(t){
  // Tocar novamente na ferramenta ativa regressa ao modo Selecionar.
  // Assim Texto/Caneta/Borracha nunca ficam presos ativos.
  const previousTool=tool;
- tool=(previousTool===t)?"select":t;
+ tool=(previousTool===t)?(t==="select"?"view":"select"):t;
  if(previousTool==="text"&&tool!=="text"){
   const focused=document.activeElement;
   if(focused?.classList?.contains("textobj"))focused.blur();
