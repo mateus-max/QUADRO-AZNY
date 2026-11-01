@@ -3966,12 +3966,16 @@ async function forceRefreshBoard(forStudent){
  if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");btn.textContent=document.documentElement.lang==="en"?"Refreshing app…":"A atualizar a aplicação…"}
  const en=document.documentElement.lang==="en";
  try{
-  /* Notify students when synchronization is available, but never block the browser reload on it. */
+  /* Atualizar apenas este navegador. Não notificar nem recarregar os participantes.
+     Guardar o quadro e a referência/horário da reunião antes do reload. */
   if(!forStudent){
+   try{persistBoardBeforeNavigation()}catch(saveError){console.warn("AZNY refresh board save:",saveError)}
    try{
-    if(AZNY_DB)await aznyRoomRef().child("board").child("teacherRefreshAt").set(Date.now());
-    Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(JSON.stringify({type:"board-request"}))}catch(_){}}});
-   }catch(signalError){console.warn("AZNY refresh notification:",signalError)}
+    if(classStarted&&classSessionId){
+     localStorage.setItem("azny-business-active-session-"+aznyRoomKey(),classSessionId);
+     if(classStartTime)localStorage.setItem("azny-business-started-at-"+aznyRoomKey(),String(classStartTime));
+    }
+   }catch(sessionSaveError){console.warn("AZNY refresh session save:",sessionSaveError)}
   }else if(studentApproved){
    try{
     if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected")studentBoardChannel.send(JSON.stringify({type:"board-request"}));
