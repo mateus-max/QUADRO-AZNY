@@ -130,7 +130,7 @@ body.status-dashboard-mode #paymentStatusBox{display:block!important;margin:0!im
  .rwb-status-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:13px}.rwb-status-actions button,.rwb-status-actions a{min-height:104px;padding:9px 5px;flex-direction:column;justify-content:center;align-items:center;gap:6px;text-align:center;font-size:10px;line-height:1.25;overflow-wrap:anywhere;background:#fff;color:#10243a;border-color:#d8e1ea}.rwb-status-actions button>b,.rwb-status-actions a>b{display:none}
  .rwb-status-action-icon{width:36px;height:36px;font-size:19px;border-radius:10px}
 }
-</style>
+.google-login-separator{display:flex;align-items:center;gap:12px;margin:18px 0;color:#718096;font-size:13px}.google-login-separator:before,.google-login-separator:after{content:"";height:1px;flex:1;background:#d9e1ea}.google-login-btn{width:100%;min-height:54px;display:flex;align-items:center;justify-content:center;gap:13px;border:1px solid #d5dde7;border-radius:12px;background:#fff;color:#1f2937;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px #0000000d}.google-login-btn:active{background:#f5f8fc}.google-login-btn:disabled{opacity:.65;cursor:wait}</style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -151,6 +151,8 @@ body.status-dashboard-mode #paymentStatusBox{display:block!important;margin:0!im
 <form id="loginForm">
 <div class="grid"><div class="field full"><label for="loginEmail">E-mail empresarial</label><input id="loginEmail" type="email" autocomplete="username" required></div><div class="field full"><label for="loginPassword">Palavra-passe</label><input id="loginPassword" type="password" autocomplete="current-password" required></div></div>
 <div class="actions"><button class="btn primary" type="submit">Entrar no painel empresarial</button><a class="btn secondary" href="index.html" style="text-decoration:none">Voltar</a></div>
+<div class="google-login-separator"><span>ou</span></div>
+<button class="google-login-btn" id="googleCompanyLogin" type="button"><svg aria-hidden="true" viewBox="0 0 48 48" width="23" height="23"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.91c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.39 37.96 46.98 31.85 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.8l-7.73-6c-2.14 1.44-4.89 2.3-8.17 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Continuar com Google</span></button>
 </form>
 <form id="registerForm" class="hidden">
 <h2 class="register-only-title">Criar conta empresarial</h2>
@@ -231,6 +233,32 @@ function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function tab(which){const reg=which==="register";document.body.classList.toggle("register-mode",reg);$("loginForm").classList.toggle("hidden",reg);$("registerForm").classList.toggle("hidden",!reg);$("loginTab").classList.toggle("active",!reg);$("registerTab").classList.toggle("active",reg);msg("")}
 $("loginTab").onclick=()=>tab("login");$("registerTab").onclick=()=>tab("register");$("cancelRegister").onclick=()=>tab("login");
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();msg("A iniciar sessão...");try{await auth.signInWithEmailAndPassword($("loginEmail").value.trim(),$("loginPassword").value);msg("",true)}catch(err){msg(errorText(err))}});
+$("googleCompanyLogin").addEventListener("click",async()=>{
+ const button=$("googleCompanyLogin");
+ const provider=new firebase.auth.GoogleAuthProvider();
+ provider.setCustomParameters({prompt:"select_account"});
+ button.disabled=true;
+ button.querySelector("span").textContent="A ligar ao Google...";
+ msg("A autenticar com Google...");
+ try{
+   await auth.signInWithPopup(provider);
+   msg("Autenticação concluída. A verificar o perfil empresarial...",true);
+ }catch(err){
+   console.error("Google company sign-in:",err);
+   if(err.code==="auth/account-exists-with-different-credential"){
+     msg("Este e-mail já tem uma conta empresarial com palavra-passe. Entre primeiro com o e-mail e a palavra-passe dessa conta; depois será necessário associar o Google.");
+   }else if(err.code==="auth/popup-closed-by-user"){
+     msg("A janela do Google foi fechada antes de concluir o acesso.");
+   }else if(err.code==="auth/unauthorized-domain"){
+     msg("Este domínio ainda não está autorizado para iniciar sessão com Google. Adicione-o aos domínios autorizados no Firebase Authentication.");
+   }else{
+     msg(errorText(err));
+   }
+ }finally{
+   button.disabled=false;
+   button.querySelector("span").textContent="Continuar com Google";
+ }
+});
 $("registerForm").addEventListener("submit",async e=>{
  e.preventDefault();
  const form=$("registerForm"),submit=form.querySelector('button[type="submit"]');
