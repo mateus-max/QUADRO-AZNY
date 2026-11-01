@@ -888,7 +888,9 @@ body:not(.student-mode) .camera-panel>.cam-buttons button:disabled{opacity:.45!i
   body:not(.student-mode) .canvas-wrap { height:55vh!important; min-height:300px!important; flex:none!important; }
 }
 
-\n#aznyContextMenu{position:fixed;z-index:99999;display:none;min-width:210px;max-width:min(300px,90vw);max-height:75vh;overflow:auto;background:#fff;border:1px solid #b9c8d8;border-radius:10px;box-shadow:0 12px 35px #0004;padding:6px;color:#172536}#aznyContextMenu.open{display:block}#aznyContextMenu .ctx-title{font-size:11px;font-weight:800;color:#64748b;padding:7px 9px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}#aznyContextMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;cursor:pointer}#aznyContextMenu button:hover{background:#edf5ff}#aznyContextMenu button:disabled{opacity:.4}\n#refreshBoardBtn{font-size:22px;font-weight:800}#refreshBoardBtn:active{transform:rotate(25deg)}\n.bottom-status{display:flex;justify-content:center;align-items:center;gap:12px;text-align:center;width:100%;font-weight:800}.bottom-status .azny-realtime-label{font-size:12px;font-weight:900;letter-spacing:.08em;text-align:center}.bottom-status #storageState{font-weight:800}
+\n#aznyContextMenu{position:fixed;z-index:99999;display:none;min-width:210px;max-width:min(300px,90vw);max-height:75vh;overflow:auto;background:#fff;border:1px solid #b9c8d8;border-radius:10px;box-shadow:0 12px 35px #0004;padding:6px;color:#172536}#aznyContextMenu.open{display:block}#aznyContextMenu .ctx-title{font-size:11px;font-weight:800;color:#64748b;padding:7px 9px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}#aznyContextMenu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;cursor:pointer}#aznyContextMenu button:hover{background:#edf5ff}#aznyContextMenu button:disabled{opacity:.4}
+#refreshBoardBtn{font-size:22px;font-weight:800}#refreshBoardBtn:active{transform:rotate(25deg)}
+.bottom-status{display:flex;justify-content:center;align-items:center;gap:12px;text-align:center;width:100%;font-weight:800}.bottom-status .azny-realtime-label{font-size:12px;font-weight:900;letter-spacing:.08em;text-align:center}.bottom-status #storageState{font-weight:800}
 /* Mobile text entry: keep the Android keyboard native and unified; give it room by adapting the student board. */
 body.student-mode.text-entry-active{height:100dvh!important}
 body.student-mode.text-entry-active .student-live{display:none!important}
@@ -1296,7 +1298,8 @@ body.azny-business-mode .topbar>.logo{
 body.azny-business-mode .topbar>.title{flex:1 1 0!important;min-width:0!important;width:0!important;overflow:hidden!important}
 body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!important}
 </style>
-<style id="remote-work-board-brand-refresh">.topbar>.logo{display:flex!important;align-items:center!important;gap:6px!important}.topbar>.logo .rwb-logo-mark{width:29px;height:29px;flex:0 0 29px;object-fit:contain;border-radius:8px;box-shadow:0 2px 8px #0004}@media(max-width:900px){.topbar>.logo .rwb-logo-mark{width:24px;height:24px;flex-basis:24px}}</style>\n</head>
+<style id="remote-work-board-brand-refresh">.topbar>.logo{display:flex!important;align-items:center!important;gap:6px!important}.topbar>.logo .rwb-logo-mark{width:29px;height:29px;flex:0 0 29px;object-fit:contain;border-radius:8px;box-shadow:0 2px 8px #0004}@media(max-width:900px){.topbar>.logo .rwb-logo-mark{width:24px;height:24px;flex-basis:24px}}</style>
+</head>
 <body class="azny-business-mode">
 <div class="app">
 <header class="topbar">
@@ -1472,7 +1475,7 @@ function aznyObjectKey(o){return String(o?.id||o?.dataset?.id||"")+"::"+String(o
 function aznyFilterDeletedPages(pages){return pages.map(page=>{if(!page)return page;const out=JSON.parse(JSON.stringify(page));out.objects=(out.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o)));return out})}
 let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0,aznyTeacherScreenTrack=null,aznyStudentScreenTrack=null;
-let isStudent=new URLSearchParams(location.search).get("aluno")==="1"; document.body.classList.add("azny-business-mode"); document.body.classList.toggle("student-mode",isStudent); document.body.classList.toggle("teacher-mode",!isStudent); const AZNY_URL_PARAMS=new URLSearchParams(location.search);const aznyHashKey=value=>{let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};const aznyAccessScope=aznyHashKey(AZNY_URL_PARAMS.get("acesso")||"");const aznyTeacherRoomStorageKey="azny_teacher_room_v1_"+aznyAccessScope;let aznySavedRoom="";try{aznySavedRoom=localStorage.getItem(aznyTeacherRoomStorageKey)||""}catch(_){};const aznyRequestedRoom=AZNY_URL_PARAMS.get("sala");let roomId;if(isStudent){roomId=aznyRequestedRoom||aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope)}else{roomId=aznyRequestedRoom?(aznyRequestedRoom.startsWith("AZNY-"+aznyAccessScope+"-")?aznyRequestedRoom:("AZNY-"+aznyAccessScope+"-"+aznyRequestedRoom)):(aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope));if(!aznyRequestedRoom){try{localStorage.setItem(aznyTeacherRoomStorageKey,roomId)}catch(_){}}}STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[.#$]/g,"_").replaceAll("/","_").replaceAll("[","_").replaceAll("]","_"));
+let isStudent=new URLSearchParams(location.search).get("aluno")==="1"; document.body.classList.add("azny-business-mode"); document.body.classList.toggle("student-mode",isStudent); document.body.classList.toggle("teacher-mode",!isStudent); const AZNY_URL_PARAMS=new URLSearchParams(location.search);const aznyHashKey=value=>{let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};const aznyAccessScope=aznyHashKey(AZNY_URL_PARAMS.get("acesso")||"");const aznyTeacherRoomStorageKey="azny_teacher_room_v1_"+aznyAccessScope;let aznySavedRoom="";try{aznySavedRoom=localStorage.getItem(aznyTeacherRoomStorageKey)||""}catch(_){};const aznyRequestedRoom=AZNY_URL_PARAMS.get("sala");let roomId;if(isStudent){roomId=aznyRequestedRoom||aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope)}else{roomId=aznyRequestedRoom?(aznyRequestedRoom.startsWith("AZNY-"+aznyAccessScope+"-")?aznyRequestedRoom:("AZNY-"+aznyAccessScope+"-"+aznyRequestedRoom)):(aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope));if(!aznyRequestedRoom){try{localStorage.setItem(aznyTeacherRoomStorageKey,roomId)}catch(_){}}}STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[.#$]/g,"_").replaceAll("/","_").replaceAll("[","_").replaceAll("]","_");
 let classSessionId=isStudent?(AZNY_URL_PARAMS.get("sess")||""):"ROOM-"+String(roomId).replace(/[.#$\[\]\/]/g,"_");
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
@@ -5518,8 +5521,6 @@ body.azny-business-mode:not(.student-mode) #students .student>.azny-student-devi
  window.addEventListener("pagehide",()=>{try{screen.orientation?.unlock?.()}catch(_){}});
 })();
 </script>
-</body>
-</html>
 
 <script>
 /* AZNY reliable workspace launchers: keep Excel and Word buttons responsive even if another toolbar handler fails. */
@@ -5640,3 +5641,6 @@ body.azny-business-mode:not(.student-mode) #students .student>.azny-student-devi
  },true);
 })();
 </script>
+
+</body>
+</html>
