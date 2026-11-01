@@ -3840,9 +3840,8 @@ async function getClassLink(){
   const result=await ref.transaction(current=>current||{target,type:"meeting",createdAt:firebase.database.ServerValue.TIMESTAMP});
   const value=result.snapshot.val();
   if(result.committed&&value&&value.target===target)return location.origin+"/r/"+code;
-  console.warn("Código curto de reunião em conflito; a usar link completo.");
- }catch(err){console.warn("Não foi possível registar o link curto da reunião:",err)}
- return target;
+  throw new Error("Código curto de reunião em conflito.");
+ }catch(err){console.error("Não foi possível registar o link curto da reunião:",err);toast("Não foi possível gerar o link profissional. Verifique a ligação e tente novamente.");return "";}
 }
 async function copyClassLink(){
  const link=await getClassLink();if(!link)return;
