@@ -503,6 +503,11 @@ body.teacher-payment-status-mode #homeIntro{display:block!important}
 @keyframes rwbTickerFlow{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @media(max-width:620px){.rwb-info-ticker{height:30px}.rwb-info-group{font-size:10px;gap:16px;padding-right:16px}.rwb-info-track{animation-duration:38s}}
 @media(prefers-reduced-motion:reduce){.rwb-info-track{animation:none;transform:none}}
+
+/* Lock the home screen in place: no vertical or horizontal page dragging. */
+html:has(main.azny-home),body:has(main.azny-home){width:100%;height:100%;overflow:hidden!important;overscroll-behavior:none!important;}
+main.azny-home{position:fixed!important;inset:0!important;width:100%!important;height:100vh!important;height:100dvh!important;min-height:0!important;overflow:hidden!important;overscroll-behavior:none!important;}
+main.azny-home>.azny-home-card{max-height:100%!important;overflow:hidden!important;}
 </style><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#071b33">
