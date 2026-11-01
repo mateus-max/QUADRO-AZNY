@@ -134,8 +134,8 @@ body.status-dashboard-mode #paymentStatusBox{display:block!important;margin:0!im
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-</head>
-<body><div class="wrap"><div class="brand" id="companyBrand"><span class="brand-icon" aria-hidden="true">🏢</span> REMOTE WORK BOARD <span>ÁREA EMPRESARIAL</span></div>
+<style id="remote-work-board-logo-refresh">.brand .brand-icon{width:34px;height:34px;object-fit:contain;border-radius:9px;flex:0 0 34px}.rwb-status-brand .brand-building{width:39px;height:39px;object-fit:contain;border-radius:10px;flex:0 0 39px}@media(max-width:620px){.brand .brand-icon{width:28px;height:28px;flex-basis:28px}.rwb-status-brand .brand-building{width:30px;height:30px;flex-basis:30px}}</style>\n</head>
+<body><div class="wrap"><div class="brand" id="companyBrand"><img class="brand-icon" src="icons/remote-work-board.svg" alt=""> <strong>REMOTE WORK BOARD</strong> <span>ÁREA EMPRESARIAL</span></div>
 <section class="panel">
 <div class="intro" id="companyIntro"><div class="eyebrow">ESPAÇO EXCLUSIVO PARA ORGANIZAÇÕES</div><h1>Reuniões profissionais, num espaço próprio.</h1><p>Crie uma conta para a sua organização, prepare reuniões e apresentações e partilhe um link exclusivo para cada atividade. O espaço de cada atividade fica separado dos restantes.</p></div>
 <div class="company-features" id="companyFeatures" aria-label="Funcionalidades empresariais">
@@ -307,7 +307,7 @@ function renderPendingReviewDashboard(company,submission){
  const proofReady=!!(submission&&submission.proofData),sentDate=formatStatusDate(submittedAt),createdDate=formatStatusDate(createdAt);
  const amountText=amount?amount.toLocaleString("pt-AO")+" Kz":"A confirmar";
  box.innerHTML=`
- <header class="rwb-status-header"><div class="rwb-status-brand"><span class="brand-building">🏢</span><span>REMOTE WORK <b>BOARD</b></span></div><a class="rwb-status-home" href="index.html">⌂ Página principal</a></header>
+ <header class="rwb-status-header"><div class="rwb-status-brand"><img class="brand-building" src="icons/remote-work-board.svg" alt=""><span>REMOTE WORK <b>BOARD</b></span></div><a class="rwb-status-home" href="index.html">⌂ Página principal</a></header>
  <main class="rwb-status-shell">
   <section class="rwb-status-hero">
    <div class="rwb-status-profile"><div class="rwb-status-avatar">🏢</div><div><h1>${esc(company.organizationName||"Conta empresarial")}</h1><p>${esc(company.organizationEmail||currentUser?.email||"")}</p><span class="rwb-status-account">🛡 Conta empresarial</span></div></div>
