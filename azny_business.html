@@ -1336,7 +1336,6 @@ body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!im
     <button type="button" class="tool" id="docBtn">📄 Carregar documento</button>
     <button class="tool" id="chartsBtn">📊 Gráficos</button>
     <button class="tool" id="pagesBtn">📑 Páginas do quadro</button>
-<button class="tool wide" id="aznyCompanyDocBtn" type="button">📝 Editor colaborativo</button>
   </div>
   <input id="imageInput" type="file" accept="image/*" hidden>
   <input id="docInput" type="file" accept=".txt,.md,.csv,.json,.html,.htm,.pdf,.doc,.docx,.xls,.xlsx" hidden>
@@ -2405,68 +2404,7 @@ function addEditableWordDocument(name,html){
  el.querySelector(".azny-export-docx").onclick=()=>{if(!window.htmlDocx){toast("Exportação Word não está disponível neste momento.");return}downloadBlob(htmlDocx.asBlob(wordBody.innerHTML),"application/vnd.openxmlformats-officedocument.wordprocessingml.document",name.replace(/\.[^.]+$/,"")+".docx")};
  el.querySelector(".azny-export-doc-html").onclick=()=>downloadBlob(wordBody.innerHTML,"text/html;charset=utf-8",name.replace(/\.[^.]+$/,"")+".html");
  el.querySelector(".azny-export-doc-pdf").onclick=()=>{const w=window.open("","_blank");if(!w){toast("Permita janelas pop-up para exportar PDF.");return}w.document.write("<!doctype html><html><head><meta charset=utf-8><title>"+escapeHtml(name)+"</title><style>body{font-family:Roboto,Arial,sans-serif}</style></head><body>"+wordBody.innerHTML+"
-<style id="azny-company-doc-editor-style">
-#aznyCompanyDocModal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:14px;background:#06172bcc}
-#aznyCompanyDocModal.open{display:flex}
-#aznyCompanyDocModal .azdoc-shell{width:min(1100px,98vw);height:min(850px,94dvh);display:flex;flex-direction:column;background:#f5f8fc;border:2px solid #315d83;border-radius:14px;overflow:hidden;box-shadow:0 20px 70px #0008;color:#172b40}
-#aznyCompanyDocModal .azdoc-head{display:flex;align-items:center;gap:10px;padding:12px 15px;background:#071b33;color:white}
-#aznyCompanyDocModal .azdoc-head strong{font-size:16px;flex:1}
-#aznyCompanyDocModal button{border:1px solid #cbd7e3;border-radius:8px;padding:8px 11px;background:white;color:#18344f;font-weight:750;cursor:pointer}
-#aznyCompanyDocModal .azdoc-head button{background:#183b5c;border-color:#ffffff40;color:white}
-#aznyCompanyDocModal .azdoc-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 13px;background:#eaf1f8;border-bottom:1px solid #d5e0eb}
-#aznyCompanyDocModal .azdoc-title{flex:1;min-width:160px;padding:9px 10px;border:1px solid #c6d4e2;border-radius:7px;font-weight:800;color:#18344f}
-#aznyCompanyDocModal .azdoc-status{font-size:12px;color:#46627c;font-weight:700}
-#aznyCompanyDocModal .azdoc-toolbar{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;background:#fff;border-bottom:1px solid #dce5ee}
-#aznyCompanyDocModal .azdoc-paper-wrap{flex:1;min-height:0;overflow:auto;padding:22px;background:#e4eaf1}
-#aznyCompanyDocModal .azdoc-paper{display:block;width:min(850px,100%);min-height:100%;margin:auto;padding:clamp(22px,5vw,58px);background:white;border:1px solid #d5dce4;box-shadow:0 3px 16px #20364a18;outline:none;white-space:pre-wrap;overflow-wrap:anywhere;font:16px/1.7 Arial,sans-serif;color:#182433;resize:none}
-#aznyCompanyDocModal .azdoc-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 13px;background:#f8fafc;border-top:1px solid #dce5ee;color:#60758a;font-size:12px}
-#aznyCompanyDocModal .azdoc-presence{font-size:12px;color:#0874c9;font-weight:750}
-@media(max-width:600px){#aznyCompanyDocModal{padding:4px}#aznyCompanyDocModal .azdoc-shell{width:100%;height:96dvh;border-radius:9px}#aznyCompanyDocModal .azdoc-head{padding:9px}#aznyCompanyDocModal .azdoc-paper-wrap{padding:8px}#aznyCompanyDocModal .azdoc-paper{padding:18px;min-height:100%;font-size:15px}#aznyCompanyDocModal .azdoc-foot{font-size:10px}}
-</style>
-<div id="aznyCompanyDocModal" aria-hidden="true">
-<section class="azdoc-shell" role="dialog" aria-modal="true" aria-label="Editor colaborativo de documentos">
-<div class="azdoc-head"><strong>📝 Documento partilhado da equipa</strong><span class="azdoc-presence" id="azdocPresence">A ligar…</span><button type="button" id="azdocClose">✕ Fechar</button></div>
-<div class="azdoc-meta"><input class="azdoc-title" id="azdocTitle" maxlength="140" value="Documento da equipa" aria-label="Título do documento"><span class="azdoc-status" id="azdocStatus">A preparar sincronização…</span></div>
-<div class="azdoc-toolbar"><button type="button" data-azdoc-wrap="**">Negrito</button><button type="button" data-azdoc-wrap="_">Itálico</button><button type="button" data-azdoc-prefix="# ">Título</button><button type="button" data-azdoc-prefix="- ">• Lista</button><button type="button" id="azdocDownload">⬇ Descarregar TXT</button><button type="button" id="azdocPrint">Imprimir / PDF</button></div>
-<div class="azdoc-paper-wrap"><textarea id="azdocBody" class="azdoc-paper" spellcheck="true" placeholder="Comece a escrever. Os outros participantes autorizados verão as alterações em tempo real…"></textarea></div>
-<div class="azdoc-foot"><span>As alterações são sincronizadas automaticamente para os participantes desta reunião.</span><span id="azdocWordCount">0 palavras</span></div>
-</section></div>
-<script src="https://cdn.jsdelivr.net/npm/yjs@13.6.27/dist/yjs.js"></script>
-<script id="azny-company-doc-editor-script">
-(function(){
- if(window.__aznyCompanyDocEditorLoaded)return;window.__aznyCompanyDocEditorLoaded=true;
- const modal=document.getElementById("aznyCompanyDocModal"),openBtn=document.getElementById("aznyCompanyDocBtn"),closeBtn=document.getElementById("azdocClose"),titleEl=document.getElementById("azdocTitle"),bodyEl=document.getElementById("azdocBody"),statusEl=document.getElementById("azdocStatus"),presenceEl=document.getElementById("azdocPresence"),countEl=document.getElementById("azdocWordCount");
- if(!modal||!openBtn)return;
- let ydoc=null,yTitle=null,yBody=null,updatesRef=null,updatesListener=null,ready=false,opening=false,remoteOrigin={},presenceRef=null,presenceKey=null,presenceTimer=null;
- const setStatus=t=>{if(statusEl)statusEl.textContent=t};
- const countWords=()=>{const n=(bodyEl.value.trim().match(/\S+/g)||[]).length;if(countEl)countEl.textContent=n+" palavras"};
- const diffApply=(shared,value)=>{const old=shared.toString(),next=String(value);if(old===next)return;let a=0;while(a<old.length&&a<next.length&&old[a]===next[a])a++;let b=0;while(b<old.length-a&&b<next.length-a&&old[old.length-1-b]===next[next.length-1-b])b++;if(old.length-a-b)shared.delete(a,old.length-a-b);if(next.length-a-b)shared.insert(a,next.slice(a,next.length-b))};
- function bindPresence(){if(!AZNY_DB||!updatesRef)return;presenceRef=updatesRef.parent.child("presence");presenceKey=(typeof aznyUid!=="undefined"&&aznyUid)||("guest-"+Math.random().toString(36).slice(2));const name=(typeof studentName!=="undefined"&&studentName)||"Participante";const update=()=>presenceRef.child(presenceKey).set({name:String(name).slice(0,60),at:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{});update();presenceTimer=setInterval(update,30000);presenceRef.on("value",snap=>{const names=[];snap.forEach(child=>{const v=child.val()||{};if(v.name)names.push(v.name)});presenceEl.textContent=names.length?names.length+" participante(s) no documento":"Documento partilhado"})}
- async function initialize(){if(ready)return true;if(opening)return false;opening=true;setStatus("A ligar ao espaço partilhado…");try{
- if(typeof ensureAZNYRealtime==="function"&&!AZNY_DB)await ensureAZNYRealtime();
- for(let i=0;i<40&&!AZNY_DB;i++)await new Promise(r=>setTimeout(r,250));
- if(!AZNY_DB||typeof aznyRoomRef!=="function")throw new Error("Não foi possível estabelecer ligação em tempo real.");
- if(!window.Y)throw new Error("O editor não foi carregado. Verifique a ligação e atualize a página.");
- ydoc=new Y.Doc();yTitle=ydoc.getText("title");yBody=ydoc.getText("body");updatesRef=aznyRoomRef().child("companyDocuments").child("shared").child("updates");
- updatesListener=updatesRef.limitToLast(1000).on("child_added",snap=>{const packet=snap.val();if(!packet||!packet.u)return;try{const binary=atob(packet.u),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);Y.applyUpdate(ydoc,bytes,remoteOrigin)}catch(e){console.warn("AZNY company doc update:",e)}});
- ydoc.on("update",(update,origin)=>{if(origin===remoteOrigin)return;const bytes=new Uint8Array(update);let binary="";for(let i=0;i<bytes.length;i++)binary+=String.fromCharCode(bytes[i]);updatesRef.push({u:btoa(binary),by:(typeof aznyUid!=="undefined"&&aznyUid)||"participant",at:firebase.database.ServerValue.TIMESTAMP}).catch(()=>setStatus("Falha ao sincronizar. A tentar novamente…"))});
- yTitle.observe(()=>{const value=yTitle.toString()||"Documento da equipa";if(titleEl&&titleEl.value!==value)titleEl.value=value});
- yBody.observe(()=>{const value=yBody.toString();if(bodyEl&&bodyEl.value!==value){const start=bodyEl.selectionStart,end=bodyEl.selectionEnd,focused=document.activeElement===bodyEl;bodyEl.value=value;if(focused){const pos=Math.min(value.length,start);bodyEl.setSelectionRange(pos,Math.min(value.length,end))}countWords()}});
- bindPresence();if(!yTitle.length)ydoc.transact(()=>yTitle.insert(0,"Documento da equipa"));
- ready=true;setStatus("Ligado · gravação automática ativa");return true;
- }catch(e){console.error("AZNY company document:",e);setStatus(e.message||"Erro ao iniciar editor.");return false}finally{opening=false}}
- openBtn.addEventListener("click",async()=>{modal.classList.add("open");modal.setAttribute("aria-hidden","false");await initialize();if(ready){titleEl.value=yTitle.toString();bodyEl.value=yBody.toString();countWords();bodyEl.focus()}});
- closeBtn.addEventListener("click",()=>{modal.classList.remove("open");modal.setAttribute("aria-hidden","true")});
- modal.addEventListener("click",e=>{if(e.target===modal){modal.classList.remove("open");modal.setAttribute("aria-hidden","true")}});
- titleEl.addEventListener("input",()=>{if(ready)diffApply(yTitle,titleEl.value)});
- bodyEl.addEventListener("input",()=>{if(ready){diffApply(yBody,bodyEl.value);countWords();setStatus("A guardar e sincronizar…")}});
- document.querySelectorAll("[data-azdoc-wrap]").forEach(btn=>btn.addEventListener("click",()=>{const marker=btn.dataset.azdocWrap,start=bodyEl.selectionStart,end=bodyEl.selectionEnd;if(start===end)return;const value=bodyEl.value;bodyEl.setRangeText(marker+value.slice(start,end)+marker,start,end,"select");bodyEl.dispatchEvent(new Event("input",{bubbles:true}));bodyEl.focus()}));
- document.querySelectorAll("[data-azdoc-prefix]").forEach(btn=>btn.addEventListener("click",()=>{const start=bodyEl.selectionStart,lineStart=bodyEl.value.lastIndexOf("\n",Math.max(0,start-1))+1;bodyEl.setRangeText(btn.dataset.azdocPrefix,lineStart,lineStart,"end");bodyEl.dispatchEvent(new Event("input",{bubbles:true}));bodyEl.focus()}));
- document.getElementById("azdocDownload").addEventListener("click",()=>{const blob=new Blob([bodyEl.value],{type:"text/plain;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=(titleEl.value||"documento").replace(/[^a-z0-9-_ ]/gi,"").trim()+".txt";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
- document.getElementById("azdocPrint").addEventListener("click",()=>{const w=window.open("","_blank");if(!w){setStatus("Permita janelas de impressão para exportar PDF.");return}const esc=bodyEl.value.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));const title=titleEl.value.replace(/[&<>]/g,"");w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+title+"</title><style>body{font:12pt/1.65 Arial,sans-serif;max-width:800px;margin:40px auto;white-space:pre-wrap}h1{font-size:22pt}</style></head><body><h1>"+title+"</h1>"+esc+"</body></html>");w.document.close();w.focus();w.print()});
- window.addEventListener("beforeunload",()=>{if(presenceTimer)clearInterval(presenceTimer);if(presenceRef&&presenceKey)presenceRef.child(presenceKey).remove().catch(()=>{});if(updatesRef&&updatesListener)updatesRef.off("child_added",updatesListener);if(ydoc)ydoc.destroy()});
-})();
-</script>
+
 
 </body></html>");w.document.close();w.focus();w.print()};
  wordBody.addEventListener("input",()=>{scheduleSave();publishLiveBoardState()});
