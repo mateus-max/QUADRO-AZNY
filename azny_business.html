@@ -2489,7 +2489,7 @@ function redraw(){
  if(isStudent)aznyRemoteLiveStrokes.forEach(s=>paintStroke(s,s.points||[]));
 }
 
-function resizeCanvas(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));canvas.style.width=r.width+"px";canvas.style.height=r.height+"px";ctx.setTransform(d,0,0,d,0,0);redraw()}
+function resizeCanvas(){const w=Math.max(1,board.clientWidth),h=Math.max(1,board.clientHeight),d=window.devicePixelRatio||1;canvas.width=Math.max(1,Math.round(w*d));canvas.height=Math.max(1,Math.round(h*d));canvas.style.width=w+"px";canvas.style.height=h+"px";canvas.style.left="0";canvas.style.top="0";ctx.setTransform(d,0,0,d,0,0);redraw()}
 function objectAtPoint(p){const els=[...board.querySelectorAll('.object')].reverse();for(const el of els){const b=anchorBox(el);if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return el}return null}
 function eraseAt(p){const radius=18;strokes=strokes.filter(s=>!strokePoints(s).some(q=>Math.hypot(q.x-p.x,q.y-p.y)<radius))}
 let aznyLastStrokeBroadcast=0,aznyStrokeBroadcastTimer=0;
@@ -2620,6 +2620,8 @@ stage.addEventListener("pointermove",e=>{if(!drawing)return;if(e.cancelable)e.pr
 stage.addEventListener("pointerup",e=>{if(drawing){if(e.cancelable)e.preventDefault();drawUp()}},{passive:false});
 stage.addEventListener("pointercancel",()=>{if(drawing)drawUp()});
 stage.addEventListener("lostpointercapture",()=>{if(drawing)drawUp()});
+/* Mesma cobertura de rato do quadro de formação, além dos eventos tácteis. */
+addEventListener("mousemove",drawMove);addEventListener("mouseup",drawUp);
 
 function rememberSelection(){
  const sel=getSelection();
