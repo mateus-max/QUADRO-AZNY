@@ -1,0 +1,3 @@
+/publicacoes /publicacoes.html 200
+/publicacoes/ /publicacoes.html 200
+/publicacoes/* /publicacoes.html 200
