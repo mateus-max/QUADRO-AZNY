@@ -26,7 +26,7 @@ body{margin:0;min-height:100vh;background:linear-gradient(145deg,#061a32 0%,#073
 .post-author{font-size:clamp(19px,2.6vw,25px);font-weight:800;color:#0a1728}
 .post-date{font-size:16px;color:#61758e;margin-top:3px}
 .post-menu{margin-left:auto;color:#0a2544;font-size:27px;letter-spacing:2px;align-self:flex-start;line-height:1}
-.post-caption{padding:0 24px 12px;color:#101923;font-size:clamp(18px,2.5vw,25px);line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere}
+.post-caption{padding:0 24px 4px;color:#101923;font-size:clamp(18px,2.5vw,25px);line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere}.post-caption.collapsed{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden}.caption-toggle{display:none;margin:0 24px 12px;padding:3px 0;border:0;background:transparent;color:#1769aa;font-size:16px;font-weight:800;text-align:left;cursor:pointer}.caption-toggle.visible{display:inline-block}.caption-toggle:focus-visible{outline:2px solid #1769aa;outline-offset:3px;border-radius:3px}
 .post-media{display:block;width:calc(100% - 48px);max-height:650px;margin:0 24px 10px;object-fit:contain;background:#101820;border-radius:13px}
 .post video.post-media{width:calc(100% - 48px)}
 .post audio{display:block;width:calc(100% - 48px);margin:18px 24px 14px}
@@ -57,7 +57,7 @@ body{margin:0;min-height:100vh;background:linear-gradient(145deg,#061a32 0%,#073
  .direction-avatar svg{width:32px;height:32px}
  .post-author{font-size:20px}
  .post-date{font-size:14px}
- .post-caption{padding:0 16px 10px;font-size:19px}
+ .post-caption{padding:0 16px 4px;font-size:19px}.caption-toggle{margin:0 16px 12px;font-size:15px}
  .post-media,.post video.post-media{width:calc(100% - 32px);margin:0 16px 8px;border-radius:11px;max-height:520px}
  .post audio{width:calc(100% - 32px);margin:14px 16px}
  .post-actions{padding:7px 16px 13px;font-size:15px;gap:8px}
@@ -92,8 +92,22 @@ function render(snap){
  const posts=[];snap.forEach(ch=>{const p=ch.val();if(p&&p.url&&['image','video','audio'].includes(p.type))posts.push(p)});
  posts.sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));
  if(!posts.length){feed.innerHTML='<div class="empty">Ainda não existem publicações. Volte mais tarde para acompanhar as novidades.</div>';return}
- feed.innerHTML=posts.map(p=>'<article class="post"><header class="post-header"><div class="direction-avatar">'+peopleIcon+'</div><div><div class="post-author">Direção</div><div class="post-date">'+(p.createdAt?new Date(p.createdAt).toLocaleString('pt-PT',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'')+'</div></div><div class="post-menu" aria-hidden="true">•••</div></header>'+(p.caption?'<div class="post-caption">'+esc(p.caption)+'</div>':'')+(p.type==='image'?'<img class="post-media" loading="lazy" src="'+esc(p.url)+'" alt="Imagem publicada pela direção">':p.type==='video'?'<video class="post-media" controls playsinline preload="metadata" src="'+esc(p.url)+'"></video>':'<audio controls preload="metadata" src="'+esc(p.url)+'"></audio>')+'<div class="post-actions"><div class="post-stats"><span class="post-stat like">'+likeIcon+' Publicação</span></div><div class="post-action-buttons"><span class="post-action">'+likeIcon+' Gostar</span><span class="post-action">'+commentIcon+' Comentar</span></div></div></article>').join('');
+ feed.innerHTML=posts.map(p=>'<article class="post"><header class="post-header"><div class="direction-avatar">'+peopleIcon+'</div><div><div class="post-author">Direção</div><div class="post-date">'+(p.createdAt?new Date(p.createdAt).toLocaleString('pt-PT',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'')+'</div></div><div class="post-menu" aria-hidden="true">•••</div></header>'+(p.caption?'<div class="post-caption collapsed" data-caption>'+esc(p.caption)+'</div><button class="caption-toggle" type="button" aria-expanded="false">Ver mais</button>':'')+(p.type==='image'?'<img class="post-media" loading="lazy" src="'+esc(p.url)+'" alt="Imagem publicada pela direção">':p.type==='video'?'<video class="post-media" controls playsinline preload="metadata" src="'+esc(p.url)+'"></video>':'<audio controls preload="metadata" src="'+esc(p.url)+'"></audio>')+'<div class="post-actions"><div class="post-stats"><span class="post-stat like">'+likeIcon+' Publicação</span></div><div class="post-action-buttons"><span class="post-action">'+likeIcon+' Gostar</span><span class="post-action">'+commentIcon+' Comentar</span></div></div></article>').join('');
+ feed.querySelectorAll('[data-caption]').forEach(caption=>{
+   const button=caption.nextElementSibling;
+   if(button && caption.scrollHeight>caption.clientHeight+2) button.classList.add('visible');
+ });
 }
+feed.addEventListener('click',event=>{
+ const button=event.target.closest('.caption-toggle');
+ if(!button)return;
+ const caption=button.previousElementSibling;
+ if(!caption || !caption.matches('[data-caption]'))return;
+ const expanded=button.getAttribute('aria-expanded')==='true';
+ caption.classList.toggle('collapsed',expanded);
+ button.setAttribute('aria-expanded',String(!expanded));
+ button.textContent=expanded?'Ver mais':'Ver menos';
+});
 db.ref('publications').on('value',render,error=>{console.error('Erro ao ler publicações:',error);feed.innerHTML='<div class="error">Não foi possível carregar as publicações. A ligação ou as permissões de leitura do Firebase precisam de ser verificadas.</div>'});
 </script>
 </body></html>
