@@ -9,7 +9,7 @@
 body{margin:0;min-height:100vh;background:linear-gradient(145deg,#061a32 0%,#073967 55%,#061a32 100%)}
 .site-header{height:auto;min-height:94px;padding:14px max(22px,calc((100% - 1180px)/2));display:flex;align-items:center;justify-content:space-between;gap:18px;background:linear-gradient(110deg,#06264a,#0b477b);border-bottom:1px solid #ffffff25;color:#fff}
 .brand{display:flex;align-items:center;gap:18px;font-size:clamp(22px,4vw,40px);font-weight:900;letter-spacing:-.7px}
-.brand-icon{width:76px;height:62px;flex:none;color:#fff}
+.brand-icon{width:76px;height:62px;flex:none;object-fit:contain;border-radius:12px}
 .brand-name span{color:#13a9f4}
 .home-link{display:flex;align-items:center;gap:12px;min-height:60px;padding:12px 22px;border:1.5px solid #b6d5f2;border-radius:16px;color:#fff;text-decoration:none;font-size:clamp(16px,2.2vw,24px);font-weight:700}
 .home-link svg{width:26px;height:26px;flex:none}
@@ -94,7 +94,7 @@ body{margin:0;min-height:100vh;background:linear-gradient(145deg,#061a32 0%,#073
 </head>
 <body>
 <header class="site-header">
- <div class="brand"><svg class="brand-icon" viewBox="0 0 80 64" aria-hidden="true"><circle cx="40" cy="15" r="12" fill="currentColor"/><circle cx="17" cy="23" r="9" fill="currentColor"/><circle cx="63" cy="23" r="9" fill="currentColor"/><path d="M17 58c0-16 10-25 23-25s23 9 23 25H17Z" fill="currentColor"/><path d="M0 57c0-12 6-19 16-19 5 0 9 2 12 6-5 5-8 10-8 14H0Zm80 0H60c0-5-3-10-8-14 3-4 7-6 12-6 10 0 16 7 16 19Z" fill="currentColor"/></svg><div class="brand-name">Remote Work <span>Board</span></div></div>
+ <div class="brand"><img class="brand-icon" src="icons/remote-work-board.svg" alt="Logótipo Remote Work Board"><div class="brand-name">Remote Work <span>Board</span></div></div>
  <a class="home-link" href="index.html"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 3 10 9h-3v9h-6v-6h-2v6H5v-9H2l10-9Z"/></svg> Página principal</a>
 </header>
 <main class="page">
