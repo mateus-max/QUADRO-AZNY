@@ -1,0 +1,7 @@
+name = "remote-work-board-publication-previews"
+main = "workers/publication-share.js"
+compatibility_date = "2026-11-02"
+workers_dev = true
+
+# Depois de publicar este Worker na Cloudflare, associe a rota:
+# remote.work.board.apsanlda.com/p/*
