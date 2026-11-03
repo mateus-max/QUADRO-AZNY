@@ -2479,20 +2479,18 @@ function addEditableWordDocument(name,html){
 (function(){
  const exitButton=document.getElementById("exitBoardBtn");
  if(!exitButton)return;
- exitButton.addEventListener("click",function(){
-  if(window.history.length>1){window.history.back();return;}
-  try{
-   const previous=document.referrer?new URL(document.referrer):null;
-   if(previous&&previous.origin===window.location.origin){window.location.replace(previous.href);return;}
-  }catch(_){}
+ exitButton.addEventListener("click",function(event){
+  event.preventDefault();
+  event.stopPropagation();
   const params=new URLSearchParams(window.location.search);
   const access=params.get("acesso")||"";
-  if(!params.has("aluno")){
-   window.location.assign("dashboard.html?acesso="+encodeURIComponent(access));
-  }else{
+  if(params.has("aluno")){
    window.location.assign("index.html");
+   return;
   }
- });
+  // Usar o mesmo destino do botão de painel já existente no cabeçalho.
+  window.location.assign("dashboard.html?acesso="+encodeURIComponent(access));
+ },{capture:true});
 })();
 </script>
 
