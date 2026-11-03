@@ -1395,7 +1395,7 @@ body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!im
     </section>
     <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
 <svg viewBox="0 0 48 56" aria-hidden="true">
-  <path class="arrow" d="M5 3 L5 43 L16 32 L25 51 L32 48 L23 29 L40 29 Z"/>
+  <path class="arrow" d="M5 3 L5 43 L16 32 L25 51 L32 48 L23 29 L40 29 Z"/><circle class="glass" cx="34" cy="13" r="8"/><circle class="glassHole" cx="34" cy="13" r="4.2"/><path d="M39.5 18.5 L46 25" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
 </svg>
 </span></div></div></div>
   </div>
@@ -1895,17 +1895,19 @@ function load(){try{const raw=localStorage.getItem(STORAGE);if(!raw)return;const
 function updateHint(){hint.style.display=board.querySelector(".object")||strokes.length?"none":"block"}
 function setPointerMode(on){
  pointerMode=!!on;
- // Enquanto o indicador/lupa está ativo, o quadro fica apenas em modo de apontar:
- // não permite editar objetos nem deslocar/percorrer a área de trabalho.
  board.classList.toggle("azny-pointer-indicator-active",pointerMode);
  stage.classList.toggle("azny-pointer-indicator-active",pointerMode);
- const p=document.getElementById("livePointer"),b=document.getElementById("pointerTool");
- p.classList.toggle("active",pointerMode);b.classList.toggle("pointer-tool-on",pointerMode);
+ const p=document.getElementById("livePointer"),b=document.getElementById("pointerTool"),studentButton=document.getElementById("studentPointerBtn");
+ p?.classList.toggle("active",pointerMode);
+ b?.classList.toggle("pointer-tool-on",pointerMode);
+ studentButton?.classList.toggle("pointer-tool-on",pointerMode);
+ studentButton?.setAttribute("aria-pressed",String(pointerMode));
+ if(studentButton){studentButton.textContent=pointerMode?"➤ Indicador: ATIVO":"➤ Indicador: DESATIVADO";studentButton.title=pointerMode?"Desativar o indicador":"Ativar o indicador";}
  document.getElementById("aznyExcelLivePointer")?.classList.remove("active");
  document.getElementById("aznyWordLivePointer")?.classList.remove("active");
  stage.style.cursor=pointerMode?"none":(tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default"));
- const sendPacket=packet=>{const raw=JSON.stringify(packet);if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"){try{ch.send(raw)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(raw)}catch(_){}}})};
- sendPacket({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:pointerMode});
+ const sendPacket=packet=>{const raw=JSON.stringify(packet);if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"){try{ch.send(raw)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(raw)}catch(_){}}})};
+ sendPacket({type:"live-pointer",x:0,y:0,nx:0,ny:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:pointerMode});
  ["excel","word"].forEach(surface=>sendPacket({type:"live-pointer",surface,x:0,y:0,boardWidth:0,boardHeight:0,visible:false}));
 }
 let lastPointerPacketAt=0;
@@ -3372,7 +3374,7 @@ async function startStudentWebRTC(options={}){
   studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));aznyApplyLowDataMode(studentPeer);
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
   studentBoardChannel.bufferedAmountLowThreshold=65536;
-  studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}))}catch(_){}};
+  studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}));studentBoardChannel.send(JSON.stringify({type:"live-pointer",x:0,y:0,nx:0,ny:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode}))}catch(_){}};
   studentBoardChannel.onmessage=e=>handleBoardChannelMessage(e.data);
   studentBoardChannel.onclose=()=>{studentBoardChannel=null};
   /* Keep the teacher's microphone on an audio-only element. Video visibility/state must never control playback of the microphone. */
@@ -3624,7 +3626,7 @@ async function connectStudentPeer(id,d){
   const ch=e.channel;
   if(ch.label!=="azny-board")return;
   pc._aznyBoardChannel=ch;ch.bufferedAmountLowThreshold=65536;
-  ch.onopen=()=>{sendBoardSnapshotToChannel(ch);setTimeout(()=>{const panel=document.getElementById("aznyWebWorkspace");if(panel?.classList.contains("azny-web-open"))aznySendWorkspaceState(true)},180)};
+  ch.onopen=()=>{sendBoardSnapshotToChannel(ch);try{ch.send(JSON.stringify({type:"live-pointer",x:0,y:0,nx:0,ny:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode}))}catch(_){}setTimeout(()=>{const panel=document.getElementById("aznyWebWorkspace");if(panel?.classList.contains("azny-web-open"))aznySendWorkspaceState(true)},180)};
   ch.onmessage=ev=>{
    try{const m=JSON.parse(ev.data);if(m.type==="board-request"){sendBoardSnapshotToChannel(ch);return}handleBoardChannelMessage(ev.data)}catch(err){console.warn("AZNY student board packet:",err)}
   };
