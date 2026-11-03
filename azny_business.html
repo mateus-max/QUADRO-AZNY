@@ -3784,7 +3784,11 @@ if(studentControlsRoot&&!studentControlsRoot.dataset.aznyDelegated){
  studentControlsRoot.addEventListener("click",event=>{
   const button=event.target.closest("button");
   if(!button||!studentControlsRoot.contains(button)||!studentControlActions[button.id])return;
-  event.preventDefault();event.stopPropagation();
+  event.preventDefault();
+  /* Capture at the toolbar before legacy per-button handlers run.
+     Those legacy handlers call stopPropagation(), which previously prevented
+     the delegated action from ever receiving the click. */
+  event.stopPropagation();event.stopImmediatePropagation();
   if(button.disabled)return;
   try{
    const result=studentControlActions[button.id]();
@@ -3797,7 +3801,7 @@ if(studentControlsRoot&&!studentControlsRoot.dataset.aznyDelegated){
    console.error("AZNY student control "+button.id,error);
    toast(document.documentElement.lang==="en"?"Could not activate this tool.":"Não foi possível ativar esta ferramenta.");
   }
- },false);
+ },true);
 }
 
 if(!classSessionId){document.getElementById("studentWaiting").textContent="Esta ligação de aula já não está ativa. Peça ao professor o link da aula atual.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=true;return}bindTeacherPresenceWatch();
