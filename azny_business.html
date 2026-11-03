@@ -1428,7 +1428,7 @@ body.azny-business-mode .topbar>.title input{min-width:0!important;width:100%!im
 </div>
 
 <div class="student-controls" id="studentControls">
-    <button id="studentPointerBtn">🔎 Lupa</button><button id="studentSelectBtn" type="button" title="Ativar seleção para mover, redimensionar ou eliminar os seus objetos">↖ Selecionar</button><button id="studentDeleteBtn" type="button" title="Eliminar o objeto selecionado">🗑 Eliminar</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentUploadImageBtn" type="button" title="Partilhar uma imagem no quadro">🖼 Imagem</button><button id="studentUploadDocBtn" type="button" title="Partilhar um documento no quadro">📄 Documento</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentScreenShareBtn" type="button" title="Partilhar o ecrã com o professor">▣ Partilhar ecrã</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button><button id="studentRaiseHandBtn" type="button" aria-pressed="false">✋ Levantar mão</button><button id="studentLeaveClassBtn" type="button" title="Sair da reunião">↩ Sair da reunião</button><button id="studentRefreshBoardBtn" type="button" title="Atualizar a aplicação e restabelecer a ligação">⟳ Atualizar</button><button id="studentLanguageBtn" class="azny-language-btn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button>
+    <button id="studentPointerBtn" type="button" title="Ativar indicador de ponteiro">➤ Indicador</button><button id="studentSelectBtn" type="button" title="Ativar seleção para mover, redimensionar ou eliminar os seus objetos">↖ Selecionar</button><button id="studentDeleteBtn" type="button" title="Eliminar o objeto selecionado">🗑 Eliminar</button><button id="studentTextBtn">T Texto</button><button id="studentEraseBtn">⌫ Apagar</button><button id="studentUploadImageBtn" type="button" title="Partilhar uma imagem no quadro">🖼 Imagem</button><button id="studentUploadDocBtn" type="button" title="Partilhar um documento no quadro">📄 Documento</button><button id="studentRecordBtn">⏺ Gravar</button><button id="studentScreenShareBtn" type="button" title="Partilhar o ecrã com o professor">▣ Partilhar ecrã</button><button id="studentMicBtn">🎙 Desligar microfone</button><button id="studentCameraBtn">📷 Desligar câmera</button><button id="studentRaiseHandBtn" type="button" aria-pressed="false">✋ Levantar mão</button><button id="studentLeaveClassBtn" type="button" title="Sair da reunião">↩ Sair da reunião</button><button id="studentRefreshBoardBtn" type="button" title="Atualizar a aplicação e restabelecer a ligação">⟳ Atualizar</button><button id="studentLanguageBtn" class="azny-language-btn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button>
 </div>
 <div id="studentMeetingHeader" class="azny-student-meeting-header" aria-live="polite"><strong><span class="azny-meeting-live-dot"></span> Reunião em andamento</strong><span id="studentMeetingTimer">00:00:00</span></div>
 <div class="student-live" id="studentLive"><div class="student-video-pair"><div class="student-video-card"><video id="studentTeacherVideo" autoplay playsinline></video><span>Anfitrião</span></div><div class="student-video-card azny-self-video-card"><video id="studentSelfVideo" autoplay muted playsinline></video><span>Você</span><b id="studentSelfRaisedHand" class="azny-self-raised-hand" aria-live="polite" hidden>✋</b></div></div></div>
@@ -1783,6 +1783,8 @@ function handleBoardChannelMessage(raw){
   }
   if(m.type==="sheet-cell"){aznyApplySheetCell(m);return}
   if(m.type==="doc-scroll"){aznyApplyDocumentScroll(m);return}
+  if(m.type==="workspace-state"){aznyApplyWorkspaceState(m);return}
+  if(m.type==="workspace-chunk"){let entry=aznyWorkspaceChunks.get(m.id);if(!entry){entry={total:m.total,parts:[]};aznyWorkspaceChunks.set(m.id,entry)}entry.parts[m.index]=m.data;if(entry.parts.filter(Boolean).length===entry.total){aznyWorkspaceChunks.delete(m.id);aznyApplyWorkspaceState(JSON.parse(entry.parts.join("")))}return}
   if(m.type==="board-zoom"){if(Number.isFinite(Number(m.zoom)))setZoom(Number(m.zoom),false);return}if(m.type==="board-pan"){applyBoardPan(m.pan);return}
   if(m.type==="board-state"){applyRemoteBoardState(m);return}
   if(m.type==="board-chunk"){
@@ -2161,6 +2163,63 @@ function addResource(type,lang){pushHistory();const el=createResourceObject(type
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 let studentTextFullSyncTimer=null;
+const aznyWorkspaceChunks=new Map();
+let aznyWorkspaceApplying=false,aznyWorkspaceSyncTimer=0;
+function aznySendWorkspacePacket(packet){
+ const raw=JSON.stringify(packet),id="w"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=10000,total=Math.ceil(raw.length/size);
+ const send=ch=>{if(!ch||ch.readyState!=="open"||ch.bufferedAmount>1048576)return;try{for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"workspace-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}))}catch(e){console.warn("AZNY workspace sync:",e)}};
+ if(isStudent)send(studentBoardChannel);
+ else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null));
+}
+function aznySendWorkspaceState(open=true){
+ const editor=document.getElementById("aznyWebEditor");
+ if(!editor)return;
+ aznySendWorkspacePacket({type:"workspace-state",surface:"word",open:!!open,html:editor.innerHTML,updatedAt:Date.now()});
+}
+function aznyApplyWorkspaceState(packet){
+ if(!packet||packet.surface!=="word")return;
+ const panel=document.getElementById("aznyWebWorkspace"),editor=document.getElementById("aznyWebEditor");
+ if(!panel||!editor)return;
+ if(packet.open){
+  panel.style.display="flex";panel.classList.add("azny-web-open");
+  document.getElementById("aznyExcelWorkspace")?.classList.remove("azny-excel-open");
+  if(document.body.classList.contains("student-mode"))panel.style.zIndex="120";
+  if(document.activeElement!==editor){
+   aznyWorkspaceApplying=true;
+   editor.innerHTML=String(packet.html||"");
+   aznyWorkspaceApplying=false;
+  }
+ }else if(!isStudent){
+  panel.classList.remove("azny-web-open");panel.style.display="none";
+ }
+ /* The host is the relay for all participants; students never write to Firebase. */
+ if(!isStudent){
+  const relay={type:"workspace-state",surface:"word",open:!!packet.open,html:String(packet.html||""),updatedAt:packet.updatedAt||Date.now()};
+  aznySendWorkspacePacket(relay);
+ }
+}
+function aznyBindWorkspaceCollaboration(){
+ const editor=document.getElementById("aznyWebEditor");
+ if(editor&&!editor.dataset.aznyCollabBound){
+  editor.dataset.aznyCollabBound="1";
+  editor.addEventListener("input",()=>{
+   if(aznyWorkspaceApplying)return;
+   clearTimeout(aznyWorkspaceSyncTimer);
+   aznyWorkspaceSyncTimer=setTimeout(()=>aznySendWorkspaceState(true),160);
+  });
+ }
+ const openBtn=document.getElementById("teacherWebBtn");
+ if(openBtn&&!openBtn.dataset.aznyWorkspaceShareBound){
+  openBtn.dataset.aznyWorkspaceShareBound="1";
+  openBtn.addEventListener("click",()=>setTimeout(()=>aznySendWorkspaceState(true),100),true);
+ }
+ const closeBtn=document.getElementById("aznyWebClose");
+ if(closeBtn&&!closeBtn.dataset.aznyWorkspaceShareBound){
+  closeBtn.dataset.aznyWorkspaceShareBound="1";
+  closeBtn.addEventListener("click",()=>{if(!isStudent)aznySendWorkspaceState(false)},true);
+ }
+}
+aznyBindWorkspaceCollaboration();
 function ensureAZNYImageControls(el){
  if(!el?.classList?.contains("mediaobj"))return;
  const img=el.querySelector("img");if(!img)return;
@@ -3410,7 +3469,7 @@ async function toggleStudentCamera(){
  const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo)selfVideo.style.opacity=studentCameraOn?"1":".22";
  toast(document.documentElement.lang==="en"?(studentCameraOn?"Camera on.":"Camera off."):(studentCameraOn?"Câmera ligada.":"Câmera desligada."));
 }
-function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);toast(document.documentElement.lang==="en"?"The host approved your entry.":"Entrada aprovada pelo anfitrião");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O anfitrião recusou o pedido de entrada na reunião.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
+function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");setTool("select");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);toast(document.documentElement.lang==="en"?"The host approved your entry.":"Entrada aprovada pelo anfitrião");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O anfitrião recusou o pedido de entrada na reunião.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
 
 /* Public bridge for the external click handler; implementation stays inside the app scope. */
 window.aznyBusinessSendJoinRequest=async function(name){
@@ -3679,7 +3738,7 @@ async function restoreStudentSessionIfApproved(){
   }
   if(!found){showStudentJoinReady();return false}
   studentRequestId=found.id;studentName=found.data.name||"";
-  studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");
+  studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");setTool("select");
   const modal=document.getElementById("studentNameModal");modal?.classList.remove("show");
   document.getElementById("studentControls").style.display="flex";
   const input=document.getElementById("studentNameInput");if(input)input.value=studentName;
@@ -3914,8 +3973,8 @@ document.getElementById("recordClassBtn").onclick=async()=>{const b=document.get
 /* AZNY bilingual toolbar: Portuguese / English, available to teacher and student. */
 (function setupAZNYLanguageSwitcher(){
  const KEY="azny-quadro-ui-language";
- const pt={undo:"↶ Desfazer",redo:"↷ Refazer",pagePrev:"◀ Página anterior",pageNext:"Página seguinte ▶",deleteTool:"✕ Apagar",pointerTool:"↖ Ponteiro",undoSide:"↶ Desfazer",redoSide:"↷ Refazer",imageBtn:"🖼 Carregar imagem",docBtn:"📄 Carregar documento",chartsBtn:"📊 Gráficos",musicBtn:"🎵 Música",pagesBtn:"📑 Páginas do quadro",shareWhatsApp:"🟢 Partilhar no WhatsApp",copyClassLink:"🔗 Copiar link da reunião",shareFacebook:"🔵 Partilhar no Facebook",startClassBtn:"▶ Iniciar reunião",endClassBtn:"⏹ Encerrar reunião",recordClassBtn:"⏺ Gravar reunião",teacherScreenShareBtn:"▣ Partilhar ecrã",studentPointerBtn:"🔎 Lupa",studentSelectBtn:"↖ Selecionar",studentDeleteBtn:"🗑 Eliminar",studentTextBtn:"T Texto",studentEraseBtn:"⌫ Apagar",studentUploadImageBtn:"🖼 Imagem",studentUploadDocBtn:"📄 Documento",studentRecordBtn:"⏺ Gravar",studentScreenShareBtn:"▣ Partilhar ecrã",studentRaiseHandBtn:"✋ Levantar mão",studentLeaveClassBtn:"↩ Sair da aula"};
- const en={undo:"↶ Undo",redo:"↷ Redo",pagePrev:"◀ Previous page",pageNext:"Next page ▶",deleteTool:"✕ Delete",pointerTool:"↖ Pointer",undoSide:"↶ Undo",redoSide:"↷ Redo",imageBtn:"🖼 Upload image",docBtn:"📄 Upload document",chartsBtn:"📊 Charts",musicBtn:"🎵 Music",pagesBtn:"📑 Board pages",shareWhatsApp:"🟢 Share on WhatsApp",copyClassLink:"🔗 Copy meeting link",shareFacebook:"🔵 Share on Facebook",startClassBtn:"▶ Start meeting",endClassBtn:"⏹ End meeting",recordClassBtn:"⏺ Record meeting",teacherScreenShareBtn:"▣ Share screen",studentPointerBtn:"🔎 Magnifier",studentSelectBtn:"↖ Select",studentDeleteBtn:"🗑 Delete",studentTextBtn:"T Text",studentEraseBtn:"⌫ Eraser",studentUploadImageBtn:"🖼 Image",studentUploadDocBtn:"📄 Document",studentRecordBtn:"⏺ Record",studentScreenShareBtn:"▣ Share screen",studentRaiseHandBtn:"✋ Raise hand",studentLeaveClassBtn:"↩ Leave class"};
+ const pt={undo:"↶ Desfazer",redo:"↷ Refazer",pagePrev:"◀ Página anterior",pageNext:"Página seguinte ▶",deleteTool:"✕ Apagar",pointerTool:"↖ Ponteiro",undoSide:"↶ Desfazer",redoSide:"↷ Refazer",imageBtn:"🖼 Carregar imagem",docBtn:"📄 Carregar documento",chartsBtn:"📊 Gráficos",musicBtn:"🎵 Música",pagesBtn:"📑 Páginas do quadro",shareWhatsApp:"🟢 Partilhar no WhatsApp",copyClassLink:"🔗 Copiar link da reunião",shareFacebook:"🔵 Partilhar no Facebook",startClassBtn:"▶ Iniciar reunião",endClassBtn:"⏹ Encerrar reunião",recordClassBtn:"⏺ Gravar reunião",teacherScreenShareBtn:"▣ Partilhar ecrã",studentPointerBtn:"➤ Indicador",studentSelectBtn:"↖ Selecionar",studentDeleteBtn:"🗑 Eliminar",studentTextBtn:"T Texto",studentEraseBtn:"⌫ Apagar",studentUploadImageBtn:"🖼 Imagem",studentUploadDocBtn:"📄 Documento",studentRecordBtn:"⏺ Gravar",studentScreenShareBtn:"▣ Partilhar ecrã",studentRaiseHandBtn:"✋ Levantar mão",studentLeaveClassBtn:"↩ Sair da aula"};
+ const en={undo:"↶ Undo",redo:"↷ Redo",pagePrev:"◀ Previous page",pageNext:"Next page ▶",deleteTool:"✕ Delete",pointerTool:"↖ Pointer",undoSide:"↶ Undo",redoSide:"↷ Redo",imageBtn:"🖼 Upload image",docBtn:"📄 Upload document",chartsBtn:"📊 Charts",musicBtn:"🎵 Music",pagesBtn:"📑 Board pages",shareWhatsApp:"🟢 Share on WhatsApp",copyClassLink:"🔗 Copy meeting link",shareFacebook:"🔵 Share on Facebook",startClassBtn:"▶ Start meeting",endClassBtn:"⏹ End meeting",recordClassBtn:"⏺ Record meeting",teacherScreenShareBtn:"▣ Share screen",studentPointerBtn:"➤ Pointer",studentSelectBtn:"↖ Select",studentDeleteBtn:"🗑 Delete",studentTextBtn:"T Text",studentEraseBtn:"⌫ Eraser",studentUploadImageBtn:"🖼 Image",studentUploadDocBtn:"📄 Document",studentRecordBtn:"⏺ Record",studentScreenShareBtn:"▣ Share screen",studentRaiseHandBtn:"✋ Raise hand",studentLeaveClassBtn:"↩ Leave class"};
  const toolPt={select:"↖ Selecionar",text:"T Texto",pen:"✎ Caneta",eraser:"⌫ Borracha"},toolEn={select:"↖ Select",text:"T Text",pen:"✎ Pen",eraser:"⌫ Eraser"};
  function applyAdditionalLanguage(lang){
   const en=lang==="en",heads=document.querySelectorAll(".sidehead");
