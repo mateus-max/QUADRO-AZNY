@@ -150,6 +150,10 @@ body:not(.student-mode) #board .musicobj svg{
 #livePointer .pointerIcon .glass{fill:#e11;stroke:#fff;stroke-width:1.4}
 #livePointer .pointerIcon .glassHole{fill:#fff}
 #livePointer.active{display:block}
+.azny-remote-pointer{position:absolute;left:0;top:0;width:48px;height:56px;z-index:2147483646;display:block;pointer-events:none;filter:drop-shadow(0 2px 2px #0005);will-change:transform}
+.azny-remote-pointer .pointerIcon,.azny-remote-pointer .pointerIcon svg{display:block;width:48px;height:56px;overflow:visible}
+.azny-remote-pointer .pointerIcon .arrow{fill:#e11;stroke:#fff;stroke-width:1.4;stroke-linejoin:round}
+.azny-remote-pointer-label{position:absolute;left:25px;top:34px;max-width:150px;padding:2px 6px;border-radius:4px;background:#b91c1c;color:#fff;font:700 10px/1.3 Arial,sans-serif;white-space:nowrap;box-shadow:0 1px 4px #0004}
 .pointer-tool-on{background:#ffe9e9!important;border-color:#e11!important;color:#c00!important;box-shadow:inset 0 0 0 1px #e11!important}
 .camera-panel{padding:10px}.camera{height:155px;background:#091626;border-radius:10px;overflow:hidden;position:relative;border:1px solid #24394f}
 .camera video{width:100%;height:100%;display:block;object-fit:cover;background:#0b1828;transform:scaleX(-1)}
@@ -1659,6 +1663,24 @@ document.getElementById("aznyBrowserReload")?.addEventListener("click",()=>{
 document.getElementById("aznyBrowserBack")?.addEventListener("click",()=>{if(isStudent)return;if(aznyBrowserHistoryIndex>0){aznyBrowserHistoryIndex--;aznyNavigateBrowser(aznyBrowserHistory[aznyBrowserHistoryIndex],"back")}else{try{aznyBrowserFrame.contentWindow.history.back()}catch(_){}}});
 document.getElementById("aznyBrowserForward")?.addEventListener("click",()=>{if(isStudent)return;if(aznyBrowserHistoryIndex<aznyBrowserHistory.length-1){aznyBrowserHistoryIndex++;aznyNavigateBrowser(aznyBrowserHistory[aznyBrowserHistoryIndex],"forward")}else{try{aznyBrowserFrame.contentWindow.history.forward()}catch(_){}}});
 
+function aznyRenderRemoteParticipantPointer(packet){
+ const owner=String(packet.pointerOwnerId||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,100);
+ if(!owner)return false;
+ const selector='[data-azny-remote-pointer="'+owner+'"]';
+ let pointer=board.querySelector(selector);
+ if(!packet.visible){pointer?.remove();return true}
+ if(!pointer){
+  pointer=document.createElement("div");pointer.className="azny-remote-pointer";pointer.dataset.aznyRemotePointer=owner;
+  const source=document.querySelector("#livePointer .pointerIcon");if(source)pointer.appendChild(source.cloneNode(true));
+  const label=document.createElement("span");label.className="azny-remote-pointer-label";pointer.appendChild(label);board.appendChild(pointer);
+ }
+ const bw=Math.max(1,Number(packet.boardWidth)||board.clientWidth),bh=Math.max(1,Number(packet.boardHeight)||board.clientHeight);
+ const x=Math.max(0,Math.min(board.clientWidth,Number(packet.x)||0))*board.clientWidth/bw;
+ const y=Math.max(0,Math.min(board.clientHeight,Number(packet.y)||0))*board.clientHeight/bh;
+ pointer.style.transform="translate("+(x-44)+"px,"+(y-2)+"px)";
+ const label=pointer.querySelector(".azny-remote-pointer-label");if(label)label.textContent=String(packet.pointerOwnerName||"Participante").slice(0,45);
+ return true;
+}
 function handleBoardChannelMessage(raw){
  try{
   const m=JSON.parse(raw);
@@ -1666,6 +1688,7 @@ function handleBoardChannelMessage(raw){
   if(m.type==="shared-browser"){if(isStudent){aznyBrowserApplyingRemote=true;aznyApplyBrowserState(m);aznyBrowserApplyingRemote=false}return;}
   if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}return;}
   if(m.type==="live-pointer"){
+   if(m.pointerOwnerId){aznyRenderRemoteParticipantPointer(m);return;}
    if(m.surface==="excel"||m.surface==="word"){
     const p=document.getElementById(m.surface==="excel"?"aznyExcelLivePointer":"aznyWordLivePointer");
     const host=document.getElementById(m.surface==="excel"?"aznyExcelWorkspace":"aznyWebWorkspace");
@@ -1800,12 +1823,12 @@ function updateHint(){hint.style.display=board.querySelector(".object")||strokes
 function setPointerMode(on){
  pointerMode=!!on;
  const p=document.getElementById("livePointer"),b=document.getElementById("pointerTool"),studentButton=document.getElementById("studentPointerBtn");
- p.classList.toggle("active",pointerMode);b?.classList.toggle("pointer-tool-on",pointerMode);studentButton?.classList.toggle("pointer-tool-on",pointerMode);studentButton?.setAttribute("aria-pressed",String(pointerMode));board.classList.toggle("azny-pointer-mode",pointerMode);
+ p.classList.toggle("active",pointerMode);b?.classList.toggle("pointer-tool-on",pointerMode);studentButton?.classList.toggle("pointer-tool-on",pointerMode);studentButton?.setAttribute("aria-pressed",String(pointerMode));if(studentButton)studentButton.textContent=pointerMode?"➤ Indicador: ATIVO":"➤ Indicador: DESATIVADO";board.classList.toggle("azny-pointer-mode",pointerMode);
  document.getElementById("aznyExcelLivePointer")?.classList.remove("active");
  document.getElementById("aznyWordLivePointer")?.classList.remove("active");
  stage.style.cursor=pointerMode?"none":(tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default"));
  const sendPacket=packet=>{const raw=JSON.stringify(packet);if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"){try{ch.send(raw)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(raw)}catch(_){}}})};
- sendPacket({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:pointerMode});
+ sendPacket({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:pointerMode,...(isStudent?{pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}:{})});
  ["excel","word"].forEach(surface=>sendPacket({type:"live-pointer",surface,x:0,y:0,boardWidth:0,boardHeight:0,visible:false}));
 }
 let lastPointerPacketAt=0;
@@ -1819,7 +1842,7 @@ function updateLivePointer(e){
   const now=performance.now();
   if(now-lastPointerPacketAt>=16){
    lastPointerPacketAt=now;
-   const touchOffset=e.pointerType==="touch";const packet=JSON.stringify({type:"live-pointer",x:x+(touchOffset?39:0),y:y+(touchOffset?-47:0),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode});
+   const touchOffset=e.pointerType==="touch";const packet=JSON.stringify({type:"live-pointer",x:x+(touchOffset?39:0),y:y+(touchOffset?-47:0),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,...(isStudent?{pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}:{})});
    if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}
    else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});
   }
@@ -1855,7 +1878,7 @@ function moveStudentPointer(e){
  const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
  const p=document.getElementById("livePointer");const tipX=x+39,tipY=y-47;p.style.transform="translate("+(tipX-44)+"px,"+(tipY-2)+"px)";p.classList.add("touch-pointer","active");
  const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
- const packet=JSON.stringify({type:"live-pointer",x:x+39,y:y-47,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true});
+ const packet=JSON.stringify({type:"live-pointer",x:x+39,y:y-47,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"});
  const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
 }
 stage.addEventListener("pointerdown",function(e){if(!isStudent||!pointerMode||!board.contains(e.target))return;aznyPointerDragId=e.pointerId;try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();moveStudentPointer(e)},{passive:false});
@@ -2768,7 +2791,7 @@ async function startStudentWebRTC(options={}){
   studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));aznyApplyLowDataMode(studentPeer);
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
   studentBoardChannel.bufferedAmountLowThreshold=65536;
-  studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}));studentBoardChannel.send(JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode}))}catch(_){}};
+  studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}));studentBoardChannel.send(JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}))}catch(_){}};
   studentBoardChannel.onmessage=e=>handleBoardChannelMessage(e.data);
   studentBoardChannel.onclose=()=>{studentBoardChannel=null};
   /* Keep the teacher's microphone on an audio-only element. Video visibility/state must never control playback of the microphone. */
