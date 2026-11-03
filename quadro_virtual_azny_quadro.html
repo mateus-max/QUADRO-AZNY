@@ -1619,7 +1619,7 @@ function aznyApplyBrowserState(state){
  if(!state.url)return;
  const url=aznyNormalizeBrowserUrl(state.url);if(!url)return;
  if(aznyBrowserAddress)aznyBrowserAddress.value=url;
- if(aznyBrowserFrame.dataset.currentUrl!==url){aznyBrowserFrame.dataset.currentUrl=url;aznyBrowserFrame.src=url}
+ if(aznyBrowserFrame.dataset.currentUrl!==url||state.action==="reload"){aznyBrowserFrame.dataset.currentUrl=url;aznyBrowserFrame.src=url}
 }
 function aznySendBrowserState(url,action="navigate"){
  if(isStudent||aznyBrowserApplyingRemote)return;
@@ -1652,7 +1652,11 @@ document.getElementById("internetSearchBtn")?.addEventListener("click",()=>{
 });
 document.getElementById("aznyBrowserForm")?.addEventListener("submit",e=>{e.preventDefault();aznyNavigateBrowser(aznyBrowserAddress.value)});
 document.getElementById("aznyBrowserClose")?.addEventListener("click",aznyCloseSharedBrowser);
-document.getElementById("aznyBrowserReload")?.addEventListener("click",()=>{try{aznyBrowserFrame.contentWindow.location.reload()}catch(_){const u=aznyBrowserFrame.dataset.currentUrl;if(u)aznyNavigateBrowser(u,"reload")}});
+document.getElementById("aznyBrowserReload")?.addEventListener("click",()=>{
+ const u=aznyBrowserFrame.dataset.currentUrl;if(!u)return;
+ if(!isStudent){aznySendBrowserState(u,"reload");aznyBrowserFrame.src=u}
+ else{try{aznyBrowserFrame.contentWindow.location.reload()}catch(_){aznyBrowserFrame.src=u}}
+});
 document.getElementById("aznyBrowserBack")?.addEventListener("click",()=>{if(isStudent)return;if(aznyBrowserHistoryIndex>0){aznyBrowserHistoryIndex--;aznyNavigateBrowser(aznyBrowserHistory[aznyBrowserHistoryIndex],"back")}else{try{aznyBrowserFrame.contentWindow.history.back()}catch(_){}}});
 document.getElementById("aznyBrowserForward")?.addEventListener("click",()=>{if(isStudent)return;if(aznyBrowserHistoryIndex<aznyBrowserHistory.length-1){aznyBrowserHistoryIndex++;aznyNavigateBrowser(aznyBrowserHistory[aznyBrowserHistoryIndex],"forward")}else{try{aznyBrowserFrame.contentWindow.history.forward()}catch(_){}}});
 
