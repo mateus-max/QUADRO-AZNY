@@ -1149,7 +1149,12 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #micBtn{o
 body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #cameraBtn{order:1!important}
 body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:disabled{opacity:.55!important}
 </style>
-\n<style id="azny-desktop-exit-board-style">\n#exitBoardBtn{width:auto!important;min-width:76px;padding:0 10px!important;white-space:nowrap;font-size:13px!important}\n@media(max-width:900px){#exitBoardBtn{display:none!important}}\n</style>\n</head>
+
+<style id="azny-desktop-exit-board-style">
+#exitBoardBtn{width:auto!important;min-width:76px;padding:0 10px!important;white-space:nowrap;font-size:13px!important}
+@media(max-width:900px){#exitBoardBtn{display:none!important}}
+</style>
+\n</head>
 <body>
 <div class="app">
 <header class="topbar">
@@ -4308,7 +4313,28 @@ html body:not(.student-mode) .rightbar .camera-panel #aznyAudioOutputStatus{
 }
 </style>
 
-\n<script id="azny-desktop-exit-board-handler">\n(function(){\n const exitButton=document.getElementById("exitBoardBtn");\n if(!exitButton)return;\n exitButton.addEventListener("click",function(){\n  if(window.history.length>1){window.history.back();return;}\n  try{\n   const previous=document.referrer?new URL(document.referrer):null;\n   if(previous&&previous.origin===window.location.origin){window.location.replace(previous.href);return;}\n  }catch(_){}\n  alert("Não foi possível identificar automaticamente a página anterior. Abra o quadro a partir da página principal para poder voltar com este botão.");\n });\n})();\n</script>\n</body></html>');w.document.close()});
+
+<script id="azny-desktop-exit-board-handler">
+(function(){
+ const exitButton=document.getElementById("exitBoardBtn");
+ if(!exitButton)return;
+ exitButton.addEventListener("click",function(){
+  if(window.history.length>1){window.history.back();return;}
+  try{
+   const previous=document.referrer?new URL(document.referrer):null;
+   if(previous&&previous.origin===window.location.origin){window.location.replace(previous.href);return;}
+  }catch(_){}
+  const params=new URLSearchParams(window.location.search);
+  const access=params.get("acesso")||"";
+  if(!params.has("aluno")){
+   window.location.assign("dashboard.html?acesso="+encodeURIComponent(access));
+  }else{
+   window.location.assign("index.html");
+  }
+ });
+})();
+</script>
+\n</body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
     document.getElementById("aznyWebClose")?.addEventListener("click",()=>{webPanel.classList.remove("azny-web-open");if(!isStudent&&webRef)webRef.update({visible:false})});
