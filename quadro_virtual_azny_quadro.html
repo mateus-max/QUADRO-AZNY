@@ -1149,7 +1149,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #micBtn{o
 body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay #cameraBtn{order:1!important}
 body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:disabled{opacity:.55!important}
 </style>
-</head>
+\n<style id="azny-desktop-exit-board-style">\n#exitBoardBtn{width:auto!important;min-width:76px;padding:0 10px!important;white-space:nowrap;font-size:13px!important}\n@media(max-width:900px){#exitBoardBtn{display:none!important}}\n</style>\n</head>
 <body>
 <div class="app">
 <header class="topbar">
@@ -1165,7 +1165,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
     <button id="shareFacebook" type="button" title="Partilhar no Facebook" aria-label="Partilhar no Facebook"><svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1877F2"/><path d="M18.5 28V17.2h3.6l.5-4.2h-4.1v-2.7c0-1.2.4-2 2.1-2h2.2V4.5c-.4-.1-1.8-.2-3.3-.2-3.3 0-5.5 2-5.5 5.7V13H10v4.2h4V28z" fill="#fff"/></svg></button>
     <div class="record-download" id="recordDownload"></div>
   </div>
-  <div class="top-actions"><button class="iconbtn" id="aznyFullscreenBtn" title="Ecrã inteiro" aria-label="Ecrã inteiro">⛶</button><button class="iconbtn" id="teacherDashboardBtn" title="Painel do professor">⌂</button>
+  <div class="top-actions"><button class="iconbtn" id="exitBoardBtn" type="button" title="Voltar à página anterior" aria-label="Sair do quadro e voltar à página anterior">↩ Sair</button><button class="iconbtn" id="aznyFullscreenBtn" title="Ecrã inteiro" aria-label="Ecrã inteiro">⛶</button><button class="iconbtn" id="teacherDashboardBtn" title="Painel do professor">⌂</button>
     <button class="iconbtn" id="saveBtn" title="Guardar">💾</button>
     <button class="iconbtn" id="refreshBoardBtn" title="Atualizar quadro e restabelecer ligação">⟳</button>
     <button class="iconbtn" id="clearBtn" title="Limpar quadro">🗑</button>
@@ -4308,7 +4308,7 @@ html body:not(.student-mode) .rightbar .camera-panel #aznyAudioOutputStatus{
 }
 </style>
 
-</body></html>');w.document.close()});
+\n<script id="azny-desktop-exit-board-handler">\n(function(){\n const exitButton=document.getElementById("exitBoardBtn");\n if(!exitButton)return;\n exitButton.addEventListener("click",function(){\n  if(window.history.length>1){window.history.back();return;}\n  try{\n   const previous=document.referrer?new URL(document.referrer):null;\n   if(previous&&previous.origin===window.location.origin){window.location.replace(previous.href);return;}\n  }catch(_){}\n  alert("Não foi possível identificar automaticamente a página anterior. Abra o quadro a partir da página principal para poder voltar com este botão.");\n });\n})();\n</script>\n</body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
     document.getElementById("aznyWebClose")?.addEventListener("click",()=>{webPanel.classList.remove("azny-web-open");if(!isStudent&&webRef)webRef.update({visible:false})});
