@@ -1965,7 +1965,6 @@ function setTool(t){
   document.body.classList.remove("azny-custom-keyboard","azny-student-native-keyboard");
  }
  document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===tool));
- updateStudentToolButtons?.();
  const drawingTool=tool==="pen"||tool==="eraser";
  board.classList.toggle("drawing-active",drawingTool);
  board.classList.toggle("object-scroll-mode",tool!=="select");
