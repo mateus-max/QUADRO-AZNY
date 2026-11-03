@@ -1796,8 +1796,8 @@ function load(){try{const raw=localStorage.getItem(STORAGE);if(!raw)return;const
 function updateHint(){hint.style.display=board.querySelector(".object")||strokes.length?"none":"block"}
 function setPointerMode(on){
  pointerMode=!!on;
- const p=document.getElementById("livePointer"),b=document.getElementById("pointerTool");
- p.classList.toggle("active",pointerMode);b.classList.toggle("pointer-tool-on",pointerMode);board.classList.toggle("azny-pointer-mode",pointerMode);
+ const p=document.getElementById("livePointer"),b=document.getElementById("pointerTool"),studentButton=document.getElementById("studentPointerBtn");
+ p.classList.toggle("active",pointerMode);b?.classList.toggle("pointer-tool-on",pointerMode);studentButton?.classList.toggle("pointer-tool-on",pointerMode);studentButton?.setAttribute("aria-pressed",String(pointerMode));board.classList.toggle("azny-pointer-mode",pointerMode);
  document.getElementById("aznyExcelLivePointer")?.classList.remove("active");
  document.getElementById("aznyWordLivePointer")?.classList.remove("active");
  stage.style.cursor=pointerMode?"none":(tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default"));
@@ -2708,7 +2708,7 @@ async function startStudentWebRTC(options={}){
   studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));aznyApplyLowDataMode(studentPeer);
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
   studentBoardChannel.bufferedAmountLowThreshold=65536;
-  studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}))}catch(_){}};
+  studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}));studentBoardChannel.send(JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode}))}catch(_){}};
   studentBoardChannel.onmessage=e=>handleBoardChannelMessage(e.data);
   studentBoardChannel.onclose=()=>{studentBoardChannel=null};
   /* Keep the teacher's microphone on an audio-only element. Video visibility/state must never control playback of the microphone. */
@@ -2891,7 +2891,7 @@ async function connectStudentPeer(id,d){
   const ch=e.channel;
   if(ch.label!=="azny-board")return;
   pc._aznyBoardChannel=ch;ch.bufferedAmountLowThreshold=65536;
-  ch.onopen=()=>sendBoardSnapshotToChannel(ch);
+  ch.onopen=()=>{sendBoardSnapshotToChannel(ch);try{ch.send(JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode}));const browserOpen=aznyBrowserPanel?.classList.contains("open");ch.send(JSON.stringify({type:"shared-browser",url:aznyBrowserFrame?.dataset?.currentUrl||"",open:!!browserOpen,action:"state"}))}catch(_){}};
   ch.onmessage=ev=>{
    try{const m=JSON.parse(ev.data);if(m.type==="board-request"){sendBoardSnapshotToChannel(ch);return}handleBoardChannelMessage(ev.data);if(m.type==="live-pointer"){const packet=ev.data;Object.values(window.aznyTeacherPeers||{}).forEach(other=>{const out=other?other._aznyBoardChannel:null;if(other!==pc&&out?.readyState==="open"&&out.bufferedAmount<65536){try{out.send(packet)}catch(_){}}})}}catch(err){console.warn("AZNY student board packet:",err)}
   };
