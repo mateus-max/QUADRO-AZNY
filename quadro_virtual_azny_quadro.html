@@ -1871,14 +1871,14 @@ let lastPointerPacketAt=0;
 function updateLivePointer(e){
  if(e.target?.closest?.("#aznyExcelWorkspace,#aznyWebWorkspace"))return;
  if(!board.contains(e.target)&&!pointerMode)return;
- const r=board.getBoundingClientRect(),cs=getComputedStyle(board),bl=parseFloat(cs.borderLeftWidth)||0,br=parseFloat(cs.borderRightWidth)||0,bt=parseFloat(cs.borderTopWidth)||0,bb=parseFloat(cs.borderBottomWidth)||0,w=Math.max(1,r.width-bl-br),h=Math.max(1,r.height-bt-bb),x=(e.clientX-r.left-bl)*board.clientWidth/w,y=(e.clientY-r.top-bt)*board.clientHeight/h;
+ const r=board.getBoundingClientRect(),cs=getComputedStyle(board),bl=parseFloat(cs.borderLeftWidth)||0,br=parseFloat(cs.borderRightWidth)||0,bt=parseFloat(cs.borderTopWidth)||0,bb=parseFloat(cs.borderBottomWidth)||0,w=Math.max(1,r.width-bl-br),h=Math.max(1,r.height-bt-bb),x=Math.max(0,Math.min(board.clientWidth,(e.clientX-r.left-bl)*board.clientWidth/w)),y=Math.max(0,Math.min(board.clientHeight,(e.clientY-r.top-bt)*board.clientHeight/h));
  const p=document.getElementById("livePointer");
- if(pointerMode){const touchOffset=e.pointerType==="touch";const tipX=x+(touchOffset?39:0),tipY=y+(touchOffset?-47:0);p.style.transform=`translate3d(${tipX-44}px,${tipY-2}px,0)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
+ if(pointerMode){const touchOffset=e.pointerType==="touch";const tipX=x,tipY=y;p.style.transform=`translate3d(${tipX-44}px,${tipY-2}px,0)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
  {
   const now=performance.now();
   if(now-lastPointerPacketAt>=16){
    lastPointerPacketAt=now;
-   const touchOffset=e.pointerType==="touch";const packet=JSON.stringify({type:"live-pointer",x:x+(touchOffset?39:0),y:y+(touchOffset?-47:0),boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,...(isStudent?{pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}:{})});
+   const packet=JSON.stringify({type:"live-pointer",x,y,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,...(isStudent?{pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}:{})});
    if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}
    else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});
   }
@@ -1986,7 +1986,7 @@ function createText(x,y,anchor){
  const r=document.createRange();r.selectNodeContents(el);r.collapse(true);
  const sel=getSelection();if(sel){sel.removeAllRanges();sel.addRange(r);savedRange=r.cloneRange();}
  el.focus({preventScroll:true});
- updateHint();scheduleSave();
+ updateHint();scheduleSave();publishLiveBoardState();
 }
 function selectObject(el){document.querySelectorAll(".object.selected").forEach(x=>x.classList.remove("selected"));selected=el;if(el)el.classList.add("selected");updateObjectActions()}
 /* Keep text within the green writing area as it grows, including text restored from sync. */
@@ -2085,7 +2085,7 @@ function makeInteractive(el){
    selectObject(el);dragStart(e,el);
   }
  },{passive:false});
- el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>{pageStates[currentPage-1]=snapshot();publishLiveBoardState()},420)clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}})},35)}});
+ el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>{pageStates[currentPage-1]=snapshot();publishLiveBoardState()},180);clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}})},35)}});
 }
 function dragStart(e,el){
  if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();localBoardEditing=true;pushHistory();const p=localPoint(e),sx=parseFloat(el.style.left)||0,sy=parseFloat(el.style.top)||0,pointerId=e.pointerId;
