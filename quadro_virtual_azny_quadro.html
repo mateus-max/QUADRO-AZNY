@@ -1975,7 +1975,7 @@ function constrainTextToBoard(el){
 })();
 function createText(x,y,anchor){
  pushHistory();
- const el=document.createElement("div");el.className="object textobj";el.dataset.id="o"+(++objectId);el.contentEditable="true";el.spellcheck=true;
+ const el=document.createElement("div");el.className="object textobj";el.dataset.id="o"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);if(isStudent)el.dataset.createdBy=studentRequestId;el.contentEditable="true";el.spellcheck=true;
  if(!document.body.classList.contains("student-mode")&&matchMedia("(pointer:coarse)").matches)el.setAttribute("inputmode","none");
  el.style.left=x+"px";el.style.top=y+"px";el.style.fontSize=document.getElementById("fontSize").value+"px";el.style.fontFamily=document.getElementById("fontFamily").value;el.style.color="#ffffff";
  constrainTextToBoard(el);
