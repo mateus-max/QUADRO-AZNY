@@ -1325,7 +1325,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
 (()=>{"use strict";
 const board=document.getElementById("board"),stage=document.getElementById("stage"),wrap=document.getElementById("canvasWrap"),canvas=document.getElementById("drawLayer"),ctx=canvas.getContext("2d");
 const hint=document.getElementById("hint"),toastEl=document.getElementById("toast");let STORAGE="azny_virtual_board_v2";
-let tool="select",selected=null,zoom=1,strokes=[],undoStack=[],redoStack=[],objectId=0,drawing=false,currentStroke=null,saveTimer=null,remoteSaveTimer=null,teacherStream=null,teacherAudioStream=null,savedRange=null,remoteBoardApplying=false,liveBoardTimer=null,localBoardEditing=false;
+let tool="select",selected=null,zoom=1,strokes=[],undoStack=[],redoStack=[],objectId=0,drawing=false,currentStroke=null,saveTimer=null,remoteSaveTimer=null,teacherStream=null,teacherAudioStream=null,savedRange=null,remoteBoardApplying=false,liveBoardTimer=null,localBoardEditing=false,pendingRemoteBoardState=null,pendingRemoteBoardTimer=null;
 let currentPage=1;
 let aznyLiveStrokeId="",aznyRemoteLiveStrokes=new Map();
 let pageStates=Array(5).fill(null);
@@ -1575,10 +1575,21 @@ function aznyStableValue(value){
 function aznySameBoardPage(a,b){
  try{return JSON.stringify(aznyStableValue(a))===JSON.stringify(aznyStableValue(b))}catch(_){return false}
 }
+function queueRemoteBoardState(d){
+ if(!d)return;pendingRemoteBoardState=d;
+ if(!pendingRemoteBoardTimer)pendingRemoteBoardTimer=setTimeout(flushPendingRemoteBoardState,160);
+}
+function flushPendingRemoteBoardState(){
+ pendingRemoteBoardTimer=null;if(!pendingRemoteBoardState)return;
+ if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer,.textobj[contenteditable]")){pendingRemoteBoardTimer=setTimeout(flushPendingRemoteBoardState,180);return;}
+ const next=pendingRemoteBoardState;pendingRemoteBoardState=null;applyRemoteBoardState(next);
+ if(!isStudent)setTimeout(()=>publishLiveBoardState(),60);
+}
+document.addEventListener("focusout",()=>{if(pendingRemoteBoardState&&!pendingRemoteBoardTimer)pendingRemoteBoardTimer=setTimeout(flushPendingRemoteBoardState,80)},true);
 function applyRemoteBoardState(d){
  if(!d||remoteBoardApplying)return;
- /* Do not rebuild the board from an older remote snapshot while the user is interacting with a document/PDF. */
- if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer,.textobj[contenteditable]"))return;
+ /* Queue updates while a participant is typing or manipulating a document instead of silently dropping them. */
+ if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer,.textobj[contenteditable]")){queueRemoteBoardState(d);return;}
  try{
   if(Array.isArray(d.deletedObjectIds))d.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
   if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
@@ -1703,7 +1714,7 @@ function handleBoardChannelMessage(raw){
   const m=JSON.parse(raw);
   if(m.type==="shared-browser-close"){if(isStudent)aznyCloseSharedBrowser(true);return;}
   if(m.type==="shared-browser"){if(isStudent){aznyBrowserApplyingRemote=true;aznyApplyBrowserState(m);aznyBrowserApplyingRemote=false}return;}
-  if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}return;}
+  if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<524288){try{out.send(packet)}catch(_){}}})}return;}
   if(m.type==="live-pointer"){
    if(m.pointerOwnerId){aznyRenderRemoteParticipantPointer(m);return;}
    if(m.surface==="excel"||m.surface==="word"){
@@ -1771,7 +1782,7 @@ function setupBoardRealtime(){
   if(!d){if(!isStudent)setTimeout(publishBoardState,150);return;}
   if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
   const activeText=document.activeElement?.closest?.(".textobj");
-  if(localBoardEditing||(activeText&&board.contains(activeText)))return;
+  if(localBoardEditing||(activeText&&board.contains(activeText))){queueRemoteBoardState(d);return;}
   /* Ignore a Firebase echo when the visible page is already identical.
      Rebuilding the DOM for an unchanged snapshot was dropping object selection. */
   try{
@@ -1893,7 +1904,7 @@ document.getElementById("pointerTool").onclick=()=>{
 let aznyPointerDragId=null,lastStudentPointerSend=0;
 function moveStudentPointer(e){
  if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
- const r=board.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;
+ const {x,y}=boardPointFromClient(e);
  const p=document.getElementById("livePointer");const tipX=x+39,tipY=y-47;p.style.transform="translate("+(tipX-44)+"px,"+(tipY-2)+"px)";p.classList.add("touch-pointer","active");
  const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
  const packet=JSON.stringify({type:"live-pointer",x:x+39,y:y-47,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"});
@@ -2067,7 +2078,7 @@ function makeInteractive(el){
    selectObject(el);dragStart(e,el);
   }
  },{passive:false});
- el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){if(isStudent){clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>publishLiveBoardState(),650)}clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}})},35)}});
+ el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>{pageStates[currentPage-1]=snapshot();publishLiveBoardState()},420)clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}})},35)}});
 }
 function dragStart(e,el){
  if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();localBoardEditing=true;pushHistory();const p=localPoint(e),sx=parseFloat(el.style.left)||0,sy=parseFloat(el.style.top)||0,pointerId=e.pointerId;
