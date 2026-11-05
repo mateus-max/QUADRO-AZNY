@@ -1465,7 +1465,8 @@ function bindTeacherPresenceWatchForStudent(){
 }
 
 function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove("show"),1000)}
-function localPoint(e){const r=board.getBoundingClientRect(),cs=getComputedStyle(board),bl=parseFloat(cs.borderLeftWidth)||0,br=parseFloat(cs.borderRightWidth)||0,bt=parseFloat(cs.borderTopWidth)||0,bb=parseFloat(cs.borderBottomWidth)||0,w=Math.max(1,r.width-bl-br),h=Math.max(1,r.height-bt-bb);return{x:(e.clientX-r.left-bl)*board.clientWidth/w,y:(e.clientY-r.top-bt)*board.clientHeight/h}}
+function boardPointFromClient(e){const r=board.getBoundingClientRect(),cs=getComputedStyle(board),bl=parseFloat(cs.borderLeftWidth)||0,br=parseFloat(cs.borderRightWidth)||0,bt=parseFloat(cs.borderTopWidth)||0,bb=parseFloat(cs.borderBottomWidth)||0,w=Math.max(1,r.width-bl-br),h=Math.max(1,r.height-bt-bb);return{x:(e.clientX-r.left-bl)*board.clientWidth/w,y:(e.clientY-r.top-bt)*board.clientHeight/h}}
+function localPoint(e){return boardPointFromClient(e)}
 function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds]}}
 function serializeObject(el){
  const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:parseFloat(el.style.width)||el.offsetWidth,height:parseFloat(el.style.height)||el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null};
@@ -1576,7 +1577,13 @@ function aznySameBoardPage(a,b){
  try{return JSON.stringify(aznyStableValue(a))===JSON.stringify(aznyStableValue(b))}catch(_){return false}
 }
 function queueRemoteBoardState(d){
- if(!d)return;pendingRemoteBoardState=d;
+ if(!d)return;
+ if(pendingRemoteBoardState&&Array.isArray(pendingRemoteBoardState.pages)&&Array.isArray(d.pages)){
+  const previous=pendingRemoteBoardState,merged={...previous,...d};
+  merged.deletedObjectIds=[...new Set([...(previous.deletedObjectIds||[]),...(d.deletedObjectIds||[])])];
+  merged.pages=Array.from({length:5},(_,i)=>{const a=previous.pages[i],b=d.pages[i];if(!a)return b||null;if(!b)return a;const objects=new Map((a.objects||[]).map(o=>[String(o.id||""),o]));(b.objects||[]).forEach(o=>objects.set(String(o.id||""),o));return{...a,...b,objects:[...objects.values()]}});
+  pendingRemoteBoardState=merged;
+ }else pendingRemoteBoardState=d;
  if(!pendingRemoteBoardTimer)pendingRemoteBoardTimer=setTimeout(flushPendingRemoteBoardState,160);
 }
 function flushPendingRemoteBoardState(){
@@ -1745,7 +1752,7 @@ function handleBoardChannelMessage(raw){
     const payload=JSON.parse(full);
     applyRemoteBoardState(payload);
     /* A student shares through their teacher peer. Fan the accepted board snapshot back out so every other participant sees the same upload/edit. */
-    if(!isStudent)setTimeout(()=>publishLiveBoardState(),40);
+    if(!isStudent&&!pendingRemoteBoardState)setTimeout(()=>publishLiveBoardState(),40);
    }
   }
  }catch(e){console.warn("AZNY board packet:",e)}
