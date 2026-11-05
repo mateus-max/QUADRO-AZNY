@@ -3496,8 +3496,8 @@ if(!isStudent)load();setTimeout(()=>{setZoom(1);updateZoomExtent();resizeCanvas(
 /* Instalação PWA do Remote Work Board */
 if ("serviceWorker" in navigator && location.protocol === "https:") {
  window.addEventListener("load", () => {
-  navigator.serviceWorker.register("service-worker.js", {scope:"./"})
-   .then(reg => { console.info("AZNY PWA pronto", reg.scope); })
+  navigator.serviceWorker.register("service-worker.js", {scope:"./",updateViaCache:"none"})
+   .then(reg => { reg.update().catch(err=>console.debug("AZNY PWA update check:",err)); console.info("AZNY PWA pronto", reg.scope); })
    .catch(err => console.warn("AZNY PWA: não foi possível registar o modo app.", err));
  });
 }
