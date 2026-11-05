@@ -1119,7 +1119,7 @@ body:not(.student-mode) .rightbar .camera .cam-controls-overlay button{display:f
 body:not(.student-mode) .rightbar .camera .cam-controls-overlay #micBtn{order:0!important}
 body:not(.student-mode) .rightbar .camera .cam-controls-overlay #cameraBtn{order:1!important}
 body:not(.student-mode) .rightbar .camera-panel>.teacher-media-status,body:not(.student-mode) .rightbar .camera-panel>.azny-audio-output-picker,body:not(.student-mode) .rightbar .camera-panel>#aznyAudioOutputStatus{display:none!important}
-body:not(.student-mode) .rightbar .camera-join-requests{max-height:55px!important;overflow:auto!important;font-size:9px!important}
+body:not(.student-mode) .rightbar .camera-join-requests{order:2!important;position:relative!important;display:flex!important;flex-direction:column!important;width:100%!important;max-height:140px!important;overflow:auto!important;font-size:10px!important;margin:8px 0 3px!important;flex-shrink:0!important;z-index:3!important}
 body:not(.student-mode) .rightbar .camera-panel+.sidehead{padding:7px 6px!important;min-height:34px!important;height:auto!important;font-size:12px!important;font-weight:800!important;line-height:1.2!important}
 body:not(.student-mode) .rightbar #students.students{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;padding:5px!important;gap:5px!important}
 body:not(.student-mode) .rightbar #students #noStudents{font-size:10px!important;padding:10px 6px!important}
@@ -1465,7 +1465,7 @@ function bindTeacherPresenceWatchForStudent(){
 }
 
 function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove("show"),1000)}
-function localPoint(e){const r=board.getBoundingClientRect();return{x:(e.clientX-r.left)/zoom,y:(e.clientY-r.top)/zoom}}
+function localPoint(e){const r=board.getBoundingClientRect(),cs=getComputedStyle(board),bl=parseFloat(cs.borderLeftWidth)||0,br=parseFloat(cs.borderRightWidth)||0,bt=parseFloat(cs.borderTopWidth)||0,bb=parseFloat(cs.borderBottomWidth)||0,w=Math.max(1,r.width-bl-br),h=Math.max(1,r.height-bt-bb);return{x:(e.clientX-r.left-bl)*board.clientWidth/w,y:(e.clientY-r.top-bt)*board.clientHeight/h}}
 function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds]}}
 function serializeObject(el){
  const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:parseFloat(el.style.width)||el.offsetWidth,height:parseFloat(el.style.height)||el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null};
@@ -1504,15 +1504,30 @@ async function resetBoardForClassLifecycle(){
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds]}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
 function sendBoardSnapshotToChannel(ch){
  if(!ch||ch.readyState!=="open")return false;
- if(ch.bufferedAmount>2097152)return false;
  try{
-  /* Always serialize the visible page immediately before sending: this includes
-     images/data URLs, documents, charts, music objects and fresh text edits. */
+  /* Send media/document snapshots in ordered chunks and respect WebRTC backpressure. */
   pageStates[currentPage-1]=snapshot();
   const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,deletedObjectIds:[...deletedObjectIds]};
   const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=12000,total=Math.ceil(raw.length/size);
-  for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
-  return true;
+  const parts=Array.from({length:total},(_,i)=>JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
+  ch.bufferedAmountLowThreshold=262144;ch._aznySnapshotQueue=ch._aznySnapshotQueue||[];
+  const queue=ch._aznySnapshotQueue,item={parts,index:0};
+  if(queue.length>1)queue[queue.length-1]=item;else queue.push(item);
+  if(!ch._aznySnapshotPump){
+   ch._aznySnapshotPump=()=>{
+    if(ch.readyState!=="open"){ch._aznySnapshotQueue=[];ch._aznySnapshotPump=null;return}
+    try{
+     while(ch._aznySnapshotQueue.length&&ch.bufferedAmount<524288){
+      const current=ch._aznySnapshotQueue[0];
+      while(current.index<current.parts.length&&ch.bufferedAmount<524288)ch.send(current.parts[current.index++]);
+      if(current.index>=current.parts.length)ch._aznySnapshotQueue.shift();else break;
+     }
+    }catch(e){console.warn("AZNY board snapshot queue:",e);ch._aznySnapshotQueue=[];ch._aznySnapshotPump=null;return}
+    if(ch._aznySnapshotQueue.length)ch.addEventListener("bufferedamountlow",ch._aznySnapshotPump,{once:true});
+    else ch._aznySnapshotPump=null;
+   };
+  }
+  ch._aznySnapshotPump();return true;
  }catch(e){console.warn("AZNY board channel:",e);return false}
 }
 function sendBoardSnapshotToPeer(pc){
@@ -1679,7 +1694,7 @@ function aznyRenderRemoteParticipantPointer(packet){
  const bw=Math.max(1,Number(packet.boardWidth)||board.clientWidth),bh=Math.max(1,Number(packet.boardHeight)||board.clientHeight);
  const x=Math.max(0,Math.min(board.clientWidth,Number(packet.x)||0))*board.clientWidth/bw;
  const y=Math.max(0,Math.min(board.clientHeight,Number(packet.y)||0))*board.clientHeight/bh;
- pointer.style.transform="translate("+(x-44)+"px,"+(y-2)+"px)";
+ pointer.style.transform="translate3d("+(x-44)+"px,"+(y-2)+"px,0)";
  const label=pointer.querySelector(".azny-remote-pointer-label");if(label)label.textContent=String(packet.pointerOwnerName||"Participante").slice(0,45);
  return true;
 }
@@ -1698,12 +1713,13 @@ function handleBoardChannelMessage(raw){
     return;
    }
    const p=document.getElementById("livePointer");
-   if(p){const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);const px=Number(m.x)*sx,py=Number(m.y)*sy;p.style.transform="translate("+(px-44)+"px,"+(py-2)+"px)";p.classList.toggle("active",!!m.visible)}
+   if(p){const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);const px=Number(m.x)*sx,py=Number(m.y)*sy;p.style.transform="translate3d("+(px-44)+"px,"+(py-2)+"px,0)";p.classList.toggle("active",!!m.visible)}
    return;
   }
   if(m.type==="text-live"){
    const el=board.querySelector('.object[data-id="'+String(m.id).replace(/[^a-zA-Z0-9_-]/g,"")+'"]');
    if(el&&el.classList.contains("textobj")){const focused=document.activeElement===el;const studentEditing=document.body.classList.contains("student-mode")&&document.body.classList.contains("azny-student-native-keyboard");if(!focused&&!studentEditing)el.innerHTML=String(m.html||"");}
+   if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<65536){try{out.send(packet)}catch(_){}}});}
    return;
   }
   if(m.type==="board-zoom"){if(Number.isFinite(Number(m.zoom)))setZoom(Number(m.zoom),false);return}if(m.type==="board-pan"){applyBoardPan(m.pan);return}
@@ -1732,7 +1748,7 @@ function publishLiveBoardState(){
   if(remoteBoardApplying)return;
   pageStates[currentPage-1]=snapshot();
   if(isStudent){
-   if(studentBoardChannel?.readyState==="open"&&studentBoardChannel.bufferedAmount<262144)sendBoardSnapshotToChannel(studentBoardChannel);
+   if(studentBoardChannel?.readyState==="open")sendBoardSnapshotToChannel(studentBoardChannel);
    return;
   }
   sendBoardSnapshotToAllPeers();
@@ -1837,9 +1853,9 @@ let lastPointerPacketAt=0;
 function updateLivePointer(e){
  if(e.target?.closest?.("#aznyExcelWorkspace,#aznyWebWorkspace"))return;
  if(!board.contains(e.target)&&!pointerMode)return;
- const r=board.getBoundingClientRect(),sx=board.clientWidth/(r.width||board.clientWidth),sy=board.clientHeight/(r.height||board.clientHeight),x=(e.clientX-r.left)*sx,y=(e.clientY-r.top)*sy;
+ const r=board.getBoundingClientRect(),cs=getComputedStyle(board),bl=parseFloat(cs.borderLeftWidth)||0,br=parseFloat(cs.borderRightWidth)||0,bt=parseFloat(cs.borderTopWidth)||0,bb=parseFloat(cs.borderBottomWidth)||0,w=Math.max(1,r.width-bl-br),h=Math.max(1,r.height-bt-bb),x=(e.clientX-r.left-bl)*board.clientWidth/w,y=(e.clientY-r.top-bt)*board.clientHeight/h;
  const p=document.getElementById("livePointer");
- if(pointerMode){const touchOffset=e.pointerType==="touch";const tipX=x+(touchOffset?39:0),tipY=y+(touchOffset?-47:0);p.style.transform=`translate(${tipX-44}px,${tipY-2}px)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
+ if(pointerMode){const touchOffset=e.pointerType==="touch";const tipX=x+(touchOffset?39:0),tipY=y+(touchOffset?-47:0);p.style.transform=`translate3d(${tipX-44}px,${tipY-2}px,0)`;p.classList.toggle("touch-pointer",touchOffset);p.classList.add("active")}
  {
   const now=performance.now();
   if(now-lastPointerPacketAt>=16){
@@ -2371,8 +2387,12 @@ document.getElementById("saveBtn").onclick=()=>{save();toast(document.documentEl
 document.getElementById("clearBtn").onclick=()=>{if(window.aznyClearActiveWorkspace&&window.aznyClearActiveWorkspace("trash"))return;if(confirm("Limpar todo o quadro?")){pushHistory();board.querySelectorAll(".object").forEach(e=>e.remove());strokes=[];selected=null;redraw();updateHint();scheduleSave();publishLiveBoardState()}};
 document.getElementById("imageBtn").onclick=()=>document.getElementById("imageInput").click();
 document.getElementById("docBtn").onclick=()=>document.getElementById("docInput").click();
-document.getElementById("imageInput").onchange=e=>{if(e.target.files[0])addImage(e.target.files[0]);e.target.value=""};
-document.getElementById("docInput").onchange=e=>{if(e.target.files[0])addDoc(e.target.files[0]);e.target.value=""};
+function aznyRememberLandscapeBeforePicker(){if(!isStudent)return;const landscape=window.matchMedia("(orientation: landscape)").matches||document.body.classList.contains("azny-auto-rotated");if(landscape){document.body.classList.add("azny-preserve-landscape");try{if(document.fullscreenElement&&screen.orientation?.lock)screen.orientation.lock("landscape")}catch(_){}}}
+ function aznyRestoreLandscapeAfterPicker(){if(!isStudent||!document.body.classList.contains("azny-preserve-landscape"))return;setTimeout(()=>{try{if(document.fullscreenElement&&screen.orientation?.lock)screen.orientation.lock("landscape")}catch(_){}resizeCanvas();window.dispatchEvent(new Event("resize"))},180)}
+ ["imageInput","docInput"].forEach(id=>{const input=document.getElementById(id);input?.addEventListener("click",aznyRememberLandscapeBeforePicker,true);input?.addEventListener("change",aznyRestoreLandscapeAfterPicker,true)});
+ window.addEventListener("focus",aznyRestoreLandscapeAfterPicker);
+ document.getElementById("imageInput").onchange=e=>{if(e.target.files[0])addImage(e.target.files[0]);e.target.value="";aznyRestoreLandscapeAfterPicker()};
+document.getElementById("docInput").onchange=e=>{if(e.target.files[0])addDoc(e.target.files[0]);e.target.value="";aznyRestoreLandscapeAfterPicker()};
 document.getElementById("pagesBtn").onclick=()=>{updatePageLabel();document.getElementById("pagesModal").classList.add("show")};
 document.getElementById("closePages").onclick=()=>document.getElementById("pagesModal").classList.remove("show");
 document.querySelectorAll("#pageChoices [data-page]").forEach(b=>b.onclick=()=>{switchPage(+b.dataset.page);document.getElementById("pagesModal").classList.remove("show")});
@@ -3039,7 +3059,7 @@ async function toggleStudentOrientation(){
  setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},180);
  toast(document.documentElement.lang==="en"?(active?"Board view enabled, with tools and cameras on the sides.":"Normal view restored."):(active?"Vista do quadro ativada, com ferramentas e câmeras nas laterais.":"Vista normal restaurada."));
 }
-function syncStudentAutoOrientation(){if(!isStudent)return;const portrait=window.matchMedia("(orientation: portrait) and (max-width: 700px)").matches;const wasRotated=document.body.classList.contains("azny-auto-rotated");if(wasRotated!==portrait){document.body.classList.toggle("azny-auto-rotated",portrait);requestAnimationFrame(()=>window.dispatchEvent(new Event("resize")))}}
+function syncStudentAutoOrientation(){if(!isStudent||document.body.classList.contains("azny-preserve-landscape"))return;const portrait=window.matchMedia("(orientation: portrait) and (max-width: 700px)").matches;const wasRotated=document.body.classList.contains("azny-auto-rotated");if(wasRotated!==portrait){document.body.classList.toggle("azny-auto-rotated",portrait);requestAnimationFrame(()=>window.dispatchEvent(new Event("resize")))}}
 function aznyStudentSessionStorageKey(){return "azny-student-session-"+String(roomId)+"-"+String(classSessionId)}
 function showStudentWaitingForClass(){
  if(!isStudent||studentApproved)return;
