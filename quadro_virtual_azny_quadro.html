@@ -1504,14 +1504,32 @@ async function resetBoardForClassLifecycle(){
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds]}).catch(e=>console.warn("AZNY board sync:",e))}catch(e){console.warn("AZNY board sync:",e)}}
 function sendBoardSnapshotToChannel(ch){
  if(!ch||ch.readyState!=="open")return false;
- if(ch.bufferedAmount>2097152)return false;
  try{
-  /* Always serialize the visible page immediately before sending: this includes
-     images/data URLs, documents, charts, music objects and fresh text edits. */
+  /* Queue every part of large media snapshots. Backpressure prevents silent
+     loss when an image/PDF makes the board state larger than the WebRTC buffer. */
   pageStates[currentPage-1]=snapshot();
   const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,deletedObjectIds:[...deletedObjectIds]};
   const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=12000,total=Math.ceil(raw.length/size);
-  for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
+  const parts=Array.from({length:total},(_,i)=>({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
+  ch.bufferedAmountLowThreshold=262144;
+  ch._aznySnapshotQueue=ch._aznySnapshotQueue||[];
+  const queue=ch._aznySnapshotQueue,item={parts,index:0};
+  if(queue.length>1)queue[queue.length-1]=item;else queue.push(item);
+  if(!ch._aznySnapshotPump){
+   ch._aznySnapshotPump=()=>{
+    if(ch.readyState!=="open"){ch._aznySnapshotQueue=[];ch._aznySnapshotPump=null;return}
+    try{
+     while(ch._aznySnapshotQueue.length&&ch.bufferedAmount<524288){
+      const current=ch._aznySnapshotQueue[0];
+      while(current.index<current.parts.length&&ch.bufferedAmount<524288)ch.send(JSON.stringify(current.parts[current.index++]));
+      if(current.index>=current.parts.length)ch._aznySnapshotQueue.shift();else break;
+     }
+    }catch(e){console.warn("AZNY board chunk send:",e);ch._aznySnapshotQueue=[];ch._aznySnapshotPump=null;return}
+    if(ch._aznySnapshotQueue.length)ch.addEventListener("bufferedamountlow",ch._aznySnapshotPump,{once:true});
+    else ch._aznySnapshotPump=null;
+   };
+  }
+  ch._aznySnapshotPump();
   return true;
  }catch(e){console.warn("AZNY board channel:",e);return false}
 }
@@ -1732,7 +1750,7 @@ function publishLiveBoardState(){
   if(remoteBoardApplying)return;
   pageStates[currentPage-1]=snapshot();
   if(isStudent){
-   if(studentBoardChannel?.readyState==="open"&&studentBoardChannel.bufferedAmount<262144)sendBoardSnapshotToChannel(studentBoardChannel);
+   if(studentBoardChannel?.readyState==="open")sendBoardSnapshotToChannel(studentBoardChannel);
    return;
   }
   sendBoardSnapshotToAllPeers();
