@@ -2387,10 +2387,11 @@ document.getElementById("saveBtn").onclick=()=>{save();toast(document.documentEl
 document.getElementById("clearBtn").onclick=()=>{if(window.aznyClearActiveWorkspace&&window.aznyClearActiveWorkspace("trash"))return;if(confirm("Limpar todo o quadro?")){pushHistory();board.querySelectorAll(".object").forEach(e=>e.remove());strokes=[];selected=null;redraw();updateHint();scheduleSave();publishLiveBoardState()}};
 document.getElementById("imageBtn").onclick=()=>document.getElementById("imageInput").click();
 document.getElementById("docBtn").onclick=()=>document.getElementById("docInput").click();
-function aznyRememberLandscapeBeforePicker(){if(!isStudent)return;const landscape=window.matchMedia("(orientation: landscape)").matches;if(landscape){document.body.classList.add("azny-preserve-landscape");try{if(document.fullscreenElement&&screen.orientation?.lock)screen.orientation.lock("landscape")}catch(_){}}}
- function aznyRestoreLandscapeAfterPicker(){if(!isStudent||!document.body.classList.contains("azny-preserve-landscape"))return;setTimeout(()=>{try{if(document.fullscreenElement&&screen.orientation?.lock)screen.orientation.lock("landscape")}catch(_){}resizeCanvas();window.dispatchEvent(new Event("resize"))},180)}
+function aznyRememberLandscapeBeforePicker(){if(!isStudent)return;const landscape=window.matchMedia("(orientation: landscape)").matches;if(landscape){document.body.classList.add("azny-preserve-landscape");try{screen.orientation?.lock?.("landscape")}catch(_){}}}
+ function aznyRestoreLandscapeAfterPicker(){if(!isStudent||!document.body.classList.contains("azny-preserve-landscape"))return;setTimeout(()=>{const portrait=window.matchMedia("(orientation: portrait) and (max-width: 700px)").matches;document.body.classList.toggle("azny-auto-rotated",portrait);try{screen.orientation?.lock?.("landscape")}catch(_){}resizeCanvas();window.dispatchEvent(new Event("resize"))},180)}
  ["imageInput","docInput"].forEach(id=>{const input=document.getElementById(id);input?.addEventListener("click",aznyRememberLandscapeBeforePicker,true);input?.addEventListener("change",aznyRestoreLandscapeAfterPicker,true)});
  window.addEventListener("focus",aznyRestoreLandscapeAfterPicker);
+ window.addEventListener("orientationchange",aznyRestoreLandscapeAfterPicker);
  document.getElementById("imageInput").onchange=e=>{if(e.target.files[0])addImage(e.target.files[0]);e.target.value="";aznyRestoreLandscapeAfterPicker()};
 document.getElementById("docInput").onchange=e=>{if(e.target.files[0])addDoc(e.target.files[0]);e.target.value="";aznyRestoreLandscapeAfterPicker()};
 document.getElementById("pagesBtn").onclick=()=>{updatePageLabel();document.getElementById("pagesModal").classList.add("show")};
