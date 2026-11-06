@@ -418,13 +418,13 @@ body.menu-open .sidebar-backdrop{display:block;position:fixed;z-index:55;inset:6
  </div>
 </header>
 <main class="wrap" id="dashboardMain">
- <div class="dashboard-heading"><div><span class="eyebrow">ESPAÇO DE ENSINO</span><h1 id="panelTitle">Visão geral</h1><p id="panelSubtitle">Acompanhe a sua conta e aceda rapidamente às ferramentas.</p></div><span class="account-chip">● Conta de professor</span></div>
+ <div class="dashboard-heading"><div><span class="eyebrow">ESPAÇO DE ENSINO</span><h1 id="panelTitle">Visão geral</h1><p id="panelSubtitle">Acompanhe a sua conta e aceda rapidamente às ferramentas.</p></div><span class="account-chip badge" id="licenseStatus">● Conta de professor</span></div>
  <div class="panel-view" id="panel-overview">
   <section class="hero-welcome" aria-label="Bem-vindo ao Remote Work Board">
  <div class="hero-copy">
   <span class="hero-kicker"><i></i> O SEU ESPAÇO DE ENSINO</span>
   <h1>Bem-vindo ao<br><strong>Remote Work Board</strong></h1>
-  <p>O seu espaço de ensino, formação<br class="desktop-break"> e colaboração online.</p>
+  <p id="hello">O seu espaço de ensino, formação<br class="desktop-break"> e colaboração online.</p>
  </div>
  <div class="hero-art" aria-hidden="true">
  <svg class="workspace-illustration" viewBox="0 0 820 620" role="img" aria-label="Computador portátil, auscultadores, caderno, caneta e chávena">
@@ -771,7 +771,7 @@ $("hello").textContent="Bem-vindo, "+accountName;$("sideTeacherName").textConten
 const initials=accountName.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("");$("profileInitials").textContent=initials||"RW";$("sideInitials").textContent=initials||"RW";
 $("topPlan").textContent=license.planName||plans[license.plan]?.name||"Plano";$("sidePlan").textContent=license.planName||plans[license.plan]?.name||"Plano";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();bindTeacherModules();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
 db.ref("assessments").orderByChild("ownerToken").equalTo(token).on("value",s=>{const d=s.val()||{};const items=Object.entries(d).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).slice(0,5);$("recentAssessments").innerHTML=items.length?items.map(([id,x])=>'<div class="activity"><strong>'+escapeHtml(x.title||"Avaliação")+'</strong><span class="small">'+escapeHtml(x.status||"Rascunho")+'</span><button class="btn" data-view="'+id+'">Abrir</button></div>').join(""):"Ainda não criou avaliações.";document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>location.href="avaliacoes/?professor=1&acesso="+encodeURIComponent(token)+"&id="+encodeURIComponent(b.dataset.view))});
-}catch(e){const reason=e&&e.message?e.message:"Erro desconhecido";setPlanValidation("Falha: "+reason,true);$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Falha ao validar: "+reason;$("hello").textContent="Não foi possível validar a conta";courseFormMessage("A validação da conta falhou: "+reason+". Volte à página inicial e entre novamente se a sessão do professor não estiver ativa.",true);console.error("Falha na inicialização do painel do professor:",e)}}
+}catch(e){const reason=e&&e.message?e.message:"Erro desconhecido";setPlanValidation("Falha: "+reason,true);const statusEl=$("licenseStatus"),helloEl=$("hello");if(statusEl){statusEl.className="account-chip badge warn";statusEl.textContent="Falha ao validar: "+reason}if(helloEl)helloEl.textContent="Não foi possível validar a conta";try{courseFormMessage("A validação da conta falhou: "+reason+". Consulte o estado acima e tente novamente.",true)}catch(messageError){console.error("Não foi possível apresentar o aviso de validação:",messageError)}console.error("Falha na inicialização do painel do professor:",e)}}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 $("openBoard").onclick=async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(e){console.info("Landscape will be retried when the board opens:",e)}location.href="aulas/?acesso="+encodeURIComponent(token)};
 $("openAssessments").onclick=()=>location.href="avaliacao.html?professor=1&acesso="+encodeURIComponent(token);
