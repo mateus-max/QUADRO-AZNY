@@ -128,45 +128,68 @@ body{background:#f5f8fc;color:#122a49;min-height:100vh}
 #panel-board .feature-card,#panel-assessments .feature-card{margin:0 auto;max-width:1000px;padding:34px}
 #panel-plan .plan-card,#panel-activities>.section{max-width:1100px;margin:0 auto}
 @media(max-width:900px){
- :root{--sidebar:0px}
- .sidebar{width:min(300px,86vw);padding:22px 15px 17px;transform:translateX(-105%);transition:transform .24s ease;box-shadow:12px 0 35px #00152e55}
- body.menu-open .sidebar{transform:translateX(0)}
- body.menu-open .sidebar-backdrop{display:block;position:fixed;z-index:35;inset:0;background:#00152e80}
- .top{height:68px;min-height:68px;margin-left:0;padding:0 15px;gap:12px}
- .menu-toggle{flex:0 0 40px;width:40px;height:40px}
- .menu-toggle:before{font-size:30px}
- .top .brand{font-size:clamp(16px,4vw,21px);white-space:nowrap;letter-spacing:-.5px}
- .top-actions{gap:12px}
- .notification-button{font-size:22px}
- .top-profile{gap:6px}.profile-avatar{width:34px;height:34px;font-size:20px}
- .top-profile strong{font-size:11px;max-width:85px;overflow:hidden;text-overflow:ellipsis}
+ :root{--sidebar:0px;--mobile-sidebar:clamp(168px,30vw,220px)}
+ .sidebar{position:fixed;top:68px;bottom:0;left:0;width:var(--mobile-sidebar);padding:16px 10px 13px;transform:none;transition:width .2s ease;box-shadow:5px 0 18px #00152e18;overflow-y:auto}
+ .sidebar-backdrop{display:none!important}
+ .side-brand{padding:3px 5px 16px;gap:8px;align-items:center}
+ .side-logo{width:38px;height:38px;flex-basis:38px}
+ .side-brand span{font-size:clamp(10px,2.3vw,14px);line-height:1.15;overflow-wrap:anywhere}
+ .side-user{margin:4px 0 8px;padding:10px 3px;gap:7px}
+ .side-avatar{width:30px;height:30px;flex-basis:30px;font-size:15px}
+ .side-user strong{font-size:10px;max-width:calc(var(--mobile-sidebar) - 65px)}
+ .side-user small{font-size:9px;max-width:calc(var(--mobile-sidebar) - 65px)}
+ .side-nav{gap:4px;padding-top:8px}
+ .side-link{padding:11px 7px;gap:7px;font-size:clamp(10px,2vw,13px);line-height:1.2;white-space:normal}
+ .side-link>span{width:20px;flex:0 0 20px;font-size:17px}
+ .side-bottom{padding-top:8px}.side-bottom small{font-size:8px;padding:8px 4px}
+ body.mobile-sidebar-collapsed .sidebar{width:64px;padding-left:7px;padding-right:7px}
+ body.mobile-sidebar-collapsed .side-brand{justify-content:center}
+ body.mobile-sidebar-collapsed .side-brand span,
+ body.mobile-sidebar-collapsed .side-user>div,
+ body.mobile-sidebar-collapsed .side-link:not(.logout-link){font-size:0}
+ body.mobile-sidebar-collapsed .side-brand .side-logo{width:38px}
+ body.mobile-sidebar-collapsed .side-user{justify-content:center}
+ body.mobile-sidebar-collapsed .side-link{justify-content:center}
+ body.mobile-sidebar-collapsed .side-link>span{font-size:19px}
+ body.mobile-sidebar-collapsed .side-bottom small{display:none}
+ .top{height:68px;min-height:68px;margin:0;padding:0 12px;gap:9px}
+ .menu-toggle{flex:0 0 38px;width:38px;height:38px}
+ .menu-toggle:before{font-size:29px}
+ .top .brand{font-size:clamp(15px,3.8vw,20px);white-space:nowrap;letter-spacing:-.5px}
+ .top-actions{gap:9px}
+ .notification-button{font-size:21px}
+ .top-profile{gap:5px}.profile-avatar{width:32px;height:32px;font-size:19px}
+ .top-profile strong{font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis}
  .top-profile small,.profile-chevron{display:none}
- .wrap{margin:0;padding:0;min-height:calc(100svh - 68px)}
- .hero-welcome{min-height:calc(100svh - 68px);padding:55px 26px 30px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start}
+ .wrap{margin:0 0 0 var(--mobile-sidebar);padding:0;min-height:calc(100svh - 68px);transition:margin-left .2s ease}
+ body.mobile-sidebar-collapsed .wrap{margin-left:64px}
+ .hero-welcome{min-height:calc(100svh - 68px);padding:42px clamp(15px,3vw,26px) 25px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start}
  .hero-copy{width:100%;padding:0;z-index:5}
- .hero-kicker{font-size:10px;margin-bottom:18px}.hero-kicker i{width:48px;height:6px}
- .hero-copy h1{font-size:clamp(34px,8vw,48px);letter-spacing:-1.3px}
- .hero-copy p{font-size:18px;margin-top:16px}
+ .hero-kicker{font-size:clamp(8px,1.7vw,10px);margin-bottom:16px;letter-spacing:1px;gap:7px}
+ .hero-kicker i{width:34px;height:5px}
+ .hero-copy h1{font-size:clamp(25px,5.4vw,42px);letter-spacing:-1px;overflow-wrap:anywhere}
+ .hero-copy p{font-size:clamp(14px,2.8vw,19px);margin-top:14px;line-height:1.45}
  .desktop-break{display:none}
- .hero-art{position:relative;top:auto;right:auto;transform:none;width:min(100%,480px);height:310px;align-self:center;margin-top:22px}
- .laptop-screen{right:13%;width:69%;height:62%;border-width:8px;border-bottom-width:13px;border-radius:15px}
- .headset-band{border-width:9px;border-bottom:0}
- .art-headset{width:25px;height:58px}
+ .hero-art{position:relative;top:auto;right:auto;transform:none;width:min(100%,480px);height:clamp(180px,38vw,300px);align-self:center;margin-top:18px}
+ .laptop-screen{right:13%;width:69%;height:62%;border-width:7px;border-bottom-width:11px;border-radius:13px}
+ .headset-band{border-width:8px;border-bottom:0}
+ .art-headset{width:22px;height:51px}
  .art-notebook{height:16%}.art-pen{height:5px}.art-cup{height:16%}
  .hero-wave{height:13%;bottom:-3%}.wave-two{height:8%;bottom:1%}
  #panel-overview{min-height:calc(100svh - 68px)}
- #panel-board,#panel-assessments,#panel-plan,#panel-activities{padding:20px 14px 30px;min-height:calc(100svh - 68px)}
- #panel-board .feature-card,#panel-assessments .feature-card{padding:20px}
+ #panel-board,#panel-assessments,#panel-plan,#panel-activities{padding:18px 12px 28px;min-height:calc(100svh - 68px)}
+ #panel-board .feature-card,#panel-assessments .feature-card{padding:16px}
 }
 @media(max-width:420px){
- .top{padding:0 10px;gap:8px}
- .top .brand{font-size:16px}
- .top-actions{gap:8px}
+ :root{--mobile-sidebar:168px}
+ .top{padding:0 8px;gap:6px}
+ .top .brand{font-size:14px}
+ .top-actions{gap:6px}
  .notification-button{display:none}
- .top-profile strong{max-width:66px}
- .hero-welcome{padding:44px 21px 25px}
- .hero-copy h1{font-size:34px}
- .hero-art{height:260px;margin-top:28px}
+ .top-profile strong{max-width:58px}
+ .hero-welcome{padding:35px 13px 20px}
+ .hero-copy h1{font-size:25px}
+ .hero-art{height:180px;margin-top:23px}
  .laptop-screen{right:12%;width:72%}
 }
 
@@ -273,9 +296,9 @@ function showPanel(name){
  window.scrollTo({top:0,behavior:"smooth"});
 }
 document.querySelectorAll("[data-panel],[data-open-panel]").forEach(el=>el.addEventListener("click",()=>showPanel(el.dataset.panel||el.dataset.openPanel)));
-$("menuToggle").addEventListener("click",()=>{const open=!document.body.classList.contains("menu-open");document.body.classList.toggle("menu-open",open);$("menuToggle").setAttribute("aria-expanded",String(open))});
-$("sidebarBackdrop").addEventListener("click",()=>{document.body.classList.remove("menu-open");$("menuToggle").setAttribute("aria-expanded","false")});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){document.body.classList.remove("menu-open");$("menuToggle").setAttribute("aria-expanded","false")}});
+$("menuToggle").addEventListener("click",()=>{const collapsed=document.body.classList.toggle("mobile-sidebar-collapsed");$("menuToggle").setAttribute("aria-expanded",String(!collapsed))});
+$("sidebarBackdrop").addEventListener("click",()=>{});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&matchMedia("(max-width:900px)").matches){document.body.classList.add("mobile-sidebar-collapsed");$("menuToggle").setAttribute("aria-expanded","false")}});
 
 function msg(t,bad=false){$("planMessage").textContent=t;$("planMessage").style.color=bad?"#b40000":"#187a35"}
 function planPrice(){const p=plans[$("nextPlan").value],period=$("period").value,amount=period==="annual"?p.annual:p.monthly;$("amountInfo").textContent="Valor do pedido: "+money(amount)+" · Plano "+p.name+" ("+(period==="annual"?"anual":"mensal")+").";const checkoutAmount=$("checkoutAmount");if(checkoutAmount)checkoutAmount.textContent=money(amount)}
@@ -293,7 +316,7 @@ $("openAssessments").onclick=()=>location.href="avaliacao.html?professor=1&acess
 $("managePlan")?.addEventListener("click",()=>showPanel("plan"));
 $("cancelPlan").onclick=()=>showPanel("overview");$("nextPlan").onchange=planPrice;$("period").onchange=planPrice;
 $("sendPlanRequest").onclick=async()=>{if(!license)return;const file=$("proof").files[0];if(!file)return msg("Anexe o comprovativo do pagamento.",true);if(file.size>4*1024*1024)return msg("O ficheiro deve ter no máximo 4 MB.",true);const plan=$("nextPlan").value,period=$("period").value,p=plans[plan];if(!p)return;const btn=$("sendPlanRequest");btn.disabled=true;const reader=new FileReader();reader.onload=async()=>{try{const item={id:"PAY-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),requestType:plan===license.plan?"renewal":"upgrade",existingAccessToken:token,name:license.teacherName||"Professor",phone:license.teacherPhone||"",plan,planName:p.name,period,amount:period==="annual"?p.annual:p.monthly,method:selectedPaymentMethod,express:selectedPaymentMethod==="Express"?"931057760":"",proof:reader.result,proofName:file.name,proofType:file.type,status:"pending",createdAt:new Date().toISOString()};const ref=db.ref("paymentRequests");const tx=await ref.transaction(cur=>{const arr=Array.isArray(cur)?cur:(cur&&typeof cur==="object"?Object.values(cur):[]);if(arr.some(x=>x&&x.status==="pending"&&x.requestType&&x.existingAccessToken===token))return;arr.push(item);return arr});if(!tx.committed){msg("Já existe um pedido de renovação/atualização pendente para esta conta.",true);return}msg("Pedido enviado. A administração deverá confirmar o pagamento antes de alterar o plano.");$("proof").value=""}catch(e){msg("Falha ao enviar: "+e.message,true)}finally{btn.disabled=false}};reader.onerror=()=>{btn.disabled=false;msg("Não foi possível ler o comprovativo.",true)};reader.readAsDataURL(file)};
-$("logout").onclick=()=>{sessionStorage.removeItem("azny_access_token");location.href="index.html"};showPanel("overview");init();
+$("logout").onclick=()=>{sessionStorage.removeItem("azny_access_token");location.href="index.html"};if(matchMedia("(max-width:900px)").matches){document.body.classList.remove("mobile-sidebar-collapsed");$("menuToggle").setAttribute("aria-expanded","true")}showPanel("overview");init();
 })();
 </script>
 <script>
