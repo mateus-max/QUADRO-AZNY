@@ -1,10 +1,10 @@
 {
-  "id": "./",
-  "name": "Remote Work Board",
-  "short_name": "Remote Work",
-  "description": "Plataforma empresarial de reuniões, conferências e colaboração remota.",
+  "id": "./index.html",
+  "name": "AZNY Academy — Ensino Online",
+  "short_name": "AZNY Academy",
+  "description": "Plataforma de aulas online, quadro virtual e avaliações para professores e alunos.",
   "lang": "pt-AO",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",
   "display_override": [
@@ -17,22 +17,21 @@
   "theme_color": "#071b33",
   "icons": [
     {
-      "src": "icons/remote-work-board-192.png",
+      "src": "icons/azny-board-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icons/remote-work-board-512.png",
+      "src": "icons/azny-board-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "categories": [
     "education",
-    "productivity",
-    "business"
+    "productivity"
   ],
   "prefer_related_applications": false
 }
