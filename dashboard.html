@@ -676,15 +676,46 @@ function getLocalVideoMetadata(file){
 }
 function uploadCourseAssetWithProgress(file,path,label){
  return new Promise((resolve,reject)=>{
-  let task;
-  try{task=firebase.storage().ref(path).put(file,{contentType:file.type|| (courseFileKind(file,"video")?"video/mp4":"image/jpeg")})}
-  catch(error){reject(error);return}
+  let task,settled=false,lastBytes=0,lastProgressAt=Date.now(),watchdog=null,absoluteTimer=null;
+  const finish=(fn,value)=>{if(settled)return;settled=true;if(watchdog)clearInterval(watchdog);if(absoluteTimer)clearTimeout(absoluteTimer);fn(value)};
+  const errorText=error=>{
+   const code=error&&error.code?error.code:"storage/unknown";
+   const messages={
+    "storage/unauthorized":"O Firebase Storage recusou o envio por falta de permissão. Verifique as regras de armazenamento para utilizadores autenticados.",
+    "storage/canceled":"O envio foi cancelado pelo navegador ou pela ligação.",
+    "storage/retry-limit-exceeded":"O Firebase esgotou as tentativas de envio. Verifique a internet e tente novamente.",
+    "storage/unknown":"O Firebase Storage devolveu um erro desconhecido. Confirme se o bucket de armazenamento está ativo."
+   };
+   return code+": "+(messages[code]||error?.message||"Falha no envio do ficheiro.");
+  };
+  try{
+   const storage=firebase.storage();
+   storage.setMaxUploadRetryTime(120000);
+   task=storage.ref(path).put(file,{contentType:file.type||(courseFileKind(file,"video")?"video/mp4":"image/jpeg"),cacheControl:"public,max-age=3600"});
+  }catch(error){finish(reject,new Error(errorText(error)));return}
+  courseFormMessage(label+" — a iniciar envio ("+(file.size/1024/1024).toFixed(1)+" MB) …");
+  absoluteTimer=setTimeout(()=>{try{task.cancel()}catch(_){}finish(reject,new Error(label+": o envio ultrapassou 3 minutos. Verifique a ligação e tente novamente."))},180000);
+  watchdog=setInterval(()=>{
+   if(settled)return;
+   const snap=task.snapshot;
+   if(!navigator.onLine){courseFormMessage(label+" — sem ligação à internet; a aguardar reconexão…");return}
+   if(snap&&snap.bytesTransferred>lastBytes){lastBytes=snap.bytesTransferred;lastProgressAt=Date.now();return}
+   if(Date.now()-lastProgressAt>45000){
+    if(snap&&snap.state==="paused"){try{task.resume();lastProgressAt=Date.now();courseFormMessage(label+" — a retomar envio…");return}catch(_){}}
+    try{task.cancel()}catch(_){}
+    finish(reject,new Error(label+": o envio ficou parado em "+(snap&&snap.bytesTransferred||0)+" de "+file.size+" bytes durante 45 segundos. O Firebase Storage não está a aceitar os dados; confirme as permissões e o bucket de armazenamento."));
+   }
+  },5000);
   task.on("state_changed",snap=>{
+   if(snap.bytesTransferred>lastBytes){lastBytes=snap.bytesTransferred;lastProgressAt=Date.now()}
    const percent=snap.totalBytes?Math.round(snap.bytesTransferred/snap.totalBytes*100):0;
-   courseFormMessage(label+" — "+percent+"%");
-  },reject,async()=>{
-   try{resolve({url:await task.snapshot.ref.getDownloadURL(),path})}
-   catch(error){reject(error)}
+   const state=snap.state==="paused"?" (envio pausado)":snap.state==="running"?" (a enviar)":"";
+   courseFormMessage(label+" — "+percent+"% · "+(snap.bytesTransferred/1024/1024).toFixed(1)+"/"+(snap.totalBytes/1024/1024).toFixed(1)+" MB"+state);
+  },error=>finish(reject,new Error(errorText(error))),async()=>{
+   try{
+    const url=await waitForFirebase(task.snapshot.ref.getDownloadURL(),label+" — obtenção do endereço do ficheiro",20000);
+    finish(resolve,{url,path});
+   }catch(error){finish(reject,new Error(errorText(error)))}
   });
  });
 }
