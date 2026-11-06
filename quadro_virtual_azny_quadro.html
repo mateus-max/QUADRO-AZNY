@@ -2468,7 +2468,7 @@ document.addEventListener("keydown",e=>{
  const points=new Map();let pinch=null;
  const distance=pts=>Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y));
  stage.addEventListener("pointerdown",e=>{
-  if(!mobile()||e.pointerType!=="touch"||!board.contains(e.target))return;
+  if(!mobile()||e.pointerType!=="touch"||tool!=="select"||pointerMode||!board.contains(e.target))return;
   points.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(points.size===2){
    const pts=[...points.values()],mid={x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2},r=stage.getBoundingClientRect();
@@ -2481,10 +2481,10 @@ document.addEventListener("keydown",e=>{
   if(!pinch||!points.has(e.pointerId))return;
   points.set(e.pointerId,{x:e.clientX,y:e.clientY});
   const pts=[...points.values()];if(pts.length<2)return;
-  const mid={x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2},r=stage.getBoundingClientRect();
+  const mid={x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2},r=stage.getBoundingClientRect(),anchorX=pinch.contentX,anchorY=pinch.contentY;
   const next=Math.max(.5,Math.min(2,pinch.zoom*distance(pts)/pinch.distance));
   setZoom(next,false);
-  requestAnimationFrame(()=>{stage.scrollLeft=Math.max(0,pinch.contentX*zoom-(mid.x-r.left));stage.scrollTop=Math.max(0,pinch.contentY*zoom-(mid.y-r.top))});
+  requestAnimationFrame(()=>{stage.scrollLeft=Math.max(0,anchorX*zoom-(mid.x-r.left));stage.scrollTop=Math.max(0,anchorY*zoom-(mid.y-r.top))});
   e.preventDefault();e.stopImmediatePropagation();
  },{capture:true,passive:false});
  const finish=e=>{
