@@ -668,7 +668,7 @@ function bindTeacherModules(){
  const courseMoney=(n,cur)=>Number(n||0).toLocaleString("pt-AO")+" "+(cur||"Kz");
  const filePreview=(inputId,previewId)=>{$(inputId).onchange=()=>{const f=$(inputId).files[0],img=$(previewId);if(!f){img.classList.add("hidden");return}img.src=URL.createObjectURL(f);img.classList.remove("hidden")}};
  filePreview("courseTeacherPhoto","courseTeacherPhotoPreview");filePreview("courseCover","courseCoverPreview");
- async async function uploadCourseAsset(file,path){if(!file)throw new Error("Selecione todos os ficheiros obrigatórios.");const ref=firebase.storage().ref(path);const task=await ref.put(file,{contentType:file.type});return await task.ref.getDownloadURL()}
+ async function uploadCourseAsset(file,path){if(!file)throw new Error("Selecione todos os ficheiros obrigatórios.");const ref=firebase.storage().ref(path);const task=await ref.put(file,{contentType:file.type});return await task.ref.getDownloadURL()}
  function courseFormMessage(text,bad=false){$("publishCourseMessage").textContent=text;$("publishCourseMessage").style.color=bad?"#b42318":"#187a35"}
  function getLocalVideoMetadata(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),probe=document.createElement("video");probe.preload="metadata";probe.onloadedmetadata=()=>{const metadata={duration:probe.duration,width:probe.videoWidth,height:probe.videoHeight};URL.revokeObjectURL(url);resolve(metadata)};probe.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Não foi possível ler os dados do vídeo."))};probe.src=url})}
  $("publishCourseBtn").onclick=async()=>{
