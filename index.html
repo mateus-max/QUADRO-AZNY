@@ -1040,4 +1040,8 @@ if("serviceWorker" in navigator && location.protocol==="https:"){window.addEvent
 
 <script>
 
+<script>
+/* Restaurar a secção da página inicial que estava aberta antes de atualizar o navegador. */
+(function(){function restoreRwbHomeView(){try{const view=sessionStorage.getItem("rwb_index_view");if(view==="login"&&typeof showLogin==="function")showLogin();else if(view==="register"&&typeof showPlans==="function")showPlans();else if((!view||view==="home")&&typeof showHome==="function")showHome();}catch(e){console.warn("Não foi possível restaurar a página anterior:",e)}}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",restoreRwbHomeView,{once:true});else restoreRwbHomeView();})();
+</script>
 </body></html>
