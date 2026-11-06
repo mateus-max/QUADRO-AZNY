@@ -624,6 +624,117 @@ function selectPayment(method){selectedPaymentMethod=method;const express=method
 $("chooseExpress").onclick=()=>selectPayment("Express");$("chooseBank").onclick=()=>selectPayment("Transferência bancária");
 $("copyExpress").onclick=async()=>{try{await navigator.clipboard.writeText("931057760");$("copyExpress").textContent="Número copiado ✓"}catch(e){const range=document.createRange(),node=$("expressNumber");const sel=window.getSelection();range.selectNodeContents(node);sel.removeAllRanges();sel.addRange(range);$("copyExpress").textContent="Selecione e copie"}};
 function requireToken(){if(!token){location.replace("index.html?acesso=necessario");return false}return true}
+
+let walletData={},teacherProfile={};
+function courseFormMessage(text,bad=false){
+ const box=$("publishCourseMessage");if(!box)return;
+ box.textContent=text;box.style.display="block";box.setAttribute("role","status");box.setAttribute("aria-live","polite");
+ box.style.background=bad?"#fff0f0":"#eef4ff";box.style.color=bad?"#b42318":"#29486b";
+ box.style.border=bad?"1px solid #f3b4b4":"1px solid #c9d9f4";
+ if(bad)box.scrollIntoView({behavior:"smooth",block:"center"});
+}
+function courseFileKind(file,kind){
+ const ext=String(file?.name||"").split(".").pop().toLowerCase(),type=String(file?.type||"").toLowerCase();
+ if(kind==="image")return ["jpg","jpeg","png","webp"].includes(ext)||["image/jpeg","image/png","image/webp"].includes(type);
+ if(kind==="video")return ["mp4","webm"].includes(ext)||["video/mp4","video/webm"].includes(type);
+ return false;
+}
+function getLocalVideoMetadata(file){
+ return new Promise((resolve,reject)=>{
+  const url=URL.createObjectURL(file),probe=document.createElement("video");let finished=false;
+  const done=(fn,value)=>{if(finished)return;finished=true;URL.revokeObjectURL(url);fn(value)};
+  probe.preload="metadata";probe.onloadedmetadata=()=>done(resolve,{duration:probe.duration,width:probe.videoWidth,height:probe.videoHeight});
+  probe.onerror=()=>done(reject,new Error("O telemóvel/navegador não conseguiu ler este vídeo. Experimente MP4."));
+  probe.src=url;
+ });
+}
+function uploadCourseAssetWithProgress(file,path,label){
+ return new Promise((resolve,reject)=>{
+  let task;
+  try{task=firebase.storage().ref(path).put(file,{contentType:file.type|| (courseFileKind(file,"video")?"video/mp4":"image/jpeg")})}
+  catch(error){reject(error);return}
+  task.on("state_changed",snap=>{
+   const percent=snap.totalBytes?Math.round(snap.bytesTransferred/snap.totalBytes*100):0;
+   courseFormMessage(label+" — "+percent+"%");
+  },reject,async()=>{
+   try{resolve({url:await task.snapshot.ref.getDownloadURL(),path})}
+   catch(error){reject(error)}
+  });
+ });
+}
+function installCoursePublisherButton(){
+ const button=$("publishCourseBtn");if(!button||button.dataset.publisherInstalled==="yes")return;
+ button.dataset.publisherInstalled="yes";button.type="button";button.style.pointerEvents="auto";
+ button.addEventListener("click",async(event)=>{
+  event.preventDefault();event.stopPropagation();
+  if(button.dataset.busy==="yes")return;
+  button.dataset.busy="yes";button.disabled=true;
+  const original=button.textContent;button.textContent="A validar…";
+  const uploaded=[];
+  try{
+   courseFormMessage("1/6 — Clique recebido. A validar os campos…");
+   const value=id=>{const el=$(id);return el?String(el.value||"").trim():""};
+   const file=id=>$(id)?.files?.[0]||null;
+   const photo=file("courseTeacherPhoto"),cover=file("courseCover"),video=file("courseIntroVideo");
+   const title=value("courseTitle"),category=value("courseCategory"),description=value("courseDescription"),curriculum=value("courseCurriculum");
+   const level=value("courseLevel"),duration=value("courseDuration"),mode=value("courseMode"),schedule=value("courseSchedule"),start=value("courseStart");
+   const seats=Number(value("courseSeats")),price=Number(value("coursePrice")),registrationFee=Number(value("courseRegistrationFee")||0);
+   const priceType=value("coursePriceType"),currency=value("courseCurrency"),holder=value("courseBankHolder"),bank=value("courseBankName"),account=value("courseBankAccount");
+   const acceptTransfer=$("courseAcceptTransfer")?.checked===true,acceptCash=$("courseAcceptCash")?.checked===true;
+   if(!title||!category||!description||!curriculum||!level||!duration||!mode||!schedule||!start||!Number.isInteger(seats)||seats<1||!priceType||!Number.isFinite(price)||price<0||!Number.isFinite(registrationFee)||registrationFee<0||!holder||!bank||!account||(!acceptTransfer&&!acceptCash)||(!photo&&!teacherProfile.photoUrl)||!cover||!video){
+    throw new Error("Preencha todos os campos obrigatórios. São necessárias fotografia de perfil (na primeira publicação), capa, vídeo, dados bancários e pelo menos um método de pagamento.");
+   }
+   if((photo&&(!courseFileKind(photo,"image")||photo.size>8*1024*1024))||!courseFileKind(cover,"image")||cover.size>10*1024*1024)throw new Error("Fotografias inválidas. Use JPG, PNG ou WebP; perfil até 8 MB e capa até 10 MB.");
+   if(!courseFileKind(video,"video")||video.size>100*1024*1024)throw new Error("O vídeo deve ser MP4 ou WebM e ter no máximo 100 MB.");
+   if(priceType!=="gratuito"&&price<=0)throw new Error("Indique um preço superior a zero ou escolha a opção Gratuito.");
+   courseFormMessage("2/6 — A verificar a duração e a orientação do vídeo…");
+   const meta=await getLocalVideoMetadata(video);
+   if(!Number.isFinite(meta.duration)||meta.duration<=0)throw new Error("Não foi possível confirmar a duração do vídeo.");
+   if(meta.width<=meta.height)throw new Error("O vídeo tem de estar na horizontal (largura maior do que a altura).");
+   if(meta.duration>60)throw new Error("O vídeo ultrapassa o limite de 60 segundos.");
+   courseFormMessage("3/6 — A autenticar e validar a conta do professor…");
+   const user=await ensureFirebaseAuth();await user.getIdToken(true);
+   const licenseSnap=await db.ref("licenses/"+token).once("value"),activeLicense=licenseSnap.val();
+   if(!activeLicense||activeLicense.status!=="active")throw new Error("A licença desta conta não está ativa. Saia e entre novamente ou contacte o suporte.");
+   license=activeLicense;
+   const publicId="RWB-"+rwbHash(token),publicRoomId="AZNY-TEACHER-"+rwbHash(token);
+   const profileSnap=await db.ref("publicTeacherDirectory/"+publicId).once("value");
+   const profile=profileSnap.val()||teacherProfile||{};
+   const teacherName=value("publicTeacherName")||value("sideTeacherName")||"Professor";
+   if(!photo&&!profile.photoUrl)throw new Error("Carregue a fotografia do professor para a primeira publicação.");
+   const courseRef=db.ref("teacherPublicCourses/"+publicId).push(),id=courseRef.key;
+   const folder="rwb-courses/"+publicId+"/"+id+"/",stamp=Date.now();
+   let photoUrl=profile.photoUrl||"";
+   if(photo){const result=await uploadCourseAssetWithProgress(photo,folder+"professor-"+stamp+"-"+photo.name.replace(/[^a-z0-9._-]/gi,"_"),"4/6 — A carregar fotografia");photoUrl=result.url;uploaded.push(result.path)}
+   const coverResult=await uploadCourseAssetWithProgress(cover,folder+"capa-"+stamp+"-"+cover.name.replace(/[^a-z0-9._-]/gi,"_"),"4/6 — A carregar capa");uploaded.push(coverResult.path);
+   const videoResult=await uploadCourseAssetWithProgress(video,folder+"apresentacao-"+stamp+"-"+video.name.replace(/[^a-z0-9._-]/gi,"_"),"4/6 — A carregar vídeo");uploaded.push(videoResult.path);
+   courseFormMessage("5/6 — Ficheiros enviados. A guardar o curso no catálogo…");
+   const now=Date.now();
+   const course={id,publicId,roomId:publicRoomId,teacherToken:token,teacherName,teacherPhotoUrl:photoUrl,teacherSpecialty:value("teacherSpecialty")||category,teacherBio:value("teacherBio"),title,category,description,curriculum,level,duration,mode,location:value("courseLocation"),schedule,startDate:start,seats,certificate:value("courseCertificate"),currency,priceType,price:priceType==="gratuito"?0:price,registrationFee,coverUrl:coverResult.url,introVideoUrl:videoResult.url,introVideoType:video.type||"video/mp4",bank:{holder,bank,account,branch:value("courseBankBranch"),currency,acceptTransfer,acceptCash},published:true,status:"published",createdAt:now,updatedAt:now};
+   const profileUpdates={name:teacherName,specialty:course.teacherSpecialty,bio:course.teacherBio,photoUrl,discoverable:true,planActive:!activeLicense.expiresAt||new Date(activeLicense.expiresAt)>new Date(),publicId,roomId:publicRoomId,updatedAt:now};
+   const updates={};updates["teacherPublicCourses/"+publicId+"/"+id]=course;updates["teacherCourses/"+token+"/"+id]=course;
+   Object.entries(profileUpdates).forEach(([key,val])=>updates["publicTeacherDirectory/"+publicId+"/"+key]=val);
+   await db.ref().update(updates);
+   courseFormMessage("6/6 — A confirmar a publicação no catálogo público…");
+   const verify=await db.ref("teacherPublicCourses/"+publicId+"/"+id).once("value");
+   if(!verify.exists()||verify.val()?.published!==true)throw new Error("O Firebase não confirmou a gravação do curso no catálogo público.");
+   teacherProfile={...profile,...profileUpdates};
+   ["courseTitle","courseCategory","courseDescription","courseCurriculum","courseDuration","courseLocation","courseSchedule","courseStart","coursePrice","courseRegistrationFee","courseBankHolder","courseBankName","courseBankAccount","courseBankBranch"].forEach(id=>{if($(id))$(id).value=""});
+   ["courseTeacherPhoto","courseCover","courseIntroVideo"].forEach(id=>{if($(id))$(id).value=""});
+   $("courseTeacherPhotoPreview")?.classList.add("hidden");$("courseCoverPreview")?.classList.add("hidden");
+   if($("courseSeats"))$("courseSeats").value="20";if($("courseAcceptTransfer"))$("courseAcceptTransfer").checked=true;if($("courseAcceptCash"))$("courseAcceptCash").checked=false;
+   courseFormMessage("✓ Curso publicado e confirmado! Já está gravado no catálogo que os alunos pesquisam.");
+   if(typeof showPanel==="function")showPanel("myCourses");
+  }catch(error){
+   console.error("Remote Work Board — publicação de curso:",error);
+   const detail=error?.code?error.code+": "+(error.message||""):error?.message||String(error);
+   courseFormMessage("Não foi possível publicar: "+detail,true);
+   if(uploaded.length){for(const path of uploaded){try{await firebase.storage().ref(path).delete()}catch(cleanError){console.warn("Limpeza de ficheiro incompleto:",cleanError)}}}
+  }finally{
+   button.dataset.busy="no";button.disabled=false;button.textContent=original;
+  }
+ },{passive:false});
+}
 async function init(){if(!requireToken())return;try{await ensureFirebaseAuth();const snap=await db.ref("licenses/"+token).once("value");license=snap.val();if(!license||license.status!=="active"){ $("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa";$("hello").textContent="Acesso não validado";$("topPlan").textContent="Sessão inválida";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
 sessionStorage.setItem("azny_access_token",token);
 const nameCandidates=[[license.firstName,license.lastName].filter(Boolean).join(" "),[license.first_name,license.last_name].filter(Boolean).join(" "),[license.nome,license.apelido||license.surname].filter(Boolean).join(" "),license.fullName,license.displayName,license.ownerName,license.professorName,license.teacherName,license.name,license.nomeCompleto,license.userName,license.username,license.display_name,license.teacher?.fullName,license.professor?.fullName,firebase.auth().currentUser?.displayName,license.teacherEmail?.split("@")[0],license.email?.split("@")[0]];
@@ -634,17 +745,17 @@ $("hello").textContent="Bem-vindo, "+accountName;$("sideTeacherName").textConten
 const initials=accountName.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("");$("profileInitials").textContent=initials||"RW";$("sideInitials").textContent=initials||"RW";
 $("topPlan").textContent=license.planName||plans[license.plan]?.name||"Plano";$("sidePlan").textContent=license.planName||plans[license.plan]?.name||"Plano";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();bindTeacherModules();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
 db.ref("assessments").orderByChild("ownerToken").equalTo(token).on("value",s=>{const d=s.val()||{};const items=Object.entries(d).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).slice(0,5);$("recentAssessments").innerHTML=items.length?items.map(([id,x])=>'<div class="activity"><strong>'+escapeHtml(x.title||"Avaliação")+'</strong><span class="small">'+escapeHtml(x.status||"Rascunho")+'</span><button class="btn" data-view="'+id+'">Abrir</button></div>').join(""):"Ainda não criou avaliações.";document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>location.href="avaliacoes/?professor=1&acesso="+encodeURIComponent(token)+"&id="+encodeURIComponent(b.dataset.view))});
-}catch(e){$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Não foi possível validar a licença";const publishMessage=$("publishCourseMessage");if(publishMessage)publishMessage.textContent="O painel não conseguiu concluir a inicialização ("+(e&&e.message?e.message:"erro de ligação") +"). Atualize a página e, se persistir, contacte o suporte.";const publishButton=$("publishCourseBtn");if(publishButton)publishButton.onclick=()=>{if(publishMessage){publishMessage.textContent="A publicação ainda não foi inicializada porque a validação da conta falhou. Motivo: "+(e&&e.message?e.message:"erro de ligação") ;publishMessage.style.color="#b42318";publishMessage.scrollIntoView({behavior:"smooth",block:"center"})}};console.error("Falha na inicialização do painel do professor:",e)}}
+}catch(e){$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Não foi possível validar a licença";courseFormMessage("O painel não conseguiu validar a conta: "+(e&&e.message?e.message:"erro de ligação")+". O botão de publicação continua ativo para apresentar o diagnóstico ao tocar.",true);console.error("Falha na inicialização do painel do professor:",e)}}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 $("openBoard").onclick=async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(e){console.info("Landscape will be retried when the board opens:",e)}location.href="aulas/?acesso="+encodeURIComponent(token)};
 $("openAssessments").onclick=()=>location.href="avaliacao.html?professor=1&acesso="+encodeURIComponent(token);
 $("managePlan")?.addEventListener("click",()=>showPanel("plan"));
 $("cancelPlan").onclick=()=>showPanel("overview");$("nextPlan").onchange=planPrice;$("period").onchange=planPrice;
 $("sendPlanRequest").onclick=async()=>{if(!license)return;const file=$("proof").files[0];if(!file)return msg("Anexe o comprovativo do pagamento.",true);if(file.size>4*1024*1024)return msg("O ficheiro deve ter no máximo 4 MB.",true);const plan=$("nextPlan").value,period=$("period").value,p=plans[plan];if(!p)return;const btn=$("sendPlanRequest");btn.disabled=true;const reader=new FileReader();reader.onload=async()=>{try{const item={id:"PAY-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),requestType:plan===license.plan?"renewal":"upgrade",existingAccessToken:token,name:license.teacherName||"Professor",phone:license.teacherPhone||"",plan,planName:p.name,period,amount:period==="annual"?p.annual:p.monthly,method:selectedPaymentMethod,express:selectedPaymentMethod==="Express"?"931057760":"",proof:reader.result,proofName:file.name,proofType:file.type,status:"pending",createdAt:new Date().toISOString()};const ref=db.ref("paymentRequests");const tx=await ref.transaction(cur=>{const arr=Array.isArray(cur)?cur:(cur&&typeof cur==="object"?Object.values(cur):[]);if(arr.some(x=>x&&x.status==="pending"&&x.requestType&&x.existingAccessToken===token))return;arr.push(item);return arr});if(!tx.committed){msg("Já existe um pedido de renovação/atualização pendente para esta conta.",true);return}msg("Pedido enviado. A administração deverá confirmar o pagamento antes de alterar o plano.");$("proof").value=""}catch(e){msg("Falha ao enviar: "+e.message,true)}finally{btn.disabled=false}};reader.onerror=()=>{btn.disabled=false;msg("Não foi possível ler o comprovativo.",true)};reader.readAsDataURL(file)};
-$("logout").onclick=()=>{sessionStorage.removeItem("azny_access_token");location.href="index.html"};closeMobileMenu();showPanel(sessionStorage.getItem("rwb_teacher_panel")||"overview");init();
+$("logout").onclick=()=>{sessionStorage.removeItem("azny_access_token");location.href="index.html"};closeMobileMenu();showPanel(sessionStorage.getItem("rwb_teacher_panel")||"overview");installCoursePublisherButton();init();
 
 // Remote Work Board — módulos de gestão pedagógica, financeira e materiais.
-let walletData={},teacherProfile={};
+
 function listHtml(items,empty){return items.length?items.join(""):'<p class="muted">'+empty+'</p>'}
 function rwbHash(value){let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)}
 function bindTeacherModules(){
@@ -654,42 +765,6 @@ function bindTeacherModules(){
  const courseRoot=db.ref("teacherPublicCourses/"+publicId);
  const teacherCoursesRoot=db.ref("teacherCourses/"+base);
  const courseMoney=(n,cur)=>Number(n||0).toLocaleString("pt-AO")+" "+(cur||"Kz");
- const filePreview=(inputId,previewId)=>{$(inputId).onchange=()=>{const f=$(inputId).files[0],img=$(previewId);if(!f){img.classList.add("hidden");return}img.src=URL.createObjectURL(f);img.classList.remove("hidden")}};
- filePreview("courseTeacherPhoto","courseTeacherPhotoPreview");filePreview("courseCover","courseCoverPreview");
- async function ensureCoursePublisherAuth(){const user=await ensureFirebaseAuth();await user.getIdToken(true);return user}
- async function uploadCourseAsset(file,path){if(!file)throw new Error("Selecione todos os ficheiros obrigatórios.");const ref=firebase.storage().ref(path);const task=ref.put(file,{contentType:file.type});await task;return await task.snapshot.ref.getDownloadURL()}
- function courseFormMessage(text,bad=false){const box=$("publishCourseMessage");if(!box)return;box.textContent=text;box.style.display="block";box.style.background=bad?"#fff0f0":"#eef4ff";box.style.color=bad?"#b42318":"#29486b";box.style.border=bad?"1px solid #f3b4b4":"1px solid #c9d9f4";if(bad)box.scrollIntoView({behavior:"smooth",block:"center"})}
- function getLocalVideoMetadata(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),probe=document.createElement("video");probe.preload="metadata";probe.onloadedmetadata=()=>{const metadata={duration:probe.duration,width:probe.videoWidth,height:probe.videoHeight};URL.revokeObjectURL(url);resolve(metadata)};probe.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Não foi possível ler os dados do vídeo."))};probe.src=url})}
- $("publishCourseBtn").onclick=async()=>{
-  courseFormMessage("Clique recebido. A validar os dados do curso…");
-  const v=id=>$(id).value.trim(),photo=$("courseTeacherPhoto").files[0],cover=$("courseCover").files[0],video=$("courseIntroVideo").files[0];
-  const title=v("courseTitle"),category=v("courseCategory"),description=v("courseDescription"),curriculum=v("courseCurriculum"),mode=v("courseMode"),schedule=v("courseSchedule"),start=v("courseStart"),seats=Number(v("courseSeats")),price=Number(v("coursePrice")),priceType=v("coursePriceType"),currency=v("courseCurrency"),holder=v("courseBankHolder"),bank=v("courseBankName"),account=v("courseBankAccount"),acceptTransfer=$("courseAcceptTransfer").checked,acceptCash=$("courseAcceptCash").checked;
-  if(!title||!category||!description||!curriculum||!v("courseLevel")||!v("courseDuration")||!mode||!schedule||!start||!Number.isInteger(seats)||seats<1||!priceType||!Number.isFinite(price)||price<0||!holder||!bank||!account||(!acceptTransfer&&!acceptCash)||(!photo&&!teacherProfile.photoUrl)||!cover||!video){courseFormMessage("Preencha os campos obrigatórios e carregue fotografia de perfil, capa e vídeo de apresentação. Indique pelo menos um método de pagamento.",true);return}
-  if((photo&&(!["image/jpeg","image/png","image/webp"].includes(photo.type)||photo.size>8*1024*1024))||!["image/jpeg","image/png","image/webp"].includes(cover.type)||cover.size>10*1024*1024){courseFormMessage("As fotografias devem ser JPG, PNG ou WebP. Perfil até 8 MB e capa até 10 MB.",true);return}
-  if(!["video/mp4","video/webm"].includes(video.type)||video.size>100*1024*1024){courseFormMessage("O vídeo deve estar em MP4 ou WebM e não ultrapassar 100 MB.",true);return}
-  let introVideoMetadata;try{introVideoMetadata=await getLocalVideoMetadata(video)}catch(e){courseFormMessage("Não foi possível verificar o formato e a duração do vídeo. Escolha outro ficheiro MP4 ou WebM.",true);return}
-  if(!Number.isFinite(introVideoMetadata.duration)||introVideoMetadata.duration<=0){courseFormMessage("Não foi possível confirmar a duração do vídeo. Escolha outro ficheiro válido.",true);return}
-  if(introVideoMetadata.width<=introVideoMetadata.height){courseFormMessage("Vídeo rejeitado: a apresentação tem de estar gravada na horizontal (largura superior à altura).",true);return}
-  if(introVideoMetadata.duration>60){courseFormMessage("Vídeo rejeitado: a duração máxima permitida é de 60 segundos (1 minuto).",true);return}
-  if(priceType!=="gratuito"&&price<=0){courseFormMessage("Indique um preço superior a zero ou selecione curso gratuito.",true);return}
-  const btn=$("publishCourseBtn");if(btn.disabled)return;btn.disabled=true;const originalButtonText=btn.textContent;btn.textContent="A publicar…";courseFormMessage("A preparar a publicação. Aguarde…");
-  try{
-   await ensureCoursePublisherAuth();
-   const profileSnap=await db.ref("publicTeacherDirectory/"+publicId).once("value");if(profileSnap.exists())teacherProfile=profileSnap.val()||teacherProfile;
-   const courseRef=courseRoot.push(),id=courseRef.key,folder="rwb-courses/"+publicId+"/"+id+"/";
-   courseFormMessage("A carregar fotografia de perfil…");const photoUrl=photo?await uploadCourseAsset(photo,folder+"professor-"+Date.now()):teacherProfile.photoUrl;if(!photoUrl)throw new Error("A fotografia de perfil não está disponível. Carregue-a novamente.");courseFormMessage("A carregar capa do curso…");const coverUrl=await uploadCourseAsset(cover,folder+"capa-"+Date.now());courseFormMessage("A carregar vídeo de apresentação…");const videoUrl=await uploadCourseAsset(video,folder+"apresentacao-"+Date.now());courseFormMessage("Ficheiros carregados. A guardar e publicar o curso…");
-   const course={id,publicId,roomId:publicRoomId,teacherToken:base,teacherName:v("publicTeacherName")||safeName,teacherPhotoUrl:photoUrl,teacherSpecialty:v("teacherSpecialty")||category,teacherBio:v("teacherBio"),title,category,description,curriculum,level:v("courseLevel"),duration:v("courseDuration"),mode,location:v("courseLocation"),schedule,startDate:start,seats,certificate:v("courseCertificate"),currency,priceType,price:priceType==="gratuito"?0:price,registrationFee:Number(v("courseRegistrationFee")||0),coverUrl,introVideoUrl:videoUrl,introVideoType:video.type,bank:{holder,bank,account,branch:v("courseBankBranch"),currency,acceptTransfer,acceptCash},published:true,status:"published",createdAt:Date.now(),updatedAt:Date.now()};
-   const publishedAt=Date.now();course.createdAt=publishedAt;course.updatedAt=publishedAt;
-   const profileUpdates={name:course.teacherName,specialty:course.teacherSpecialty,bio:course.teacherBio,photoUrl,discoverable:true,planActive:!license.expiresAt||new Date(license.expiresAt)>new Date(),publicId,roomId:publicRoomId,updatedAt:publishedAt};
-   const updates={};updates["teacherPublicCourses/"+publicId+"/"+id]=course;updates["teacherCourses/"+base+"/"+id]=course;Object.entries(profileUpdates).forEach(([key,value])=>updates["publicTeacherDirectory/"+publicId+"/"+key]=value);
-   await db.ref().update(updates);
-   ["courseTitle","courseCategory","courseDescription","courseCurriculum","courseDuration","courseLocation","courseSchedule","courseStart","coursePrice","courseRegistrationFee","courseBankHolder","courseBankName","courseBankAccount","courseBankBranch"].forEach(id=>$(id).value="");
-   ["courseTeacherPhoto","courseCover","courseIntroVideo"].forEach(id=>$(id).value="");
-   $("courseTeacherPhotoPreview").classList.add("hidden");$("courseCoverPreview").classList.add("hidden");$("courseSeats").value="20";$("courseAcceptTransfer").checked=true;$("courseAcceptCash").checked=false;
-   courseFormMessage("Curso publicado com sucesso! Já está disponível na pesquisa dos alunos.");showPanel("myCourses");
-  }catch(e){console.error("Publicação de curso:",e);const detail=e&&((e.code?e.code+": ":"")+(e.message||""));courseFormMessage("Falha ao publicar"+(detail?" — "+detail:"")+". Verifique a ligação e tente novamente.",true)}
-  finally{btn.disabled=false;btn.textContent=originalButtonText}
- };
  courseRoot.on("value",s=>{const rows=Object.entries(s.val()||{}).sort((a,b)=>Number(b[1].createdAt||0)-Number(a[1].createdAt||0));$("teacherCoursesList").innerHTML=rows.length?rows.map(([id,x])=>'<article class="course-admin-card"><img src="'+escapeHtml(x.coverUrl||"")+'" alt=""><div><strong>'+escapeHtml(x.title||"Curso")+'</strong><small>'+escapeHtml(x.category||"")+' · '+escapeHtml(x.mode||"")+' · '+courseMoney(x.price,x.currency)+'</small><small>Estado: '+escapeHtml(x.status||"publicado")+' · '+Number(x.seats||0)+' vagas</small><div class="course-admin-actions"><button class="btn" data-course-toggle="'+escapeHtml(id)+'">'+(x.published===false?"Republicar":"Retirar da vitrina")+'</button><button class="btn" data-course-delete="'+escapeHtml(id)+'">Eliminar</button></div></div></article>').join(""):'<p class="muted">Ainda não publicou cursos. Use «Publicar um curso» para criar a primeira oferta.</p>';
   document.querySelectorAll("[data-course-toggle]").forEach(b=>b.onclick=async()=>{const item=rows.find(([id])=>id===b.dataset.courseToggle)?.[1];if(!item)return;const published=item.published===false;await courseRoot.child(b.dataset.courseToggle).update({published,status:published?"published":"unpublished",updatedAt:Date.now()});await teacherCoursesRoot.child(b.dataset.courseToggle).update({published,status:published?"published":"unpublished",updatedAt:Date.now()})});
   document.querySelectorAll("[data-course-delete]").forEach(b=>b.onclick=async()=>{if(!confirm("Eliminar este curso e retirá-lo da pesquisa dos alunos?"))return;await courseRoot.child(b.dataset.courseDelete).remove();await teacherCoursesRoot.child(b.dataset.courseDelete).remove()});
