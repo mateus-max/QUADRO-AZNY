@@ -311,6 +311,31 @@ body.overview-fixed .hero-welcome{height:100%;min-height:0;overflow:hidden}
  .side-user strong{font-size:13px}
 }
 
+
+/* Menu móvel em gaveta: o conteúdo ocupa sempre a largura toda. */
+.workspace-illustration{display:block;width:100%;height:auto;max-height:650px;overflow:visible;filter:drop-shadow(0 16px 24px #0b2d501a)}
+@media(max-width:900px){
+ .sidebar{position:fixed!important;z-index:60!important;top:68px!important;bottom:0!important;left:0!important;width:min(290px,84vw)!important;height:calc(100dvh - 68px)!important;padding:14px 12px 16px!important;transform:translateX(-105%)!important;transition:transform .22s ease!important;overflow-y:auto!important;box-shadow:12px 0 32px #0004!important}
+ body.menu-open .sidebar{transform:translateX(0)!important}
+ body.mobile-sidebar-collapsed .sidebar{width:min(290px,84vw)!important;transform:translateX(-105%)!important}
+ body.menu-open.mobile-sidebar-collapsed .sidebar{transform:translateX(0)!important}
+ .sidebar-backdrop{display:none!important;position:fixed!important;z-index:55!important;inset:68px 0 0!important;background:#03172e88!important}
+ body.menu-open .sidebar-backdrop{display:block!important}
+ .wrap,body.mobile-sidebar-collapsed .wrap{margin:0!important;width:100%!important}
+ .side-user strong{font-size:15px!important;max-width:100%!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
+ .side-user small{font-size:11px!important}
+ .side-nav{padding-top:12px!important;gap:7px!important}
+ .side-link{font-size:13px!important;padding:13px 10px!important;gap:10px!important}
+ .side-link>span{font-size:19px!important}
+ .top-profile{max-width:42%!important;min-width:0}
+ .top-profile strong{font-size:clamp(9px,2.1vw,13px)!important;max-width:150px;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
+ .workspace-illustration{width:100%;max-height:100%;object-fit:contain}
+}
+@media(max-width:520px){
+ .top-profile{max-width:40%!important}
+ .top-profile strong{font-size:clamp(8px,2.4vw,11px)!important;max-width:118px}
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -348,7 +373,73 @@ body.overview-fixed .hero-welcome{height:100%;min-height:0;overflow:hidden}
   <h1>Bem-vindo ao<br><strong>Remote Work Board</strong></h1>
   <p>O seu espaço de ensino, formação<br class="desktop-break"> e colaboração online.</p>
  </div>
- <div class="hero-art" aria-hidden="true"><img class="workspace-photo" src="assets/remote-work-workspace.webp" alt=""></div>
+ <div class="hero-art" aria-hidden="true">
+ <svg class="workspace-illustration" viewBox="0 0 820 620" role="img" aria-label="Computador portátil, auscultadores, caderno, caneta e chávena">
+  <defs>
+   <linearGradient id="screenBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1688ff"/><stop offset="1" stop-color="#03449d"/></linearGradient>
+   <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f9fcff"/><stop offset=".48" stop-color="#b9c8d7"/><stop offset="1" stop-color="#eef3f8"/></linearGradient>
+   <linearGradient id="mug" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".65" stop-color="#f4f7fa"/><stop offset="1" stop-color="#dce5ee"/></linearGradient>
+   <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#f4f7fb"/></linearGradient>
+   <filter id="softShadow" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur stdDeviation="13"/></filter>
+  </defs>
+  <ellipse cx="416" cy="555" rx="340" ry="34" fill="#9bb5d0" opacity=".24" filter="url(#softShadow)"/>
+  <!-- Laptop screen -->
+  <path d="M245 92 Q250 70 274 68 L650 55 Q675 55 679 80 L709 385 Q711 405 691 410 L206 426 Q184 426 187 404 Z" fill="#142b43"/>
+  <path d="M258 92 L651 80 L678 377 L218 393 Z" fill="url(#screenBlue)" stroke="#314a64" stroke-width="5"/>
+  <path d="M277 111 L640 101 L661 350 L237 365 Z" fill="#0c63cb" opacity=".48"/>
+  <path d="M286 121 L625 112" stroke="#ffffff" stroke-opacity=".18" stroke-width="3"/>
+  <circle cx="452" cy="72" r="3.5" fill="#71879b"/>
+  <!-- people icon on screen -->
+  <g fill="#fff" transform="translate(0 2)">
+   <circle cx="440" cy="221" r="28"/><circle cx="382" cy="237" r="21"/><circle cx="500" cy="237" r="21"/>
+   <path d="M382 270 Q383 244 412 242 Q437 242 440 270 L440 295 L366 295 L366 285 Q367 275 382 270Z"/>
+   <path d="M440 270 Q444 235 478 235 Q514 235 520 270 L520 300 L440 300Z"/>
+   <path d="M340 278 Q342 253 368 253 Q388 253 398 269 L398 290 L333 290Z" opacity=".94"/>
+  </g>
+  <!-- laptop base -->
+  <path d="M186 408 L709 388 L779 474 Q785 487 765 493 L116 517 Q95 516 105 499 Z" fill="url(#metal)" stroke="#9eafbf" stroke-width="3"/>
+  <path d="M215 419 L684 401 L735 466 L160 490 Z" fill="#26384b"/>
+  <path d="M215 423 L682 405 L721 458 L175 480 Z" fill="#354b61"/>
+  <g stroke="#91a5b8" stroke-width="2" opacity=".95">
+   <path d="M229 435 L674 417 M219 447 L685 429 M207 460 L696 442 M194 472 L706 454"/>
+   <path d="M255 426 L260 476 M293 424 L297 475 M331 422 L335 473 M369 421 L373 471 M407 419 L411 469 M445 418 L449 468 M483 416 L487 466 M521 415 L525 465 M559 413 L563 463 M597 412 L601 461 M635 410 L639 460"/>
+  </g>
+  <path d="M379 462 L507 457 L521 477 L365 484 Z" fill="#b6c6d5" stroke="#8296a9" stroke-width="2"/>
+  <path d="M115 500 Q425 495 767 475 L783 486 Q782 495 762 497 L118 522 Q98 520 105 508Z" fill="#e9eff5" stroke="#9eafbf" stroke-width="2"/>
+  <!-- headphones -->
+  <path d="M613 160 Q612 65 690 62 Q763 59 775 153" fill="none" stroke="#18283a" stroke-width="28" stroke-linecap="round"/>
+  <path d="M618 157 Q622 83 690 81 Q747 80 759 151" fill="none" stroke="#526579" stroke-width="7" stroke-linecap="round"/>
+  <rect x="596" y="143" width="53" height="112" rx="22" fill="#101e2d" stroke="#64788c" stroke-width="5" transform="rotate(-9 622 199)"/>
+  <rect x="742" y="139" width="56" height="118" rx="23" fill="#111f30" stroke="#71869a" stroke-width="5" transform="rotate(9 770 198)"/>
+  <rect x="608" y="157" width="28" height="82" rx="13" fill="#263d54" transform="rotate(-9 622 198)"/>
+  <rect x="755" y="154" width="29" height="86" rx="13" fill="#263d54" transform="rotate(9 770 197)"/>
+  <path d="M771 248 Q781 283 749 296 L704 310" fill="none" stroke="#1d2c3c" stroke-width="8" stroke-linecap="round"/>
+  <path d="M704 310 Q688 318 681 305" fill="none" stroke="#1d2c3c" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="677" cy="302" rx="17" ry="8" fill="#111e2c" transform="rotate(-20 677 302)"/>
+  <!-- notebook -->
+  <path d="M69 487 L431 458 L540 548 L169 597 Q153 600 140 588 L62 510 Q53 497 69 487Z" fill="#d7e0e9" stroke="#9baebe" stroke-width="3"/>
+  <path d="M73 478 L427 450 L528 532 L167 579 Q153 582 142 572 L67 502 Q58 489 73 478Z" fill="url(#paper)" stroke="#aebdca" stroke-width="3"/>
+  <path d="M87 494 L420 468 L502 534 L171 565Z" fill="#fff" stroke="#dce5ed" stroke-width="2"/>
+  <g stroke="#d6e5f3" stroke-width="2"><path d="M101 507 L430 482 M116 521 L446 496 M132 535 L461 510 M148 549 L476 524"/></g>
+  <g fill="none" stroke="#73889b" stroke-width="3"><path d="M78 485 q-10 7 1 15 q-10 7 2 15 q-9 8 3 15 q-8 8 5 16 q-7 9 7 17"/></g>
+  <g fill="none" stroke="#71869a" stroke-width="4"><ellipse cx="78" cy="485" rx="6" ry="4"/><ellipse cx="92" cy="499" rx="6" ry="4"/><ellipse cx="107" cy="513" rx="6" ry="4"/><ellipse cx="122" cy="527" rx="6" ry="4"/></g>
+  <!-- pen -->
+  <g transform="rotate(-17 326 523)">
+   <rect x="210" y="514" width="250" height="12" rx="6" fill="#1c2c3d"/>
+   <rect x="224" y="516" width="212" height="3" rx="1.5" fill="#71869a"/>
+   <path d="M210 514 L192 520 L210 526Z" fill="#aebbc8"/>
+   <path d="M460 514 L474 520 L460 526Z" fill="#d1a66a"/>
+   <path d="M276 513 L292 513 L292 527 L276 527Z" fill="#c8d3de"/>
+  </g>
+  <!-- mug, clean smooth ceramic -->
+  <path d="M626 354 Q626 337 644 337 L760 337 Q778 337 778 355 L767 476 Q765 496 744 498 L660 498 Q640 496 638 477Z" fill="url(#mug)" stroke="#c6d3df" stroke-width="3"/>
+  <path d="M768 365 Q817 357 815 407 Q812 452 770 445" fill="none" stroke="#d9e2eb" stroke-width="18"/>
+  <path d="M770 376 Q799 372 798 405 Q796 432 771 431" fill="none" stroke="#fff" stroke-width="8"/>
+  <ellipse cx="701" cy="341" rx="58" ry="10" fill="#e9eff5" stroke="#c6d3df" stroke-width="3"/>
+  <ellipse cx="701" cy="341" rx="48" ry="6" fill="#d7e2ec"/>
+  <path d="M650 360 Q652 438 662 471" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".85"/>
+ </svg>
+</div>
  <div class="hero-wave wave-one"></div><div class="hero-wave wave-two"></div>
 </section>
  </div>
@@ -404,9 +495,10 @@ function showPanel(name){
  window.scrollTo({top:0,behavior:"smooth"});
 }
 document.querySelectorAll("[data-panel],[data-open-panel]").forEach(el=>el.addEventListener("click",()=>showPanel(el.dataset.panel||el.dataset.openPanel)));
-$("menuToggle").addEventListener("click",()=>{const collapsed=document.body.classList.toggle("mobile-sidebar-collapsed");$("menuToggle").setAttribute("aria-expanded",String(!collapsed))});
-$("sidebarBackdrop").addEventListener("click",()=>{});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&matchMedia("(max-width:900px)").matches){document.body.classList.add("mobile-sidebar-collapsed");$("menuToggle").setAttribute("aria-expanded","false")}});
+function closeMobileMenu(){document.body.classList.remove("menu-open");$("menuToggle").setAttribute("aria-expanded","false")}
+$("menuToggle").addEventListener("click",()=>{const open=document.body.classList.toggle("menu-open");$("menuToggle").setAttribute("aria-expanded",String(open))});
+$("sidebarBackdrop").addEventListener("click",closeMobileMenu);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMobileMenu()});
 
 function msg(t,bad=false){$("planMessage").textContent=t;$("planMessage").style.color=bad?"#b40000":"#187a35"}
 function planPrice(){const p=plans[$("nextPlan").value],period=$("period").value,amount=period==="annual"?p.annual:p.monthly;$("amountInfo").textContent="Valor do pedido: "+money(amount)+" · Plano "+p.name+" ("+(period==="annual"?"anual":"mensal")+").";const checkoutAmount=$("checkoutAmount");if(checkoutAmount)checkoutAmount.textContent=money(amount)}
@@ -416,9 +508,10 @@ $("copyExpress").onclick=async()=>{try{await navigator.clipboard.writeText("9310
 function requireToken(){if(!token){location.replace("index.html?acesso=necessario");return false}return true}
 async function init(){if(!requireToken())return;try{const snap=await db.ref("licenses/"+token).once("value");license=snap.val();if(!license||license.status!=="active"){ $("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa";$("hello").textContent="Acesso não validado";$("topPlan").textContent="Sessão inválida";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
 sessionStorage.setItem("azny_access_token",token);
-const rawAccountName=[license.fullName,license.displayName,license.ownerName,license.professorName,license.teacherName,license.name,license.teacherEmail?.split("@")[0],license.email?.split("@")[0]].map(v=>String(v||"").trim()).find(v=>v&&!/^(professor|formador|teacher|a minha conta|conta do professor)$/i.test(v))||"Eduardo Gabriel";
-const cleanParts=rawAccountName.replace(/^(professor|formador|teacher)\s+/i,"").trim().split(/\s+/).filter(Boolean);
-const accountName=cleanParts.length>2?cleanParts[0]+" "+cleanParts[cleanParts.length-1]:cleanParts.join(" ")||"Eduardo Gabriel";
+const nameCandidates=[license.fullName,license.displayName,license.ownerName,license.professorName,license.teacherName,license.name,license.nomeCompleto,license.nome,license.userName,license.username,license.display_name,license.teacher?.fullName,license.professor?.fullName,[license.firstName,license.lastName].filter(Boolean).join(" "),[license.first_name,license.last_name].filter(Boolean).join(" "),license.teacherEmail?.split("@")[0],license.email?.split("@")[0]];
+const rawAccountName=nameCandidates.map(v=>String(v||"").trim()).find(v=>v&&!/^(professor|formador|teacher|a minha conta|conta do professor)$/i.test(v))||"Nome não disponível";
+const cleanParts=rawAccountName.replace(/^(professor|formador|teacher)\\s+/i,"").replace(/[._-]+/g," ").trim().split(/\\s+/).filter(Boolean);
+const accountName=cleanParts.length>2?cleanParts[0]+" "+cleanParts[cleanParts.length-1]:cleanParts.join(" ")||"Nome não disponível";
 $("hello").textContent="Bem-vindo, "+accountName;$("sideTeacherName").textContent=accountName;$("topTeacherName").textContent=accountName;
 const initials=accountName.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("");$("profileInitials").textContent=initials||"RW";$("sideInitials").textContent=initials||"RW";
 $("topPlan").textContent=license.planName||plans[license.plan]?.name||"Plano";$("sidePlan").textContent=license.planName||plans[license.plan]?.name||"Plano";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
@@ -430,7 +523,7 @@ $("openAssessments").onclick=()=>location.href="avaliacao.html?professor=1&acess
 $("managePlan")?.addEventListener("click",()=>showPanel("plan"));
 $("cancelPlan").onclick=()=>showPanel("overview");$("nextPlan").onchange=planPrice;$("period").onchange=planPrice;
 $("sendPlanRequest").onclick=async()=>{if(!license)return;const file=$("proof").files[0];if(!file)return msg("Anexe o comprovativo do pagamento.",true);if(file.size>4*1024*1024)return msg("O ficheiro deve ter no máximo 4 MB.",true);const plan=$("nextPlan").value,period=$("period").value,p=plans[plan];if(!p)return;const btn=$("sendPlanRequest");btn.disabled=true;const reader=new FileReader();reader.onload=async()=>{try{const item={id:"PAY-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),requestType:plan===license.plan?"renewal":"upgrade",existingAccessToken:token,name:license.teacherName||"Professor",phone:license.teacherPhone||"",plan,planName:p.name,period,amount:period==="annual"?p.annual:p.monthly,method:selectedPaymentMethod,express:selectedPaymentMethod==="Express"?"931057760":"",proof:reader.result,proofName:file.name,proofType:file.type,status:"pending",createdAt:new Date().toISOString()};const ref=db.ref("paymentRequests");const tx=await ref.transaction(cur=>{const arr=Array.isArray(cur)?cur:(cur&&typeof cur==="object"?Object.values(cur):[]);if(arr.some(x=>x&&x.status==="pending"&&x.requestType&&x.existingAccessToken===token))return;arr.push(item);return arr});if(!tx.committed){msg("Já existe um pedido de renovação/atualização pendente para esta conta.",true);return}msg("Pedido enviado. A administração deverá confirmar o pagamento antes de alterar o plano.");$("proof").value=""}catch(e){msg("Falha ao enviar: "+e.message,true)}finally{btn.disabled=false}};reader.onerror=()=>{btn.disabled=false;msg("Não foi possível ler o comprovativo.",true)};reader.readAsDataURL(file)};
-$("logout").onclick=()=>{sessionStorage.removeItem("azny_access_token");location.href="index.html"};if(matchMedia("(max-width:900px)").matches){document.body.classList.remove("mobile-sidebar-collapsed");$("menuToggle").setAttribute("aria-expanded","true")}showPanel("overview");init();
+$("logout").onclick=()=>{sessionStorage.removeItem("azny_access_token");location.href="index.html"};closeMobileMenu();showPanel("overview");init();
 })();
 </script>
 <script>
