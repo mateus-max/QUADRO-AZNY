@@ -598,7 +598,7 @@ body.menu-open .sidebar-backdrop{display:block;position:fixed;z-index:55;inset:6
 <script>
 (()=>{"use strict";
 const cfg={apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c"};
-if(!firebase.apps.length)firebase.initializeApp(cfg);const db=firebase.database();const auth=firebase.auth();auth.signInAnonymously().catch(e=>console.warn("Autenticação anónima inicial:",e));
+if(!firebase.apps.length)firebase.initializeApp(cfg);const db=firebase.database();const auth=firebase.auth();
 const qs=new URLSearchParams(location.search),token=qs.get("acesso")||sessionStorage.getItem("azny_access_token")||"",plans={basic:{name:"Básico",monthly:10000,annual:60000},professional:{name:"Profissional",monthly:20000,annual:60000},school:{name:"Escola",monthly:30000,annual:100000}};
 let license=null,requests=[],selectedPaymentMethod="Express";
 const $=id=>document.getElementById(id), money=n=>Number(n||0).toLocaleString("pt-AO")+" Kz";
@@ -624,7 +624,7 @@ function selectPayment(method){selectedPaymentMethod=method;const express=method
 $("chooseExpress").onclick=()=>selectPayment("Express");$("chooseBank").onclick=()=>selectPayment("Transferência bancária");
 $("copyExpress").onclick=async()=>{try{await navigator.clipboard.writeText("931057760");$("copyExpress").textContent="Número copiado ✓"}catch(e){const range=document.createRange(),node=$("expressNumber");const sel=window.getSelection();range.selectNodeContents(node);sel.removeAllRanges();sel.addRange(range);$("copyExpress").textContent="Selecione e copie"}};
 function requireToken(){if(!token){location.replace("index.html?acesso=necessario");return false}return true}
-async function init(){if(!requireToken())return;try{const snap=await db.ref("licenses/"+token).once("value");license=snap.val();if(!license||license.status!=="active"){ $("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa";$("hello").textContent="Acesso não validado";$("topPlan").textContent="Sessão inválida";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
+async function init(){if(!requireToken())return;try{if(!auth.currentUser)await auth.signInAnonymously();const snap=await db.ref("licenses/"+token).once("value");license=snap.val();if(!license||license.status!=="active"){ $("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa";$("hello").textContent="Acesso não validado";$("topPlan").textContent="Sessão inválida";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
 sessionStorage.setItem("azny_access_token",token);
 const nameCandidates=[[license.firstName,license.lastName].filter(Boolean).join(" "),[license.first_name,license.last_name].filter(Boolean).join(" "),[license.nome,license.apelido||license.surname].filter(Boolean).join(" "),license.fullName,license.displayName,license.ownerName,license.professorName,license.teacherName,license.name,license.nomeCompleto,license.userName,license.username,license.display_name,license.teacher?.fullName,license.professor?.fullName,firebase.auth().currentUser?.displayName,license.teacherEmail?.split("@")[0],license.email?.split("@")[0]];
 const rawAccountName=nameCandidates.map(v=>String(v||"").trim()).find(v=>v&&!/^(professor|formador|teacher|a minha conta|conta do professor)$/i.test(v))||"Professor";
