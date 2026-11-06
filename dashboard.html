@@ -726,6 +726,6 @@ function bindTeacherModules(){
 })();
 </script>
 <script>
-if("serviceWorker" in navigator && location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js",{scope:"/QUADRO-AZNY/"}).catch(err=>console.warn("AZNY PWA:",err)));}
+if("serviceWorker" in navigator && location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js",{scope:"./",updateViaCache:"none"}).then(reg=>reg.update()).catch(err=>console.warn("AZNY PWA:",err)));}
 </script>
 </body></html>
