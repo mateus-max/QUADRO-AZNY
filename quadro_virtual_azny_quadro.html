@@ -1102,6 +1102,8 @@ body.student-mode #aznySharedBrowser .teacher-only-browser{display:none!importan
 #aznyPointerCaptureLayer{position:absolute;inset:0;z-index:35;display:none;background:transparent;pointer-events:none;touch-action:none}
 #board.azny-pointer-mode #aznyPointerCaptureLayer{display:block;pointer-events:auto;cursor:none;touch-action:none}
 #board #livePointer{z-index:40!important;pointer-events:none!important}
+.recording-notice{padding:6px 12px;text-align:center;background:#fff8e8;color:#805500;border-bottom:1px solid #f2d99d;font-size:11px;font-weight:700;line-height:1.35}
+@media(max-width:600px){.recording-notice{font-size:10px;padding:5px 8px}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style id="azny-teacher-camera-controls-and-refresh-persistence">
@@ -1174,7 +1176,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
     <button class="iconbtn" id="helpBtn" title="Ajuda">?</button>
   </div>
 </header>
-
+<div class="recording-notice" role="status">🔴 Esta aula é gravada automaticamente quando o professor a inicia. A gravação fica disponível para consulta posterior.</div>
 <div class="workspace">
 <aside class="leftbar">
   <div class="sidehead">Ferramentas do quadro</div>
