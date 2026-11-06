@@ -670,7 +670,7 @@ function installCoursePublisherButton(){
   if(button.dataset.busy==="yes")return;
   button.dataset.busy="yes";button.disabled=true;
   const original=button.textContent;button.textContent="A validar…";
-  const uploaded=[];
+  const uploaded=[];let databaseWriteCommitted=false;
   try{
    courseFormMessage("1/6 — Clique recebido. A validar os campos…");
    const value=id=>{const el=$(id);return el?String(el.value||"").trim():""};
@@ -714,7 +714,7 @@ function installCoursePublisherButton(){
    const profileUpdates={name:teacherName,specialty:course.teacherSpecialty,bio:course.teacherBio,photoUrl,discoverable:true,planActive:!activeLicense.expiresAt||new Date(activeLicense.expiresAt)>new Date(),publicId,roomId:publicRoomId,updatedAt:now};
    const updates={};updates["teacherPublicCourses/"+publicId+"/"+id]=course;updates["teacherCourses/"+token+"/"+id]=course;
    Object.entries(profileUpdates).forEach(([key,val])=>updates["publicTeacherDirectory/"+publicId+"/"+key]=val);
-   await db.ref().update(updates);
+   await db.ref().update(updates);databaseWriteCommitted=true;
    courseFormMessage("6/6 — A confirmar a publicação no catálogo público…");
    const verify=await db.ref("teacherPublicCourses/"+publicId+"/"+id).once("value");
    if(!verify.exists()||verify.val()?.published!==true)throw new Error("O Firebase não confirmou a gravação do curso no catálogo público.");
@@ -729,7 +729,7 @@ function installCoursePublisherButton(){
    console.error("Remote Work Board — publicação de curso:",error);
    const detail=error?.code?error.code+": "+(error.message||""):error?.message||String(error);
    courseFormMessage("Não foi possível publicar: "+detail,true);
-   if(uploaded.length){for(const path of uploaded){try{await firebase.storage().ref(path).delete()}catch(cleanError){console.warn("Limpeza de ficheiro incompleto:",cleanError)}}}
+   if(uploaded.length&&!databaseWriteCommitted){for(const path of uploaded){try{await firebase.storage().ref(path).delete()}catch(cleanError){console.warn("Limpeza de ficheiro incompleto:",cleanError)}}}
   }finally{
    button.dataset.busy="no";button.disabled=false;button.textContent=original;
   }
