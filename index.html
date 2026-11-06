@@ -628,6 +628,48 @@ body.teacher-checkout-mode #plansView{
   overflow:visible!important;
  }
 }
+
+/* REMOTE WORK BOARD — ecrã de autenticação em PC: ocupar toda a largura disponível.
+   A regra desktop geral limita o cartão inicial a 980px; essa limitação não
+   deve ser aplicada à página de login do professor. */
+@media (min-width:621px){
+ html:has(body.teacher-login-mode),
+ body.teacher-login-mode{
+  width:100%!important;min-width:100%!important;margin:0!important;
+ }
+ body.teacher-login-mode main.azny-home{
+  display:block!important;position:relative!important;inset:auto!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+  min-height:100vh!important;height:auto!important;margin:0!important;
+  padding:0!important;overflow:visible!important;
+ }
+ body.teacher-login-mode main.azny-home>.azny-home-card{
+  display:block!important;width:100%!important;max-width:none!important;
+  min-width:0!important;min-height:100vh!important;height:auto!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
+  overflow:visible!important;box-shadow:none!important;
+ }
+ body.teacher-login-mode #loginView,
+ body.teacher-login-mode .teacher-login-page{
+  display:block!important;width:100%!important;max-width:none!important;
+  min-width:0!important;margin:0!important;
+ }
+ body.teacher-login-mode .teacher-login-header{width:100%!important}
+ body.teacher-login-mode .teacher-login-hero{
+  width:100%!important;min-height:500px!important;
+  background-size:cover,auto 100%!important;
+  background-position:center,right center!important;
+ }
+ body.teacher-login-mode .teacher-login-form-wrap{
+  width:min(980px,calc(100% - 80px))!important;
+  max-width:980px!important;margin:0 auto!important;
+ }
+ body.teacher-login-mode .teacher-login-footer{
+  width:min(1200px,calc(100% - 80px))!important;
+  max-width:1200px!important;margin:0 auto!important;
+ }
+}
+
 </style><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#071b33">
