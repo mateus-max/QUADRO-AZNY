@@ -857,7 +857,9 @@ async function submitPayment(){if(!selectedPlanKey)return toast("Escolha um plan
 async function submitTrialRequest(){
  const name=document.getElementById("licenseName").value.trim(),email=String(document.getElementById("licenseEmail").value||"").trim().toLowerCase(),phone=document.getElementById("licensePhone").value.trim(),password=document.getElementById("licensePassword").value,confirm=document.getElementById("licensePasswordConfirm").value,btn=document.getElementById("requestTrial");
  if(!name||!email||!phone||!password||!confirm){toast("Preencha nome, e-mail, senha e telefone antes de solicitar o teste.");return}
- if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||password.length<6||password!==confirm){toast("Verifique o e-mail e confirme uma senha com pelo menos 6 caracteres.");return}
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){document.getElementById("licenseEmail").focus();toast("Introduza um endereço de e-mail válido.");return}
+ if(password.length<6){document.getElementById("licensePassword").focus();toast("A palavra-passe deve ter pelo menos 6 caracteres.");return}
+ if(password!==confirm){document.getElementById("licensePasswordConfirm").focus();toast("As palavras-passe não coincidem. Confirme a mesma palavra-passe nos dois campos.");return}
  btn.disabled=true;btn.textContent="A enviar pedido de teste...";
  try{
   await AZNY_REMOTE_READY;const signed=firebase.auth().currentUser;
