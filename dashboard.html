@@ -694,16 +694,16 @@ function uploadCourseAssetWithProgress(file,path,label){
    task=storage.ref(path).put(file,{contentType:file.type||(courseFileKind(file,"video")?"video/mp4":"image/jpeg"),cacheControl:"public,max-age=3600"});
   }catch(error){finish(reject,new Error(errorText(error)));return}
   courseFormMessage(label+" — a iniciar envio ("+(file.size/1024/1024).toFixed(1)+" MB) …");
-  absoluteTimer=setTimeout(()=>{try{task.cancel()}catch(_){}finish(reject,new Error(label+": o envio ultrapassou 3 minutos. Verifique a ligação e tente novamente."))},180000);
+  absoluteTimer=setTimeout(()=>{finish(reject,new Error(label+": o Firebase Storage não concluiu o envio dentro de 25 segundos. O ficheiro não foi publicado. Confirme a configuração do bucket e as regras de acesso no Firebase Console."));try{task.cancel()}catch(_){}},25000);
   watchdog=setInterval(()=>{
    if(settled)return;
    const snap=task.snapshot;
    if(!navigator.onLine){courseFormMessage(label+" — sem ligação à internet; a aguardar reconexão…");return}
    if(snap&&snap.bytesTransferred>lastBytes){lastBytes=snap.bytesTransferred;lastProgressAt=Date.now();return}
-   if(Date.now()-lastProgressAt>45000){
+   if(Date.now()-lastProgressAt>15000){
     if(snap&&snap.state==="paused"){try{task.resume();lastProgressAt=Date.now();courseFormMessage(label+" — a retomar envio…");return}catch(_){}}
     try{task.cancel()}catch(_){}
-    finish(reject,new Error(label+": o envio ficou parado em "+(snap&&snap.bytesTransferred||0)+" de "+file.size+" bytes durante 45 segundos. O Firebase Storage não está a aceitar os dados; confirme as permissões e o bucket de armazenamento."));
+    finish(reject,new Error(label+": o envio ficou parado em "+(snap&&snap.bytesTransferred||0)+" de "+file.size+" bytes durante 15 segundos. O Firebase Storage não está a aceitar os dados; confirme as permissões e o bucket de armazenamento."));
    }
   },5000);
   task.on("state_changed",snap=>{
