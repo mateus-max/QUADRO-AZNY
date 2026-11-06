@@ -1357,7 +1357,7 @@ async function validateTeacherLicenseAccess(){
   const snap=await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).once("value"),lic=snap.val();
   if(!lic||lic.status!=="active"||(lic.expiresAt&&new Date(lic.expiresAt)<=new Date())){location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));return false}
   aznyTeacherPlanKey=String(lic.plan||"");
-  if(lic.plan==="trial"&&Number(lic.trialSessionsUsed||Object.keys(lic.trialCompletedSessions||{}).length)>=4){await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).update({status:"trial_exhausted"});location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));return false}
+  if(lic.plan==="trial"&&(lic.trialExhausted===true||Number(lic.trialSessionsUsed||Object.keys(lic.trialCompletedSessions||{}).length)>=4)){await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).update({trialExhausted:true,boardAccess:false});location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));return false}
   return true;
  }catch(e){console.error("Validação do acesso do professor:",e);toast("Não foi possível validar o plano. Verifique a ligação e tente novamente.");return false}
 }
@@ -2614,7 +2614,7 @@ async function aznyCountCompletedTrialClass(){
   if(!completed[run])completed[run]=Date.now();
   const used=Object.keys(completed).length;
   lic.trialCompletedSessions=completed;lic.trialSessionsLimit=4;lic.trialSessionsUsed=used;
-  if(used>=4){lic.status="trial_exhausted";lic.trialCompletedAt=new Date().toISOString()}
+  if(used>=4){lic.trialExhausted=true;lic.boardAccess=false;lic.trialCompletedAt=new Date().toISOString()}
   return lic;
  });
  const lic=tx.snapshot.val()||{};
