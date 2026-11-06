@@ -128,7 +128,7 @@ body{background:#f5f8fc;color:#122a49;min-height:100vh}
 #panel-board .feature-card,#panel-assessments .feature-card{margin:0 auto;max-width:1000px;padding:34px}
 #panel-plan .plan-card,#panel-activities>.section{max-width:1100px;margin:0 auto}
 @media(max-width:900px){
- :root{--sidebar:0px;--mobile-sidebar:clamp(168px,30vw,220px)}
+ :root{--sidebar:0px;--mobile-sidebar:clamp(168px,29vw,250px)}
  .sidebar{position:fixed;top:68px;bottom:0;left:0;width:var(--mobile-sidebar);padding:16px 10px 13px;transform:none;transition:width .2s ease;box-shadow:5px 0 18px #00152e18;overflow-y:auto}
  .sidebar-backdrop{display:none!important}
  .side-brand{padding:3px 5px 16px;gap:8px;align-items:center}
@@ -193,6 +193,79 @@ body{background:#f5f8fc;color:#122a49;min-height:100vh}
  .laptop-screen{right:12%;width:72%}
 }
 
+
+/* Refinamento do visual aprovado: identidade, conta e fotografia realista. */
+.top{gap:14px}
+.top-logo{width:49px;height:49px;flex:0 0 49px;object-fit:contain;border-radius:9px;background:#fff}
+.top .brand{font-weight:850}
+.notification-button{width:38px;height:38px;display:grid;place-items:center}
+.notification-button svg{width:27px;height:27px}
+.top-profile{max-width:260px}
+.top-profile strong{max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.profile-avatar{font-size:14px;font-weight:900;letter-spacing:-.5px}
+.side-brand{flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 8px 25px;gap:10px}
+.side-logo{width:82px;height:82px;flex:0 0 82px;filter:none;background:transparent;object-fit:contain;border-radius:0}
+.side-brand span{max-width:100%;font-size:20px;line-height:1.15;letter-spacing:-.5px;font-weight:900}
+.side-brand b{color:#fff}
+.hero-welcome{background:radial-gradient(ellipse at 82% 42%,#e6f1ff 0%,#f8fbff 48%,#fff 82%)}
+.hero-welcome:before{content:"";position:absolute;z-index:0;pointer-events:none;right:-13%;top:-17%;width:76%;height:42%;border-radius:0 0 0 100%;border-bottom:2px solid #d9eaff;background:linear-gradient(150deg,#eaf4ff88,transparent 70%);transform:rotate(-7deg)}
+.hero-art{width:min(55%,760px);height:auto;right:0;top:51%;transform:translateY(-43%);display:flex;align-items:center;justify-content:center}
+.workspace-photo{display:block;width:100%;height:auto;max-height:650px;object-fit:contain;filter:drop-shadow(0 15px 22px #0a2d5014)}
+@media(max-width:900px){
+ .top{gap:8px;padding:0 12px}
+ .top-logo{width:48px;height:48px;flex-basis:48px}
+ .top .brand{font-size:clamp(15px,3.5vw,22px);white-space:normal;line-height:1.05;max-width:210px}
+ .top-actions{gap:clamp(6px,1.5vw,15px)}
+ .notification-button{display:grid;width:30px;height:34px}
+ .notification-button svg{width:24px;height:24px}
+ .top-profile{gap:6px;max-width:34%}
+ .profile-avatar{width:37px;height:37px;flex:0 0 37px;font-size:12px}
+ .top-profile strong{font-size:clamp(10px,1.8vw,14px);max-width:100%;white-space:normal;line-height:1.05}
+ .top-profile small{display:none}
+ .side-brand{padding:12px 4px 20px;gap:8px}
+ .side-logo{width:76px;height:76px;flex-basis:76px}
+ .side-brand span{font-size:clamp(15px,2.4vw,20px)}
+ .side-user{padding:12px 4px;gap:8px}
+ .side-avatar{width:35px;height:35px;flex-basis:35px}
+ .side-user strong{font-size:12px;max-width:calc(var(--mobile-sidebar) - 70px)}
+ .side-user small{font-size:10px;max-width:calc(var(--mobile-sidebar) - 70px)}
+ .side-link{padding:13px 9px;gap:9px;font-size:clamp(11px,1.8vw,14px)}
+ .side-link>span{width:23px;flex-basis:23px;font-size:20px}
+ .hero-welcome{padding:clamp(36px,6vw,60px) clamp(18px,4.5vw,42px) 30px;min-height:calc(100svh - 68px)}
+ .hero-copy{width:100%;padding:0}
+ .hero-kicker{font-size:clamp(9px,1.5vw,12px);letter-spacing:1.3px;gap:9px;margin-bottom:22px}
+ .hero-kicker i{width:clamp(45px,10vw,78px);height:7px}
+ .hero-copy h1{font-size:clamp(29px,5.5vw,48px);line-height:1.14;letter-spacing:-1.2px;overflow-wrap:normal}
+ .hero-copy p{font-size:clamp(16px,2.8vw,23px);line-height:1.5;margin-top:19px}
+ .hero-art{position:relative;top:auto;right:auto;transform:none;width:100%;max-width:720px;height:auto;align-self:center;margin:18px auto 42px}
+ .workspace-photo{width:100%;max-height:none;object-fit:contain}
+ .hero-welcome:before{right:-20%;top:-5%;width:85%;height:24%}
+ .hero-wave{height:12%;bottom:-3%}.wave-two{height:7%;bottom:1%}
+}
+@media(max-width:520px){
+ .top{padding:0 7px;gap:5px}
+ .menu-toggle{flex-basis:32px;width:32px;height:36px}
+ .menu-toggle:before{font-size:25px}
+ .top-logo{width:38px;height:38px;flex-basis:38px}
+ .top .brand{font-size:13px;max-width:104px}
+ .top-actions{gap:4px}
+ .notification-button{width:25px}
+ .notification-button svg{width:20px;height:20px}
+ .top-profile{max-width:31%;gap:4px}
+ .profile-avatar{width:30px;height:30px;flex-basis:30px;font-size:10px}
+ .top-profile strong{font-size:9px}
+ .side-brand span{font-size:15px}
+ .side-logo{width:65px;height:65px;flex-basis:65px}
+ .side-link{font-size:10px;padding:12px 6px;gap:5px}
+ .side-link>span{width:19px;flex-basis:19px;font-size:17px}
+ .hero-welcome{padding:33px 13px 22px}
+ .hero-kicker{font-size:8px;letter-spacing:.9px;margin-bottom:17px}
+ .hero-kicker i{width:38px;height:5px}
+ .hero-copy h1{font-size:clamp(25px,7vw,34px);letter-spacing:-.9px}
+ .hero-copy p{font-size:15px;margin-top:13px}
+ .hero-art{margin-top:15px}
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -201,7 +274,7 @@ body{background:#f5f8fc;color:#122a49;min-height:100vh}
 <link rel="apple-touch-icon" href="icons/azny-board.svg">
 </head>
 <body><aside class="sidebar" id="sidebar" aria-label="Menu principal">
- <div class="side-brand"><img class="side-logo" src="icons/remote-work-board.svg" alt="Logótipo Remote Work Board"><span>REMOTE WORK <b>BOARD</b></span></div>
+ <div class="side-brand"><img class="side-logo" src="icons/remote-work-board.svg" alt="Logótipo Remote Work Board"><span>Remote Work<br><b>Board</b></span></div>
  <div class="side-user"><span class="side-avatar">👨‍🏫</span><div><strong id="sideTeacherName">Professor</strong><small id="sidePlan">A validar plano…</small></div></div>
  <nav class="side-nav">
   <button type="button" class="side-link active" data-panel="overview"><span>⌂</span> Visão geral</button>
@@ -214,9 +287,13 @@ body{background:#f5f8fc;color:#122a49;min-height:100vh}
 </aside>
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 <header class="top">
- <button type="button" class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
+ <button type="button" class="menu-toggle" id="menuToggle" aria-label="Recolher ou expandir menu" aria-expanded="true">☰</button>
+ <img class="top-logo" src="icons/remote-work-board.svg" alt="Remote Work Board">
  <div class="brand">Remote Work Board</div>
- <div class="top-actions"><button type="button" class="notification-button" aria-label="Notificações">♧<i></i></button><div class="top-profile"><span class="profile-avatar">●</span><span><strong id="topTeacherName">Professor</strong><small id="topPlan">A carregar plano…</small></span><b class="profile-chevron">⌄</b></div></div>
+ <div class="top-actions">
+  <button type="button" class="notification-button" aria-label="Notificações"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><i></i></button>
+  <div class="top-profile"><span class="profile-avatar" id="profileInitials">EG</span><span><strong id="topTeacherName">A minha conta</strong><small id="topPlan">A carregar plano…</small></span><b class="profile-chevron">⌄</b></div>
+ </div>
 </header>
 <main class="wrap" id="dashboardMain">
  <div class="dashboard-heading"><div><span class="eyebrow">ESPAÇO DE ENSINO</span><h1 id="panelTitle">Visão geral</h1><p id="panelSubtitle">Acompanhe a sua conta e aceda rapidamente às ferramentas.</p></div><span class="account-chip">● Conta de professor</span></div>
@@ -227,21 +304,7 @@ body{background:#f5f8fc;color:#122a49;min-height:100vh}
   <h1>Bem-vindo ao<br><strong>Remote Work Board</strong></h1>
   <p>O seu espaço de ensino, formação<br class="desktop-break"> e colaboração online.</p>
  </div>
- <div class="hero-art" aria-hidden="true">
-  <div class="art-glow"></div>
-  <div class="headset-band"></div>
-  <div class="laptop-screen">
-   <div class="screen-shine"></div>
-   <svg viewBox="0 0 280 190" role="presentation">
-    <g fill="#fff"><circle cx="140" cy="66" r="24"/><circle cx="91" cy="79" r="18"/><circle cx="189" cy="79" r="18"/><path d="M91 104c-21 0-37 18-37 40v10h74v-10c0-22-16-40-37-40zm98 0c-21 0-37 18-37 40v10h74v-10c0-22-16-40-37-40zm-49-7c-29 0-51 22-51 51v12h102v-12c0-29-22-51-51-51z"/></g>
-   </svg>
-  </div>
-  <div class="laptop-base"></div>
-  <div class="art-headset"><span></span></div>
-  <div class="art-notebook"><i></i></div>
-  <div class="art-pen"></div>
-  <div class="art-cup"></div>
- </div>
+ <div class="hero-art" aria-hidden="true"><img class="workspace-photo" src="assets/remote-work-workspace.webp" alt=""></div>
  <div class="hero-wave wave-one"></div><div class="hero-wave wave-two"></div>
 </section>
  </div>
@@ -307,7 +370,11 @@ $("chooseExpress").onclick=()=>selectPayment("Express");$("chooseBank").onclick=
 $("copyExpress").onclick=async()=>{try{await navigator.clipboard.writeText("931057760");$("copyExpress").textContent="Número copiado ✓"}catch(e){const range=document.createRange(),node=$("expressNumber");const sel=window.getSelection();range.selectNodeContents(node);sel.removeAllRanges();sel.addRange(range);$("copyExpress").textContent="Selecione e copie"}};
 function requireToken(){if(!token){location.replace("index.html?acesso=necessario");return false}return true}
 async function init(){if(!requireToken())return;try{const snap=await db.ref("licenses/"+token).once("value");license=snap.val();if(!license||license.status!=="active"){ $("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa";$("hello").textContent="Acesso não validado";$("topPlan").textContent="Sessão inválida";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
-sessionStorage.setItem("azny_access_token",token);$("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");$("sideTeacherName").textContent=license.teacherName||"Professor";$("topTeacherName").textContent=license.teacherName||"Professor";$("topPlan").textContent=license.planName||plans[license.plan]?.name||"Plano";$("sidePlan").textContent=license.planName||plans[license.plan]?.name||"Plano";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
+sessionStorage.setItem("azny_access_token",token);
+const accountName=[license.fullName,license.name,license.displayName,license.ownerName,license.professorName,license.teacherName,license.email?.split("@")[0],license.teacherEmail?.split("@")[0]].map(v=>String(v||"").trim()).find(v=>v&&!/^(professor|formador|teacher|a minha conta)$/i.test(v))||"Conta do professor";
+$("hello").textContent="Bem-vindo, "+accountName;$("sideTeacherName").textContent=accountName;$("topTeacherName").textContent=accountName;
+const initials=accountName.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("");$("profileInitials").textContent=initials||"RW";
+$("topPlan").textContent=license.planName||plans[license.plan]?.name||"Plano";$("sidePlan").textContent=license.planName||plans[license.plan]?.name||"Plano";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
 db.ref("assessments").orderByChild("ownerToken").equalTo(token).on("value",s=>{const d=s.val()||{};const items=Object.entries(d).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).slice(0,5);$("recentAssessments").innerHTML=items.length?items.map(([id,x])=>'<div class="activity"><strong>'+escapeHtml(x.title||"Avaliação")+'</strong><span class="small">'+escapeHtml(x.status||"Rascunho")+'</span><button class="btn" data-view="'+id+'">Abrir</button></div>').join(""):"Ainda não criou avaliações.";document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>location.href="avaliacoes/?professor=1&acesso="+encodeURIComponent(token)+"&id="+encodeURIComponent(b.dataset.view))});
 }catch(e){$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Não foi possível validar a licença";console.error(e)}}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
