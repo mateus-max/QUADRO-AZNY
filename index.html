@@ -593,6 +593,41 @@ body.teacher-checkout-mode #plansView{
  max-height:none!important;overflow:visible!important;
  padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))!important;
 }
+
+/* DESKTOP: permitir scroll vertical normal na página principal.
+   Trackpad (dois dedos), roda do rato e barra de deslocamento podem
+   percorrer todo o conteúdo. Os layouts móveis mantêm o comportamento actual. */
+@media (min-width:621px){
+ html:has(main.azny-home),
+ html.azny-page-locked:has(main.azny-home),
+ html.azny-page-scroll:has(main.azny-home){
+  width:100%!important;height:auto!important;min-height:100%!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  overscroll-behavior-y:auto!important;
+ }
+ html:has(main.azny-home) body,
+ html.azny-page-locked:has(main.azny-home) body,
+ html.azny-page-scroll:has(main.azny-home) body{
+  width:100%!important;height:auto!important;min-height:100vh!important;
+  overflow-x:hidden!important;overflow-y:visible!important;
+  overscroll-behavior-y:auto!important;
+ }
+ html:has(main.azny-home) main.azny-home,
+ html.azny-page-locked:has(main.azny-home) main.azny-home,
+ html.azny-page-scroll:has(main.azny-home) main.azny-home{
+  position:relative!important;inset:auto!important;
+  width:100%!important;height:auto!important;min-height:100vh!important;
+  max-height:none!important;overflow:visible!important;
+  overscroll-behavior:auto!important;
+ }
+ html:has(main.azny-home) main.azny-home>.azny-home-card,
+ html.azny-page-locked:has(main.azny-home) main.azny-home>.azny-home-card,
+ html.azny-page-scroll:has(main.azny-home) main.azny-home>.azny-home-card{
+  width:min(980px,100%)!important;height:auto!important;
+  max-height:none!important;min-height:calc(100vh - 44px)!important;
+  overflow:visible!important;
+ }
+}
 </style><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#071b33">
