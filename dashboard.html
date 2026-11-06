@@ -5,6 +5,58 @@
 
 /* Modern AZNY checkout */
 .pay-heading{display:flex;flex-direction:column;gap:4px;margin-top:18px;color:#10243b}.pay-heading b{font-size:17px}.pay-heading span{font-size:12px;color:#64748b}.payment-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}.payment-option{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:7px;text-align:left;padding:14px;border:2px solid #dbe4ed;border-radius:14px;background:#fff;cursor:pointer;min-width:0;transition:border-color .18s,box-shadow .18s,transform .18s}.payment-option:hover{transform:translateY(-2px);box-shadow:0 8px 22px #071b3312}.payment-option.selected{border-color:#f47b00;background:#fffaf4;box-shadow:0 0 0 3px #f47b001c}.express-logo{display:block;width:100%;height:100px;object-fit:contain;border-radius:8px}.payment-option-title{font-size:14px;font-weight:850;color:#172536}.payment-option-sub{font-size:11px;color:#64748b;line-height:1.4}.selected-mark{display:none;font-size:11px;font-weight:800;color:#a94b00}.payment-option.selected .selected-mark{display:block}.bank-icon{height:100px;width:100%;display:flex;align-items:center;justify-content:center;border-radius:8px;background:linear-gradient(135deg,#eaf2ff,#d8e7fb);color:#164a85;font-size:64px}.payment-detail{border:1px solid #dbe4ed;border-radius:14px;padding:16px;margin:10px 0 14px;background:linear-gradient(180deg,#fff,#f9fbfe)}.payment-detail-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.payment-detail h3{margin:4px 0 0;font-size:18px;color:#10243b}.detail-logo{width:92px;height:65px;object-fit:contain;border-radius:8px}.number-copy{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px dashed #f0a04c;border-radius:10px;padding:12px;margin:12px 0}.number-copy strong{font-size:clamp(20px,4vw,26px);letter-spacing:1px;color:#a92715}.payment-amount{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #e4ebf2;padding-top:12px;margin-top:12px}.payment-amount span{color:#64748b;font-size:13px}.payment-amount strong{font-size:19px;color:#10243b}.payment-detail .alert{margin-top:12px}@media(max-width:520px){.payment-options{grid-template-columns:1fr}.payment-option{display:grid;grid-template-columns:88px 1fr;column-gap:12px;align-items:center}.payment-option .express-logo,.payment-option .bank-icon{grid-row:span 3;width:88px;height:72px}.payment-option-title,.payment-option-sub,.selected-mark{grid-column:2}.number-copy{align-items:flex-start;flex-direction:column}.number-copy .btn{width:100%}}
+
+:root{--navy:#071b33;--navy2:#0b2949;--blue:#1677ff;--line:#dbe4ed;--muted:#64748b;--sidebar:258px}
+body{min-height:100vh;background:#eef3f8}
+.top{position:sticky;top:0;z-index:25;margin-left:var(--sidebar);min-height:68px;padding:13px 26px;flex-wrap:nowrap;box-shadow:0 4px 18px #071b3310}
+.menu-toggle{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border:1px solid #ffffff35;border-radius:10px;background:#ffffff12;color:#fff;font-size:23px;cursor:pointer}
+.top .brand{letter-spacing:.2px}.top small{margin-left:auto}
+.sidebar{position:fixed;z-index:40;inset:0 auto 0 0;width:var(--sidebar);display:flex;flex-direction:column;background:linear-gradient(180deg,#071b33,#0b2949);color:#fff;padding:22px 14px 16px;box-shadow:8px 0 28px #071b3314}
+.side-brand{display:flex;align-items:center;gap:10px;padding:4px 8px 22px;border-bottom:1px solid #ffffff20;font-size:13px;font-weight:900;letter-spacing:.35px;white-space:nowrap}
+.side-brand b{color:#58a7ff}.side-mark{width:35px;height:35px;display:grid;place-items:center;border-radius:10px;background:#1677ff;font-weight:900;font-size:12px}
+.side-user{display:flex;align-items:center;gap:11px;padding:20px 8px 17px;border-bottom:1px solid #ffffff20;min-width:0}
+.side-avatar{width:40px;height:40px;flex:0 0 40px;border-radius:50%;display:grid;place-items:center;background:#ffffff18;font-size:21px}
+.side-user strong,.side-user small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:165px}.side-user strong{font-size:13px}.side-user small{font-size:11px;color:#b8cbe0;margin-top:4px}
+.side-nav{display:grid;gap:6px;padding-top:18px}
+.side-link{width:100%;display:flex;align-items:center;gap:13px;padding:12px 13px;border:0;border-radius:10px;background:transparent;color:#d8e5f2;text-align:left;font:600 13px Inter,Segoe UI,Arial,sans-serif;cursor:pointer;transition:background .15s,color .15s}
+.side-link>span{width:23px;text-align:center;font-size:18px}.side-link:hover{background:#ffffff12;color:#fff}.side-link.active{background:#1677ff;color:#fff;box-shadow:0 6px 16px #1677ff35}
+.side-bottom{margin-top:auto;border-top:1px solid #ffffff20;padding-top:13px}.side-bottom small{display:block;padding:12px 10px 0;color:#9db2c9;font-size:10px}.logout-link{color:#ffd6d6}
+.sidebar-backdrop{display:none}
+.wrap{max-width:none;margin:0 0 0 var(--sidebar);padding:28px clamp(20px,3vw,48px) 48px}
+.dashboard-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:0 0 22px}
+.dashboard-heading h1{margin:4px 0;font-size:26px;color:#10243b}.dashboard-heading p{margin:0;color:#64748b;font-size:13px}
+.eyebrow{font-size:10px;font-weight:900;letter-spacing:1.2px;color:#1677ff}
+.account-chip{padding:8px 12px;border:1px solid #dbe4ed;border-radius:99px;background:#fff;color:#47617d;font-size:11px;font-weight:800;white-space:nowrap}
+.panel-view{display:block;animation:panelIn .18s ease}.panel-view.hidden{display:none!important}
+@keyframes panelIn{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:none}}
+.welcome{padding:25px;margin-bottom:16px}.welcome h1{color:#10243b}
+#panel-overview>.section[aria-label]{margin-top:0}
+.overview-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:16px}
+.shortcut{display:flex;flex-direction:column;align-items:flex-start;gap:7px;text-align:left;padding:18px;border:1px solid var(--line);border-radius:14px;background:#fff;color:#172536;cursor:pointer;min-height:125px;box-shadow:0 5px 18px #071b3308}
+.shortcut:hover{border-color:#9bc5ff;transform:translateY(-1px)}.shortcut>span{font-size:22px;color:#1677ff}.shortcut b{font-size:13px}.shortcut small{font-size:11px;color:#64748b}
+.feature-card{display:flex;align-items:flex-start;gap:20px;padding:28px;background:#fff;border:1px solid var(--line);border-radius:17px;box-shadow:0 8px 25px #071b3308;max-width:920px}
+.feature-icon{width:58px;height:58px;flex:0 0 58px;display:grid;place-items:center;border-radius:16px;background:#eaf3ff;color:#1677ff;font-size:28px}
+.feature-card h2{font-size:21px;margin:5px 0 8px;color:#10243b}.feature-card p{max-width:680px;margin:0 0 18px;line-height:1.65}
+.feature-action{min-width:210px}.feature-card .small{display:block;margin-top:9px}
+.plan-card{margin-top:0;max-width:980px;padding:22px}
+#panel-activities>.section{margin-top:0;max-width:980px}
+#planSection h2{color:#10243b}
+@media(max-width:900px){
+ :root{--sidebar:0px}
+ .sidebar{width:min(290px,84vw);transform:translateX(-105%);transition:transform .22s ease;box-shadow:12px 0 32px #0003}
+ body.menu-open .sidebar{transform:translateX(0)}
+ body.menu-open .sidebar-backdrop{display:block;position:fixed;z-index:35;inset:0;background:#071b3377}
+ .top{margin-left:0;padding:11px 15px}.top .brand{font-size:17px}.top small{font-size:11px}
+ .wrap{margin:0;padding:19px 15px 34px}
+ .dashboard-heading{align-items:flex-start;margin-bottom:16px}.dashboard-heading h1{font-size:22px}.account-chip{display:none}
+ .overview-shortcuts{grid-template-columns:1fr}
+ .shortcut{min-height:unset;display:grid;grid-template-columns:34px 1fr;align-items:center;padding:14px}
+ .shortcut>span{grid-row:span 2}.shortcut small{grid-column:2}
+ .feature-card{padding:20px;gap:13px}.feature-icon{width:45px;height:45px;flex-basis:45px;font-size:23px}
+ .feature-card h2{font-size:18px}.feature-action{width:100%}
+}
+@media(max-width:420px){.feature-card{display:block}.feature-icon{margin-bottom:12px}.dashboard-heading p{max-width:260px}}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -12,9 +64,25 @@
 <link rel="icon" href="icons/azny-board.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/azny-board.svg">
 </head>
-<body><header class="top"><div class="brand">Remote Work Board </div><small id="topPlan">A carregar plano…</small></header>
-<main class="wrap"><section class="welcome"><h1 id="hello">Painel do Professor</h1><p class="muted">Gira as suas aulas, crie avaliações e acompanhe a sua subscrição num único lugar.</p><div id="licenseStatus" class="badge">A validar licença…</div></section>
-<section class="section" aria-label="Recomendação para gerir o quadro">
+<body><aside class="sidebar" id="sidebar" aria-label="Menu principal">
+ <div class="side-brand"><span class="side-mark">RW</span><span>REMOTE WORK <b>BOARD</b></span></div>
+ <div class="side-user"><span class="side-avatar">👨‍🏫</span><div><strong id="sideTeacherName">Professor</strong><small id="sidePlan">A validar plano…</small></div></div>
+ <nav class="side-nav">
+  <button type="button" class="side-link active" data-panel="overview"><span>⌂</span> Visão geral</button>
+  <button type="button" class="side-link" data-panel="board"><span>▣</span> Quadro Virtual</button>
+  <button type="button" class="side-link" data-panel="assessments"><span>📝</span> Testes e Avaliações</button>
+  <button type="button" class="side-link" data-panel="plan"><span>💳</span> Plano e Pagamentos</button>
+  <button type="button" class="side-link" data-panel="activities"><span>▤</span> Atividades Recentes</button>
+ </nav>
+ <div class="side-bottom"><button class="side-link logout-link" id="logout"><span>↪</span> Terminar sessão</button><small>Remote Work Board · Área do Professor</small></div>
+</aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<header class="top"><button type="button" class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">☰</button><div class="brand">Remote Work Board</div><small id="topPlan">A carregar plano…</small></header>
+<main class="wrap" id="dashboardMain">
+ <div class="dashboard-heading"><div><span class="eyebrow">ESPAÇO DE ENSINO</span><h1 id="panelTitle">Visão geral</h1><p id="panelSubtitle">Acompanhe a sua conta e aceda rapidamente às ferramentas.</p></div><span class="account-chip">● Conta de professor</span></div>
+ <div class="panel-view" id="panel-overview">
+  <section class="welcome"><h1 id="hello">Painel do Professor</h1><p class="muted">Gira as suas aulas, crie avaliações e acompanhe a sua subscrição num único lugar.</p><div id="licenseStatus" class="badge">A validar licença…</div></section>
+  <section class="section" aria-label="Recomendação para gerir o quadro">
 <div style="display:flex;gap:13px;align-items:flex-start">
 <div aria-hidden="true" style="font-size:28px;line-height:1">💻</div>
 <div>
@@ -31,12 +99,20 @@
 </div>
 </div>
 </section>
-<div class="grid">
-<section class="tile"><h2>🎓 Entrar no Remote Work Board</h2><p>Abra o quadro já existente, inicie uma aula e partilhe o link habitual com os alunos. As ferramentas atuais do quadro são preservadas.</p><button class="btn primary" id="openBoard">Entrar no quadro</button></section>
-<section class="tile"><h2>📝 Testes e Avaliações</h2><p>Crie testes, exames, defina a duração, publique um link e acompanhe as tentativas, as respostas e os alertas de supervisão.</p><button class="btn primary" id="openAssessments">Abrir avaliações</button><span class="small" id="assessmentAccess"></span></section>
-<section class="tile"><h2>💳 Plano e pagamentos</h2><p>Consulte o plano atual, solicite uma renovação ou peça a atualização para outro plano. A alteração fica pendente de validação do pagamento.</p><button class="btn dark" id="managePlan">Renovar / atualizar plano</button></section>
-</div>
-<section class="section hidden" id="planSection"><h2>Plano atual</h2><div id="currentPlanInfo" class="muted"></div><div class="row"><div><label for="nextPlan">Plano pretendido</label><select class="input" id="nextPlan"><option value="basic">Básico — 10.000 Kz/mês</option><option value="professional">Profissional — 20.000 Kz/mês</option><option value="school">Escola — 30.000 Kz/mês</option></select></div><div><label for="period">Periodicidade</label><select class="input" id="period"><option value="monthly">Mensal</option><option value="annual">Anual</option></select></div></div><div id="amountInfo" class="alert"></div>
+  <div class="overview-shortcuts">
+   <button type="button" class="shortcut" data-open-panel="board"><span>▣</span><b>Entrar no quadro</b><small>Iniciar ou continuar uma aula</small></button>
+   <button type="button" class="shortcut" data-open-panel="assessments"><span>📝</span><b>Testes e avaliações</b><small>Criar e acompanhar avaliações</small></button>
+   <button type="button" class="shortcut" data-open-panel="plan"><span>💳</span><b>Plano e pagamentos</b><small>Consultar a sua subscrição</small></button>
+  </div>
+ </div>
+ <section class="panel-view hidden" id="panel-board">
+  <section class="feature-card"><div class="feature-icon">▣</div><div><span class="eyebrow">SALA DE AULA DIGITAL</span><h2>Quadro Virtual</h2><p class="muted">Abra o quadro habitual, prepare os seus materiais, inicie uma aula e partilhe o link com os alunos. As ferramentas actuais do quadro são preservadas.</p><button class="btn primary feature-action" id="openBoard">Entrar no quadro</button></div></section>
+ </section>
+ <section class="panel-view hidden" id="panel-assessments">
+  <section class="feature-card"><div class="feature-icon">📝</div><div><span class="eyebrow">AVALIAÇÃO DA APRENDIZAGEM</span><h2>Testes e Avaliações</h2><p class="muted">Crie testes e exames, defina a duração, publique um link e acompanhe as tentativas, respostas e alertas de supervisão.</p><button class="btn primary feature-action" id="openAssessments">Abrir avaliações</button><span class="small" id="assessmentAccess"></span></div></section>
+ </section>
+ <section class="panel-view hidden" id="panel-plan">
+  <section class="section plan-card" id="planSection"><h2>Plano atual</h2><div id="currentPlanInfo" class="muted"></div><div class="row"><div><label for="nextPlan">Plano pretendido</label><select class="input" id="nextPlan"><option value="basic">Básico — 10.000 Kz/mês</option><option value="professional">Profissional — 20.000 Kz/mês</option><option value="school">Escola — 30.000 Kz/mês</option></select></div><div><label for="period">Periodicidade</label><select class="input" id="period"><option value="monthly">Mensal</option><option value="annual">Anual</option></select></div></div><div id="amountInfo" class="alert"></div>
 <div class="pay-heading"><b>Escolha como pretende pagar</b><span>Pagamento seguro · Remote Work Board</span></div>
 <div class="payment-options" role="group" aria-label="Método de pagamento">
 <button type="button" class="payment-option selected" id="chooseExpress" aria-pressed="true">
@@ -58,8 +134,10 @@
 <p class="muted">Esta opção está preparada no checkout. Os dados bancários oficiais ainda precisam de ser configurados pela administração para evitar transferências para uma conta incorreta.</p>
 <div class="alert">Confirme com a administração os dados bancários antes de transferir. Pode anexar o comprovativo quando os dados da conta forem disponibilizados.</div>
 </div><input class="input" id="proof" type="file" accept="image/*,.pdf"><div class="row"><button class="btn" id="cancelPlan">Cancelar</button><button class="btn primary" id="sendPlanRequest">Enviar pedido de renovação/atualização</button></div><div id="planMessage" class="small"></div></section>
-<section class="section"><h2>📚 Atividades recentes</h2><p class="muted">As avaliações criadas nesta conta aparecerão aqui e também na área de avaliações.</p><div id="recentAssessments" class="muted small">A carregar atividades…</div></section>
-<section class="section"><button class="btn" id="logout">Sair da sessão</button> <span class="muted small">A saída remove o token da barra de endereço e regressa à página inicial.</span></section>
+ </section>
+ <section class="panel-view hidden" id="panel-activities">
+  <section class="section"><h2>📚 Atividades recentes</h2><p class="muted">As avaliações criadas nesta conta aparecerão aqui e também na área de avaliações.</p><div id="recentAssessments" class="muted small">A carregar atividades…</div></section>
+ </section>
 </main>
 <script>
 (()=>{"use strict";
@@ -68,6 +146,20 @@ if(!firebase.apps.length)firebase.initializeApp(cfg);const db=firebase.database(
 const qs=new URLSearchParams(location.search),token=qs.get("acesso")||sessionStorage.getItem("azny_access_token")||"",plans={basic:{name:"Básico",monthly:10000,annual:60000},professional:{name:"Profissional",monthly:20000,annual:60000},school:{name:"Escola",monthly:30000,annual:100000}};
 let license=null,requests=[],selectedPaymentMethod="Express";
 const $=id=>document.getElementById(id), money=n=>Number(n||0).toLocaleString("pt-AO")+" Kz";
+const panelMeta={overview:["Visão geral","Acompanhe a sua conta e aceda rapidamente às ferramentas."],board:["Quadro Virtual","Prepare e conduza as suas aulas online."],assessments:["Testes e Avaliações","Crie avaliações e acompanhe os resultados dos seus alunos."],plan:["Plano e Pagamentos","Consulte a sua subscrição e faça pedidos de renovação ou atualização."],activities:["Atividades Recentes","Consulte as avaliações e atividades recentes da sua conta."]};
+function showPanel(name){
+ const key=panelMeta[name]?name:"overview";
+ document.querySelectorAll(".panel-view").forEach(el=>el.classList.toggle("hidden",el.id!=="panel-"+key));
+ document.querySelectorAll(".side-link[data-panel]").forEach(el=>el.classList.toggle("active",el.dataset.panel===key));
+ $("panelTitle").textContent=panelMeta[key][0];$("panelSubtitle").textContent=panelMeta[key][1];
+ document.body.classList.remove("menu-open");$("menuToggle").setAttribute("aria-expanded","false");
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll("[data-panel],[data-open-panel]").forEach(el=>el.addEventListener("click",()=>showPanel(el.dataset.panel||el.dataset.openPanel)));
+$("menuToggle").addEventListener("click",()=>{const open=!document.body.classList.contains("menu-open");document.body.classList.toggle("menu-open",open);$("menuToggle").setAttribute("aria-expanded",String(open))});
+$("sidebarBackdrop").addEventListener("click",()=>{document.body.classList.remove("menu-open");$("menuToggle").setAttribute("aria-expanded","false")});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){document.body.classList.remove("menu-open");$("menuToggle").setAttribute("aria-expanded","false")}});
+
 function msg(t,bad=false){$("planMessage").textContent=t;$("planMessage").style.color=bad?"#b40000":"#187a35"}
 function planPrice(){const p=plans[$("nextPlan").value],period=$("period").value,amount=period==="annual"?p.annual:p.monthly;$("amountInfo").textContent="Valor do pedido: "+money(amount)+" · Plano "+p.name+" ("+(period==="annual"?"anual":"mensal")+").";const checkoutAmount=$("checkoutAmount");if(checkoutAmount)checkoutAmount.textContent=money(amount)}
 function selectPayment(method){selectedPaymentMethod=method;const express=method==="Express";$("chooseExpress").classList.toggle("selected",express);$("chooseBank").classList.toggle("selected",!express);$("chooseExpress").setAttribute("aria-pressed",String(express));$("chooseBank").setAttribute("aria-pressed",String(!express));$("expressDetail").classList.toggle("hidden",!express);$("bankDetail").classList.toggle("hidden",express)}
@@ -75,16 +167,16 @@ $("chooseExpress").onclick=()=>selectPayment("Express");$("chooseBank").onclick=
 $("copyExpress").onclick=async()=>{try{await navigator.clipboard.writeText("931057760");$("copyExpress").textContent="Número copiado ✓"}catch(e){const range=document.createRange(),node=$("expressNumber");const sel=window.getSelection();range.selectNodeContents(node);sel.removeAllRanges();sel.addRange(range);$("copyExpress").textContent="Selecione e copie"}};
 function requireToken(){if(!token){location.replace("index.html?acesso=necessario");return false}return true}
 async function init(){if(!requireToken())return;try{const snap=await db.ref("licenses/"+token).once("value");license=snap.val();if(!license||license.status!=="active"){ $("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa";$("hello").textContent="Acesso não validado";$("topPlan").textContent="Sessão inválida";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
-sessionStorage.setItem("azny_access_token",token);$("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");$("topPlan").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · AZNY";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
+sessionStorage.setItem("azny_access_token",token);$("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");$("sideTeacherName").textContent=license.teacherName||"Professor";$("topPlan").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · AZNY";$("sidePlan").textContent=license.planName||plans[license.plan]?.name||"Plano";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
 db.ref("assessments").orderByChild("ownerToken").equalTo(token).on("value",s=>{const d=s.val()||{};const items=Object.entries(d).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).slice(0,5);$("recentAssessments").innerHTML=items.length?items.map(([id,x])=>'<div class="activity"><strong>'+escapeHtml(x.title||"Avaliação")+'</strong><span class="small">'+escapeHtml(x.status||"Rascunho")+'</span><button class="btn" data-view="'+id+'">Abrir</button></div>').join(""):"Ainda não criou avaliações.";document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>location.href="avaliacoes/?professor=1&acesso="+encodeURIComponent(token)+"&id="+encodeURIComponent(b.dataset.view))});
 }catch(e){$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Não foi possível validar a licença";console.error(e)}}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 $("openBoard").onclick=async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(e){console.info("Landscape will be retried when the board opens:",e)}location.href="aulas/?acesso="+encodeURIComponent(token)};
 $("openAssessments").onclick=()=>location.href="avaliacao.html?professor=1&acesso="+encodeURIComponent(token);
-$("managePlan").onclick=()=>{$("planSection").classList.remove("hidden");$("planSection").scrollIntoView({behavior:"smooth"})};
-$("cancelPlan").onclick=()=>$("planSection").classList.add("hidden");$("nextPlan").onchange=planPrice;$("period").onchange=planPrice;
+$("managePlan")?.addEventListener("click",()=>showPanel("plan"));
+$("cancelPlan").onclick=()=>showPanel("overview");$("nextPlan").onchange=planPrice;$("period").onchange=planPrice;
 $("sendPlanRequest").onclick=async()=>{if(!license)return;const file=$("proof").files[0];if(!file)return msg("Anexe o comprovativo do pagamento.",true);if(file.size>4*1024*1024)return msg("O ficheiro deve ter no máximo 4 MB.",true);const plan=$("nextPlan").value,period=$("period").value,p=plans[plan];if(!p)return;const btn=$("sendPlanRequest");btn.disabled=true;const reader=new FileReader();reader.onload=async()=>{try{const item={id:"PAY-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),requestType:plan===license.plan?"renewal":"upgrade",existingAccessToken:token,name:license.teacherName||"Professor",phone:license.teacherPhone||"",plan,planName:p.name,period,amount:period==="annual"?p.annual:p.monthly,method:selectedPaymentMethod,express:selectedPaymentMethod==="Express"?"931057760":"",proof:reader.result,proofName:file.name,proofType:file.type,status:"pending",createdAt:new Date().toISOString()};const ref=db.ref("paymentRequests");const tx=await ref.transaction(cur=>{const arr=Array.isArray(cur)?cur:(cur&&typeof cur==="object"?Object.values(cur):[]);if(arr.some(x=>x&&x.status==="pending"&&x.requestType&&x.existingAccessToken===token))return;arr.push(item);return arr});if(!tx.committed){msg("Já existe um pedido de renovação/atualização pendente para esta conta.",true);return}msg("Pedido enviado. A administração deverá confirmar o pagamento antes de alterar o plano.");$("proof").value=""}catch(e){msg("Falha ao enviar: "+e.message,true)}finally{btn.disabled=false}};reader.onerror=()=>{btn.disabled=false;msg("Não foi possível ler o comprovativo.",true)};reader.readAsDataURL(file)};
-$("logout").onclick=()=>{sessionStorage.removeItem("azny_access_token");location.href="index.html"};init();
+$("logout").onclick=()=>{sessionStorage.removeItem("azny_access_token");location.href="index.html"};showPanel("overview");init();
 })();
 </script>
 <script>
