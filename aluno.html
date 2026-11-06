@@ -184,8 +184,8 @@ function openCourseCheckout(){
  $("courseDetailView").classList.add("hidden");$("courseCheckoutView").classList.remove("hidden");$("courseCheckoutView").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("coursePaymentMethod").onchange=()=>{$("courseReceiptWrap").classList.toggle("hidden",$("coursePaymentMethod").value!=="Transferência bancária")};
-$("courseDetailBack").onclick=()=>{$("courseDetailView").classList.add("hidden");$("courseCheckoutView").classList.add("hidden");$("teacherResults").scrollIntoView({behavior:"smooth",block:"start")};
-$("courseCheckoutBack").onclick=()=>{$("courseCheckoutView").classList.add("hidden");$("courseDetailView").classList.remove("hidden");$("courseDetailView").scrollIntoView({behavior:"smooth",block:"start")};
+$("courseDetailBack").onclick=()=>{$("courseDetailView").classList.add("hidden");$("courseCheckoutView").classList.add("hidden");$("teacherResults").scrollIntoView({behavior:"smooth",block:"start"});};
+$("courseCheckoutBack").onclick=()=>{$("courseCheckoutView").classList.add("hidden");$("courseDetailView").classList.remove("hidden");$("courseDetailView").scrollIntoView({behavior:"smooth",block:"start"});};
 $("courseSubmitEnrollment").onclick=async()=>{
  const x=selectedCourse,t=selectedTeacher,method=$("coursePaymentMethod").value,file=$("coursePaymentReceipt").files[0],note=$("coursePaymentNote").value.trim();
  if(!user||!x||!t)return;
