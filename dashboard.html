@@ -57,6 +57,18 @@ body{min-height:100vh;background:#eef3f8}
 }
 @media(max-width:420px){.feature-card{display:block}.feature-icon{margin-bottom:12px}.dashboard-heading p{max-width:260px}}
 
+
+/* Visão geral limpa: apenas a identidade visual da plataforma. */
+.side-brand{gap:11px}
+.side-logo{display:block;width:43px;height:43px;object-fit:contain;border-radius:10px;background:#fff;flex:0 0 43px}
+.side-mark{display:none}
+.brand-welcome{min-height:calc(100vh - 190px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:35px 20px}
+.brand-welcome img{width:clamp(130px,19vw,220px);height:auto;max-height:220px;object-fit:contain;filter:drop-shadow(0 12px 22px #071b3312)}
+.brand-welcome-name{margin-top:22px;font-size:clamp(25px,3.5vw,43px);font-weight:950;letter-spacing:-1.2px;color:#071b33}
+.brand-welcome-name strong{color:#1677ff}
+.brand-welcome p{margin:10px 0 0;color:#718096;font-size:14px;line-height:1.6}
+@media(max-width:900px){.side-logo{width:40px;height:40px;flex-basis:40px}.brand-welcome{min-height:calc(100vh - 170px)}.brand-welcome img{width:clamp(125px,38vw,185px)}}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -65,7 +77,7 @@ body{min-height:100vh;background:#eef3f8}
 <link rel="apple-touch-icon" href="icons/azny-board.svg">
 </head>
 <body><aside class="sidebar" id="sidebar" aria-label="Menu principal">
- <div class="side-brand"><span class="side-mark">RW</span><span>REMOTE WORK <b>BOARD</b></span></div>
+ <div class="side-brand"><img class="side-logo" src="icons/remote-work-board.svg" alt="Logótipo Remote Work Board"><span>REMOTE WORK <b>BOARD</b></span></div>
  <div class="side-user"><span class="side-avatar">👨‍🏫</span><div><strong id="sideTeacherName">Professor</strong><small id="sidePlan">A validar plano…</small></div></div>
  <nav class="side-nav">
   <button type="button" class="side-link active" data-panel="overview"><span>⌂</span> Visão geral</button>
@@ -81,29 +93,11 @@ body{min-height:100vh;background:#eef3f8}
 <main class="wrap" id="dashboardMain">
  <div class="dashboard-heading"><div><span class="eyebrow">ESPAÇO DE ENSINO</span><h1 id="panelTitle">Visão geral</h1><p id="panelSubtitle">Acompanhe a sua conta e aceda rapidamente às ferramentas.</p></div><span class="account-chip">● Conta de professor</span></div>
  <div class="panel-view" id="panel-overview">
-  <section class="welcome"><h1 id="hello">Painel do Professor</h1><p class="muted">Gira as suas aulas, crie avaliações e acompanhe a sua subscrição num único lugar.</p><div id="licenseStatus" class="badge">A validar licença…</div></section>
-  <section class="section" aria-label="Recomendação para gerir o quadro">
-<div style="display:flex;gap:13px;align-items:flex-start">
-<div aria-hidden="true" style="font-size:28px;line-height:1">💻</div>
-<div>
-<h2 style="margin:0 0 7px">Para gerir melhor o seu Remote Work Board, recomendamos usar um computador</h2>
-<p class="muted" style="margin:0 0 8px">O quadro também pode ser aberto no telemóvel, mas a versão para computador oferece mais espaço e torna a gestão das aulas mais cómoda.</p>
-<ul style="margin:0;padding-left:20px;line-height:1.6;color:#405267;font-size:13px">
-<li>Ver e utilizar melhor as ferramentas do quadro, sem tantos menus apertados.</li>
-<li>Carregar, visualizar e organizar imagens, PDFs e outros documentos com mais facilidade.</li>
-<li>Escrever, desenhar, selecionar e mover objetos com maior precisão usando o rato e o teclado.</li>
-<li>Gerir câmaras, participantes, gravações e controlos da aula com uma visão mais ampla.</li>
-<li>Preparar materiais e acompanhar o quadro com menos limitações de espaço no ecrã.</li>
-</ul>
-<p style="margin:9px 0 0;font-size:13px;font-weight:800;color:#164a85">A nossa recomendação: use o computador para preparar e dirigir as aulas; utilize o telemóvel quando precisar de aceder rapidamente ou não tiver um computador disponível.</p>
-</div>
-</div>
-</section>
-  <div class="overview-shortcuts">
-   <button type="button" class="shortcut" data-open-panel="board"><span>▣</span><b>Entrar no quadro</b><small>Iniciar ou continuar uma aula</small></button>
-   <button type="button" class="shortcut" data-open-panel="assessments"><span>📝</span><b>Testes e avaliações</b><small>Criar e acompanhar avaliações</small></button>
-   <button type="button" class="shortcut" data-open-panel="plan"><span>💳</span><b>Plano e pagamentos</b><small>Consultar a sua subscrição</small></button>
-  </div>
+  <section class="brand-welcome" aria-label="Bem-vindo ao Remote Work Board">
+   <img src="icons/remote-work-board.svg" alt="Logótipo Remote Work Board">
+   <div class="brand-welcome-name">REMOTE WORK <strong>BOARD</strong></div>
+   <p>Plataforma de ensino, formação e colaboração online.</p>
+  </section>
  </div>
  <section class="panel-view hidden" id="panel-board">
   <section class="feature-card"><div class="feature-icon">▣</div><div><span class="eyebrow">SALA DE AULA DIGITAL</span><h2>Quadro Virtual</h2><p class="muted">Abra o quadro habitual, prepare os seus materiais, inicie uma aula e partilhe o link com os alunos. As ferramentas actuais do quadro são preservadas.</p><button class="btn primary feature-action" id="openBoard">Entrar no quadro</button></div></section>
