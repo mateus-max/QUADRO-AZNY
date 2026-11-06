@@ -275,7 +275,7 @@ body{background:#f5f8fc;color:#122a49;min-height:100vh}
 .side-user small{font-size:11px;white-space:nowrap}
 .side-nav{padding-top:12px}
 .top-profile strong{white-space:nowrap!important;overflow:visible;text-overflow:clip;max-width:none}
-.workspace-photo{display:block;width:100%;height:auto;max-height:650px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 14px 22px #0a2d5012)}
+.workspace-photo{display:block;width:100%;height:auto;max-height:650px;object-fit:contain;image-rendering:auto;filter:none}
 body.overview-fixed{height:100dvh;min-height:0;overflow:hidden}
 body.overview-fixed .wrap{height:calc(100dvh - 76px);min-height:0;overflow:hidden}
 body.overview-fixed #panel-overview{height:100%;min-height:0;overflow:hidden}
@@ -420,7 +420,7 @@ body.menu-open .sidebar-backdrop{display:block;position:fixed;z-index:55;inset:6
    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#f4f7fb"/></linearGradient>
    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur stdDeviation="13"/></filter>
   </defs>
-  <ellipse cx="416" cy="555" rx="340" ry="34" fill="#9bb5d0" opacity=".24" filter="url(#softShadow)"/>
+  <ellipse cx="416" cy="555" rx="340" ry="34" fill="#9bb5d0" opacity=".24" />
   <!-- Laptop screen -->
   <path d="M245 92 Q250 70 274 68 L650 55 Q675 55 679 80 L709 385 Q711 405 691 410 L206 426 Q184 426 187 404 Z" fill="#142b43"/>
   <path d="M258 92 L651 80 L678 377 L218 393 Z" fill="url(#screenBlue)" stroke="#314a64" stroke-width="5"/>
@@ -582,7 +582,7 @@ $("copyExpress").onclick=async()=>{try{await navigator.clipboard.writeText("9310
 function requireToken(){if(!token){location.replace("index.html?acesso=necessario");return false}return true}
 async function init(){if(!requireToken())return;try{const snap=await db.ref("licenses/"+token).once("value");license=snap.val();if(!license||license.status!=="active"){ $("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa";$("hello").textContent="Acesso não validado";$("topPlan").textContent="Sessão inválida";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
 sessionStorage.setItem("azny_access_token",token);
-const nameCandidates=[[license.firstName,license.lastName].filter(Boolean).join(" "),[license.first_name,license.last_name].filter(Boolean).join(" "),[license.nome,license.apelido||license.surname].filter(Boolean).join(" "),license.fullName,license.displayName,license.ownerName,license.professorName,license.teacherName,license.name,license.nomeCompleto,license.userName,license.username,license.display_name,license.teacher?.fullName,license.professor?.fullName,license.teacherEmail?.split("@")[0],license.email?.split("@")[0],firebase.auth().currentUser?.displayName];
+const nameCandidates=[[license.firstName,license.lastName].filter(Boolean).join(" "),[license.first_name,license.last_name].filter(Boolean).join(" "),[license.nome,license.apelido||license.surname].filter(Boolean).join(" "),license.fullName,license.displayName,license.ownerName,license.professorName,license.teacherName,license.name,license.nomeCompleto,license.userName,license.username,license.display_name,license.teacher?.fullName,license.professor?.fullName,firebase.auth().currentUser?.displayName,license.teacherEmail?.split("@")[0],license.email?.split("@")[0]];
 const rawAccountName=nameCandidates.map(v=>String(v||"").trim()).find(v=>v&&!/^(professor|formador|teacher|a minha conta|conta do professor)$/i.test(v))||"Professor";
 const cleanParts=rawAccountName.replace(/^(professor|formador|teacher)\s+/i,"").replace(/[._-]+/g," ").trim().split(/\s+/).filter(Boolean);
 const accountName=cleanParts.length>2?cleanParts[0]+" "+cleanParts[cleanParts.length-1]:cleanParts.join(" ")||"Nome não disponível";
