@@ -598,7 +598,26 @@ body.menu-open .sidebar-backdrop{display:block;position:fixed;z-index:55;inset:6
 <script>
 (()=>{"use strict";
 const cfg={apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c"};
-if(!firebase.apps.length)firebase.initializeApp(cfg);const db=firebase.database();const auth=firebase.auth();let firebaseAuthPromise=null;async function ensureFirebaseAuth(){if(auth.currentUser)return auth.currentUser;if(!firebaseAuthPromise){firebaseAuthPromise=auth.signInAnonymously().then(credential=>credential.user).catch(error=>{firebaseAuthPromise=null;throw error})}return firebaseAuthPromise}
+if(!firebase.apps.length)firebase.initializeApp(cfg);const db=firebase.database();const auth=firebase.auth();let firebaseAuthPromise=null;
+async function ensureFirebaseAuth(){
+ if(auth.currentUser)return auth.currentUser;
+ if(!firebaseAuthPromise){
+  firebaseAuthPromise=auth.signInAnonymously().then(credential=>credential.user).catch(error=>{firebaseAuthPromise=null;throw error});
+ }
+ return firebaseAuthPromise;
+}
+async function waitForFirebase(promise,label,timeoutMs=15000){
+ let timer;
+ try{
+  return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+" não respondeu em "+Math.round(timeoutMs/1000)+" segundos. Verifique a ligação e as permissões do Firebase.")),timeoutMs)})]);
+ }finally{clearTimeout(timer)}
+}
+function setPlanValidation(text,bad=false){
+ const side=$("sidePlan"),top=$("topPlan");
+ if(side)side.textContent=text;if(top)top.textContent=text;
+ if(side)side.style.color=bad?"#ffd0d0":"";
+ if(top)top.style.color=bad?"#ffd0d0":"";
+}
 const qs=new URLSearchParams(location.search),token=qs.get("acesso")||sessionStorage.getItem("azny_access_token")||"",plans={basic:{name:"Básico",monthly:10000,annual:60000},professional:{name:"Profissional",monthly:20000,annual:60000},school:{name:"Escola",monthly:30000,annual:100000}};
 let license=null,requests=[],selectedPaymentMethod="Express";
 const $=id=>document.getElementById(id), money=n=>Number(n||0).toLocaleString("pt-AO")+" Kz";
@@ -735,7 +754,7 @@ function installCoursePublisherButton(){
   }
  },{passive:false});
 }
-async function init(){if(!requireToken())return;try{await ensureFirebaseAuth();const snap=await db.ref("licenses/"+token).once("value");license=snap.val();if(!license||license.status!=="active"){ $("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa";$("hello").textContent="Acesso não validado";$("topPlan").textContent="Sessão inválida";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
+async function init(){if(!requireToken())return;setPlanValidation("A ligar ao Firebase…");try{await waitForFirebase(ensureFirebaseAuth(),"Autenticação Firebase",15000);setPlanValidation("A consultar a licença…");const snap=await waitForFirebase(db.ref("licenses/"+token).once("value"),"Consulta da licença no Firebase",15000);license=snap.val();if(!license||license.status!=="active"){setPlanValidation("Licença não ativa",true);$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa ou não encontrada";$("hello").textContent="Acesso não validado";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
 sessionStorage.setItem("azny_access_token",token);
 const nameCandidates=[[license.firstName,license.lastName].filter(Boolean).join(" "),[license.first_name,license.last_name].filter(Boolean).join(" "),[license.nome,license.apelido||license.surname].filter(Boolean).join(" "),license.fullName,license.displayName,license.ownerName,license.professorName,license.teacherName,license.name,license.nomeCompleto,license.userName,license.username,license.display_name,license.teacher?.fullName,license.professor?.fullName,firebase.auth().currentUser?.displayName,license.teacherEmail?.split("@")[0],license.email?.split("@")[0]];
 const rawAccountName=nameCandidates.map(v=>String(v||"").trim()).find(v=>v&&!/^(professor|formador|teacher|a minha conta|conta do professor)$/i.test(v))||"Professor";
@@ -745,7 +764,7 @@ $("hello").textContent="Bem-vindo, "+accountName;$("sideTeacherName").textConten
 const initials=accountName.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("");$("profileInitials").textContent=initials||"RW";$("sideInitials").textContent=initials||"RW";
 $("topPlan").textContent=license.planName||plans[license.plan]?.name||"Plano";$("sidePlan").textContent=license.planName||plans[license.plan]?.name||"Plano";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();bindTeacherModules();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
 db.ref("assessments").orderByChild("ownerToken").equalTo(token).on("value",s=>{const d=s.val()||{};const items=Object.entries(d).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).slice(0,5);$("recentAssessments").innerHTML=items.length?items.map(([id,x])=>'<div class="activity"><strong>'+escapeHtml(x.title||"Avaliação")+'</strong><span class="small">'+escapeHtml(x.status||"Rascunho")+'</span><button class="btn" data-view="'+id+'">Abrir</button></div>').join(""):"Ainda não criou avaliações.";document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>location.href="avaliacoes/?professor=1&acesso="+encodeURIComponent(token)+"&id="+encodeURIComponent(b.dataset.view))});
-}catch(e){$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Não foi possível validar a licença";courseFormMessage("O painel não conseguiu validar a conta: "+(e&&e.message?e.message:"erro de ligação")+". O botão de publicação continua ativo para apresentar o diagnóstico ao tocar.",true);console.error("Falha na inicialização do painel do professor:",e)}}
+}catch(e){const reason=e&&e.message?e.message:"Erro desconhecido";setPlanValidation("Falha na validação",true);$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Falha ao validar: "+reason;$("hello").textContent="Não foi possível validar a conta";courseFormMessage("A validação da conta falhou: "+reason+". O sistema deixou de ficar preso em «A validar plano»; consulte esta mensagem para identificar a causa.",true);console.error("Falha na inicialização do painel do professor:",e)}}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 $("openBoard").onclick=async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(e){console.info("Landscape will be retried when the board opens:",e)}location.href="aulas/?acesso="+encodeURIComponent(token)};
 $("openAssessments").onclick=()=>location.href="avaliacao.html?professor=1&acesso="+encodeURIComponent(token);
