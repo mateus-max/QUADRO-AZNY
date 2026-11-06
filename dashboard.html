@@ -69,6 +69,107 @@ body{min-height:100vh;background:#eef3f8}
 .brand-welcome p{margin:10px 0 0;color:#718096;font-size:14px;line-height:1.6}
 @media(max-width:900px){.side-logo{width:40px;height:40px;flex-basis:40px}.brand-welcome{min-height:calc(100vh - 170px)}.brand-welcome img{width:clamp(125px,38vw,185px)}}
 
+
+/* REMOTE WORK BOARD — dashboard visual aprovado: desktop + mobile */
+:root{--sidebar:270px;--navy:#062448;--navy-deep:#031a35;--electric:#0877f9}
+body{background:#f5f8fc;color:#122a49;min-height:100vh}
+.sidebar{width:var(--sidebar);padding:25px 15px 18px;background:linear-gradient(180deg,#06264b 0%,#031a35 100%);box-shadow:none}
+.side-brand{padding:4px 13px 27px;gap:13px;font-size:16px;line-height:1.25;white-space:normal}
+.side-logo{width:64px;height:64px;flex:0 0 64px;background:transparent;border-radius:0;object-fit:contain;filter:brightness(0) invert(1)}
+.side-brand span{max-width:145px;font-size:17px;letter-spacing:-.35px}
+.side-brand b{color:#fff}
+.side-user{margin:7px 5px 15px;padding:15px 9px;border-bottom:1px solid #ffffff24}
+.side-avatar{background:#ffffff1b}
+.side-nav{gap:8px;padding-top:12px}
+.side-link{padding:15px 14px;gap:14px;border-radius:11px;font-size:14px;color:#edf5ff}
+.side-link>span{font-size:21px;width:27px}
+.side-link.active{background:linear-gradient(100deg,#0865c8,#0754a6);box-shadow:none}
+.side-bottom{border-top:1px solid #ffffff2c}
+.top{height:76px;min-height:76px;margin-left:var(--sidebar);padding:0 32px;background:linear-gradient(100deg,#06264b,#031d3d);box-shadow:none;display:flex;flex-wrap:nowrap;gap:24px}
+.menu-toggle{width:42px;height:42px;border:0;background:transparent;border-radius:8px;font-size:0;position:relative}
+.menu-toggle:before{content:"☰";font-size:33px;line-height:1;color:white}
+.top .brand{font-size:27px;letter-spacing:-.7px;color:#fff}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:38px}
+.notification-button{position:relative;border:0;background:transparent;color:#fff;font-size:29px;cursor:pointer;line-height:1}
+.notification-button i{position:absolute;right:0;top:1px;width:10px;height:10px;border-radius:50%;background:#ff3151;border:2px solid #06264b}
+.top-profile{display:flex;align-items:center;gap:11px;color:#fff;min-width:0}
+.profile-avatar{width:43px;height:43px;border:2px solid #c8e1ff;border-radius:50%;display:grid;place-items:center;background:#eaf4ff;color:#2875c7;font-size:26px;line-height:1}
+.top-profile strong,.top-profile small{display:block;white-space:nowrap}
+.top-profile strong{font-size:14px}.top-profile small{font-size:10px;color:#bcd1e8;margin-top:3px}
+.profile-chevron{font-size:21px;margin-left:3px}
+.wrap{margin:0 0 0 var(--sidebar);padding:0;max-width:none;min-height:calc(100vh - 76px);overflow:hidden}
+.dashboard-heading{display:none}
+.hero-welcome{position:relative;isolation:isolate;min-height:calc(100vh - 76px);overflow:hidden;display:flex;align-items:center;padding:70px clamp(38px,5vw,78px);background:radial-gradient(ellipse at 80% 45%,#e1efff 0%,#f8fbff 43%,#fff 75%);border:0}
+.hero-copy{position:relative;z-index:5;width:54%;padding-bottom:35px}
+.hero-kicker{display:inline-flex;align-items:center;gap:10px;color:#1677ee;font-size:12px;font-weight:900;letter-spacing:1.6px;margin-bottom:25px}
+.hero-kicker i{display:block;width:76px;height:8px;border-radius:10px;background:#0877f9}
+.hero-copy h1{margin:0;color:#092345;font-size:clamp(37px,4.1vw,64px);line-height:1.12;letter-spacing:-2.2px;font-weight:850}
+.hero-copy h1 strong{color:#0868e9;font-weight:900}
+.hero-copy p{margin:25px 0 0;color:#455b78;font-size:clamp(18px,2vw,27px);line-height:1.45}
+.hero-art{position:absolute;z-index:3;width:min(48%,650px);height:430px;right:2.5%;top:50%;transform:translateY(-46%)}
+.art-glow{position:absolute;width:78%;height:72%;right:8%;top:12%;border-radius:50%;background:radial-gradient(ellipse,#d4e8ff 0%,#eaf4ff 54%,transparent 75%)}
+.laptop-screen{position:absolute;right:10%;top:12%;width:67%;height:64%;border:12px solid #172c43;border-bottom-width:18px;border-radius:22px 22px 12px 12px;background:linear-gradient(135deg,#0875f6,#003e92);box-shadow:0 22px 35px #092b4c38;transform:perspective(900px) rotateY(-9deg) rotateZ(-2deg);display:grid;place-items:center;overflow:hidden}
+.laptop-screen svg{position:relative;z-index:2;width:63%;height:auto;filter:drop-shadow(0 6px 10px #002b6c55)}
+.screen-shine{position:absolute;inset:0;background:linear-gradient(125deg,#ffffff24 0%,transparent 38%,#ffffff0b 60%,transparent 100%)}
+.laptop-base{position:absolute;right:5%;top:76%;width:78%;height:8%;background:linear-gradient(#c8d2dc,#74899e 55%,#dce4ec);clip-path:polygon(8% 0,92% 0,100% 65%,94% 100%,0 100%);border-radius:5px 5px 24px 24px;filter:drop-shadow(0 15px 9px #092b4c2b)}
+.headset-band{position:absolute;z-index:4;right:13%;top:5%;width:24%;height:43%;border:13px solid #17283b;border-bottom:0;border-radius:100px 100px 0 0;transform:rotate(13deg);filter:drop-shadow(3px 5px 3px #0004)}
+.art-headset{position:absolute;z-index:5;right:9%;top:36%;width:35px;height:82px;border-radius:16px;background:linear-gradient(90deg,#111e2c,#46566a,#101c2b);transform:rotate(13deg);box-shadow:4px 6px 10px #0004}
+.art-headset span{position:absolute;width:47px;height:12px;background:#17283b;border-radius:10px;right:15px;bottom:-8px;transform:rotate(-24deg)}
+.art-notebook{position:absolute;z-index:6;right:7%;bottom:2%;width:48%;height:17%;background:repeating-linear-gradient(0deg,#fff,#fff 7px,#dce4ed 8px);border:5px solid #d8e0e8;border-radius:5px 8px 13px 9px;transform:rotate(-5deg);box-shadow:0 12px 18px #092b4c24}
+.art-notebook i{position:absolute;left:10%;right:10%;top:12%;height:2px;background:#d5dde6;box-shadow:0 15px #d5dde6,0 30px #d5dde6}
+.art-pen{position:absolute;z-index:7;right:18%;bottom:8%;width:22%;height:7px;border-radius:8px;background:linear-gradient(#172536,#52667b,#0a1625);transform:rotate(-18deg);box-shadow:0 3px 4px #0003}
+.art-cup{position:absolute;z-index:7;right:0;bottom:18%;width:13%;height:17%;border-radius:8px 8px 24px 24px;background:linear-gradient(90deg,#e0e7ee,#fff 45%,#d6e0e9);box-shadow:0 8px 13px #092b4c1e}
+.art-cup:after{content:"";position:absolute;right:-34%;top:22%;width:42%;height:48%;border:7px solid #e1e8ef;border-left:0;border-radius:0 20px 20px 0}
+.hero-wave{position:absolute;z-index:1;left:-5%;width:112%;pointer-events:none}
+.wave-one{height:22%;bottom:-7%;background:linear-gradient(105deg,#06428d,#0877f9);clip-path:ellipse(70% 65% at 48% 100%)}
+.wave-two{height:14%;bottom:1%;background:#4a9cff33;clip-path:ellipse(65% 60% at 47% 100%)}
+#panel-overview{min-height:calc(100vh - 76px)}
+#panel-board,#panel-assessments,#panel-plan,#panel-activities{padding:34px clamp(20px,3vw,48px);min-height:calc(100vh - 76px);background:#f5f8fc}
+#panel-board .feature-card,#panel-assessments .feature-card{margin:0 auto;max-width:1000px;padding:34px}
+#panel-plan .plan-card,#panel-activities>.section{max-width:1100px;margin:0 auto}
+@media(max-width:900px){
+ :root{--sidebar:0px}
+ .sidebar{width:min(300px,86vw);padding:22px 15px 17px;transform:translateX(-105%);transition:transform .24s ease;box-shadow:12px 0 35px #00152e55}
+ body.menu-open .sidebar{transform:translateX(0)}
+ body.menu-open .sidebar-backdrop{display:block;position:fixed;z-index:35;inset:0;background:#00152e80}
+ .top{height:68px;min-height:68px;margin-left:0;padding:0 15px;gap:12px}
+ .menu-toggle{flex:0 0 40px;width:40px;height:40px}
+ .menu-toggle:before{font-size:30px}
+ .top .brand{font-size:clamp(16px,4vw,21px);white-space:nowrap;letter-spacing:-.5px}
+ .top-actions{gap:12px}
+ .notification-button{font-size:22px}
+ .top-profile{gap:6px}.profile-avatar{width:34px;height:34px;font-size:20px}
+ .top-profile strong{font-size:11px;max-width:85px;overflow:hidden;text-overflow:ellipsis}
+ .top-profile small,.profile-chevron{display:none}
+ .wrap{margin:0;padding:0;min-height:calc(100svh - 68px)}
+ .hero-welcome{min-height:calc(100svh - 68px);padding:55px 26px 30px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start}
+ .hero-copy{width:100%;padding:0;z-index:5}
+ .hero-kicker{font-size:10px;margin-bottom:18px}.hero-kicker i{width:48px;height:6px}
+ .hero-copy h1{font-size:clamp(34px,8vw,48px);letter-spacing:-1.3px}
+ .hero-copy p{font-size:18px;margin-top:16px}
+ .desktop-break{display:none}
+ .hero-art{position:relative;top:auto;right:auto;transform:none;width:min(100%,480px);height:310px;align-self:center;margin-top:22px}
+ .laptop-screen{right:13%;width:69%;height:62%;border-width:8px;border-bottom-width:13px;border-radius:15px}
+ .headset-band{border-width:9px;border-bottom:0}
+ .art-headset{width:25px;height:58px}
+ .art-notebook{height:16%}.art-pen{height:5px}.art-cup{height:16%}
+ .hero-wave{height:13%;bottom:-3%}.wave-two{height:8%;bottom:1%}
+ #panel-overview{min-height:calc(100svh - 68px)}
+ #panel-board,#panel-assessments,#panel-plan,#panel-activities{padding:20px 14px 30px;min-height:calc(100svh - 68px)}
+ #panel-board .feature-card,#panel-assessments .feature-card{padding:20px}
+}
+@media(max-width:420px){
+ .top{padding:0 10px;gap:8px}
+ .top .brand{font-size:16px}
+ .top-actions{gap:8px}
+ .notification-button{display:none}
+ .top-profile strong{max-width:66px}
+ .hero-welcome{padding:44px 21px 25px}
+ .hero-copy h1{font-size:34px}
+ .hero-art{height:260px;margin-top:28px}
+ .laptop-screen{right:12%;width:72%}
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -89,15 +190,37 @@ body{min-height:100vh;background:#eef3f8}
  <div class="side-bottom"><button class="side-link logout-link" id="logout"><span>↪</span> Terminar sessão</button><small>Remote Work Board · Área do Professor</small></div>
 </aside>
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-<header class="top"><button type="button" class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">☰</button><div class="brand">Remote Work Board</div><small id="topPlan">A carregar plano…</small></header>
+<header class="top">
+ <button type="button" class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
+ <div class="brand">Remote Work Board</div>
+ <div class="top-actions"><button type="button" class="notification-button" aria-label="Notificações">♧<i></i></button><div class="top-profile"><span class="profile-avatar">●</span><span><strong id="topTeacherName">Professor</strong><small id="topPlan">A carregar plano…</small></span><b class="profile-chevron">⌄</b></div></div>
+</header>
 <main class="wrap" id="dashboardMain">
  <div class="dashboard-heading"><div><span class="eyebrow">ESPAÇO DE ENSINO</span><h1 id="panelTitle">Visão geral</h1><p id="panelSubtitle">Acompanhe a sua conta e aceda rapidamente às ferramentas.</p></div><span class="account-chip">● Conta de professor</span></div>
  <div class="panel-view" id="panel-overview">
-  <section class="brand-welcome" aria-label="Bem-vindo ao Remote Work Board">
-   <img src="icons/remote-work-board.svg" alt="Logótipo Remote Work Board">
-   <div class="brand-welcome-name">REMOTE WORK <strong>BOARD</strong></div>
-   <p>Plataforma de ensino, formação e colaboração online.</p>
-  </section>
+  <section class="hero-welcome" aria-label="Bem-vindo ao Remote Work Board">
+ <div class="hero-copy">
+  <span class="hero-kicker"><i></i> O SEU ESPAÇO DE ENSINO</span>
+  <h1>Bem-vindo ao<br><strong>Remote Work Board</strong></h1>
+  <p>O seu espaço de ensino, formação<br class="desktop-break"> e colaboração online.</p>
+ </div>
+ <div class="hero-art" aria-hidden="true">
+  <div class="art-glow"></div>
+  <div class="headset-band"></div>
+  <div class="laptop-screen">
+   <div class="screen-shine"></div>
+   <svg viewBox="0 0 280 190" role="presentation">
+    <g fill="#fff"><circle cx="140" cy="66" r="24"/><circle cx="91" cy="79" r="18"/><circle cx="189" cy="79" r="18"/><path d="M91 104c-21 0-37 18-37 40v10h74v-10c0-22-16-40-37-40zm98 0c-21 0-37 18-37 40v10h74v-10c0-22-16-40-37-40zm-49-7c-29 0-51 22-51 51v12h102v-12c0-29-22-51-51-51z"/></g>
+   </svg>
+  </div>
+  <div class="laptop-base"></div>
+  <div class="art-headset"><span></span></div>
+  <div class="art-notebook"><i></i></div>
+  <div class="art-pen"></div>
+  <div class="art-cup"></div>
+ </div>
+ <div class="hero-wave wave-one"></div><div class="hero-wave wave-two"></div>
+</section>
  </div>
  <section class="panel-view hidden" id="panel-board">
   <section class="feature-card"><div class="feature-icon">▣</div><div><span class="eyebrow">SALA DE AULA DIGITAL</span><h2>Quadro Virtual</h2><p class="muted">Abra o quadro habitual, prepare os seus materiais, inicie uma aula e partilhe o link com os alunos. As ferramentas actuais do quadro são preservadas.</p><button class="btn primary feature-action" id="openBoard">Entrar no quadro</button></div></section>
@@ -161,7 +284,7 @@ $("chooseExpress").onclick=()=>selectPayment("Express");$("chooseBank").onclick=
 $("copyExpress").onclick=async()=>{try{await navigator.clipboard.writeText("931057760");$("copyExpress").textContent="Número copiado ✓"}catch(e){const range=document.createRange(),node=$("expressNumber");const sel=window.getSelection();range.selectNodeContents(node);sel.removeAllRanges();sel.addRange(range);$("copyExpress").textContent="Selecione e copie"}};
 function requireToken(){if(!token){location.replace("index.html?acesso=necessario");return false}return true}
 async function init(){if(!requireToken())return;try{const snap=await db.ref("licenses/"+token).once("value");license=snap.val();if(!license||license.status!=="active"){ $("licenseStatus").className="badge warn";$("licenseStatus").textContent="Licença não ativa";$("hello").textContent="Acesso não validado";$("topPlan").textContent="Sessão inválida";$("openBoard").disabled=true;$("openAssessments").disabled=true;return}
-sessionStorage.setItem("azny_access_token",token);$("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");$("sideTeacherName").textContent=license.teacherName||"Professor";$("topPlan").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · AZNY";$("sidePlan").textContent=license.planName||plans[license.plan]?.name||"Plano";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
+sessionStorage.setItem("azny_access_token",token);$("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");$("sideTeacherName").textContent=license.teacherName||"Professor";$("topTeacherName").textContent=license.teacherName||"Professor";$("topPlan").textContent=license.planName||plans[license.plan]?.name||"Plano";$("sidePlan").textContent=license.planName||plans[license.plan]?.name||"Plano";const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();$("licenseStatus").className="badge"+(expired?" warn":"");$("licenseStatus").textContent=expired?"Plano expirado — renove para continuar":"Plano ativo";$("currentPlanInfo").textContent=(license.planName||plans[license.plan]?.name||"Plano")+" · Início: "+(license.startedAt?new Date(license.startedAt).toLocaleDateString("pt-AO"):"—")+" · Expira: "+(license.expiresAt?new Date(license.expiresAt).toLocaleDateString("pt-AO"):"não definido");$("nextPlan").value=license.plan||"basic";planPrice();const pro=license.plan==="professional"||license.plan==="school";$("assessmentAccess").textContent=pro?"Incluído no plano.":"Disponível a partir do plano Profissional (20.000 Kz/mês).";$("openAssessments").disabled=!pro||expired;$("openBoard").disabled=!!expired;
 db.ref("assessments").orderByChild("ownerToken").equalTo(token).on("value",s=>{const d=s.val()||{};const items=Object.entries(d).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).slice(0,5);$("recentAssessments").innerHTML=items.length?items.map(([id,x])=>'<div class="activity"><strong>'+escapeHtml(x.title||"Avaliação")+'</strong><span class="small">'+escapeHtml(x.status||"Rascunho")+'</span><button class="btn" data-view="'+id+'">Abrir</button></div>').join(""):"Ainda não criou avaliações.";document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>location.href="avaliacoes/?professor=1&acesso="+encodeURIComponent(token)+"&id="+encodeURIComponent(b.dataset.view))});
 }catch(e){$("licenseStatus").className="badge warn";$("licenseStatus").textContent="Não foi possível validar a licença";console.error(e)}}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
