@@ -1263,8 +1263,8 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
 
 <aside class="rightbar">
   <div class="camera-panel">
-    <div class="camera-label" id="teacherCameraLabel">Professor</div>
     <div class="camera" id="teacherCamera">
+      <div class="camera-label" id="teacherCameraLabel">Professor</div>
       <div class="cam-off"><div class="big">🎥</div><div>Câmera do professor desligada</div><div>Autorize o acesso à câmera para aparecer aqui.</div></div>
       <video id="teacherVideo" autoplay muted playsinline hidden></video>
       <div class="azny-camera-signal" id="teacherCameraSignal" aria-label="Estado da ligação"><i></i><i></i><i></i></div>
@@ -4365,7 +4365,47 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
     document.getElementById("aznyExcelMerge")?.addEventListener("click",mergeSelection);
     document.getElementById("aznyExcelUnmerge")?.addEventListener("click",()=>{const rg=selectedRange();current().merges=(current().merges||[]).filter(m=>{const a=coord(m.start),b=coord(m.end);return !(a[0]<=rg.r2&&b[0]>=rg.r1&&a[1]<=rg.c2&&b[1]>=rg.c1)});render();schedulePublish()});
     document.getElementById("aznyExcelDownload")?.addEventListener("click",()=>{const csv=Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,col)=>{const v=display(current().cells[key(r,col)]??"");return '"'+v.replace(/"/g,'""')+'"'}).join(",")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=current().name+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
-    document.getElementById("aznyExcelPDF")?.addEventListener("click",()=>{const table=Array.from({length:ROWS},(_,r)=>"<tr>"+Array.from({length:COLS},(_,col)=>"<td>"+esc(display(current().cells[key(r,col)]??""))+"</td>").join("")+"</tr>").join("");const w=window.open("","_blank");if(!w){status.textContent="Permita pop-ups para imprimir ou guardar em PDF.";return}w.document.write('<html><head><title>'+esc(current().name)+'</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td{border:1px solid #bbb;padding:5px;min-width:35px}</style></head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script></body></html>');w.document.close()});
+    document.getElementById("aznyExcelPDF")?.addEventListener("click",()=>{const table=Array.from({length:ROWS},(_,r)=>"<tr>"+Array.from({length:COLS},(_,col)=>"<td>"+esc(display(current().cells[key(r,col)]??""))+"</td>").join("")+"</tr>").join("");const w=window.open("","_blank");if(!w){status.textContent="Permita pop-ups para imprimir ou guardar em PDF.";return}w.document.write('<html><head><title>'+esc(current().name)+'</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td{border:1px solid #bbb;padding:5px;min-width:35px}</style><style id="azny-camera-layout-reference-final">
+/* Câmaras e microfones — disposição fiel à referência enviada. */
+body:not(.student-mode) .rightbar{width:284px!important;min-width:284px!important;max-width:284px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;background:#fff!important}
+body:not(.student-mode) .rightbar .camera-panel{display:flex!important;flex:0 0 auto!important;position:relative!important;padding:7px!important;margin:0!important;gap:0!important;background:#fff!important}
+body:not(.student-mode) .rightbar #teacherCamera{position:relative!important;display:block!important;width:100%!important;height:auto!important;min-height:0!important;aspect-ratio:16/9!important;border:3px solid #16c784!important;border-radius:14px!important;overflow:hidden!important;background:#091626!important;order:1!important}
+body:not(.student-mode) .rightbar #teacherCamera video{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;transform:scaleX(-1)!important;background:#091626!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-off{position:absolute!important;inset:0!important;display:flex;align-items:center;justify-content:center;background:#091626!important;color:#d7e5f2!important;font-size:12px!important}
+body:not(.student-mode) .rightbar #teacherCameraLabel{position:absolute!important;left:27px!important;right:76px!important;bottom:8px!important;top:auto!important;z-index:12!important;display:block!important;width:auto!important;margin:0!important;padding:4px 7px!important;border-radius:6px!important;background:#071b33d9!important;color:#fff!important;text-align:left!important;font-size:11px!important;font-weight:800!important;line-height:1.2!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-status{display:none!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay{position:absolute!important;left:auto!important;right:7px!important;bottom:6px!important;top:auto!important;inset:auto 7px 6px auto!important;z-index:15!important;display:flex!important;width:auto!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;pointer-events:none!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay .cam-buttons{display:flex!important;gap:5px!important;pointer-events:auto!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button{display:flex!important;align-items:center!important;justify-content:center!important;width:27px!important;height:27px!important;min-width:27px!important;min-height:27px!important;padding:0!important;border:1px solid #ffffff80!important;border-radius:50%!important;background:#071b33d9!important;color:#fff!important;font-size:14px!important;line-height:1!important;box-shadow:0 1px 4px #0007!important;text-shadow:none!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button[aria-pressed="false"]{background:#b42332e8!important}
+body:not(.student-mode) .rightbar .teacher-media-status,body:not(.student-mode) .rightbar .azny-audio-output-picker,body:not(.student-mode) .rightbar #aznyAudioOutputStatus{display:none!important}
+body:not(.student-mode) .rightbar .azny-participants-heading{flex:0 0 auto!important;min-height:43px!important;padding:8px 10px!important;background:#fff!important;color:#1b3149!important;font-size:15px!important;font-weight:850!important;border-top:1px solid #e5eaf0!important;border-bottom:1px solid #e5eaf0!important}
+body:not(.student-mode) .rightbar #students.students{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:max-content!important;align-content:start!important;gap:7px!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;padding:8px!important}
+body:not(.student-mode) .rightbar #students .student{position:relative!important;display:block!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:4/3!important;padding:0!important;margin:0!important;overflow:hidden!important;border:1px solid #d5dee7!important;border-radius:10px!important;background:#0b1727!important}
+body:not(.student-mode) .rightbar #students .student>video{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;min-height:0!important;aspect-ratio:auto!important;object-fit:cover!important;background:#0b1727!important}
+body:not(.student-mode) .rightbar #students .student>.label{position:absolute!important;left:5px!important;right:59px!important;bottom:5px!important;top:auto!important;z-index:10!important;display:block!important;width:auto!important;max-width:none!important;margin:0!important;padding:4px 6px!important;border-radius:5px!important;background:#071b33d9!important;color:#fff!important;font-size:10px!important;font-weight:750!important;text-align:left!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls{position:absolute!important;left:auto!important;right:4px!important;bottom:4px!important;top:auto!important;z-index:12!important;display:flex!important;flex-direction:row!important;gap:3px!important;width:auto!important;padding:0!important;margin:0!important;background:transparent!important;pointer-events:none!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls button{display:flex!important;align-items:center!important;justify-content:center!important;flex:0 0 23px!important;width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important;padding:0!important;border:1px solid #ffffff70!important;border-radius:50%!important;background:#071b33d9!important;color:#fff!important;font-size:12px!important;line-height:1!important;pointer-events:auto!important;box-shadow:0 1px 4px #0006!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls button.is-off{background:#b42332e8!important;border-color:#ffc4c9!important}
+.azny-camera-signal{position:absolute!important;left:7px!important;bottom:8px!important;z-index:13!important;display:flex!important;align-items:flex-end!important;gap:2px!important;height:14px!important;padding:2px 3px!important;border-radius:4px!important;background:#071b33b8!important;pointer-events:none!important}
+.azny-camera-signal i{display:block!important;width:3px!important;height:5px!important;border-radius:2px!important;background:#64748b!important}
+.azny-camera-signal i:nth-child(2){height:8px!important}.azny-camera-signal i:nth-child(3){height:11px!important}
+.azny-camera-signal.is-live i{background:#20d879!important}
+body:not(.student-mode) .rightbar #teacherCamera .azny-camera-signal{left:8px!important;bottom:9px!important}
+body:not(.student-mode) .rightbar #students .student>.azny-camera-signal{left:6px!important;bottom:7px!important}
+body:not(.student-mode) .rightbar #students .student>.label{left:27px!important}
+@media(max-width:950px){
+ body:not(.student-mode) .rightbar{width:220px!important;min-width:220px!important;max-width:220px!important}
+ body:not(.student-mode) .rightbar #students.students{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;padding:5px!important}
+ body:not(.student-mode) .rightbar #students .student>.label{font-size:9px!important;right:53px!important}
+ body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls button{width:21px!important;height:21px!important;min-width:21px!important;min-height:21px!important}
+}
+@media(max-width:700px) and (orientation:portrait){
+ body:not(.student-mode) .rightbar{width:100%!important;min-width:0!important;max-width:none!important}
+ body:not(.student-mode) .rightbar #students.students{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+</style>
+</head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script></body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
     document.getElementById("aznyWebClose")?.addEventListener("click",()=>{webPanel.classList.remove("azny-web-open");if(!isStudent&&webRef)webRef.update({visible:false})});
@@ -4736,6 +4776,24 @@ body:not(.student-mode) .rightbar #students #noStudents{grid-column:1/-1!importa
 })();
 </script>
 
+<script id="azny-camera-signal-state">
+(function(){
+ function setSignal(el,live){if(!el)return;el.classList.toggle("is-live",!!live);el.setAttribute("aria-label",live?"Ligação de vídeo ativa":"Câmara desligada");}
+ function refresh(){
+  const teacher=document.getElementById("teacherVideo"),teacherLive=!!teacher?.srcObject?.getVideoTracks?.().some(t=>t.readyState==="live"&&t.enabled);
+  setSignal(document.getElementById("teacherCameraSignal"),teacherLive);
+  document.querySelectorAll("#students .student").forEach(card=>{
+   const video=card.querySelector("video"),live=!!video?.srcObject?.getVideoTracks?.().some(t=>t.readyState==="live"&&t.enabled);
+   setSignal(card.querySelector(".azny-camera-signal"),live);
+  });
+ }
+ refresh();setInterval(refresh,700);
+ const list=document.getElementById("students");
+ if(list)new MutationObserver(refresh).observe(list,{childList:true,subtree:true});
+ const teacher=document.getElementById("teacherCamera");
+ if(teacher)new MutationObserver(refresh).observe(teacher,{childList:true,subtree:true});
+})();
+</script>
 </body>
 </html>
 
@@ -4831,61 +4889,5 @@ body:not(.student-mode) .rightbar #students #noStudents{grid-column:1/-1!importa
 </script>
 
 
-<style id="azny-camera-layout-reference-final">
-/* Câmaras e microfones — disposição fiel à referência enviada. */
-body:not(.student-mode) .rightbar{width:284px!important;min-width:284px!important;max-width:284px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;background:#fff!important}
-body:not(.student-mode) .rightbar .camera-panel{display:flex!important;flex:0 0 auto!important;position:relative!important;padding:7px!important;margin:0!important;gap:0!important;background:#fff!important}
-body:not(.student-mode) .rightbar #teacherCamera{position:relative!important;display:block!important;width:100%!important;height:auto!important;min-height:0!important;aspect-ratio:16/9!important;border:3px solid #16c784!important;border-radius:14px!important;overflow:hidden!important;background:#091626!important;order:1!important}
-body:not(.student-mode) .rightbar #teacherCamera video{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;transform:scaleX(-1)!important;background:#091626!important}
-body:not(.student-mode) .rightbar #teacherCamera .cam-off{position:absolute!important;inset:0!important;display:flex;align-items:center;justify-content:center;background:#091626!important;color:#d7e5f2!important;font-size:12px!important}
-body:not(.student-mode) .rightbar #teacherCameraLabel{position:absolute!important;left:27px!important;right:76px!important;bottom:8px!important;top:auto!important;z-index:12!important;display:block!important;width:auto!important;margin:0!important;padding:4px 7px!important;border-radius:6px!important;background:#071b33d9!important;color:#fff!important;text-align:left!important;font-size:11px!important;font-weight:800!important;line-height:1.2!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-body:not(.student-mode) .rightbar #teacherCamera .cam-status{display:none!important}
-body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay{position:absolute!important;left:auto!important;right:7px!important;bottom:6px!important;top:auto!important;inset:auto 7px 6px auto!important;z-index:15!important;display:flex!important;width:auto!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;pointer-events:none!important}
-body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay .cam-buttons{display:flex!important;gap:5px!important;pointer-events:auto!important}
-body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button{display:flex!important;align-items:center!important;justify-content:center!important;width:27px!important;height:27px!important;min-width:27px!important;min-height:27px!important;padding:0!important;border:1px solid #ffffff80!important;border-radius:50%!important;background:#071b33d9!important;color:#fff!important;font-size:14px!important;line-height:1!important;box-shadow:0 1px 4px #0007!important;text-shadow:none!important}
-body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button[aria-pressed="false"]{background:#b42332e8!important}
-body:not(.student-mode) .rightbar .teacher-media-status,body:not(.student-mode) .rightbar .azny-audio-output-picker,body:not(.student-mode) .rightbar #aznyAudioOutputStatus{display:none!important}
-body:not(.student-mode) .rightbar .azny-participants-heading{flex:0 0 auto!important;min-height:43px!important;padding:8px 10px!important;background:#fff!important;color:#1b3149!important;font-size:15px!important;font-weight:850!important;border-top:1px solid #e5eaf0!important;border-bottom:1px solid #e5eaf0!important}
-body:not(.student-mode) .rightbar #students.students{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:max-content!important;align-content:start!important;gap:7px!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;padding:8px!important}
-body:not(.student-mode) .rightbar #students .student{position:relative!important;display:block!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:4/3!important;padding:0!important;margin:0!important;overflow:hidden!important;border:1px solid #d5dee7!important;border-radius:10px!important;background:#0b1727!important}
-body:not(.student-mode) .rightbar #students .student>video{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;min-height:0!important;aspect-ratio:auto!important;object-fit:cover!important;background:#0b1727!important}
-body:not(.student-mode) .rightbar #students .student>.label{position:absolute!important;left:5px!important;right:59px!important;bottom:5px!important;top:auto!important;z-index:10!important;display:block!important;width:auto!important;max-width:none!important;margin:0!important;padding:4px 6px!important;border-radius:5px!important;background:#071b33d9!important;color:#fff!important;font-size:10px!important;font-weight:750!important;text-align:left!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls{position:absolute!important;left:auto!important;right:4px!important;bottom:4px!important;top:auto!important;z-index:12!important;display:flex!important;flex-direction:row!important;gap:3px!important;width:auto!important;padding:0!important;margin:0!important;background:transparent!important;pointer-events:none!important}
-body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls button{display:flex!important;align-items:center!important;justify-content:center!important;flex:0 0 23px!important;width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important;padding:0!important;border:1px solid #ffffff70!important;border-radius:50%!important;background:#071b33d9!important;color:#fff!important;font-size:12px!important;line-height:1!important;pointer-events:auto!important;box-shadow:0 1px 4px #0006!important}
-body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls button.is-off{background:#b42332e8!important;border-color:#ffc4c9!important}
-.azny-camera-signal{position:absolute!important;left:7px!important;bottom:8px!important;z-index:13!important;display:flex!important;align-items:flex-end!important;gap:2px!important;height:14px!important;padding:2px 3px!important;border-radius:4px!important;background:#071b33b8!important;pointer-events:none!important}
-.azny-camera-signal i{display:block!important;width:3px!important;height:5px!important;border-radius:2px!important;background:#64748b!important}
-.azny-camera-signal i:nth-child(2){height:8px!important}.azny-camera-signal i:nth-child(3){height:11px!important}
-.azny-camera-signal.is-live i{background:#20d879!important}
-body:not(.student-mode) .rightbar #teacherCamera .azny-camera-signal{left:8px!important;bottom:9px!important}
-body:not(.student-mode) .rightbar #students .student>.azny-camera-signal{left:6px!important;bottom:7px!important}
-body:not(.student-mode) .rightbar #students .student>.label{left:27px!important}
-@media(max-width:950px){
- body:not(.student-mode) .rightbar{width:220px!important;min-width:220px!important;max-width:220px!important}
- body:not(.student-mode) .rightbar #students.students{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;padding:5px!important}
- body:not(.student-mode) .rightbar #students .student>.label{font-size:9px!important;right:53px!important}
- body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls button{width:21px!important;height:21px!important;min-width:21px!important;min-height:21px!important}
-}
-@media(max-width:700px) and (orientation:portrait){
- body:not(.student-mode) .rightbar{width:100%!important;min-width:0!important;max-width:none!important}
- body:not(.student-mode) .rightbar #students.students{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-}
-</style>
-<script id="azny-camera-signal-state">
-(function(){
- function setSignal(el,live){if(!el)return;el.classList.toggle("is-live",!!live);el.setAttribute("aria-label",live?"Ligação de vídeo ativa":"Câmara desligada");}
- function refresh(){
-  const teacher=document.getElementById("teacherVideo"),teacherLive=!!teacher?.srcObject?.getVideoTracks?.().some(t=>t.readyState==="live"&&t.enabled);
-  setSignal(document.getElementById("teacherCameraSignal"),teacherLive);
-  document.querySelectorAll("#students .student").forEach(card=>{
-   const video=card.querySelector("video"),live=!!video?.srcObject?.getVideoTracks?.().some(t=>t.readyState==="live"&&t.enabled);
-   setSignal(card.querySelector(".azny-camera-signal"),live);
-  });
- }
- refresh();setInterval(refresh,700);
- const list=document.getElementById("students");
- if(list)new MutationObserver(refresh).observe(list,{childList:true,subtree:true});
- const teacher=document.getElementById("teacherCamera");
- if(teacher)new MutationObserver(refresh).observe(teacher,{childList:true,subtree:true});
-})();
-</script>
+
+
