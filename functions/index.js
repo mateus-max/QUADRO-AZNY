@@ -3,7 +3,7 @@ const { onValueWritten } = require("firebase-functions/v2/database");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase, ServerValue } = require("firebase-admin/database");
 const { defineString } = require("firebase-functions/params");
-const ADMIN_EMAILS = defineString("ADMIN_EMAILS", { default: "suporte@domingas.com" });
+const ADMIN_EMAIL = "suporte@domingas.com";
 
 initializeApp({ projectId: 'remot-board', databaseURL: 'https://remot-board-default-rtdb.firebaseio.com' });
 const db = getDatabase();
@@ -26,9 +26,9 @@ function requireAuth(request) {
 }
 function requireAdmin(request) {
   const uid = requireAuth(request);
-  const configured = [...ADMIN_EMAILS.value().split(",").map(v => v.trim().toLowerCase()).filter(Boolean), "suporte@domingas.com"];
   const email = String(request.auth?.token?.email || "").trim().toLowerCase();
-  if (request.auth?.token?.admin !== true && (!email || !configured.includes(email))) {
+  const emailVerified = request.auth?.token?.email_verified === true;
+  if (request.auth?.token?.admin !== true && (!emailVerified || email !== ADMIN_EMAIL)) {
     throw new HttpsError("permission-denied", "Acesso reservado à administração.");
   }
   return uid;
