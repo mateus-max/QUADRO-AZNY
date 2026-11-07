@@ -1279,7 +1279,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
     <label class="azny-audio-output-picker" for="aznyAudioOutputSelect">🔊 Saída de som <select id="aznyAudioOutputSelect"><option value="default">Saída automática do dispositivo</option></select></label><div id="aznyAudioOutputStatus" class="teacher-media-status">Saída automática do dispositivo</div>
     <div class="camera-join-requests" id="cameraJoinRequests"></div>
   </div>
-  <div class="sidehead">Alunos na aula</div>
+  <div class="sidehead azny-participants-heading">👥 AULA / PARTICIPANTES <span id="aznyParticipantCount">(0)</span></div>
   <div class="students" id="students">
     <div class="no-students" id="noStudents">Nenhum aluno entrou na aula.</div>
   </div>
@@ -4585,6 +4585,151 @@ html body:not(.student-mode) .rightbar .camera-panel #aznyAudioOutputStatus{
  });
 })();
 </script>
+
+<style id="azny-reference-layout-2026">
+/* Layout da aula inspirado na referência enviada: ferramentas em cartões e câmaras em grelha. */
+@media (min-width: 951px){
+ body:not(.student-mode) .leftbar{width:190px!important;min-width:190px!important;max-width:190px!important}
+ body:not(.student-mode) .rightbar{width:284px!important;min-width:284px!important;max-width:284px!important}
+}
+body:not(.student-mode) .leftbar .sidehead{
+ height:auto!important;min-height:58px!important;justify-content:center!important;
+ text-align:center!important;padding:10px 8px!important;background:#f8fafc!important;
+ color:#1b3149!important;font-size:13px!important;letter-spacing:.25px!important;
+ line-height:1.25!important;border-bottom:1px solid #dbe4ed!important
+}
+body:not(.student-mode) .leftbar .tools{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ grid-auto-rows:minmax(62px,auto)!important;gap:6px!important;padding:8px!important;
+ align-content:start!important;overflow-y:auto!important
+}
+body:not(.student-mode) .leftbar .tools .tool{
+ min-width:0!important;min-height:62px!important;height:auto!important;
+ padding:7px 4px!important;border:1px solid #dce5ed!important;
+ border-radius:13px!important;background:#fff!important;color:#19314a!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ justify-content:center!important;gap:4px!important;text-align:center!important;
+ font-size:12px!important;font-weight:750!important;line-height:1.15!important;
+ white-space:normal!important;box-shadow:0 1px 2px #10243a0b!important
+}
+body:not(.student-mode) .leftbar .tools .tool svg{display:block!important;margin:0!important;width:24px!important;height:24px!important;flex:0 0 24px!important}
+body:not(.student-mode) .leftbar .tools .tool.wide{grid-column:auto!important}
+body:not(.student-mode) .leftbar .tools .tool.active{background:#eaf4ff!important;border:1.5px solid #2c91ee!important;color:#126fc0!important}
+body:not(.student-mode) .leftbar .tools .tool:hover{background:#f1f7fd!important;border-color:#9bbbd8!important}
+body:not(.student-mode) .leftbar .bottom-status{padding:8px!important;font-size:9px!important;gap:5px!important;flex-wrap:wrap!important}
+body:not(.student-mode) .rightbar{background:#fff!important;border-left:1px solid #dbe4ed!important;overflow:hidden!important}
+body:not(.student-mode) .rightbar .camera-panel{
+ display:flex!important;flex-direction:column!important;gap:6px!important;
+ padding:7px!important;flex:0 0 auto!important;min-height:0!important;
+ overflow:visible!important;background:#fff!important
+}
+body:not(.student-mode) .rightbar #teacherCamera{
+ position:relative!important;width:100%!important;height:auto!important;
+ aspect-ratio:16/9!important;min-height:0!important;max-height:none!important;
+ border:2px solid #16c784!important;border-radius:14px!important;
+ overflow:hidden!important;background:#091626!important;order:1!important
+}
+body:not(.student-mode) .rightbar #teacherCamera video{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ object-fit:cover!important;transform:scaleX(-1)!important
+}
+body:not(.student-mode) .rightbar #teacherCameraLabel{
+ position:absolute!important;left:7px!important;bottom:7px!important;top:auto!important;
+ z-index:6!important;display:block!important;width:auto!important;margin:0!important;
+ padding:4px 7px!important;border-radius:6px!important;background:#000b!important;
+ color:#fff!important;text-align:left!important;font-size:11px!important;font-weight:800!important
+}
+body:not(.student-mode) .rightbar #teacherCamera .cam-status{
+ top:6px!important;right:6px!important;z-index:6!important;
+ padding:3px 6px!important;border-radius:6px!important;font-size:9px!important
+}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay{
+ position:absolute!important;inset:auto 7px 6px auto!important;z-index:8!important;
+ display:flex!important;align-items:center!important;justify-content:flex-end!important;
+ width:auto!important;margin:0!important;padding:0!important;background:transparent!important;
+ border:0!important;box-shadow:none!important;pointer-events:none!important
+}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay .cam-buttons{display:flex!important;gap:5px!important;pointer-events:auto!important}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:29px!important;height:29px!important;min-width:29px!important;min-height:29px!important;
+ padding:0!important;border:1px solid #ffffff65!important;border-radius:50%!important;
+ background:#071b33d9!important;color:#fff!important;font-size:15px!important;
+ line-height:1!important;text-shadow:none!important;box-shadow:0 1px 4px #0005!important
+}
+body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:disabled{opacity:.45!important}
+body:not(.student-mode) .rightbar .teacher-media-status,
+body:not(.student-mode) .rightbar .azny-audio-output-picker,
+body:not(.student-mode) .rightbar #aznyAudioOutputStatus{display:none!important}
+body:not(.student-mode) .rightbar .camera-join-requests{order:2!important;margin:0!important;max-height:110px!important;overflow:auto!important}
+body:not(.student-mode) .rightbar .azny-participants-heading{
+ flex:0 0 auto!important;display:flex!important;align-items:center!important;gap:6px!important;
+ min-height:38px!important;height:38px!important;padding:0 9px!important;
+ border-top:1px solid #e5eaf0!important;border-bottom:1px solid #e5eaf0!important;
+ background:#f8fafc!important;color:#1b3149!important;font-size:12px!important;
+ font-weight:850!important;letter-spacing:.1px!important
+}
+body:not(.student-mode) #aznyParticipantCount{font-weight:850!important}
+body:not(.student-mode) .rightbar #students.students{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ grid-auto-rows:auto!important;align-content:start!important;gap:7px!important;
+ flex:1 1 auto!important;min-height:0!important;max-height:none!important;
+ overflow-y:auto!important;padding:7px!important
+}
+body:not(.student-mode) .rightbar #students .student{
+ position:relative!important;width:100%!important;height:auto!important;
+ min-height:0!important;max-height:none!important;aspect-ratio:4/3!important;
+ padding:0!important;overflow:hidden!important;border:1px solid #d5dee7!important;
+ border-radius:10px!important;background:#0b1727!important
+}
+body:not(.student-mode) .rightbar #students .student video{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ aspect-ratio:auto!important;object-fit:cover!important;background:#0b1727!important
+}
+body:not(.student-mode) .rightbar #students .student>.label{
+ position:absolute!important;left:5px!important;right:53px!important;bottom:5px!important;
+ z-index:6!important;width:auto!important;max-width:none!important;
+ padding:4px 6px!important;border-radius:5px!important;background:#000c!important;
+ color:#fff!important;font-size:10px!important;font-weight:750!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+}
+body:not(.student-mode) .rightbar #students .student .azny-student-device-controls{
+ position:absolute!important;left:auto!important;right:4px!important;bottom:4px!important;
+ z-index:9!important;display:flex!important;flex-direction:column!important;
+ flex-wrap:nowrap!important;justify-content:flex-end!important;align-items:center!important;
+ gap:3px!important;width:25px!important;padding:0!important;margin:0!important;
+ background:transparent!important;pointer-events:none!important
+}
+body:not(.student-mode) .rightbar #students .student .azny-student-device-controls button{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ flex:0 0 23px!important;width:23px!important;min-width:23px!important;
+ max-width:23px!important;height:23px!important;min-height:23px!important;
+ padding:0!important;border:1px solid #ffffff70!important;border-radius:50%!important;
+ background:#071b33d9!important;color:#fff!important;font-size:12px!important;
+ line-height:1!important;pointer-events:auto!important;box-shadow:0 1px 4px #0006!important
+}
+body:not(.student-mode) .rightbar #students .student .azny-student-device-controls button.is-off{
+ background:#b42332e8!important;border-color:#ffc4c9!important;color:#fff!important
+}
+body:not(.student-mode) .rightbar #students .student .azny-raised-hand{z-index:7!important;top:5px!important;right:5px!important}
+body:not(.student-mode) .rightbar #students #noStudents{grid-column:1/-1!important;min-height:55px!important}
+@media(max-width:950px){
+ body:not(.student-mode) .rightbar #students.students{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body:not(.student-mode) .rightbar #teacherCamera{aspect-ratio:16/9!important;height:auto!important;min-height:0!important}
+ body:not(.student-mode) .leftbar .tools{grid-auto-rows:minmax(54px,auto)!important;padding:5px!important;gap:5px!important}
+ body:not(.student-mode) .leftbar .tools .tool{min-height:54px!important;font-size:10px!important}
+}
+</style>
+<script id="azny-participant-count-sync">
+(function(){
+ const list=document.getElementById("students"),count=document.getElementById("aznyParticipantCount");
+ if(!list||!count)return;
+ const update=()=>{const n=list.querySelectorAll(".student:not(.no-students)").length;count.textContent="("+n+")"};
+ new MutationObserver(update).observe(list,{childList:true,subtree:true});
+ update();
+})();
+</script>
+
 </body>
 </html>
 
