@@ -888,7 +888,7 @@ async function submitPayment(){
  finally{btn.disabled=false;btn.textContent="Enviar comprovativo e solicitar ativação"}
 }
 async function submitTrialRequest(){
- const name=document.getElementById("licenseName").value.trim(),email=String(document.getElementById("licenseEmail").value||"").trim().toLowerCase(),phone=document.getElementById("licensePhone").value.trim(),password=document.getElementById("licensePassword").value,confirm=document.getElementById("licensePasswordConfirm").value,btn=document.getElementById("requestTrial");
+ const name=document.getElementById("licenseName").value.trim(),email=String(document.getElementById("licenseEmail").value||"").trim().toLowerCase(),phone=document.getElementById("licensePhone").value.trim(),password=document.getElementById("licensePassword").value,confirm=document.getElementById("licensePasswordConfirm").value,checkoutVisible=document.getElementById("checkoutBox").style.display!=="none",btn=document.getElementById(checkoutVisible?"requestTrial":"requestTrialDirect");
  const googleUser=!!(googleRegistrationEmail&&firebase.auth().currentUser&&String(firebase.auth().currentUser.email||"").trim().toLowerCase()===email);
  if(!name||!email||!phone||(!googleUser&&(!password||!confirm)))return toast("Preencha nome, e-mail e telefone. Para registo por e-mail, indique a palavra-passe.");
  if(!googleUser&&(password.length<6||password!==confirm))return toast("Verifique a senha e a confirmação.");
