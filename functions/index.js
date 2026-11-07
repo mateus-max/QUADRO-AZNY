@@ -248,7 +248,7 @@ async function loadPaymentRequests() {
   return normalized;
 }
 
-async async function createLicenseForApprovedRequest(approved, requestId) {
+async function createLicenseForApprovedRequest(approved, requestId) {
   const plans = {
     basic: { name: "Básico", students: 10, dailyClasses: 2, simultaneous: 1, duration: 2, storage: "10 GB temporários" },
     professional: { name: "Profissional", students: 45, dailyClasses: 3, simultaneous: 2, duration: 4, storage: "50 GB temporários" },
