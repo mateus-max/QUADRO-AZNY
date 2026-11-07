@@ -65,14 +65,14 @@
                 ".read": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $request))",
                 ".write": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $request))"
               }
-            },
-            "studentMesh": {
-              "$from": {
-                "$to": {
-                  ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to)",
-                  ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to) && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student'"
-                }
-              }
+            }
+          }
+        },
+        "studentMesh": {
+          "$from": {
+            "$to": {
+              ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to)",
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to) && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student'"
             }
           }
         }
