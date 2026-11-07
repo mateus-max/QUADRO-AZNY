@@ -424,8 +424,15 @@ exports.getMyPaymentRequests = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request);
   const email = safeEmail(request.auth.token.email);
   if (!email) throw new HttpsError("failed-precondition", "Conta sem e-mail.");
-  const all = await loadPaymentRequests();
-  const items = Object.values(all).filter(x => x && (x.uid === uid || safeEmail(x.email) === email))
+  // Consultas indexadas por UID e e-mail. Nunca descarregar todos os pedidos
+  // (nem os comprovativos dos outros professores) para mostrar o estado pessoal.
+  const [byUid, byEmail] = await Promise.all([
+    db.ref("paymentRequests").orderByChild("uid").equalTo(uid).get(),
+    db.ref("paymentRequests").orderByChild("email").equalTo(email).get()
+  ]);
+  const merged = { ...(byUid.val() || {}), ...(byEmail.val() || {}) };
+  const items = Object.values(paymentObject(merged))
+    .filter(x => x && (x.uid === uid || safeEmail(x.email || x.teacherEmail) === email))
     .sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .map(({ proof, ...item }) => item);
   return { requests: items };
