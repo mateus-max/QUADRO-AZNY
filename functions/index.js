@@ -328,10 +328,7 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
     // Mantém a compatibilidade com o fluxo antigo: ler os pedidos existentes e
     // gravar somente o novo registo. Não executar transaction() na raiz inteira,
     // que inclui todos os comprovativos e pode provocar timeout/INTERNAL.
-    const current = await loadPaymentRequests();
-    const duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email &&
-      (x.status === "pending" || (x.status === "approved" && x.plan !== "trial")));
-    if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName, createdAt: duplicate.createdAt } };
+    // Não ler a árvore inteira de pedidos e comprovativos ao criar um pedido.
     const id = "PAY-" + require("crypto").randomUUID();
     const item = {
       id, uid, name, email, phone,
@@ -364,11 +361,18 @@ exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async 
     throw new HttpsError("invalid-argument", "Preencha o nome e o telefone corretamente.");
   }
   try {
-    const ref = db.ref("paymentRequests");
-    const current = await loadPaymentRequests();
-    const duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email && x.status !== "rejected");
-    if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName } };
-    const id = "TRIAL-" + require("crypto").randomUUID();
+    // Chave estável por UID: consultar só este pedido, nunca a árvore inteira
+    // paymentRequests, que também contém comprovativos dos planos pagos.
+    const id = "TRIAL-" + uid.replace(/[^A-Za-z0-9_-]/g, "_");
+    const ref = db.ref("paymentRequests").child(id);
+    const priorSnap = await ref.get();
+    const prior = priorSnap.val();
+    if (prior && prior.status !== "rejected") {
+      return { ok: true, existing: true, request: {
+        id, status: prior.status, plan: prior.plan, planName: prior.planName,
+        createdAt: prior.createdAt
+      }};
+    }
     const provider = String(request.auth?.token?.firebase?.sign_in_provider || "password");
     const item = {
       id, uid, name, email, phone,
@@ -380,13 +384,21 @@ exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async 
       status: "pending", accountStatus: "pending", accessGranted: false,
       createdAt: new Date().toISOString()
     };
-    // Grava apenas o pedido novo, tal como no fluxo antigo.
-    await ref.child(id).set(item);
-    return { ok: true, existing: false, request: { id, status: "pending", plan: "trial", planName: item.planName, createdAt: item.createdAt } };
+    await ref.set(item);
+    return { ok: true, existing: false, request: {
+      id, status: "pending", plan: "trial", planName: item.planName,
+      createdAt: item.createdAt
+    }};
   } catch (error) {
-    console.error("createTrialRequest failed", { uid, email, code: error?.code, message: error?.message, stack: error?.stack });
+    console.error("createTrialRequest failed", {
+      uid, email, code: error?.code, message: error?.message, stack: error?.stack
+    });
     if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Não foi possível gravar o pedido de teste na base de dados. A equipa técnica foi informada; tente novamente dentro de alguns minutos.", { operation: "createTrialRequest", originalCode: String(error?.code || "unknown") });
+    throw new HttpsError("internal",
+      "Não foi possível gravar o pedido de teste. A equipa técnica foi informada; tente novamente.",
+      { operation: "createTrialRequest", originalCode: String(error?.code || "unknown"),
+        originalMessage: String(error?.message || "").slice(0, 300) }
+    );
   }
 });
 
