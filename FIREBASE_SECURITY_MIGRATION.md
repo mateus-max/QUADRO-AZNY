@@ -8,7 +8,7 @@ Foram adicionados:
 - `functions/package.json` e `firebase.json`: configuração inicial para Cloud Functions e regras.
 - O quadro passou a chamar funções seguras para validação do professor, aprovação do aluno, contagem do trial e criação do link curto.
 
-**Ainda não publicar as regras.** A migração não está completa: `index.html` cria/atualiza licenças diretamente no Realtime Database e `dashboard.html` lê licenças diretamente. Se as regras de produção negarem o acesso de clientes a `licenses`, esses fluxos de registo, compra/ativação e consulta de conta poderão falhar. Esses fluxos precisam ser movidos para funções confiáveis antes da publicação.
+**Ainda não publicar as regras.** A ativação de licença foi transferida para a função `activateApprovedLicense`, que confirma no servidor a autenticação, o e-mail, o pedido e o estado aprovado antes de criar/substituir a licença. A consulta de licenças também usa funções confiáveis. Porém, o fluxo de pedidos e a aprovação administrativa ainda dependem de acesso direto a `paymentRequests` no cliente. Enquanto um cliente puder alterar o estado de um pedido para `approved`, a função de ativação não pode ser considerada segura. O fluxo de submissão, leitura de estado e aprovação administrativa tem de ser migrado para funções com validação de permissões antes de publicar as regras restritivas.
 
 ## Modelo de autorização
 
@@ -26,7 +26,7 @@ Aluno aprovado:
 
 ## Funções criadas
 
-- `verifyTeacherAccess`: verifica token, estado, validade e limite do trial; cria a autorização do professor.
+- `verifyTeacherAccess`: verifica token, estado, validade e limite do trial; cria a autorização do professor.\n- `activateApprovedLicense`: cria ou substitui a licença no servidor apenas se encontrar um pedido aprovado para o e-mail autenticado.
 - `approveStudentRequest`: confirma que quem aprova é o professor autorizado, cria a autorização do aluno e atualiza o pedido.
 - `grantApprovedStudentRoomAccess`: gatilho de reconciliação para pedidos aprovados.
 - `recordTrialClass`: contabiliza aulas de teste no servidor.
@@ -34,7 +34,7 @@ Aluno aprovado:
 
 ## Antes de publicar
 
-1. Migrar a criação, substituição, leitura e atualização de licenças usadas por `index.html` e `dashboard.html` para funções confiáveis; não abrir `licenses` a todos os clientes.
+1. Migrar submissão e consulta de `paymentRequests` para funções confiáveis.\n2. Migrar a aprovação administrativa para uma função que valide uma lista de UIDs administrativos confiáveis; nunca aceitar `status: approved` escrito pelo navegador.\n3. Manter criação, substituição, leitura e atualização de licenças exclusivamente nas funções; não abrir `licenses` a clientes.
 2. Rever os restantes caminhos e operações RTDB do repositório, incluindo fluxos administrativos e de pagamento.
 3. Instalar dependências e validar as Cloud Functions com Firebase Emulator Suite.
 4. Testar professor, aluno pendente, aluno aprovado, conta não autenticada, licenças expiradas e trial esgotado.
