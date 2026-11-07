@@ -1066,37 +1066,41 @@ if("serviceWorker" in navigator && location.protocol==="https:"){window.addEvent
 </script>
 
 <script>
-/* Ação de segurança do botão principal: garante a abertura da área de acesso,
-   mesmo que outro inicializador da página tenha falhado antes de ligar eventos. */
+/* Controlador de contingência para os principais botões de navegação e acesso.
+   Evita que uma falha num inicializador anterior deixe os botões sem ação. */
 (function(){
- function openTeacherAccess(event){
-  const button=event.target&&event.target.closest?event.target.closest("#homeLogin"):null;
-  if(!button)return;
+ const actions={
+  homeLogin:()=>{if(typeof window.showLogin==="function")window.showLogin();else throw new Error("A página de autenticação não foi inicializada.");},
+  createAccount:()=>{if(typeof window.showPlans==="function")window.showPlans();else throw new Error("O registo não foi inicializado.");},
+  loginSubmit:()=>{if(typeof window.login==="function")return window.login();throw new Error("A autenticação não foi inicializada.");},
+  loginGoogle:()=>{if(typeof window.googleSignIn==="function")return window.googleSignIn();throw new Error("A autenticação Google não foi inicializada.");},
+  createTeacherAccount:()=>{if(typeof window.createTeacherAccount==="function")return window.createTeacherAccount();throw new Error("O formulário de criação de conta não foi inicializado.");},
+  teacherRegisterBack:()=>{if(typeof window.showLogin==="function")window.showLogin();else throw new Error("A página de autenticação não foi inicializada.");},
+  teacherStatusLogin:()=>{if(typeof window.showLogin==="function")window.showLogin();else throw new Error("A página de autenticação não foi inicializada.");},
+  teacherLoginMenu:()=>{const menu=document.getElementById("rwbMenuOpen");if(menu)menu.click();else{const drawer=document.getElementById("rwbMenuDrawer"),shade=document.getElementById("rwbMenuOverlay");if(!drawer||!shade)throw new Error("O menu ainda não está disponível.");drawer.classList.add("open");shade.classList.add("open");drawer.setAttribute("aria-hidden","false");shade.setAttribute("aria-hidden","false");}}
+ };
+ function showActionError(button,error){
+  console.error("Falha no botão "+button.id+":",error);
+  const box=document.getElementById("loginMessage")||document.getElementById("homeIntro");
+  if(box){box.textContent=error&&error.message?error.message:"Não foi possível abrir esta área. Atualize a página e tente novamente.";box.style.display="block";}
+  else alert(error&&error.message?error.message:"Não foi possível concluir a ação. Atualize a página e tente novamente.");
+ }
+ document.addEventListener("click",function(event){
+  const button=event.target&&event.target.closest?event.target.closest("button[id]"):null;
+  if(!button||!Object.prototype.hasOwnProperty.call(actions,button.id))return;
   event.preventDefault();
   event.stopImmediatePropagation();
   try{
-   if(typeof window.showLogin==="function")window.showLogin();
-   else{
-    document.body.classList.remove("teacher-register-mode","teacher-checkout-mode","teacher-payment-status-mode");
-    document.body.classList.add("teacher-login-mode");
-    document.querySelectorAll(".home-view").forEach(el=>el.classList.remove("show"));
-    const view=document.getElementById("loginView");
-    if(view)view.classList.add("show");
-    try{sessionStorage.setItem("rwb_index_view","login")}catch(_){}
+   const result=actions[button.id]();
+   if(result&&typeof result.catch==="function")result.catch(error=>showActionError(button,error));
+   if(button.id==="homeLogin"||button.id==="teacherRegisterBack"||button.id==="teacherStatusLogin"){
+    let language="pt";try{language=localStorage.getItem("azny-quadro-ui-language")||"pt"}catch(_){}
+    if(typeof window.setLoginLanguage==="function")window.setLoginLanguage(language);
+    const email=document.getElementById("loginEmail");if(email)setTimeout(()=>email.focus(),80);
+    window.scrollTo({top:0,behavior:"smooth"});
    }
-   let language="pt";
-   try{language=localStorage.getItem("azny-quadro-ui-language")||"pt"}catch(_){}
-   if(typeof window.setLoginLanguage==="function")window.setLoginLanguage(language);
-   const email=document.getElementById("loginEmail");
-   if(email)setTimeout(()=>email.focus(),80);
-   window.scrollTo({top:0,behavior:"smooth"});
-  }catch(error){
-   console.error("Falha ao abrir a área Dar Formações Online:",error);
-   const view=document.getElementById("loginView");
-   if(view){view.classList.add("show");view.scrollIntoView({behavior:"smooth",block:"start"})}
-  }
- }
- document.addEventListener("click",openTeacherAccess,true);
+  }catch(error){showActionError(button,error)}
+ },true);
 })();
 </script>
 </body></html>
