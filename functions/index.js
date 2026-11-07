@@ -208,67 +208,94 @@ exports.getLicenseForAccount = onCall({ region: REGION }, async (request) => {
 });
 
 exports.activateApprovedLicense = onCall({ region: REGION }, async (request) => {
-  const uid = requireAuth(request);
-  const email = String(request.auth.token.email || "").trim().toLowerCase();
+  requireAuth(request);
+  const email = safeEmail(request.auth?.token?.email);
   const requestId = String(request.data?.requestId || "");
   if (!email || !requestId || requestId.length > 180) {
     throw new HttpsError("invalid-argument", "Pedido ou conta inválida.");
   }
-  const requestsRef = db.ref("paymentRequests");
-  const snap = await requestsRef.get();
-  const requests = paymentObject(snap.val());
-  const list = Object.values(requests);
-  const approved = requests[requestId] || list.find(item => item && String(item.id || "") === requestId);
+  const requests = await loadPaymentRequests();
+  const approved = requests[requestId] || Object.values(requests).find(item => item && String(item.id || "") === requestId);
   if (!approved || approved.status !== "approved" ||
-      String(approved.email || approved.teacherEmail || "").trim().toLowerCase() !== email) {
+      safeEmail(approved.email || approved.teacherEmail) !== email) {
     throw new HttpsError("permission-denied", "A administração ainda não aprovou este pedido para esta conta.");
   }
+  return createLicenseForApprovedRequest(approved, requestId);
+});
+function safeEmail(value) { return String(value || "").trim().toLowerCase(); }
+function validEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value); }
+
+// A versão antiga guardava paymentRequests como uma lista. A versão actual usa
+// um objecto indexado pelo ID. Esta normalização conserva todos os pedidos antigos.
+function paymentObject(value) {
+  const entries = Array.isArray(value)
+    ? value.map((item, index) => [String(item?.id || "LEGACY-" + index), item])
+    : Object.entries(value && typeof value === "object" ? value : {});
+  const result = {};
+  for (const [key, item] of entries) {
+    if (!item || typeof item !== "object") continue;
+    const id = String(item.id || key);
+    result[id] = { ...item, id };
+  }
+  return result;
+}
+async function loadPaymentRequests() {
+  const ref = db.ref("paymentRequests");
+  const snap = await ref.get();
+  const raw = snap.val();
+  const normalized = paymentObject(raw);
+  if (Array.isArray(raw)) await ref.set(normalized);
+  return normalized;
+}
+
+async function createLicenseForApprovedRequest(approved, requestId) {
   const plans = {
     basic: { name: "Básico", students: 10, dailyClasses: 2, simultaneous: 1, duration: 2, storage: "10 GB temporários" },
     professional: { name: "Profissional", students: 45, dailyClasses: 3, simultaneous: 2, duration: 4, storage: "50 GB temporários" },
     school: { name: "Escola", students: 50, dailyClasses: 3, simultaneous: 5, duration: 6, storage: "100 GB temporários" },
     trial: { name: "Teste — 4 aulas", students: 45, dailyClasses: 3, simultaneous: 1, duration: 4, storage: "Temporário" }
   };
+  const email = safeEmail(approved.email || approved.teacherEmail);
   const planKey = String(approved.plan || "");
   const plan = plans[planKey];
-  if (!plan) throw new HttpsError("failed-precondition", "O plano aprovado não é válido.");
-  const token = String(approved.accessToken || approved.existingAccessToken || "").trim() ||
-    require("crypto").randomUUID();
+  if (!email || !plan) throw new HttpsError("failed-precondition", "O pedido aprovado não tem conta ou plano válido.");
+  const token = String(approved.accessToken || approved.existingAccessToken || "").trim() || require("crypto").randomUUID();
   const licenseRef = db.ref("licenses/" + token);
   const priorSnap = await licenseRef.get();
   const prior = priorSnap.val() || {};
   const completed = prior.trialCompletedSessions || {};
   const used = Object.keys(completed).length;
   const exhausted = planKey === "trial" && used >= 4;
+  const now = new Date().toISOString();
   const license = {
     status: "active", trialExhausted: exhausted, boardAccess: !exhausted,
     plan: planKey, planName: String(approved.planName || plan.name),
-    ...plan, startedAt: prior.startedAt || approved.approvedAt || new Date().toISOString(),
+    ...plan, startedAt: prior.startedAt || approved.approvedAt || now,
     expiresAt: approved.expiresAt || null,
     teacherName: String(approved.name || approved.teacherName || email),
     teacherPhone: String(approved.phone || approved.teacherPhone || ""),
     requestId, accessToken: token, teacherEmail: email,
-    ...(planKey === "trial" ? { trialSessionsLimit: 4, trialSessionsUsed: used, trialCompletedSessions: completed,
-      trialApprovedAt: prior.trialApprovedAt || approved.approvedAt || new Date().toISOString() } : {})
+    ...(planKey === "trial" ? {
+      trialSessionsLimit: 4, trialSessionsUsed: used,
+      trialCompletedSessions: completed,
+      trialApprovedAt: prior.trialApprovedAt || approved.approvedAt || now
+    } : {})
   };
   const updates = {};
   updates["licenses/" + token] = license;
+  updates["paymentRequests/" + requestId] = {
+    ...approved, accessToken: token,
+    activatedAt: approved.activatedAt || ServerValue.TIMESTAMP
+  };
   const oldToken = String(approved.existingAccessToken || "").trim();
   if (oldToken && oldToken !== token) {
     updates["licenses/" + oldToken + "/status"] = "replaced";
     updates["licenses/" + oldToken + "/replacedBy"] = token;
     updates["licenses/" + oldToken + "/replacedAt"] = ServerValue.TIMESTAMP;
   }
-  const updatedRequests = list.map(item => item && String(item.id || "") === requestId
-    ? { ...item, accessToken: token, activatedAt: ServerValue.TIMESTAMP } : item);
-  updates["paymentRequests/" + requestId] = { ...approved, accessToken: token, activatedAt: ServerValue.TIMESTAMP };
   await db.ref().update(updates);
   return { ok: true, accessToken: token, plan: planKey, teacherName: license.teacherName };
-});
-
-function safeEmail(value) { return String(value || "").trim().toLowerCase(); }
-function validEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value); }
-function paymentObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
+}
 
 exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
   const uid = requireAuth(request);
@@ -297,8 +324,7 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
   const months = period === "annual" ? 12 : Math.max(1, Math.min(12, Number(d.months) || 1));
   const amount = period === "annual" ? plans[plan].annual : plans[plan].monthly * months;
   const requestsRef = db.ref("paymentRequests");
-  const snap = await requestsRef.get();
-  const current = paymentObject(snap.val());
+  const current = await loadPaymentRequests();
   const duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email &&
     (x.status === "pending" || (x.status === "approved" && x.plan !== "trial")));
   if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName, createdAt: duplicate.createdAt } };
@@ -328,8 +354,7 @@ exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async 
   }
   try {
     const ref = db.ref("paymentRequests");
-    const snap = await ref.get();
-    const current = paymentObject(snap.val());
+    const current = await loadPaymentRequests();
     const duplicate = Object.values(current).find(x =>
       x && safeEmail(x.email) === email && x.status !== "rejected"
     );
@@ -373,8 +398,7 @@ exports.getMyPaymentRequests = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request);
   const email = safeEmail(request.auth.token.email);
   if (!email) throw new HttpsError("failed-precondition", "Conta sem e-mail.");
-  const snap = await db.ref("paymentRequests").get();
-  const all = paymentObject(snap.val());
+  const all = await loadPaymentRequests();
   const items = Object.values(all).filter(x => x && (x.uid === uid || safeEmail(x.email) === email))
     .sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .map(({ proof, ...item }) => item);
@@ -383,8 +407,7 @@ exports.getMyPaymentRequests = onCall({ region: REGION }, async (request) => {
 
 exports.adminListPaymentRequests = onCall({ region: REGION }, async (request) => {
   requireAdmin(request);
-  const snap = await db.ref("paymentRequests").get();
-  const requests = Object.values(paymentObject(snap.val()))
+  const requests = Object.values(await loadPaymentRequests())
     .sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .map(({ proof, ...item }) => item);
   return { requests };
@@ -410,14 +433,20 @@ exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
   const status = String(request.data?.status || "");
   const note = String(request.data?.note || "").slice(0,1000);
   if (!id || id.length > 180 || !["approved","rejected"].includes(status)) throw new HttpsError("invalid-argument", "Decisão inválida.");
+  await loadPaymentRequests(); // migra automaticamente listas antigas para o formato actual, sem perder registos
   const ref = db.ref("paymentRequests/" + id);
-  let updated;
   const tx = await ref.transaction(current => {
     if (!current || !["pending","rejected"].includes(current.status)) return;
-    updated = { ...current, status, adminNote: note, approvedBy: adminUid, approvedAt: status === "approved" ? new Date().toISOString() : null, reviewedAt: ServerValue.TIMESTAMP };
-    return updated;
+    return {
+      ...current, status, adminNote: note, approvedBy: adminUid,
+      approvedAt: status === "approved" ? new Date().toISOString() : null,
+      reviewedAt: ServerValue.TIMESTAMP
+    };
   });
   if (!tx.committed) throw new HttpsError("failed-precondition", "Pedido inexistente ou já processado.");
+  const updated = tx.snapshot.val();
+  // A aprovação passa a activar/criar a licença no mesmo fluxo da Direcção.
+  if (status === "approved") await createLicenseForApprovedRequest(updated, id);
   await db.ref("auditLogs").push({ action: "payment_" + status, requestId: id, adminUid, at: ServerValue.TIMESTAMP });
   return { ok: true, requestId: id, status };
 });
