@@ -4912,6 +4912,25 @@ html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .camera-labe
 }
 </style>
 
+<style id="azny-camera-single-icon-final">
+/* Um único símbolo por botão: impedir os pseudo-ícones antigos de duplicarem os emojis reais. */
+html body:not(.student-mode) .rightbar #teacherCamera #cameraBtn::before,
+html body:not(.student-mode) .rightbar #teacherCamera #cameraBtn::after,
+html body:not(.student-mode) .rightbar #teacherCamera #micBtn::before,
+html body:not(.student-mode) .rightbar #teacherCamera #micBtn::after{
+ content:none!important;display:none!important;
+}
+html body:not(.student-mode) .rightbar #teacherCamera #cameraBtn .azny-toggle-icon,
+html body:not(.student-mode) .rightbar #teacherCamera #micBtn .azny-toggle-icon{
+ display:block!important;visibility:visible!important;opacity:1!important;
+ font-size:17px!important;line-height:1!important;
+}
+html body:not(.student-mode) .rightbar #teacherCamera #cameraBtn .azny-toggle-label,
+html body:not(.student-mode) .rightbar #teacherCamera #micBtn .azny-toggle-label{
+ display:none!important;
+}
+</style>
+
 </body>
 </html>
 
