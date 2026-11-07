@@ -61,6 +61,31 @@ exports.verifyTeacherAccess = onCall({ region: REGION }, async (request) => {
   return { ok: true, plan: String(license.plan || ""), teacherName: String(license.teacherName || license.name || license.fullName || license.nome || "Professor") };
 });
 
+exports.createIsolatedGuestRoom = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request);
+  const provider = request.auth?.token?.firebase?.sign_in_provider || "";
+  if (provider !== "anonymous") {
+    throw new HttpsError("permission-denied", "O acesso temporário exige uma sessão anónima do Firebase.");
+  }
+  const roomId = String(request.data?.roomId || "");
+  if (!/^AZNY-GUEST-[a-f0-9]{32}$/.test(roomId)) {
+    throw new HttpsError("invalid-argument", "Identificador da sala temporária inválido.");
+  }
+  const guestRef = db.ref("guestRooms/" + roomId);
+  const tx = await guestRef.transaction(current => {
+    if (current && current.ownerUid !== uid) return;
+    return current || { ownerUid: uid, createdAt: ServerValue.TIMESTAMP, type: "isolated" };
+  });
+  const guest = tx.snapshot.val();
+  if (!guest || guest.ownerUid !== uid) {
+    throw new HttpsError("already-exists", "Esta sala temporária já pertence a outra sessão.");
+  }
+  await db.ref("roomAccess/" + roomId + "/" + uid).set({
+    role: "teacher", status: "approved", guest: true, verifiedAt: ServerValue.TIMESTAMP
+  });
+  return { ok: true, roomId };
+});
+
 exports.recordTrialClass = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request);
   const token = String(request.data?.accessToken || "");
