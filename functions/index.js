@@ -268,7 +268,7 @@ exports.activateApprovedLicense = onCall({ region: REGION }, async (request) => 
 });
 
 function safeEmail(value) { return String(value || "").trim().toLowerCase(); }
-function validEmail(value) { return /^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(value); }
+function validEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value); }
 function paymentObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
 
 exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
