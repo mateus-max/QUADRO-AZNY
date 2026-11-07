@@ -123,7 +123,15 @@
       ".indexOn": [
         "uid",
         "email"
-      ]
+      ],
+      "$requestId": {
+        ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || data.child('uid').val() === auth.uid)",
+        ".write": "auth != null && auth.token.email !== 'suporte@domingas.com' && !data.exists() && newData.child('uid').val() === auth.uid && newData.child('email').val() === auth.token.email && newData.child('status').val() === 'pending' && ((newData.child('requestType').val() === 'trial' && newData.child('plan').val() === 'trial' && newData.child('amount').val() === 0 && !newData.child('proof').exists()) || (newData.child('requestType').val() === 'payment' && (newData.child('plan').val() === 'basic' || newData.child('plan').val() === 'professional' || newData.child('plan').val() === 'school') && newData.child('proof').isString()))",
+        ".validate": "newData.hasChildren(['uid','email','name','phone','requestType','plan','planName','amount','status','createdAt']) && newData.child('uid').isString() && newData.child('email').isString() && newData.child('name').isString() && newData.child('phone').isString() && newData.child('requestType').isString() && newData.child('plan').isString() && newData.child('planName').isString() && newData.child('amount').isNumber() && newData.child('amount').val() >= 0 && newData.child('status').val() === 'pending' && newData.child('createdAt').isString()",
+        "proof": {
+          ".validate": "newData.isString() && newData.val().length <= 6000000"
+        }
+      }
     },
     "admin": {
       ".read": false,
