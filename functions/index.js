@@ -428,6 +428,22 @@ exports.adminListPaymentRequests = onCall({ region: REGION }, async (request) =>
   return { requests };
 });
 
+exports.adminDeletePaymentRequest = onCall({ region: REGION }, async (request) => {
+  const adminUid = requireAdmin(request);
+  const id = String(request.data?.requestId || "");
+  if (!id || id.length > 180 || /[.#$\\[\\]\/]/.test(id)) {
+    throw new HttpsError("invalid-argument", "Pedido inválido.");
+  }
+  const ref = db.ref("paymentRequests/" + id);
+  const snap = await ref.get();
+  const item = snap.val();
+  if (!item) throw new HttpsError("not-found", "Pedido não encontrado.");
+  await ref.remove();
+  if (item.accessToken) await db.ref("licenses/" + String(item.accessToken)).remove();
+  await db.ref("auditLogs").push({ action: "payment_deleted", requestId: id, adminUid, at: ServerValue.TIMESTAMP });
+  return { ok: true, requestId: id };
+});
+
 exports.adminGetPaymentProof = onCall({ region: REGION }, async (request) => {
   requireAdmin(request);
   const id = String(request.data?.requestId || "");
