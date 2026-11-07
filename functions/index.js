@@ -3,7 +3,7 @@ const { onValueWritten } = require("firebase-functions/v2/database");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase, ServerValue } = require("firebase-admin/database");
 
-initializeApp();
+initializeApp({ projectId: 'remot-board', databaseURL: 'https://remote-board-default-rtdb.firebaseio.com' });
 const db = getDatabase();
 const REGION = "us-central1";
 
