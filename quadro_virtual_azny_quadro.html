@@ -3104,7 +3104,7 @@ async function connectStudentPeer(id,d){
  bindStudentNetworkQuality(pc,id);
  let remoteDescriptionReady=false,pendingStudentCandidates=[];
  pc._aznyOfferSdp=d.offer?.sdp||"";
- window.aznyTeacherPeers[id]=pc;aznyApplyLowDataMode(pc);
+ window.aznyTeacherPeers[id]=pc;const liveStudentCard=document.getElementById("student-"+id);if(liveStudentCard)liveStudentCard._aznyPeerConnection=pc;aznyApplyLowDataMode(pc);
  // The student offer already contains audio/video transceivers because the
  // student adds their camera and microphone before creating the offer.
  // Reuse those negotiated transceivers instead of creating duplicate m-lines.
@@ -4961,6 +4961,8 @@ html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-camera
 
 
 <style id="azny-unified-camera-footer-all-views">
+body:not(.student-mode) .rightbar #students .student>.azny-camera-signal{display:none!important}
+
 /* Mesma disposição visual nos vídeos do professor e dos alunos: câmara | rede | microfone. */
 body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls{
  position:absolute!important;left:3px!important;right:3px!important;bottom:1px!important;z-index:18!important;
