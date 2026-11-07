@@ -131,7 +131,7 @@ exports.approveStudentRequest = onCall({ region: REGION }, async (request) => {
   const roomId = cleanKey(request.data?.roomId);
   const sessionId = String(request.data?.sessionId || "");
   const requestId = String(request.data?.requestId || "");
-  if (!roomId || !sessionId || !requestId || /[.#$\\[\\]\\/]/.test(sessionId + requestId)) {
+  if (!roomId || !sessionId || !requestId || [".", "#", "$", "[", "]", "/"].some(ch => sessionId.includes(ch) || requestId.includes(ch))) {
     throw new HttpsError("invalid-argument", "Pedido de entrada inválido.");
   }
   const teacher = await db.ref("roomAccess/" + roomId + "/" + teacherUid).get();
