@@ -15,7 +15,7 @@ Este documento define o contrato inicial para a nova base de dados. A regra gera
 | `paymentRequests/{id}` | Pedidos de compra/renovação | Cliente submete e consulta o próprio pedido via funções; aprovação apenas admin |
 | `payments/{id}` | Comprovativos e estado financeiro | Apenas funções e administração autorizada |
 | `roomAccess/{room}/{uid}` | Papel e autorização por sala | Apenas Cloud Functions |
-| `aznyRooms/{room}/board` | Conteúdo colaborativo do quadro | Professor e alunos aprovados na sala |
+| `aznyRooms/{room}/board` | Estado partilhado do quadro (5 páginas, traços, objetos, texto, posições, zoom e eliminações) | Leitura/escrita apenas por professor e alunos aprovados na sala; cada atualização identifica o autor |
 | `aznyRooms/{room}/sessions/{session}` | Estado da aula e participantes | Professor autorizado; aluno conforme estado/pedido |
 | `aznyRooms/{room}/sessions/{session}/joinRequests/{id}` | Pedido de entrada do aluno | Aluno dono do pedido e professor da sala |
 | `aznyRooms/{room}/sessions/{session}/peers/{id}` | Sinalização WebRTC | Professor da sala e aluno associado ao pedido |
@@ -36,9 +36,14 @@ Este documento define o contrato inicial para a nova base de dados. A regra gera
 - **Aluno:** recebe `{ role: "student", status: "approved", requestId, sessionId }` somente depois da aprovação do professor por função.
 - **Visitante/pedido pendente:** não recebe autorização de leitura/escrita do quadro.
 
-## Regras atuais
+## Sincronização colaborativa obrigatória
 
-`database.rules.json` mantém `.read=false` e `.write=false` na raiz, concede acesso granular às funcionalidades de sala já presentes no código e explicita o bloqueio de dados pessoais, pagamentos, licenças, permissões, gravações e auditoria. Os dados financeiros e de identidade ainda não estão liberados ao cliente.
+- O Firebase Realtime Database é a fonte partilhada de estado para todos os participantes autorizados.
+- Professor e alunos aprovados publicam alterações do quadro; os clientes mantêm o listener `value` no caminho `aznyRooms/{room}/board`.
+- A publicação é agrupada por um intervalo curto (25 ms local + 140 ms para aluno / 180 ms para professor) para reduzir tráfego sem esperar pelo fim da aula. O canal WebRTC continua a fornecer transmissão rápida entre pares.
+- Cada snapshot transporta página atual, título, zoom, dimensões, páginas e marcadores de eliminação; `lastEditorUid` identifica o autor da última publicação.
+- As regras negam acesso por omissão e limitam a leitura/escrita do quadro a participantes aprovados, validando página atual, máximo de cinco páginas e identidade do último editor.
+- Esta arquitetura de snapshots é um primeiro passo de sincronização bidirecional. Edições simultâneas de vários participantes ainda exigem testes de concorrência; a validação deve confirmar que traços e objetos não se perdem em atualizações cruzadas.
 
 ## Não fazer ainda
 
@@ -53,5 +58,5 @@ Este documento define o contrato inicial para a nova base de dados. A regra gera
 2. Implementar funções para submissão/consulta de pedidos de pagamento.
 3. Implementar aprovação administrativa com UID(s) confiáveis no ambiente Functions.
 4. Confirmar o fluxo de conta, licenças e renovação.
-5. Testar as regras com Firebase Emulator Suite (professor, aluno pendente, aprovado, utilizador externo e admin).
+5. Testar as regras com Firebase Emulator Suite (professor, aluno pendente, aprovado, utilizador externo e admin), incluindo dois alunos a escrever/desenhar simultaneamente e uploads grandes.
 6. Só então publicar regras e funções no projeto `remot-board`.
