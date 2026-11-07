@@ -853,7 +853,81 @@ function showTeacherPaymentStatus(item){
 async function restoreTeacherPaymentStatus(){
  try{const id=sessionStorage.getItem("rwb_teacher_payment_id");if(!id)return;await AZNY_REMOTE_READY;const snap=await AZNY_DB.ref("paymentRequests").once("value");const found=aznyList(snap.val()).find(x=>x&&x.id===id);if(found)showTeacherPaymentStatus(found)}catch(e){console.warn("Não foi possível restaurar o estado do pedido:",e)}
 }
-async function submitPayment(){if(!selectedPlanKey)return toast("Escolha um plano.");if(!selectedRegisterMethod)return toast("Escolha Express ou transferência bancária clicando no método de pagamento.");const name=document.getElementById("licenseName").value.trim(),email=String(document.getElementById("licenseEmail").value||"").trim().toLowerCase(),phone=document.getElementById("licensePhone").value.trim(),password=document.getElementById("licensePassword").value,confirm=document.getElementById("licensePasswordConfirm").value,period=document.getElementById("billingPeriod").value,file=document.getElementById("proofInput").files[0],googleUser=!!(googleRegistrationEmail&&googleRegistrationEmail===email&&firebase.auth().currentUser&&String(firebase.auth().currentUser.email||"").toLowerCase()===email);const authenticatedUser=!!(firebase.auth().currentUser&&String(firebase.auth().currentUser.email||"").trim().toLowerCase()===email);if(!name||!email||!phone||(!googleUser&&!authenticatedUser&&(!password||!confirm))||!file)return toast("Preencha nome, e-mail, contacto, senha (se aplicável) e comprovativo.");if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return toast("Introduza um e-mail válido.");if(!googleUser&&!authenticatedUser&&password.length<6)return toast("A senha deve ter pelo menos 6 caracteres.");if(!googleUser&&!authenticatedUser&&password!==confirm)return toast("As senhas não coincidem.");if(file.size>4*1024*1024)return toast("Use um comprovativo até 4 MB.");const btn=document.getElementById("submitPayment");btn.disabled=true;btn.textContent="A enviar...";const reader=new FileReader();reader.onload=async()=>{try{await AZNY_REMOTE_READY;const existing=aznyList(AZNY_REMOTE.payments).find(x=>x&&String(x.email||"").trim().toLowerCase()===email&&x.status!=="rejected"&&(x.status==="pending"||(x.status==="approved"&&x.plan!=="trial")));if(existing){await firebase.auth().signOut().catch(()=>{});googleRegistrationEmail="";const note=document.getElementById("googleRegisterNote");if(note)note.style.display="none";const box=document.getElementById("checkoutBox");if(box)box.style.display="none";const detail=document.getElementById("planDetail");if(detail)detail.classList.remove("show");document.querySelectorAll(".home-plan").forEach(x=>x.classList.remove("selected"));const plans=document.getElementById("plansView");if(plans)plans.classList.remove("show");showTeacherPaymentStatus(existing);return}if(!googleUser){const signedUser=firebase.auth().currentUser;if(!signedUser||String(signedUser.email||"").trim().toLowerCase()!==email){try{await firebase.auth().createUserWithEmailAndPassword(email,password)}catch(authError){if(authError.code==="auth/email-already-in-use"){try{await firebase.auth().signInWithEmailAndPassword(email,password)}catch(_){toast("Este e-mail já tem conta. Entre com essa conta ou use Google.");return}}else throw authError}}}const plan=AZNY_PLANS[selectedPlanKey],months=period==="annual"?12:Math.max(1,Math.min(12,Number(document.getElementById("monthlyMonths").value)||1)),amount=period==="annual"?plan.annual:plan.monthly*months,item={id:"PAY-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),name,email,phone,authProvider:googleUser?"google":authenticatedUser?(firebase.auth().currentUser.providerData?.[0]?.providerId||"password"):"password",existingAccessToken:sessionStorage.getItem("rwb_upgrade_token")||"",plan:selectedPlanKey,planName:plan.name,period,months,amount,monthlyPrice:plan.monthly,method:selectedRegisterMethod,express:selectedRegisterMethod==="Express"?"931057760":"",iban:selectedRegisterMethod==="Transferência bancária"?"000600006350302130157":"",proof:reader.result,proofName:file.name,proofType:file.type,status:"pending",createdAt:new Date().toISOString()};const tx=await AZNY_DB.ref("paymentRequests").transaction(current=>{const req=aznyList(current);if(req.some(x=>x&&String(x.email||"").trim().toLowerCase()===email&&x.status!=="rejected"&&(x.status==="pending"||(x.status==="approved"&&x.plan!=="trial"))))return;req.push(item);return req});if(!tx.committed){const latest=aznyList(tx.snapshot.val()).find(x=>x&&String(x.email||"").trim().toLowerCase()===email&&x.status!=="rejected");if(latest){await firebase.auth().signOut().catch(()=>{});googleRegistrationEmail="";const note=document.getElementById("googleRegisterNote");if(note)note.style.display="none";const box=document.getElementById("checkoutBox");if(box)box.style.display="none";const detail=document.getElementById("planDetail");if(detail)detail.classList.remove("show");document.querySelectorAll(".home-plan").forEach(x=>x.classList.remove("selected"));const plans=document.getElementById("plansView");if(plans)plans.classList.remove("show");showTeacherPaymentStatus(latest)}else toast("Não foi possível confirmar o pedido existente. Atualize a página e tente novamente.");return}AZNY_REMOTE.payments=aznyList(tx.snapshot.val());await firebase.auth().signOut().catch(()=>{});googleRegistrationEmail="";const googleNote=document.getElementById("googleRegisterNote");if(googleNote)googleNote.style.display="none";document.getElementById("checkoutBox").style.display="none";document.getElementById("planDetail").classList.remove("show");document.querySelectorAll(".home-plan").forEach(x=>x.classList.remove("selected"));document.getElementById("plansView").classList.remove("show");showTeacherPaymentStatus(item);toast("Pedido enviado para análise.")}catch(err){console.error("Erro no registo:",err);toast("Não foi possível enviar o pedido: "+(err.message||"erro desconhecido"))}finally{btn.disabled=false;btn.textContent="Enviar comprovativo e solicitar ativação"}};reader.onerror=()=>{btn.disabled=false;btn.textContent="Enviar comprovativo e solicitar ativação";toast("Não foi possível ler o comprovativo.")};reader.readAsDataURL(file)}
+async function submitPayment(){
+ if(!selectedPlanKey)return toast("Escolha um plano.");
+ if(!selectedRegisterMethod)return toast("Escolha Express ou transferência bancária.");
+ const name=document.getElementById("licenseName").value.trim();
+ const email=String(document.getElementById("licenseEmail").value||"").trim().toLowerCase();
+ const phone=document.getElementById("licensePhone").value.trim();
+ const password=document.getElementById("licensePassword").value;
+ const confirm=document.getElementById("licensePasswordConfirm").value;
+ const period=document.getElementById("billingPeriod").value;
+ const file=document.getElementById("proofInput").files[0];
+ const googleUser=!!(googleRegistrationEmail&&googleRegistrationEmail===email&&firebase.auth().currentUser&&String(firebase.auth().currentUser.email||"").trim().toLowerCase()===email);
+ const user=firebase.auth().currentUser;
+ const authenticatedUser=!!(user&&!user.isAnonymous&&String(user.email||"").trim().toLowerCase()===email);
+ if(!name||!email||!phone||(!googleUser&&!authenticatedUser&&(!password||!confirm))||!file)return toast("Preencha nome, e-mail, contacto, senha (se aplicável) e comprovativo.");
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return toast("Introduza um e-mail válido.");
+ if(!googleUser&&!authenticatedUser&&password.length<6)return toast("A senha deve ter pelo menos 6 caracteres.");
+ if(!googleUser&&!authenticatedUser&&password!==confirm)return toast("As senhas não coincidem.");
+ if(file.size>4*1024*1024)return toast("Use um comprovativo até 4 MB.");
+ const proofType=String(file.type||"").toLowerCase()||(/\.pdf$/i.test(file.name)?"application/pdf":/\.png$/i.test(file.name)?"image/png":/\.jpe?g$/i.test(file.name)?"image/jpeg":/\.webp$/i.test(file.name)?"image/webp":"");
+ if(!["image/png","image/jpeg","image/webp","application/pdf"].includes(proofType))return toast("Formato não suportado. Anexe PNG, JPG, WEBP ou PDF.");
+ const btn=document.getElementById("submitPayment");
+ btn.disabled=true;btn.textContent="A enviar...";
+ const reader=new FileReader();
+ reader.onload=async()=>{
+  try{
+   await AZNY_REMOTE_READY;
+   let current=firebase.auth().currentUser;
+   if(!current||current.isAnonymous||String(current.email||"").trim().toLowerCase()!==email){
+    if(googleUser)throw new Error("Volte a autenticar-se com a conta Google escolhida.");
+    try{const cred=await firebase.auth().signInWithEmailAndPassword(email,password);current=cred.user;}
+    catch(authError){
+     if(authError.code==="auth/user-not-found"||authError.code==="auth/invalid-credential"){
+      const cred=await firebase.auth().createUserWithEmailAndPassword(email,password);current=cred.user;
+     }else throw authError;
+    }
+   }
+   await current.getIdToken(true);
+   const plan=AZNY_PLANS[selectedPlanKey];
+   const months=period==="annual"?12:Math.max(1,Math.min(12,Number(document.getElementById("monthlyMonths").value)||1));
+   const callable=firebase.app().functions("us-central1").httpsCallable("createPaymentRequest");
+   const result=await callable({
+    name,phone,plan:selectedPlanKey,period,months,method:selectedRegisterMethod,
+    authProvider:googleUser?"google":"password",
+    existingAccessToken:sessionStorage.getItem("rwb_upgrade_token")||"",
+    proofData:String(reader.result||""),proofName:file.name,proofType
+   });
+   const data=result.data||{};
+   const request=data.request||{};
+   const item={
+    ...request,name,email,phone,plan:selectedPlanKey,planName:plan.name,period,months,
+    amount:period==="annual"?plan.annual:plan.monthly*months,
+    method:selectedRegisterMethod,status:request.status||"pending",
+    createdAt:request.createdAt||new Date().toISOString()
+   };
+   googleRegistrationEmail="";
+   showTeacherPaymentStatus(item);
+   toast(data.existing?"Já existe um pedido associado a esta conta.":"Pedido enviado para análise da Direcção.");
+  }catch(err){
+   console.error("Falha no envio do pedido de pagamento:",{code:err?.code,message:err?.message,details:err?.details});
+   const code=String(err?.code||"").replace(/^functions\//,"");
+   const details=err?.details&&typeof err.details==="object"?err.details:{};
+   const diagnostic=code==="internal"&&(details.originalCode||details.originalMessage)
+    ?"Falha técnica ("+String(details.originalCode||"sem código")+"): "+String(details.originalMessage||"Verifique os registos da função createPaymentRequest")
+    :(err?.message||"Não foi possível enviar o pedido. A conta continua activa.");
+   toast(diagnostic);
+  }finally{
+   btn.disabled=false;btn.textContent="Enviar comprovativo e solicitar ativação";
+  }
+ };
+ reader.onerror=()=>{
+  btn.disabled=false;btn.textContent="Enviar comprovativo e solicitar ativação";
+  toast("Não foi possível ler o comprovativo.");
+ };
+ reader.readAsDataURL(file);
+}
 async function submitTrialRequest(){
  const name=document.getElementById("licenseName").value.trim(),email=String(document.getElementById("licenseEmail").value||"").trim().toLowerCase(),phone=document.getElementById("licensePhone").value.trim(),password=document.getElementById("licensePassword").value,confirm=document.getElementById("licensePasswordConfirm").value,btn=document.getElementById("requestTrial");
  if(!name||!email||!phone||!password||!confirm){toast("Preencha nome, e-mail, senha e telefone antes de solicitar o teste.");return}
