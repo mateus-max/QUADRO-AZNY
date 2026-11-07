@@ -125,3 +125,30 @@ exports.grantApprovedStudentRoomAccess = onValueWritten({
     approvedAt: ServerValue.TIMESTAMP
   });
 });
+
+exports.approveStudentRequest = onCall({ region: REGION }, async (request) => {
+  const teacherUid = requireAuth(request);
+  const roomId = cleanKey(request.data?.roomId);
+  const sessionId = String(request.data?.sessionId || "");
+  const requestId = String(request.data?.requestId || "");
+  if (!roomId || !sessionId || !requestId || /[.#$\\[\\]\\/]/.test(sessionId + requestId)) {
+    throw new HttpsError("invalid-argument", "Pedido de entrada inválido.");
+  }
+  const teacher = await db.ref("roomAccess/" + roomId + "/" + teacherUid).get();
+  if (teacher.val()?.role !== "teacher" || teacher.val()?.status !== "approved") {
+    throw new HttpsError("permission-denied", "Apenas o professor autorizado pode aprovar alunos.");
+  }
+  const requestRef = db.ref("aznyRooms/" + roomId + "/sessions/" + sessionId + "/joinRequests/" + requestId);
+  const requestSnap = await requestRef.get();
+  const student = requestSnap.val();
+  if (!student?.studentUid || student.status !== "pending") {
+    throw new HttpsError("failed-precondition", "O pedido já não está pendente.");
+  }
+  const studentUid = String(student.studentUid);
+  await db.ref("roomAccess/" + roomId + "/" + studentUid).set({
+    role: "student", status: "approved", requestId, sessionId,
+    approvedBy: teacherUid, approvedAt: ServerValue.TIMESTAMP
+  });
+  await requestRef.update({ status: "approved", approvedAt: ServerValue.TIMESTAMP, teacherUid });
+  return { ok: true };
+});
