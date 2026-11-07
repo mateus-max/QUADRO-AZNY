@@ -1066,5 +1066,37 @@ if("serviceWorker" in navigator && location.protocol==="https:"){window.addEvent
 </script>
 
 <script>
-
+/* Ação de segurança do botão principal: garante a abertura da área de acesso,
+   mesmo que outro inicializador da página tenha falhado antes de ligar eventos. */
+(function(){
+ function openTeacherAccess(event){
+  const button=event.target&&event.target.closest?event.target.closest("#homeLogin"):null;
+  if(!button)return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  try{
+   if(typeof window.showLogin==="function")window.showLogin();
+   else{
+    document.body.classList.remove("teacher-register-mode","teacher-checkout-mode","teacher-payment-status-mode");
+    document.body.classList.add("teacher-login-mode");
+    document.querySelectorAll(".home-view").forEach(el=>el.classList.remove("show"));
+    const view=document.getElementById("loginView");
+    if(view)view.classList.add("show");
+    try{sessionStorage.setItem("rwb_index_view","login")}catch(_){}
+   }
+   let language="pt";
+   try{language=localStorage.getItem("azny-quadro-ui-language")||"pt"}catch(_){}
+   if(typeof window.setLoginLanguage==="function")window.setLoginLanguage(language);
+   const email=document.getElementById("loginEmail");
+   if(email)setTimeout(()=>email.focus(),80);
+   window.scrollTo({top:0,behavior:"smooth"});
+  }catch(error){
+   console.error("Falha ao abrir a área Dar Formações Online:",error);
+   const view=document.getElementById("loginView");
+   if(view){view.classList.add("show");view.scrollIntoView({behavior:"smooth",block:"start"})}
+  }
+ }
+ document.addEventListener("click",openTeacherAccess,true);
+})();
+</script>
 </body></html>
