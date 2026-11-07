@@ -1103,7 +1103,7 @@ body.student-mode #aznySharedBrowser .teacher-only-browser{display:none!importan
 #board.azny-pointer-mode #aznyPointerCaptureLayer{display:block;pointer-events:auto;cursor:none;touch-action:none}
 #board #livePointer{z-index:40!important;pointer-events:none!important}
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style id="azny-teacher-camera-controls-and-refresh-persistence">
 /* Apenas dois botões de alternância: microfone à esquerda e câmara à direita. */
 body:not(.student-mode) .rightbar .camera-panel{padding:5px 6px 7px!important;display:flex!important;flex-direction:column!important;gap:0!important;min-height:0!important;overflow:hidden!important}
@@ -1348,18 +1348,22 @@ const aznyRoomKey=()=>String(roomId).replace(/[.#$\[\]\/]/g,"_");
 const aznyRoomRef=()=>AZNY_DB?AZNY_DB.ref("aznyRooms/"+aznyRoomKey()):null;
 /* Uma sessão permanente por sala: o link antigo continua válido entre aulas. */
 if(!isStudent&&!classSessionId)classSessionId="ROOM-"+aznyRoomKey();
-async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Auth anónima indisponível; a tentar ligação direta ao Realtime Database.",authError)}if(AZNY_DB){return true}}catch(e){console.warn("AZNY ligação:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
+async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Auth anónima indisponível; a tentar ligação direta ao Realtime Database.",authError)}}catch(e){console.warn("AZNY ligação:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
 let aznyRealtimeBound=false;
 async function validateTeacherLicenseAccess(){
  if(isStudent)return true;
  if(!AZNY_ACCESS_TOKEN){location.replace("index.html?acesso=necessario");return false}
  try{
-  const snap=await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).once("value"),lic=snap.val();
-  if(!lic||lic.status!=="active"||(lic.expiresAt&&new Date(lic.expiresAt)<=new Date())){location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));return false}
-  aznyTeacherPlanKey=String(lic.plan||"");
-  if(lic.plan==="trial"&&(lic.trialExhausted===true||Number(lic.trialSessionsUsed||Object.keys(lic.trialCompletedSessions||{}).length)>=4)){await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).update({trialExhausted:true,boardAccess:false});location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));return false}
-  return true;
- }catch(e){console.error("Validação do acesso do professor:",e);toast("Não foi possível validar o plano. Verifique a ligação e tente novamente.");return false}
+  const verify=firebase.functions("us-central1").httpsCallable("verifyTeacherAccess");
+  const result=await verify({accessToken:AZNY_ACCESS_TOKEN,roomId:roomId});
+  aznyTeacherPlanKey=String(result.data?.plan||"");
+  return result.data?.ok===true;
+ }catch(e){
+  console.error("Validação segura da licença:",e);
+  if(e?.code==="functions/permission-denied"){location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));return false}
+  toast("Não foi possível validar o acesso seguro. Verifique a ligação e tente novamente.");
+  return false;
+ }
 }
 async function ensureAZNYRealtime(){
  if(!AZNY_DB){const ok=await initAZNYRealtime();if(!ok)return false}
@@ -2606,20 +2610,11 @@ async function startClass(){if(classStarted)return;if(!await ensureAZNYRealtime(
 
 async function restoreActiveTeacherSession(){if(isStudent||!classSessionId||!AZNY_DB)return;try{const snap=await aznySessionRef()?.once("value");const session=snap?.val();if(!session||session.status!=="active"){return}try{await aznySessionRef().child("teacherReloadNotice").set({id:"restore-"+Date.now()+"-"+Math.random().toString(36).slice(2,9),at:firebase.database.ServerValue.TIMESTAMP,reason:"teacher-session-restored"})}catch(reloadSignalError){console.warn("AZNY teacher reload notice:",reloadSignalError)}classStarted=true;classRunId=String(session.runId||("RUN-RESTORE-"+Date.now()+"-"+Math.random().toString(36).slice(2,9)));if(!session.runId)aznySessionRef().child("runId").set(classRunId).catch(()=>{});classStartTime=Number(session.startedAt)||Date.now();document.getElementById("startClassBtn").disabled=true;document.getElementById("endClassBtn").disabled=false;clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();try{await aznySessionRef().child("teacherPresence").update({online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP});aznySessionRef().child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(_){}roomChannel?.postMessage({type:"class-started",title:session.title||document.getElementById("boardTitle").value,session:classSessionId});toast("Aula ativa restaurada após atualizar a página")}catch(e){console.warn("AZNY session restore:",e)}}
 async function aznyCountCompletedTrialClass(){
- if(isStudent||!AZNY_DB||!AZNY_ACCESS_TOKEN)return {trial:false,exhausted:false,used:0};
+ if(isStudent||!AZNY_ACCESS_TOKEN)return {trial:false,exhausted:false,used:0};
  const run=classRunId||("RUN-END-"+Date.now()+"-"+Math.random().toString(36).slice(2,9));
- const ref=AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN);
- const tx=await ref.transaction(lic=>{
-  if(!lic||lic.plan!=="trial"||lic.status!=="active")return lic;
-  const completed=lic.trialCompletedSessions&&typeof lic.trialCompletedSessions==="object"?lic.trialCompletedSessions:{};
-  if(!completed[run])completed[run]=Date.now();
-  const used=Object.keys(completed).length;
-  lic.trialCompletedSessions=completed;lic.trialSessionsLimit=4;lic.trialSessionsUsed=used;
-  if(used>=4){lic.trialExhausted=true;lic.boardAccess=false;lic.trialCompletedAt=new Date().toISOString()}
-  return lic;
- });
- const lic=tx.snapshot.val()||{};
- return {trial:lic.plan==="trial",exhausted:lic.plan==="trial"&&(lic.status==="trial_exhausted"||Number(lic.trialSessionsUsed||0)>=4),used:Number(lic.trialSessionsUsed||0)};
+ const record=firebase.functions("us-central1").httpsCallable("recordTrialClass");
+ const result=await record({accessToken:AZNY_ACCESS_TOKEN,roomId:roomId,runId:run});
+ return result.data||{trial:false,exhausted:false,used:0};
 }
 async function endClass(){if(!classStarted)return;let trialResult={trial:false,exhausted:false,used:0};try{trialResult=await aznyCountCompletedTrialClass()}catch(e){console.error("Contagem da aula de teste:",e);let isTrial=aznyTeacherPlanKey==="trial";try{const s=await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).once("value");isTrial=isTrial||s.val()?.plan==="trial"}catch(_){}if(isTrial){toast("Não foi possível registar a aula de teste por falta de ligação. Restabeleça a internet e tente encerrar novamente.");return}}classStarted=false;await resetBoardForClassLifecycle();aznyObservedClassStatus="ended";clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;document.getElementById("classTimer").textContent="00:00:00";document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;try{stopCamera()}catch(e){console.warn("AZNY camera cleanup:",e)}try{stopMic()}catch(e){console.warn("AZNY microphone cleanup:",e)}try{if(AZNY_DB&&classSessionId)await aznySessionRef().update({status:"ended",endedAt:firebase.database.ServerValue.TIMESTAMP,"teacherPresence/online":false,"teacherPresence/network":"offline","teacherPresence/updatedAt":firebase.database.ServerValue.TIMESTAMP})}catch(e){console.warn("AZNY class end status:",e)}try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){}clearTeacherStudentCameras();Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}removeStudentVideoCard(id)});window.aznyTeacherPeers={};roomChannel?.postMessage({type:"class-ended",session:classSessionId});if(isStudent)showClassEnded();toast("Aula encerrada. As câmeras dos alunos foram removidas.");if(trialResult.trial){if(trialResult.exhausted){aznyTeacherAccessValidated=false;setTimeout(()=>{alert("Concluiu as quatro aulas do plano de teste. Para continuar a utilizar o quadro, atualize o seu plano.");location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN))},350)}else{toast("Aula de teste concluída: "+trialResult.used+"/4.")}}}
 
@@ -3364,7 +3359,7 @@ async function getClassLink(){
  const currentParams=new URLSearchParams(location.search);
  
  const code=aznyHashKey("class:"+roomId).toUpperCase().padStart(7,"0").slice(-7);
- try{if(!AZNY_DB)throw new Error("Firebase indisponível");const ref=AZNY_DB.ref("aznyShortLinks/"+code);const result=await ref.transaction(current=>current||{target:target.href,type:"class",createdAt:firebase.database.ServerValue.TIMESTAMP});const value=result.snapshot.val();if(result.committed&&value&&value.target===target.href)return location.origin+"/c/"+code;throw new Error("Código curto em conflito.");}
+ try{if(!AZNY_DB)throw new Error("Firebase indisponível");const create=firebase.functions("us-central1").httpsCallable("createClassShortLink");const result=await create({roomId:roomId,code:code,target:target.href});if(result.data?.code===code&&result.data?.target===target.href)return location.origin+"/c/"+code;throw new Error("Código curto em conflito.");}
  catch(err){console.error("Link curto da aula:",err);toast("Não foi possível gerar o link curto. Verifique a ligação e tente novamente.");return "";}
 }
 async function copyClassLink(){const link=await getClassLink();if(!link)return;try{await navigator.clipboard.writeText(link);toast(document.documentElement.lang==="en"?"Class link copied":"Link da aula copiado")}catch(e){prompt("Copie o link da aula:",link)}}
