@@ -48,7 +48,7 @@ exports.verifyTeacherAccess = onCall({ region: REGION }, async (request) => {
   await db.ref("roomAccess/" + roomId + "/" + uid).set({
     role: "teacher", status: "approved", verifiedAt: ServerValue.TIMESTAMP
   });
-  return { ok: true, plan: String(license.plan || "") };
+  return { ok: true, plan: String(license.plan || ""), teacherName: String(license.teacherName || license.name || license.fullName || license.nome || "Professor") };
 });
 
 exports.recordTrialClass = onCall({ region: REGION }, async (request) => {
