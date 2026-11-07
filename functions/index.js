@@ -472,6 +472,27 @@ exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
   return { ok: true, requestId: id, status };
 });
 
+exports.adminDeletePaymentRequest = onCall({ region: REGION }, async (request) => {
+  const adminUid = requireAdmin(request);
+  const id = String(request.data?.requestId || "");
+  if (!id || id.length > 180 || /[.#$\\[\\]\\/]/.test(id)) {
+    throw new HttpsError("invalid-argument", "Pedido inválido.");
+  }
+  const ref = db.ref("paymentRequests/" + id);
+  const snap = await ref.get();
+  const item = snap.val();
+  if (!item) throw new HttpsError("not-found", "Pedido não encontrado.");
+  const updates = {};
+  updates["paymentRequests/" + id] = null;
+  const token = String(item.accessToken || "").trim();
+  if (token) updates["licenses/" + token] = null;
+  await db.ref().update(updates);
+  await db.ref("auditLogs").push({
+    action: "payment_deleted", requestId: id, adminUid, at: ServerValue.TIMESTAMP
+  });
+  return { ok: true, requestId: id };
+});
+
 exports.submitFeedback = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request);
   const message = String(request.data?.message || "").trim();
