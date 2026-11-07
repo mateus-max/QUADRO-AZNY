@@ -2,7 +2,6 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onValueWritten } = require("firebase-functions/v2/database");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase, ServerValue } = require("firebase-admin/database");
-const { getStorage } = require("firebase-admin/storage");
 const { defineString } = require("firebase-functions/params");
 const ADMIN_EMAIL = "suporte@domingas.com";
 
@@ -300,7 +299,7 @@ async function createLicenseForApprovedRequest(approved, requestId) {
   return { ok: true, accessToken: token, plan: planKey, teacherName: license.teacherName };
 }
 
-exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
+exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10, memory: "1GiB", timeoutSeconds: 60 }, async (request) => {
   const uid = requireAuth(request);
   const email = safeEmail(request.auth?.token?.email);
   if (!email || !validEmail(email)) throw new HttpsError("failed-precondition", "A conta autenticada precisa de um endereço de e-mail válido.");
@@ -309,7 +308,7 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
   const phone = String(d.phone || "").trim();
   const plan = String(d.plan || "");
   const period = String(d.period || "monthly");
-  const proofPath = String(d.proofPath || "");
+  const proofData = String(d.proofData || "");
   const proofName = String(d.proofName || "comprovativo");
   const proofType = String(d.proofType || "").toLowerCase();
   const plans = {
@@ -317,36 +316,20 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
     professional: { monthly: 20000, annual: 60000 },
     school: { monthly: 30000, annual: 100000 }
   };
-  const expectedProofPrefix = "paymentProofs/" + uid + "/";
+  const allowedTypes = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
+  const dataMatch = proofData.match(/^data:(image\/png|image\/jpeg|image\/webp|application\/pdf);base64,([A-Za-z0-9+/=]+)$/);
   if (!name || name.length > 120 || !phone || phone.length > 40 || !plans[plan] ||
-      !["monthly", "annual"].includes(period) ||
-      !proofPath.startsWith(expectedProofPrefix) ||
-      proofPath.length > expectedProofPrefix.length + 220 ||
-      !["image/png", "image/jpeg", "image/webp", "application/pdf"].includes(proofType)) {
-    throw new HttpsError("invalid-argument", "Dados do pedido ou caminho do comprovativo inválidos.");
+      !["monthly", "annual"].includes(period) || !allowedTypes.includes(proofType) ||
+      !dataMatch || dataMatch[1] !== proofType || proofData.length > 6 * 1024 * 1024) {
+    throw new HttpsError("invalid-argument", "Dados do pedido ou comprovativo inválidos. Anexe PNG, JPG, WEBP ou PDF até 4 MB.");
   }
-  const proofFile = getStorage().bucket().file(proofPath);
-  let proofMetadata;
-  try {
-    [proofMetadata] = await proofFile.getMetadata();
-  } catch (error) {
-    console.error("Comprovativo não encontrado no Storage", { uid, proofPath, code: error?.code, message: error?.message });
-    throw new HttpsError("failed-precondition", "O comprovativo ainda não terminou de carregar. Volte a anexá-lo e tente novamente.");
-  }
-  const storedType = String(proofMetadata.contentType || "").toLowerCase();
-  const storedSize = Number(proofMetadata.size || 0);
-  const ownerUid = String(proofMetadata.metadata?.ownerUid || "");
-  if (!storedSize || storedSize > 4 * 1024 * 1024 || storedType !== proofType || ownerUid !== uid) {
-    throw new HttpsError("invalid-argument", "O comprovativo excede 4 MB ou tem um formato não permitido.");
+  const proofBuffer = Buffer.from(dataMatch[2], "base64");
+  if (!proofBuffer.length || proofBuffer.length > 4 * 1024 * 1024) {
+    throw new HttpsError("invalid-argument", "O comprovativo deve ter no máximo 4 MB.");
   }
   const months = period === "annual" ? 12 : Math.max(1, Math.min(12, Number(d.months) || 1));
   const amount = period === "annual" ? plans[plan].annual : plans[plan].monthly * months;
-  const requestsRef = db.ref("paymentRequests");
   try {
-    // Mantém a compatibilidade com o fluxo antigo: ler os pedidos existentes e
-    // gravar somente o novo registo. Não executar transaction() na raiz inteira,
-    // que inclui todos os comprovativos e pode provocar timeout/INTERNAL.
-    // Não ler a árvore inteira de pedidos e comprovativos ao criar um pedido.
     const id = "PAY-" + require("crypto").randomUUID();
     const item = {
       id, uid, name, email, phone,
@@ -354,21 +337,20 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
       existingAccessToken: String(d.existingAccessToken || "").slice(0,180),
       plan, planName: ({basic:"Básico",professional:"Profissional",school:"Escola"})[plan],
       period, months, amount, method: String(d.method || "").slice(0,50),
-      proofPath, proofName: proofName.slice(0,180), proofType: proofType.slice(0,100), proofSize: storedSize,
+      proof: proofData, proofName: proofName.slice(0,180), proofType, proofSize: proofBuffer.length,
       status: "pending", accountStatus: "pending", accessGranted: false,
       createdAt: new Date().toISOString()
     };
-    await requestsRef.child(id).set(item);
+    await db.ref("paymentRequests").child(id).set(item);
     return { ok: true, existing: false, request: { id, status: "pending", plan, planName: item.planName, createdAt: item.createdAt } };
   } catch (error) {
     console.error("createPaymentRequest failed", { uid, email, plan, code: error?.code, message: error?.message, stack: error?.stack });
     if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", "Não foi possível guardar o pedido de pagamento. A conta foi mantida. Tente novamente.", {
+    throw new HttpsError("internal", "Não foi possível guardar o pedido de pagamento no Realtime Database. Tente novamente.", {
       operation: "createPaymentRequest", originalCode: String(error?.code || "unknown"), originalMessage: String(error?.message || "").slice(0,300)
     });
   }
 });
-
 exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
   const uid = requireAuth(request);
   const email = safeEmail(request.auth?.token?.email);
@@ -454,23 +436,11 @@ exports.adminGetPaymentProof = onCall({ region: REGION }, async (request) => {
   }
   const snap = await db.ref("paymentRequests/" + id).get();
   const item = snap.val();
-  if (!item) throw new HttpsError("not-found", "Comprovativo não encontrado.");
-  if (typeof item.proof === "string" && item.proof.startsWith("data:")) {
-    return { proof: item.proof, proofName: String(item.proofName || "comprovativo"), proofType: String(item.proofType || "") };
+  if (!item || typeof item.proof !== "string" || !item.proof.startsWith("data:")) {
+    throw new HttpsError("not-found", "Comprovativo não encontrado no Realtime Database.");
   }
-  const proofPath = String(item.proofPath || "");
-  if (!proofPath.startsWith("paymentProofs/")) throw new HttpsError("not-found", "Comprovativo não encontrado.");
-  try {
-    const [buffer] = await getStorage().bucket().file(proofPath).download();
-    const contentType = String(item.proofType || "application/octet-stream");
-    return { proof: "data:" + contentType + ";base64," + buffer.toString("base64"),
-      proofName: String(item.proofName || "comprovativo"), proofType: contentType };
-  } catch (error) {
-    console.error("Falha ao descarregar comprovativo", { requestId: id, proofPath, code: error?.code, message: error?.message });
-    throw new HttpsError("not-found", "O ficheiro do comprovativo não está disponível no armazenamento.");
-  }
+  return { proof: item.proof, proofName: String(item.proofName || "comprovativo"), proofType: String(item.proofType || "") };
 });
-
 exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
   const adminUid = requireAdmin(request);
   const id = String(request.data?.requestId || "");
