@@ -41,15 +41,35 @@
             ".read": false,
             ".write": false,
             "status": {
-              ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
+              ".read": "auth != null",
               ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
             },
             "teacherPresence": {
-              ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
+              ".read": "auth != null",
               ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
             },
             "teacherReloadNotice": {
-              ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
+              ".read": "auth != null",
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+            },
+            "runId": {
+              ".read": "auth != null",
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+            },
+            "startedAt": {
+              ".read": "auth != null",
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+            },
+            "endedAt": {
+              ".read": "auth != null",
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+            },
+            "title": {
+              ".read": "auth != null",
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+            },
+            "teacherUid": {
+              ".read": "auth != null",
               ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
             },
             "joinRequests": {
@@ -57,7 +77,7 @@
               "$request": {
                 ".read": "auth != null && (data.child('studentUid').val() === auth.uid || (root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'))",
                 ".write": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (!data.exists() && newData.child('studentUid').val() === auth.uid && newData.child('status').val() === 'pending') || (data.child('studentUid').val() === auth.uid && newData.child('studentUid').val() === auth.uid && newData.child('status').val() === data.child('status').val()))",
-                ".validate": "!newData.exists() || (newData.hasChildren(['studentUid','name','status']) && newData.child('studentUid').isString() && newData.child('name').isString() && newData.child('status').isString() && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (newData.child('status').val() === 'pending' || newData.child('status').val() === 'approved' || newData.child('status').val() === 'rejected')) || (newData.child('studentUid').val() === auth.uid && newData.child('status').val() === 'pending')))"
+                ".validate": "!newData.exists() || (newData.hasChildren(['studentUid','name','status']) && newData.child('studentUid').isString() && newData.child('name').isString() && newData.child('status').isString() && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (newData.child('status').val() === 'pending' || newData.child('status').val() === 'approved' || newData.child('status').val() === 'rejected')) || (newData.child('studentUid').val() === auth.uid && (newData.child('status').val() === 'pending' || newData.child('status').val() === data.child('status').val()))))"
               }
             },
             "peers": {
@@ -65,14 +85,14 @@
                 ".read": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $request))",
                 ".write": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $request))"
               }
-            }
-          }
-        },
-        "studentMesh": {
-          "$from": {
-            "$to": {
-              ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to)",
-              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to) && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student'"
+            },
+            "studentMesh": {
+              "$from": {
+                "$to": {
+                  ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to)",
+                  ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to)"
+                }
+              }
             }
           }
         }
