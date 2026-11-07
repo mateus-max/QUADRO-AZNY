@@ -937,14 +937,17 @@ async function submitPayment(){
   if(!user||user.isAnonymous||String(user.email||"").trim().toLowerCase()!==email)throw new Error("A sessão da conta do professor não está pronta. Entre novamente e repita o pedido.");
   const proofType=String(file.type||"").toLowerCase();
   if(!["image/png","image/jpeg","image/webp","application/pdf"].includes(proofType))throw new Error("O comprovativo deve ser PNG, JPG, WEBP ou PDF.");
-  if(!firebase.storage)throw new Error("O módulo de armazenamento do Firebase não foi carregado. Atualize a página.");
-  const safeName=String(file.name||"comprovativo").replace(/[^A-Za-z0-9._-]/g,"_").slice(-100);
-  const proofPath="paymentProofs/"+user.uid+"/"+Date.now()+"-"+safeName;
-  const storageRef=firebase.storage().ref().child(proofPath);
-  await storageRef.put(file,{contentType:proofType,customMetadata:{ownerUid:user.uid,ownerEmail:email}});
+  // O comprovativo é enviado diretamente ao Realtime Database, sem Firebase Storage.
+  const proofData=await new Promise((resolve,reject)=>{
+   const reader=new FileReader();
+   reader.onload=()=>resolve(String(reader.result||""));
+   reader.onerror=()=>reject(new Error("Não foi possível ler o comprovativo. Escolha o ficheiro novamente."));
+   reader.readAsDataURL(file);
+  });
+  if(!proofData.startsWith("data:"+proofType+";base64,"))throw new Error("Não foi possível preparar o comprovativo.");
   const months=period==="annual"?12:Math.max(1,Math.min(12,Number(document.getElementById("monthlyMonths").value)||1));
   const call=AZNY_FUNCTIONS.httpsCallable("createPaymentRequest");
-  const res=await call({name,phone,plan:selectedPlanKey,period,months,method:selectedRegisterMethod,authProvider:googleUser?"google":"password",existingAccessToken:sessionStorage.getItem("rwb_upgrade_token")||"",proofPath,proofName:file.name,proofType});
+  const res=await call({name,phone,plan:selectedPlanKey,period,months,method:selectedRegisterMethod,authProvider:googleUser?"google":"password",existingAccessToken:sessionStorage.getItem("rwb_upgrade_token")||"",proofData,proofName:file.name,proofType});
   const plan=AZNY_PLANS[selectedPlanKey],item={...(res.data?.request||{}),name,email,phone,plan:selectedPlanKey,planName:plan.name,period,months,amount:period==="annual"?plan.annual:plan.monthly*months,method:selectedRegisterMethod,status:res.data?.request?.status||"pending",createdAt:res.data?.request?.createdAt||new Date().toISOString()};
   googleRegistrationEmail="";showTeacherPaymentStatus(item);toast(res.data?.existing?"Já existe um pedido associado a esta conta.":"Pedido enviado para análise.");
  }catch(err){console.error("Erro no registo/pedido de plano:",{code:err?.code,message:err?.message,details:err?.details,customData:err?.customData});toast(rwbFriendlyError(err,"Não foi possível enviar o pedido de plano."))}
