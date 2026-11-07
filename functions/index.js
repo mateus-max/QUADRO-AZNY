@@ -5,7 +5,7 @@ const { getDatabase, ServerValue } = require("firebase-admin/database");
 const { defineString } = require("firebase-functions/params");
 const ADMIN_EMAILS = defineString("ADMIN_EMAILS", { default: "suporte@domingas.com" });
 
-initializeApp({ projectId: 'remot-board', databaseURL: 'https://remote-board-default-rtdb.firebaseio.com' });
+initializeApp({ projectId: 'remot-board', databaseURL: 'https://remot-board-default-rtdb.firebaseio.com' });
 const db = getDatabase();
 const REGION = "us-central1";
 
