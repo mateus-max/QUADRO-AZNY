@@ -103,6 +103,38 @@
         ".read": true,
         ".write": false
       }
+    },
+    "users": {
+      ".read": false,
+      ".write": false
+    },
+    "profiles": {
+      ".read": false,
+      ".write": false
+    },
+    "payments": {
+      ".read": false,
+      ".write": false
+    },
+    "paymentRequests": {
+      ".read": false,
+      ".write": false
+    },
+    "admin": {
+      ".read": false,
+      ".write": false
+    },
+    "recordings": {
+      ".read": false,
+      ".write": false
+    },
+    "auditLogs": {
+      ".read": false,
+      ".write": false
+    },
+    "notifications": {
+      ".read": false,
+      ".write": false
     }
   }
 }
