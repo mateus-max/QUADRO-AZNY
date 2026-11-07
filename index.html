@@ -722,6 +722,15 @@ function rwbFriendlyError(err,context){
   "not-found":"O serviço solicitado não está publicado no Firebase. A administração precisa atualizar as funções.",
   "internal":"O servidor encontrou uma falha ao processar o pedido. A sua conta não foi apagada. Aguarde e tente novamente; se persistir, a administração deve verificar os registos do Firebase."
  };
+ if(code==="internal"){
+  const details=err?.details&&typeof err.details==="object"?err.details:{};
+  const originalCode=String(details.originalCode||"").trim();
+  const originalMessage=String(details.originalMessage||"").trim();
+  if(originalCode||originalMessage){
+   console.error("Diagnóstico interno do Firebase:",{operation:details.operation||"",originalCode,originalMessage});
+   return "Falha técnica no servidor ("+(originalCode||"sem código")+"): "+(originalMessage||"consulte os registos da função createTrialRequest")+". A conta não foi apagada.";
+  }
+ }
  if(messages[code])return messages[code];
  if(raw&&raw.toLowerCase()!=="internal"&&!raw.toLowerCase().includes("internal"))return raw;
  return context||"Não foi possível concluir a operação. Tente novamente.";
