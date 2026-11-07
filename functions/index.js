@@ -3,7 +3,7 @@ const { onValueWritten } = require("firebase-functions/v2/database");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase, ServerValue } = require("firebase-admin/database");
 const { defineString } = require("firebase-functions/params");
-const ADMIN_EMAILS = defineString("ADMIN_EMAILS", { default: "" });
+const ADMIN_EMAILS = defineString("ADMIN_EMAILS", { default: "suporte@domingas.com" });
 
 initializeApp({ projectId: 'remot-board', databaseURL: 'https://remote-board-default-rtdb.firebaseio.com' });
 const db = getDatabase();
