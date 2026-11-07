@@ -1103,7 +1103,7 @@ body.student-mode #aznySharedBrowser .teacher-only-browser{display:none!importan
 #board.azny-pointer-mode #aznyPointerCaptureLayer{display:block;pointer-events:auto;cursor:none;touch-action:none}
 #board #livePointer{z-index:40!important;pointer-events:none!important}
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style id="azny-teacher-camera-controls-and-refresh-persistence">
 /* Apenas dois botões de alternância: microfone à esquerda e câmara à direita. */
 body:not(.student-mode) .rightbar .camera-panel{padding:5px 6px 7px!important;display:flex!important;flex-direction:column!important;gap:0!important;min-height:0!important;overflow:hidden!important}
@@ -1340,7 +1340,7 @@ let classSessionId=isStudent?(AZNY_URL_PARAMS.get("sess")||""):"ROOM-"+String(ro
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 const roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
-const AZNY_FIREBASE_CONFIG={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remote-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};const AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";
+const AZNY_FIREBASE_CONFIG={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remot-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};const AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";
 if(!isStudent&&!AZNY_ACCESS_TOKEN){location.replace("index.html?acesso=necessario");throw new Error("Acesso de professor não autorizado sem sessão.");}
 
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
@@ -1354,15 +1354,19 @@ async function validateTeacherLicenseAccess(){
  if(isStudent)return true;
  if(!AZNY_ACCESS_TOKEN){location.replace("index.html?acesso=necessario");return false}
  try{
-  const verify=firebase.functions("us-central1").httpsCallable("verifyTeacherAccess");
-  const result=await verify({accessToken:AZNY_ACCESS_TOKEN,roomId:roomId});
-  aznyTeacherPlanKey=String(result.data?.plan||"");
-  aznyTeacherDisplayName=String(result.data?.teacherName||"Professor");
-  return result.data?.ok===true;
+  const user=AZNY_AUTH&&AZNY_AUTH.currentUser;
+  if(!user||user.isAnonymous||!user.email){location.replace("index.html?acesso=necessario");return false}
+  const snap=await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).once("value");
+  const license=snap.val();
+  if(!license||license.status!=="active"||String(license.teacherEmail||"").trim().toLowerCase()!==String(user.email).trim().toLowerCase()||(license.teacherUid&&license.teacherUid!==user.uid)){
+   location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));return false;
+  }
+  aznyTeacherPlanKey=String(license.plan||"");
+  aznyTeacherDisplayName=String(license.teacherName||"Professor");
+  return true;
  }catch(e){
-  console.error("Validação segura da licença:",e);
-  if(e?.code==="functions/permission-denied"){location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));return false}
-  toast("Não foi possível validar o acesso seguro. Verifique a ligação e tente novamente.");
+  console.error("Validação da licença no Realtime Database:",e);
+  toast("Não foi possível validar a licença no Firebase Realtime Database: "+(e.message||"verifique as regras e a ligação."));
   return false;
  }
 }
