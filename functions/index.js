@@ -214,8 +214,8 @@ exports.activateApprovedLicense = onCall({ region: REGION }, async (request) => 
   if (!email || !requestId || requestId.length > 180) {
     throw new HttpsError("invalid-argument", "Pedido ou conta inválida.");
   }
-  const requests = await loadPaymentRequests();
-  const approved = requests[requestId] || Object.values(requests).find(item => item && String(item.id || "") === requestId);
+  const requestSnap = await db.ref("paymentRequests/" + requestId).get();
+  const approved = requestSnap.val();
   if (!approved || approved.status !== "approved" ||
       safeEmail(approved.email || approved.teacherEmail) !== email) {
     throw new HttpsError("permission-denied", "A administração ainda não aprovou este pedido para esta conta.");
@@ -441,7 +441,8 @@ exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
   const status = String(request.data?.status || "");
   const note = String(request.data?.note || "").slice(0,1000);
   if (!id || id.length > 180 || !["approved","rejected"].includes(status)) throw new HttpsError("invalid-argument", "Decisão inválida.");
-  await loadPaymentRequests(); // migra automaticamente listas antigas para o formato actual, sem perder registos
+  // O pedido é consultado directamente pelo ID; não carregar a árvore inteira
+  // de pedidos e comprovativos durante a aprovação.
   const ref = db.ref("paymentRequests/" + id);
   const tx = await ref.transaction(current => {
     if (!current || !["pending","rejected"].includes(current.status)) return;
