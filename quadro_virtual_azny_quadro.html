@@ -1269,12 +1269,10 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
       <video id="teacherVideo" autoplay muted playsinline hidden></video>
       <div class="azny-camera-signal" id="teacherCameraSignal" aria-label="Estado da ligação"><i></i><i></i><i></i></div>
       <div class="cam-status" id="camStatus">Desligada</div>
-      <div class="cam-controls-overlay" aria-label="Controlos da câmara e do microfone">
-        <div class="cam-buttons">
-          <button id="micBtn" type="button" title="Ligar/desligar microfone" aria-label="Ligar ou desligar microfone">🎙</button>
-          <button id="cameraBtn" type="button" title="Ligar/desligar câmera" aria-label="Ligar ou desligar câmera">📷</button>
-        </div>
-      </div>
+    </div>
+    <div class="azny-teacher-media-toggles" role="group" aria-label="Controlos da câmara e do microfone">
+      <button id="micBtn" type="button" aria-pressed="false" title="Ligar microfone"><span class="azny-toggle-icon">🎙</span><span class="azny-toggle-label">Microfone desligado</span></button>
+      <button id="cameraBtn" type="button" aria-pressed="false" title="Ligar câmara"><span class="azny-toggle-icon">📷</span><span class="azny-toggle-label">Câmara desligada</span></button>
     </div>
     <div class="teacher-media-status" id="teacherMediaStatus">Câmera: desligada · Microfone: desligado</div>
     <label class="azny-audio-output-picker" for="aznyAudioOutputSelect">🔊 Saída de som <select id="aznyAudioOutputSelect"><option value="default">Saída automática do dispositivo</option></select></label><div id="aznyAudioOutputStatus" class="teacher-media-status">Saída automática do dispositivo</div>
@@ -2540,11 +2538,26 @@ document.getElementById("helpBtn").onclick=()=>document.getElementById("helpModa
 document.getElementById("closeHelp").onclick=()=>document.getElementById("helpModal").classList.remove("show");
 
 function updateTeacherMediaStatus(){
- const en=document.documentElement.lang==="en",cam=teacherStream?(en?"on":"ligada"):(en?"off":"desligada"),mic=teacherAudioStream?(en?"on":"ligado"):(en?"off":"desligado");
- const status=document.getElementById("teacherMediaStatus");if(status)status.textContent=en?"Camera: "+cam+" · Microphone: "+mic:"Câmera: "+cam+" · Microfone: "+mic;
+ const en=document.documentElement.lang==="en",cam=!!teacherStream,mic=!!teacherAudioStream;
+ const status=document.getElementById("teacherMediaStatus");
+ if(status)status.textContent=en?"Camera: "+(cam?"on":"off")+" · Microphone: "+(mic?"on":"off"):"Câmera: "+(cam?"ligada":"desligada")+" · Microfone: "+(mic?"ligado":"desligado");
  const cameraBtn=document.getElementById("cameraBtn"),micBtn=document.getElementById("micBtn");
- if(cameraBtn){cameraBtn.textContent="📷";cameraBtn.setAttribute("aria-pressed",teacherStream?"true":"false");cameraBtn.title=teacherStream?(en?"Turn camera off":"Desligar câmera"):(en?"Turn camera on":"Ligar câmera");}
- if(micBtn){micBtn.textContent="🎙";micBtn.setAttribute("aria-pressed",teacherAudioStream?"true":"false");micBtn.title=teacherAudioStream?(en?"Turn microphone off":"Desligar microfone"):(en?"Turn microphone on":"Ligar microfone");}
+ if(cameraBtn){
+  cameraBtn.setAttribute("aria-pressed",cam?"true":"false");
+  cameraBtn.classList.toggle("is-on",cam);
+  cameraBtn.querySelector(".azny-toggle-icon")?.replaceChildren(document.createTextNode(cam?"📷":"📷"));
+  const label=cameraBtn.querySelector(".azny-toggle-label");if(label)label.textContent=en?(cam?"Camera on":"Camera off"):(cam?"Câmara ligada":"Câmara desligada");
+  cameraBtn.title=en?(cam?"Turn camera off":"Turn camera on"):(cam?"Desligar câmera":"Ligar câmera");
+  cameraBtn.setAttribute("aria-label",cameraBtn.title);
+ }
+ if(micBtn){
+  micBtn.setAttribute("aria-pressed",mic?"true":"false");
+  micBtn.classList.toggle("is-on",mic);
+  const icon=micBtn.querySelector(".azny-toggle-icon");if(icon)icon.textContent=mic?"🎙":"🔇";
+  const label=micBtn.querySelector(".azny-toggle-label");if(label)label.textContent=en?(mic?"Microphone on":"Microphone off"):(mic?"Microfone ligado":"Microfone desligado");
+  micBtn.title=en?(mic?"Turn microphone off":"Turn microphone on"):(mic?"Desligar microfone":"Ligar microfone");
+  micBtn.setAttribute("aria-label",micBtn.title);
+ }
 }
 async function startCamera(){
  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera exige HTTPS ou localhost.");return}
@@ -4412,6 +4425,35 @@ body:not(.student-mode) .rightbar #students .student>.azny-student-cam-off span{
 body:not(.student-mode) .rightbar #students .student>.azny-student-cam-off small{font-size:9px!important}
 body:not(.student-mode) .rightbar #students .student.azny-video-live>.azny-student-cam-off{display:none!important}
 
+<style id="azny-visible-teacher-media-toggles">
+/* Controlos do professor: barra própria, sempre visível por baixo da pré-visualização. */
+html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:7px!important;width:100%!important;margin:5px 0 3px!important;padding:0!important;
+ position:relative!important;z-index:30!important;overflow:visible!important;
+ visibility:visible!important;opacity:1!important;pointer-events:auto!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles button{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ flex-direction:column!important;gap:3px!important;min-width:0!important;width:100%!important;
+ min-height:49px!important;height:auto!important;padding:6px 4px!important;
+ border:1px solid #cbd7e3!important;border-radius:9px!important;
+ background:#102d49!important;color:#fff!important;box-shadow:0 2px 5px #071b3320!important;
+ font:700 10px/1.2 Arial,sans-serif!important;white-space:normal!important;
+ cursor:pointer!important;visibility:visible!important;opacity:1!important;
+ pointer-events:auto!important;touch-action:manipulation!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles button .azny-toggle-icon{display:block!important;font-size:19px!important;line-height:1!important}
+html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles button .azny-toggle-label{display:block!important;font-size:10px!important;line-height:1.15!important;text-align:center!important}
+html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles button.is-on{background:#087b58!important;border-color:#12b981!important;color:#fff!important}
+html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles button:active{transform:scale(.98)}
+html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles button:disabled{opacity:.55!important;cursor:wait!important}
+@media(max-width:950px) and (orientation:landscape),(max-height:520px) and (pointer:coarse){
+ html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles{gap:4px!important;margin:3px 0!important}
+ html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles button{min-height:37px!important;padding:3px!important;flex-direction:row!important;gap:4px!important;font-size:9px!important}
+ html body:not(.student-mode) .rightbar .camera-panel .azny-teacher-media-toggles button .azny-toggle-icon{font-size:16px!important}
+}
+</style>
 </head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script></body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
