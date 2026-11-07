@@ -739,20 +739,17 @@ function showPlans(){rwbPushView("register");try{sessionStorage.setItem('rwb_ind
 function findApproved(phone){const n=normalizePhone(phone);return readJson(AZNY_PAYMENTS_KEY,[]).filter(r=>r.status==='approved'&&normalizePhone(r.phone)===n).sort((a,b)=>new Date(b.approvedAt||b.createdAt||0)-new Date(a.approvedAt||a.createdAt||0))[0]||null}
 async function enterAccount(r){
  if(!r||typeof r!=="object")throw new Error("Não foi possível localizar os dados da conta aprovada. Contacte a administração.");
- const planKey=String(r.plan||"").trim(),p=AZNY_PLANS[planKey];
- if(!p)throw new Error("A conta foi encontrada, mas o plano associado não é válido. Solicite à administração a correção da licença.");
  const requestId=String(r.id||r.requestId||"").trim();
- const token=String(r.accessToken||"").trim()||((crypto&&crypto.randomUUID)?crypto.randomUUID():"AZNY-"+Date.now()+"-"+Math.random().toString(36).slice(2));
- let priorLicense=null;
- if(planKey==="trial"){const old=await AZNY_DB.ref("licenses/"+token).once("value");priorLicense=old.val()||null}
- const completed=priorLicense?.trialCompletedSessions||{},used=Object.keys(completed).length,exhausted=planKey==="trial"&&used>=4;
- const l={status:"active",trialExhausted:exhausted,boardAccess:!exhausted,plan:planKey,planName:r.planName||p.name,students:p.students,dailyClasses:p.dailyClasses,simultaneous:p.simultaneous,duration:p.duration,storage:p.storage,startedAt:priorLicense?.startedAt||r.approvedAt||r.startedAt||new Date().toISOString(),expiresAt:r.expiresAt||null,teacherName:r.name||r.teacherName||r.email||"",teacherPhone:r.phone||r.teacherPhone||"",requestId,accessToken:token,teacherEmail:String(r.email||r.teacherEmail||"").trim().toLowerCase(),...(planKey==="trial"?{trialSessionsLimit:4,trialSessionsUsed:used,trialCompletedSessions:completed}:{}),trialApprovedAt:priorLicense?.trialApprovedAt||r.approvedAt||new Date().toISOString()};
  if(!requestId)throw new Error("A licença não possui identificador de pedido. Peça à administração para verificar a aprovação.");
- r.accessToken=token;const req=aznyList(readJson(AZNY_PAYMENTS_KEY,[]));const i=req.findIndex(x=>x&&String(x.id||"")===requestId);
- if(i>=0){req[i]={...req[i],...r};writeJson(AZNY_PAYMENTS_KEY,req)}
- await AZNY_DB.ref("licenses/"+token).set(l);
- if(r.existingAccessToken&&r.existingAccessToken!==token){await AZNY_DB.ref("licenses/"+r.existingAccessToken).update({status:"replaced",replacedBy:token,replacedAt:new Date().toISOString()}).catch(e=>console.warn("Não foi possível encerrar o token anterior:",e))}
- sessionStorage.setItem("azny_access_token",token);location.href="dashboard.html?acesso="+encodeURIComponent(token)
+ const user=firebase.auth().currentUser,email=String(user?.email||"").trim().toLowerCase();
+ if(!user||!email)throw new Error("Entre na sua conta antes de ativar a licença.");
+ if(String(r.email||r.teacherEmail||"").trim().toLowerCase()!==email)throw new Error("O pedido aprovado não pertence à conta autenticada.");
+ const activate=firebase.functions("us-central1").httpsCallable("activateApprovedLicense");
+ const result=await activate({requestId});
+ const token=String(result.data?.accessToken||"");
+ if(!token)throw new Error("O servidor não devolveu o acesso da licença.");
+ sessionStorage.setItem("azny_access_token",token);
+ location.href="dashboard.html?acesso="+encodeURIComponent(token);
 }
 function login(){return runTeacherLogin()}
 async function runTeacherLogin(){
