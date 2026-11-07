@@ -27,8 +27,7 @@ function requireAuth(request) {
 function requireAdmin(request) {
   const uid = requireAuth(request);
   const email = String(request.auth?.token?.email || "").trim().toLowerCase();
-  const emailVerified = request.auth?.token?.email_verified === true;
-  if (request.auth?.token?.admin !== true && (!emailVerified || email !== ADMIN_EMAIL)) {
+  if (request.auth?.token?.admin !== true && email !== ADMIN_EMAIL) {
     throw new HttpsError("permission-denied", "Acesso reservado à administração.");
   }
   return uid;
