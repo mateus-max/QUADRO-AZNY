@@ -1,62 +1,43 @@
-# Migração de segurança do Firebase Realtime Database — AZNY
+# Segurança Firebase — Quadro AZNY
 
-## Estado deste pacote
+## Estado atual — migração em andamento
 
-Este repositório passa a conter uma **base de regras restritiva**, não uma alteração já aplicada ao Firebase Console. Não publicar estas regras ainda: a versão atual do quadro não implementa a criação/verificação dos registos de autorização abaixo e depende de acessos que estas regras bloqueiam deliberadamente.
+Foram adicionados:
+- `database.rules.json`: regras restritivas para Realtime Database, com permissões por sala, função e sessão.
+- `functions/index.js`: funções confiáveis para validar a licença do professor, aprovar alunos, registar aulas de teste e criar links curtos.
+- `functions/package.json` e `firebase.json`: configuração inicial para Cloud Functions e regras.
+- O quadro passou a chamar funções seguras para validação do professor, aprovação do aluno, contagem do trial e criação do link curto.
+
+**Ainda não publicar as regras.** A migração não está completa: `index.html` cria/atualiza licenças diretamente no Realtime Database e `dashboard.html` lê licenças diretamente. Se as regras de produção negarem o acesso de clientes a `licenses`, esses fluxos de registo, compra/ativação e consulta de conta poderão falhar. Esses fluxos precisam ser movidos para funções confiáveis antes da publicação.
 
 ## Modelo de autorização
 
-As regras usam Firebase Authentication e um registo de autorização confiável:
+O servidor gere `roomAccess/{roomKey}/{uid}`; os clientes não podem ler nem escrever essa árvore.
 
-`roomAccess/{roomKey}/{uid}`
-
-Exemplo de registo que só um servidor confiável (Firebase Admin SDK / Cloud Functions) pode criar:
-
+Professor:
 ```json
-{
-  "role": "teacher",
-  "status": "approved"
-}
+{ "role": "teacher", "status": "approved" }
 ```
 
-Para um aluno aprovado, o servidor cria:
-
+Aluno aprovado:
 ```json
-{
-  "role": "student",
-  "status": "approved",
-  "requestId": "-FirebasePushIdDoPedido"
-}
+{ "role": "student", "status": "approved", "requestId": "ID_DO_PEDIDO" }
 ```
 
-Nunca criar estes registos a partir do navegador. A raiz `roomAccess` fica sem permissões de leitura/escrita para clientes.
+## Funções criadas
 
-## O que as regras protegem
+- `verifyTeacherAccess`: verifica token, estado, validade e limite do trial; cria a autorização do professor.
+- `approveStudentRequest`: confirma que quem aprova é o professor autorizado, cria a autorização do aluno e atualiza o pedido.
+- `grantApprovedStudentRoomAccess`: gatilho de reconciliação para pedidos aprovados.
+- `recordTrialClass`: contabiliza aulas de teste no servidor.
+- `createClassShortLink`: cria links curtos no servidor.
 
-- Negam por omissão a leitura e escrita na raiz.
-- Negam acesso do cliente a `licenses`; os tokens/licenças não devem ser consultados nem alterados diretamente pelo HTML.
-- Exigem identidade autenticada e autorização aprovada para aceder aos dados de uma sala.
-- Apenas o professor aprovado pode iniciar/alterar o estado da sessão, presença do professor, aviso de recarregamento, navegador partilhado e evento de piano.
-- Professor e alunos aprovados podem colaborar no quadro, folha de cálculo e documento partilhado.
-- O aluno só pode criar/alterar o seu próprio pedido de entrada e sinalização WebRTC associada ao `requestId` atribuído pelo servidor.
-- Os links curtos são públicos para leitura, mas não podem ser criados/alterados diretamente por clientes.
+## Antes de publicar
 
-## Alterações obrigatórias no cliente/servidor antes de ativar
+1. Migrar a criação, substituição, leitura e atualização de licenças usadas por `index.html` e `dashboard.html` para funções confiáveis; não abrir `licenses` a todos os clientes.
+2. Rever os restantes caminhos e operações RTDB do repositório, incluindo fluxos administrativos e de pagamento.
+3. Instalar dependências e validar as Cloud Functions com Firebase Emulator Suite.
+4. Testar professor, aluno pendente, aluno aprovado, conta não autenticada, licenças expiradas e trial esgotado.
+5. Só depois publicar conjuntamente funções e regras com `firebase deploy --only functions,database`.
 
-O ficheiro `quadro_virtual_azny_quadro.html` ainda contém estes comportamentos incompatíveis com as regras:
-
-1. `validateTeacherLicenseAccess()` lê e pode atualizar `licenses/{token}` diretamente no navegador. Migrar a validação e atualização de trial para uma Callable/HTTPS Cloud Function com Firebase Admin SDK.
-2. `getClassLink()` cria `aznyShortLinks/{code}` com uma transação no navegador. Mover a criação para função confiável.
-3. O fluxo atual cria pedidos anónimos e usa `studentUid` fornecido pelo próprio cliente. O servidor deve verificar o pedido e a aprovação do professor, depois criar `roomAccess` para o UID autenticado e vincular o `requestId`.
-4. O código usa `studentMesh`; esta estrutura não recebe permissão neste primeiro conjunto de regras. Antes de a reativar, desenhar autorização por par de participantes e validar os IDs contra os membros da sala.
-5. Rever os restantes caminhos RTDB usados pelo HTML (incluindo métricas, estado de plano e contadores de trial) e migrá-los para funções confiáveis ou regras específicas. Não conceder acesso genérico a `aznyRooms/{room}` ou a `sessions/{session}`.
-
-## Ordem segura de implantação
-
-1. Implementar e publicar as Cloud Functions que validam licenças, aprovam alunos e criam/removem `roomAccess`.
-2. Atualizar o cliente para chamar essas funções e remover a leitura/escrita direta em `licenses` e `aznyShortLinks`.
-3. Migrar e testar `studentMesh` e todos os outros caminhos RTDB ainda usados.
-4. Testar com contas separadas de professor, aluno aprovado, aluno pendente e utilizador não autenticado, incluindo leitura e escrita negadas.
-5. Só então publicar `database.rules.json` no Realtime Database.
-
-**Não substituir as regras de produção antes de concluir estes passos**: a aplicação atual perderá acesso a partes da aula. O objetivo é não trocar uma configuração insegura por uma configuração que exponha dados ou deixe a plataforma indisponível.
+Não substituir as regras atualmente publicadas até concluir todos os passos. O ficheiro JSON no GitHub não altera automaticamente o Firebase Console.
