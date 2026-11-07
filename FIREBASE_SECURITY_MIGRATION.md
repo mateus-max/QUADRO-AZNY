@@ -11,7 +11,7 @@
 As páginas `index.html`, `dashboard.html` e `quadro_virtual_azny_quadro.html`, bem como o Admin SDK das Cloud Functions, foram apontados para este projeto novo. O projeto antigo `quadro-azny` deixou de ser a configuração usada pelo código atualizado. Não apagar os dados antigos até terminar a migração e validar o novo ambiente.
 
 
-## Estado atual — migração em andamento
+## Estado atual — novo projeto preparado, migração em andamento
 
 Foram adicionados:
 - `database.rules.json`: regras restritivas para Realtime Database, com permissões por sala, função e sessão.
@@ -62,3 +62,8 @@ Não substituir as regras atualmente publicadas até concluir todos os passos. O
 5. Testar login, pedido de pagamento, aprovação administrativa, ativação da licença, professor, aluno, sincronização do quadro e gravações antes de apontar o domínio público para o novo ambiente.
 
 **Importante:** a troca das configurações no código não migra os dados, não cria automaticamente os utilizadores de Authentication, não publica as regras e não implanta as Cloud Functions. O novo banco mostrado no Console estava vazio (`null`) no momento da captura.
+
+
+## Modelo detalhado
+
+Consultar `FIREBASE_DATA_MODEL.md` para a árvore de dados, papéis, limites e sequência de ativação no projeto novo.
