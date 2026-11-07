@@ -1340,7 +1340,7 @@ let classSessionId=isStudent?(AZNY_URL_PARAMS.get("sess")||""):"ROOM-"+String(ro
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 const roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
-const AZNY_FIREBASE_CONFIG={apiKey:"AIzaSyB20GNxPQsMRmjF0"+"RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:a6294fee1a6d92e604d89c3",measurementId:"G-SVR4LGF8TH"};const AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";
+const AZNY_FIREBASE_CONFIG={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remote-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};const AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";
 if(!isStudent&&!AZNY_ACCESS_TOKEN){location.replace("index.html?acesso=necessario");throw new Error("Acesso de professor não autorizado sem sessão.");}
 
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
