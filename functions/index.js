@@ -152,3 +152,47 @@ exports.approveStudentRequest = onCall({ region: REGION }, async (request) => {
   await requestRef.update({ status: "approved", approvedAt: ServerValue.TIMESTAMP, teacherUid });
   return { ok: true };
 });
+
+exports.getMyActiveLicense = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request);
+  const email = String(request.auth.token.email || "").trim().toLowerCase();
+  if (!email) throw new HttpsError("failed-precondition", "A conta autenticada não tem e-mail verificado.");
+  const snap = await db.ref("licenses").orderByChild("teacherEmail").equalTo(email).get();
+  const all = snap.val() || {};
+  const now = Date.now();
+  const active = Object.values(all).filter(lic =>
+    lic && lic.status === "active" &&
+    (!lic.expiresAt || new Date(lic.expiresAt).getTime() > now)
+  ).sort((a,b) => new Date(b.startedAt || 0) - new Date(a.startedAt || 0))[0];
+  if (!active) return { found: false };
+  return { found: true, license: {
+    status: active.status, plan: active.plan, planName: active.planName,
+    expiresAt: active.expiresAt || null, teacherName: active.teacherName || "",
+    teacherPhone: active.teacherPhone || "", teacherEmail: email,
+    accessToken: active.accessToken || "", trialExhausted: active.trialExhausted === true,
+    trialSessionsUsed: Number(active.trialSessionsUsed || 0),
+    trialCompletedSessions: active.trialCompletedSessions || {},
+    requestId: active.requestId || "", startedAt: active.startedAt || null
+  }};
+});
+
+exports.getLicenseForAccount = onCall({ region: REGION }, async (request) => {
+  requireAuth(request);
+  const email = String(request.auth.token.email || "").trim().toLowerCase();
+  const token = String(request.data?.accessToken || "");
+  if (!email || !token) throw new HttpsError("invalid-argument", "Conta ou licença inválida.");
+  const snap = await db.ref("licenses/" + token).get();
+  const lic = snap.val();
+  if (!lic || String(lic.teacherEmail || "").trim().toLowerCase() !== email) {
+    throw new HttpsError("permission-denied", "Esta licença não pertence à conta autenticada.");
+  }
+  return { found: true, license: {
+    status: lic.status, plan: lic.plan, planName: lic.planName,
+    expiresAt: lic.expiresAt || null, teacherName: lic.teacherName || "",
+    teacherPhone: lic.teacherPhone || "", teacherEmail: email,
+    accessToken: lic.accessToken || token, trialExhausted: lic.trialExhausted === true,
+    trialSessionsUsed: Number(lic.trialSessionsUsed || 0),
+    trialCompletedSessions: lic.trialCompletedSessions || {},
+    requestId: lic.requestId || "", startedAt: lic.startedAt || null
+  }};
+});
