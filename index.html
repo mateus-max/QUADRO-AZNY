@@ -797,14 +797,17 @@ async function chooseGoogleForRegistration(){
   document.getElementById("licenseEmail").readOnly=true;
   for(const id of ["licensePassword","licensePasswordConfirm"]){const el=document.getElementById(id);el.required=false;el.value="";el.style.display="none";if(el.previousElementSibling?.tagName==="LABEL")el.previousElementSibling.style.display="none";}
   note.style.color="#137547";note.textContent="Conta Google ligada: "+email+". Preencha ou confirme o nome e indique o telefone para continuar.";
-  await AZNY_REMOTE_READY;
-  const mine=aznyList(await aznyLoadMyRequests()).filter(x=>x&&String(x.email||x.teacherEmail||"").trim().toLowerCase()===email).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
-  const approved=mine.find(x=>x.status==="approved");
-  if(approved){await enterAccount(approved);return}
-  const pending=mine.find(x=>x.status==="pending");
-  if(pending){showTeacherPaymentStatus(pending);return}
-  toast("Conta Google reconhecida. Complete o registo para escolher o plano.");
- }catch(e){console.error("Registo Google:",e);note.style.color="#b42318";note.textContent=e.code==="auth/unauthorized-domain"?"Este endereço do site ainda não está autorizado para a entrada Google. Contacte o suporte.":"Não foi possível concluir a ligação à conta Google. Tente novamente."}
+  // A consulta de pedidos anteriores é auxiliar: uma falha desta consulta não pode bloquear a criação da conta.
+  try{
+   await AZNY_REMOTE_READY;
+   const mine=aznyList(await aznyLoadMyRequests()).filter(x=>x&&String(x.email||x.teacherEmail||"").trim().toLowerCase()===email).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+   const approved=mine.find(x=>x.status==="approved");
+   if(approved){await enterAccount(approved);return}
+   const pending=mine.find(x=>x.status==="pending");
+   if(pending){showTeacherPaymentStatus(pending);return}
+  }catch(checkError){console.warn("Consulta opcional de pedidos anteriores; o registo continuará:",checkError)}
+  toast("Conta Google autenticada. Complete o registo para escolher o plano.");
+ }catch(e){console.error("Registo Google:",e);note.style.color="#b42318";const code=String(e.code||"");note.textContent=code==="auth/unauthorized-domain"?"Este domínio ainda não está autorizado no Firebase Authentication. Adicione o domínio exato em Authentication → Settings → Authorized domains.":code==="auth/operation-not-allowed"?"O acesso com Google não está ativado no Firebase Authentication. Ative o fornecedor Google em Authentication → Sign-in method.":code==="auth/popup-blocked"?"O navegador bloqueou a janela Google. Permita pop-ups para este site e tente novamente.":code==="auth/popup-closed-by-user"?"A janela de autenticação Google foi fechada antes de terminar. Tente novamente.":("Falha na autenticação Google ("+(code||"erro desconhecido")+"). Verifique o fornecedor Google e os domínios autorizados no Firebase.")}
  finally{btn.disabled=false}
 }
 async function firstAccess(){const box=document.getElementById("loginMessage"),en=document.documentElement.lang==="en";box.textContent=en?"Create your account from Buy plan, enter your email and password, and submit your proof of payment.":"Crie a conta em Comprar plano, introduza o e-mail e a senha e envie o comprovativo de pagamento."}
@@ -838,9 +841,12 @@ async function createTeacherAccount(){
  btn.disabled=true;btn.textContent="A criar a conta...";
  try{
   const user=await ensureTeacherIdentity(email,password,googleUser);
-  const mine=await aznyLoadMyRequests();
-  const prior=aznyList(mine).filter(x=>x&&String(x.email||x.teacherEmail||"").trim().toLowerCase()===email&&x.status!=="rejected").sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))[0];
-  if(prior){showTeacherPaymentStatus(prior);return}
+  // A verificação prévia é apenas informativa. A validação definitiva de duplicados é feita no servidor ao enviar o pedido.
+  try{
+   const mine=await aznyLoadMyRequests();
+   const prior=aznyList(mine).filter(x=>x&&String(x.email||x.teacherEmail||"").trim().toLowerCase()===email&&x.status!=="rejected").sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))[0];
+   if(prior){showTeacherPaymentStatus(prior);return}
+  }catch(checkError){console.warn("Não foi possível consultar pedidos anteriores; o registo continuará:",checkError)}
   try{sessionStorage.setItem("rwb_teacher_registration",JSON.stringify({name,email,phone,provider:googleUser?"google":"password"}))}catch(_){}
   teacherRegistrationReady=true;
   box.style.color="#137547";box.textContent="Conta criada e autenticada com sucesso. Agora escolha o plano pretendido.";
@@ -849,7 +855,7 @@ async function createTeacherAccount(){
   document.getElementById("planDetail").classList.remove("show");
   document.getElementById("checkoutBox").style.display="none";
   document.getElementById("teacherPlanCards").scrollIntoView({behavior:"smooth",block:"start"});
- }catch(err){console.error("Criação da conta do professor:",err);box.style.color="#b42318";box.textContent=err.message||"Não foi possível criar a conta. Verifique os dados e tente novamente."}
+ }catch(err){console.error("Criação da conta do professor:",err);box.style.color="#b42318";const code=String(err.code||"");box.textContent=code==="auth/email-already-in-use"?"Este e-mail já está registado. Entre na conta existente.":code==="auth/weak-password"?"A palavra-passe deve ter pelo menos 6 caracteres.":code==="auth/invalid-email"?"O endereço de e-mail não é válido.":code==="auth/operation-not-allowed"?"A criação de contas por e-mail ainda não está ativada no Firebase Authentication.":(err.message&&err.message!=="internal"?err.message:"Não foi possível concluir esta etapa. A autenticação foi mantida; tente novamente ou contacte o suporte.")}
  finally{btn.disabled=false;btn.textContent="Continuar para escolher o plano"}
 }
 function updateRegisterPrice(){if(!selectedPlanKey)return;const p=AZNY_PLANS[selectedPlanKey],period=document.getElementById("billingPeriod").value,months=period==="annual"?12:Math.max(1,Math.min(12,Number(document.getElementById("monthlyMonths").value)||1)),amount=period==="annual"?p.annual:p.monthly*months,monthSelect=document.getElementById("monthlyMonths");monthSelect.style.display=period==="annual"?"none":"";document.getElementById("registerAmount").textContent=amount.toLocaleString("pt-AO")+" Kz";document.getElementById("selectedPlanInfo").innerHTML="<b>Plano selecionado:</b> "+p.name+" · "+p.students+" participantes/aula · "+p.dailyClasses+" aulas/dia<br><b>Duração:</b> "+(period==="annual"?"12 meses (anual)":months+(months===1?" mês":" meses"))+"<br><b>Total a pagar:</b> "+amount.toLocaleString("pt-AO")+" Kz";}
