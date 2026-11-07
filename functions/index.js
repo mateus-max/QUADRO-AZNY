@@ -322,31 +322,33 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
   const months = period === "annual" ? 12 : Math.max(1, Math.min(12, Number(d.months) || 1));
   const amount = period === "annual" ? plans[plan].annual : plans[plan].monthly * months;
   const requestsRef = db.ref("paymentRequests");
-  await loadPaymentRequests();
-  const id = "PAY-" + require("crypto").randomUUID();
-  const item = {
-    id, uid, name, email, phone,
-    authProvider: String(request.auth?.token?.firebase?.sign_in_provider || (d.authProvider || "password")).slice(0,40) === "google.com" ? "google" : "password",
-    existingAccessToken: String(d.existingAccessToken || "").slice(0,180),
-    plan, planName: ({basic:"Básico",professional:"Profissional",school:"Escola"})[plan],
-    period, months, amount, method: String(d.method || "").slice(0,50),
-    proof, proofName: proofName.slice(0,180), proofType: proofType.slice(0,100),
-    status: "pending", createdAt: new Date().toISOString()
-  };
-  let duplicate = null;
-  const tx = await requestsRef.transaction(value => {
-    const current = paymentObject(value);
-    duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email &&
+  try {
+    // Mantém a compatibilidade com o fluxo antigo: ler os pedidos existentes e
+    // gravar somente o novo registo. Não executar transaction() na raiz inteira,
+    // que inclui todos os comprovativos e pode provocar timeout/INTERNAL.
+    const current = await loadPaymentRequests();
+    const duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email &&
       (x.status === "pending" || (x.status === "approved" && x.plan !== "trial")));
-    if (duplicate) return;
-    current[id] = item;
-    return current;
-  });
-  if (!tx.committed) {
     if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName, createdAt: duplicate.createdAt } };
-    throw new HttpsError("aborted", "Não foi possível registar o pedido. Atualize a página e tente novamente.");
+    const id = "PAY-" + require("crypto").randomUUID();
+    const item = {
+      id, uid, name, email, phone,
+      authProvider: String(request.auth?.token?.firebase?.sign_in_provider || (d.authProvider || "password")).slice(0,40) === "google.com" ? "google" : "password",
+      existingAccessToken: String(d.existingAccessToken || "").slice(0,180),
+      plan, planName: ({basic:"Básico",professional:"Profissional",school:"Escola"})[plan],
+      period, months, amount, method: String(d.method || "").slice(0,50),
+      proof, proofName: proofName.slice(0,180), proofType: proofType.slice(0,100),
+      status: "pending", createdAt: new Date().toISOString()
+    };
+    await requestsRef.child(id).set(item);
+    return { ok: true, existing: false, request: { id, status: "pending", plan, planName: item.planName, createdAt: item.createdAt } };
+  } catch (error) {
+    console.error("createPaymentRequest failed", { uid, email, plan, code: error?.code, message: error?.message, stack: error?.stack });
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Não foi possível guardar o pedido de pagamento. A conta foi mantida. Tente novamente.", {
+      operation: "createPaymentRequest", originalCode: String(error?.code || "unknown"), originalMessage: String(error?.message || "").slice(0,300)
+    });
   }
-  return { ok: true, existing: false, request: { id, status: "pending", plan, planName: item.planName, createdAt: item.createdAt } };
 });
 
 exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
@@ -360,7 +362,9 @@ exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async 
   }
   try {
     const ref = db.ref("paymentRequests");
-    await loadPaymentRequests();
+    const current = await loadPaymentRequests();
+    const duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email && x.status !== "rejected");
+    if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName } };
     const id = "TRIAL-" + require("crypto").randomUUID();
     const provider = String(request.auth?.token?.firebase?.sign_in_provider || "password");
     const item = {
@@ -372,18 +376,8 @@ exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async 
       amount: 0, method: "Plano de teste",
       status: "pending", createdAt: new Date().toISOString()
     };
-    let duplicate = null;
-    const tx = await ref.transaction(value => {
-      const current = paymentObject(value);
-      duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email && x.status !== "rejected");
-      if (duplicate) return;
-      current[id] = item;
-      return current;
-    });
-    if (!tx.committed) {
-      if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName } };
-      throw new HttpsError("aborted", "Não foi possível registar o pedido de teste. Atualize a página e tente novamente.");
-    }
+    // Grava apenas o pedido novo, tal como no fluxo antigo.
+    await ref.child(id).set(item);
     return { ok: true, existing: false, request: { id, status: "pending", plan: "trial", planName: item.planName, createdAt: item.createdAt } };
   } catch (error) {
     console.error("createTrialRequest failed", { uid, email, code: error?.code, message: error?.message, stack: error?.stack });
