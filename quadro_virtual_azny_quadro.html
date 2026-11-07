@@ -1272,6 +1272,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
       <div class="azny-teacher-media-toggles" role="group" aria-label="Controlos da câmara e do microfone">
       <button id="micBtn" type="button" aria-pressed="false" title="Ligar microfone"><span class="azny-toggle-icon">🎙</span><span class="azny-toggle-label">Microfone desligado</span></button>
       <button id="cameraBtn" type="button" aria-pressed="false" title="Ligar câmara"><span class="azny-toggle-icon">📷</span><span class="azny-toggle-label">Câmara desligada</span></button>
+      <span id="azny-camera-network-indicator" class="azny-camera-network-indicator is-connecting" role="status" aria-label="A verificar ligação à rede" title="A verificar ligação à rede"><span class="azny-network-bars" aria-hidden="true"><i></i><i></i><i></i></span></span>
       </div>
     </div>
     <div class="teacher-media-status" id="teacherMediaStatus">Câmera: desligada · Microfone: desligado</div>
@@ -4930,6 +4931,33 @@ html body:not(.student-mode) .rightbar #teacherCamera #micBtn .azny-toggle-label
  display:none!important;
 }
 </style>
+
+<style id="azny-camera-clean-minimal-controls">
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .cam-status{display:none!important;visibility:hidden!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles{left:4px!important;right:4px!important;bottom:4px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:0!important;padding:0!important;background:transparent!important;border:0!important;pointer-events:none!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button{flex:0 0 20px!important;width:20px!important;min-width:20px!important;max-width:20px!important;height:20px!important;min-height:20px!important;max-height:20px!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#fff!important;text-shadow:0 1px 3px #000,0 0 4px #000!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button.is-on{background:transparent!important;border:0!important;box-shadow:none!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button .azny-toggle-icon{font-size:14px!important;line-height:1!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-camera-network-indicator{position:absolute!important;left:50%!important;bottom:5px!important;top:auto!important;transform:translateX(-50%)!important;z-index:32!important;display:flex!important;align-items:center!important;justify-content:center!important;width:20px!important;height:18px!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-network-bars{display:flex!important;align-items:flex-end!important;justify-content:center!important;gap:2px!important;width:16px!important;height:13px!important;filter:drop-shadow(0 1px 2px #000)!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-network-bars i{display:block!important;width:3px!important;border-radius:1px 1px 0 0!important;background:#ff6262!important;opacity:.95!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-network-bars i:nth-child(1){height:5px!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-network-bars i:nth-child(2){height:9px!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-network-bars i:nth-child(3){height:13px!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-camera-network-indicator.is-online .azny-network-bars i{background:#35e59a!important}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-camera-network-indicator.is-connecting .azny-network-bars i{background:#ffd15a!important}
+@media(max-width:950px) and (orientation:landscape),(max-height:520px) and (pointer:coarse){html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button{flex-basis:18px!important;width:18px!important;min-width:18px!important;max-width:18px!important;height:18px!important;min-height:18px!important;max-height:18px!important}html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button .azny-toggle-icon{font-size:13px!important}}
+</style>
+<script id="azny-camera-network-live-status">
+(function(){
+ const el=document.getElementById("azny-camera-network-indicator");if(!el)return;
+ let connected=null,listenerBound=false;
+ function paint(){const state=navigator.onLine===false?"offline":connected===true?"online":connected===false?"offline":"connecting";el.classList.remove("is-online","is-offline","is-connecting");el.classList.add("is-"+state);const label=state==="online"?"Rede em tempo real: ligada":state==="offline"?"Rede em tempo real: sem ligação":"Rede em tempo real: a verificar ligação";el.setAttribute("aria-label",label);el.title=label}
+ function bind(){if(listenerBound||!window.firebase?.database)return;try{firebase.database().ref(".info/connected").on("value",snap=>{connected=snap.val()===true;paint()});listenerBound=true}catch(e){}}
+ window.addEventListener("online",paint);window.addEventListener("offline",paint);paint();bind();
+ let tries=0;const timer=setInterval(()=>{bind();paint();if(listenerBound||++tries>=30)clearInterval(timer)},1000);
+})();
+</script>
 
 </body>
 </html>
