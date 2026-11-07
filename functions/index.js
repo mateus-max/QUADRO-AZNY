@@ -431,7 +431,7 @@ exports.adminListPaymentRequests = onCall({ region: REGION }, async (request) =>
 exports.adminGetPaymentProof = onCall({ region: REGION }, async (request) => {
   requireAdmin(request);
   const id = String(request.data?.requestId || "");
-  if (!id || id.length > 180 || /[.#$\\[\\]\/]/.test(id)) {
+  if (!id || id.length > 180 || [...id].some(ch => ".#$[]/".includes(ch))) {
     throw new HttpsError("invalid-argument", "Pedido inválido.");
   }
   const snap = await db.ref("paymentRequests/" + id).get();
@@ -475,7 +475,7 @@ exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
 exports.adminDeletePaymentRequest = onCall({ region: REGION }, async (request) => {
   const adminUid = requireAdmin(request);
   const id = String(request.data?.requestId || "");
-  if (!id || id.length > 180 || /[.#$\\[\\]\\/]/.test(id)) {
+  if (!id || id.length > 180 || [...id].some(ch => ".#$[]/".includes(ch))) {
     throw new HttpsError("invalid-argument", "Pedido inválido.");
   }
   const ref = db.ref("paymentRequests/" + id);
