@@ -18,7 +18,8 @@
         },
         "board": {
           ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
-          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' || root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student')"
+          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' || root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student')",
+          ".validate": "newData.hasChildren(['currentPage','pages']) && newData.child('currentPage').isNumber() && newData.child('currentPage').val() >= 1 && newData.child('currentPage').val() <= 5 && newData.child('pages').hasChildren() && newData.child('pages').numChildren() <= 5 && (!newData.child('lastEditorUid').exists() || newData.child('lastEditorUid').val() === auth.uid)"
         },
         "sharedBrowser": {
           ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
