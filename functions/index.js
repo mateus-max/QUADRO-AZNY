@@ -2,10 +2,11 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onValueWritten } = require("firebase-functions/v2/database");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase, ServerValue } = require("firebase-admin/database");
+const { getStorage } = require("firebase-admin/storage");
 const { defineString } = require("firebase-functions/params");
 const ADMIN_EMAIL = "suporte@domingas.com";
 
-initializeApp({ projectId: 'remot-board', databaseURL: 'https://remot-board-default-rtdb.firebaseio.com' });
+initializeApp({ projectId: 'remot-board', databaseURL: 'https://remot-board-default-rtdb.firebaseio.com', storageBucket: 'remot-board.firebasestorage.app' });
 const db = getDatabase();
 const REGION = "us-central1";
 
@@ -308,18 +309,35 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
   const phone = String(d.phone || "").trim();
   const plan = String(d.plan || "");
   const period = String(d.period || "monthly");
-  const proof = String(d.proof || "");
+  const proofPath = String(d.proofPath || "");
   const proofName = String(d.proofName || "comprovativo");
-  const proofType = String(d.proofType || "");
+  const proofType = String(d.proofType || "").toLowerCase();
   const plans = {
     basic: { monthly: 10000, annual: 60000 },
     professional: { monthly: 20000, annual: 60000 },
     school: { monthly: 30000, annual: 100000 }
   };
+  const expectedProofPrefix = "paymentProofs/" + uid + "/";
   if (!name || name.length > 120 || !phone || phone.length > 40 || !plans[plan] ||
-      !["monthly", "annual"].includes(period) || !proof.startsWith("data:") ||
-      proof.length > 5_600_000 || !/^data:(image\/(png|jpeg|webp)|application\/pdf);base64,/.test(proof)) {
-    throw new HttpsError("invalid-argument", "Dados do pedido ou comprovativo inválidos.");
+      !["monthly", "annual"].includes(period) ||
+      !proofPath.startsWith(expectedProofPrefix) ||
+      proofPath.length > expectedProofPrefix.length + 220 ||
+      !["image/png", "image/jpeg", "image/webp", "application/pdf"].includes(proofType)) {
+    throw new HttpsError("invalid-argument", "Dados do pedido ou caminho do comprovativo inválidos.");
+  }
+  const proofFile = getStorage().bucket().file(proofPath);
+  let proofMetadata;
+  try {
+    [proofMetadata] = await proofFile.getMetadata();
+  } catch (error) {
+    console.error("Comprovativo não encontrado no Storage", { uid, proofPath, code: error?.code, message: error?.message });
+    throw new HttpsError("failed-precondition", "O comprovativo ainda não terminou de carregar. Volte a anexá-lo e tente novamente.");
+  }
+  const storedType = String(proofMetadata.contentType || "").toLowerCase();
+  const storedSize = Number(proofMetadata.size || 0);
+  const ownerUid = String(proofMetadata.metadata?.ownerUid || "");
+  if (!storedSize || storedSize > 4 * 1024 * 1024 || storedType !== proofType || ownerUid !== uid) {
+    throw new HttpsError("invalid-argument", "O comprovativo excede 4 MB ou tem um formato não permitido.");
   }
   const months = period === "annual" ? 12 : Math.max(1, Math.min(12, Number(d.months) || 1));
   const amount = period === "annual" ? plans[plan].annual : plans[plan].monthly * months;
@@ -336,7 +354,7 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
       existingAccessToken: String(d.existingAccessToken || "").slice(0,180),
       plan, planName: ({basic:"Básico",professional:"Profissional",school:"Escola"})[plan],
       period, months, amount, method: String(d.method || "").slice(0,50),
-      proof, proofName: proofName.slice(0,180), proofType: proofType.slice(0,100),
+      proofPath, proofName: proofName.slice(0,180), proofType: proofType.slice(0,100), proofSize: storedSize,
       status: "pending", accountStatus: "pending", accessGranted: false,
       createdAt: new Date().toISOString()
     };
@@ -429,10 +447,21 @@ exports.adminGetPaymentProof = onCall({ region: REGION }, async (request) => {
   }
   const snap = await db.ref("paymentRequests/" + id).get();
   const item = snap.val();
-  if (!item || typeof item.proof !== "string" || !item.proof.startsWith("data:")) {
-    throw new HttpsError("not-found", "Comprovativo não encontrado.");
+  if (!item) throw new HttpsError("not-found", "Comprovativo não encontrado.");
+  if (typeof item.proof === "string" && item.proof.startsWith("data:")) {
+    return { proof: item.proof, proofName: String(item.proofName || "comprovativo"), proofType: String(item.proofType || "") };
   }
-  return { proof: item.proof, proofName: String(item.proofName || "comprovativo"), proofType: String(item.proofType || "") };
+  const proofPath = String(item.proofPath || "");
+  if (!proofPath.startsWith("paymentProofs/")) throw new HttpsError("not-found", "Comprovativo não encontrado.");
+  try {
+    const [buffer] = await getStorage().bucket().file(proofPath).download();
+    const contentType = String(item.proofType || "application/octet-stream");
+    return { proof: "data:" + contentType + ";base64," + buffer.toString("base64"),
+      proofName: String(item.proofName || "comprovativo"), proofType: contentType };
+  } catch (error) {
+    console.error("Falha ao descarregar comprovativo", { requestId: id, proofPath, code: error?.code, message: error?.message });
+    throw new HttpsError("not-found", "O ficheiro do comprovativo não está disponível no armazenamento.");
+  }
 });
 
 exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
