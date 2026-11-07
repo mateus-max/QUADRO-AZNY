@@ -2,6 +2,8 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onValueWritten } = require("firebase-functions/v2/database");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase, ServerValue } = require("firebase-admin/database");
+const { defineString } = require("firebase-functions/params");
+const ADMIN_UIDS = defineString("ADMIN_UIDS", { default: "" });
 
 initializeApp({ projectId: 'remot-board', databaseURL: 'https://remote-board-default-rtdb.firebaseio.com' });
 const db = getDatabase();
@@ -21,6 +23,14 @@ function cleanKey(value) {
 function requireAuth(request) {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Autenticação necessária.");
   return request.auth.uid;
+}
+function requireAdmin(request) {
+  const uid = requireAuth(request);
+  const configured = ADMIN_UIDS.value().split(",").map(v => v.trim()).filter(Boolean);
+  if (request.auth?.token?.admin !== true && !configured.includes(uid)) {
+    throw new HttpsError("permission-denied", "Acesso reservado à administração.");
+  }
+  return uid;
 }
 function teacherRoomAllowed(roomId, token) {
   const scope = hashKey(token);
@@ -206,9 +216,9 @@ exports.activateApprovedLicense = onCall({ region: REGION }, async (request) => 
   }
   const requestsRef = db.ref("paymentRequests");
   const snap = await requestsRef.get();
-  const requests = snap.val();
-  const list = Array.isArray(requests) ? requests : Object.values(requests || {});
-  const approved = list.find(item => item && String(item.id || "") === requestId);
+  const requests = paymentObject(snap.val());
+  const list = Object.values(requests);
+  const approved = requests[requestId] || list.find(item => item && String(item.id || "") === requestId);
   if (!approved || approved.status !== "approved" ||
       String(approved.email || approved.teacherEmail || "").trim().toLowerCase() !== email) {
     throw new HttpsError("permission-denied", "A administração ainda não aprovou este pedido para esta conta.");
@@ -251,7 +261,119 @@ exports.activateApprovedLicense = onCall({ region: REGION }, async (request) => 
   }
   const updatedRequests = list.map(item => item && String(item.id || "") === requestId
     ? { ...item, accessToken: token, activatedAt: ServerValue.TIMESTAMP } : item);
-  updates["paymentRequests"] = updatedRequests;
+  updates["paymentRequests/" + requestId] = { ...approved, accessToken: token, activatedAt: ServerValue.TIMESTAMP };
   await db.ref().update(updates);
   return { ok: true, accessToken: token, plan: planKey, teacherName: license.teacherName };
+});
+
+function safeEmail(value) { return String(value || "").trim().toLowerCase(); }
+function validEmail(value) { return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value); }
+function paymentObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
+
+exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
+  const uid = requireAuth(request);
+  const email = safeEmail(request.auth.token.email);
+  if (!email || !validEmail(email) || request.auth.token.email_verified !== true) {
+    throw new HttpsError("failed-precondition", "Entre com um e-mail verificado.");
+  }
+  const d = request.data || {};
+  const name = String(d.name || "").trim();
+  const phone = String(d.phone || "").trim();
+  const plan = String(d.plan || "");
+  const period = String(d.period || "monthly");
+  const proof = String(d.proof || "");
+  const proofName = String(d.proofName || "comprovativo");
+  const proofType = String(d.proofType || "");
+  const plans = {
+    basic: { monthly: 10000, annual: 60000 },
+    professional: { monthly: 20000, annual: 60000 },
+    school: { monthly: 30000, annual: 100000 }
+  };
+  if (!name || name.length > 120 || !phone || phone.length > 40 || !plans[plan] ||
+      !["monthly", "annual"].includes(period) || !proof.startsWith("data:") ||
+      proof.length > 5_600_000 || !/^data:(image\\/(png|jpeg|webp)|application\\/pdf);base64,/.test(proof)) {
+    throw new HttpsError("invalid-argument", "Dados do pedido ou comprovativo inválidos.");
+  }
+  const months = period === "annual" ? 12 : Math.max(1, Math.min(12, Number(d.months) || 1));
+  const amount = period === "annual" ? plans[plan].annual : plans[plan].monthly * months;
+  const requestsRef = db.ref("paymentRequests");
+  const snap = await requestsRef.get();
+  const current = paymentObject(snap.val());
+  const duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email &&
+    (x.status === "pending" || (x.status === "approved" && x.plan !== "trial")));
+  if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName, createdAt: duplicate.createdAt } };
+  const id = "PAY-" + require("crypto").randomUUID();
+  const item = {
+    id, uid, name, email, phone, authProvider: String(d.authProvider || "email").slice(0,40),
+    existingAccessToken: String(d.existingAccessToken || "").slice(0,180),
+    plan, planName: ({basic:"Básico",professional:"Profissional",school:"Escola"})[plan],
+    period, months, amount, method: String(d.method || "").slice(0,50),
+    proof, proofName: proofName.slice(0,180), proofType: proofType.slice(0,100),
+    status: "pending", createdAt: new Date().toISOString()
+  };
+  await requestsRef.child(id).set(item);
+  return { ok: true, existing: false, request: { id, status: "pending", plan, planName: item.planName, createdAt: item.createdAt } };
+});
+
+exports.createTrialRequest = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request);
+  const email = safeEmail(request.auth.token.email);
+  if (!email || request.auth.token.email_verified !== true) throw new HttpsError("failed-precondition", "E-mail verificado obrigatório.");
+  const name = String(request.data?.name || "").trim();
+  const phone = String(request.data?.phone || "").trim();
+  if (!name || name.length > 120 || !phone || phone.length > 40) throw new HttpsError("invalid-argument", "Dados incompletos.");
+  const ref = db.ref("paymentRequests");
+  const snap = await ref.get();
+  const current = paymentObject(snap.val());
+  const duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email && x.status !== "rejected");
+  if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName } };
+  const id = "TRIAL-" + require("crypto").randomUUID();
+  const item = { id, uid, name, email, phone, authProvider: "email", requestType: "trial", plan: "trial", planName: "Plano de teste — 4 aulas", trialSessionsLimit: 4, trialSessionsUsed: 0, amount: 0, method: "Plano de teste", status: "pending", createdAt: new Date().toISOString() };
+  await ref.child(id).set(item);
+  return { ok: true, existing: false, request: { id, status: "pending", plan: "trial", planName: item.planName } };
+});
+
+exports.getMyPaymentRequests = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request);
+  const email = safeEmail(request.auth.token.email);
+  if (!email) throw new HttpsError("failed-precondition", "Conta sem e-mail.");
+  const snap = await db.ref("paymentRequests").get();
+  const all = paymentObject(snap.val());
+  const items = Object.values(all).filter(x => x && (x.uid === uid || safeEmail(x.email) === email))
+    .sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .map(({ proof, ...item }) => item);
+  return { requests: items };
+});
+
+exports.adminListPaymentRequests = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const snap = await db.ref("paymentRequests").get();
+  return { requests: Object.values(paymentObject(snap.val())).sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) };
+});
+
+exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
+  const adminUid = requireAdmin(request);
+  const id = String(request.data?.requestId || "");
+  const status = String(request.data?.status || "");
+  const note = String(request.data?.note || "").slice(0,1000);
+  if (!id || id.length > 180 || !["approved","rejected"].includes(status)) throw new HttpsError("invalid-argument", "Decisão inválida.");
+  const ref = db.ref("paymentRequests/" + id);
+  let updated;
+  const tx = await ref.transaction(current => {
+    if (!current || !["pending","rejected"].includes(current.status)) return;
+    updated = { ...current, status, adminNote: note, approvedBy: adminUid, approvedAt: status === "approved" ? new Date().toISOString() : null, reviewedAt: ServerValue.TIMESTAMP };
+    return updated;
+  });
+  if (!tx.committed) throw new HttpsError("failed-precondition", "Pedido inexistente ou já processado.");
+  await db.ref("auditLogs").push({ action: "payment_" + status, requestId: id, adminUid, at: ServerValue.TIMESTAMP });
+  return { ok: true, requestId: id, status };
+});
+
+exports.submitFeedback = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request);
+  const message = String(request.data?.message || "").trim();
+  if (message.length < 3 || message.length > 5000) throw new HttpsError("invalid-argument", "Mensagem inválida.");
+  const ref = db.ref("feedback").push();
+  await ref.set({ uid, message, createdAt: ServerValue.TIMESTAMP, status: "new" });
+  return { ok: true, id: ref.key };
 });
