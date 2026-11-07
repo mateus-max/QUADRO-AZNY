@@ -67,3 +67,29 @@ Não substituir as regras atualmente publicadas até concluir todos os passos. O
 ## Modelo detalhado
 
 Consultar `FIREBASE_DATA_MODEL.md` para a árvore de dados, papéis, limites e sequência de ativação no projeto novo.
+
+
+## Migração financeira para Cloud Functions
+
+Foram adicionadas as funções:
+- `createPaymentRequest`: recebe o comprovativo e cria pedido pendente no servidor, associando-o ao UID e e-mail autenticados; impede pedidos pendentes/ativos duplicados.
+- `createTrialRequest`: regista pedidos de teste no servidor.
+- `getMyPaymentRequests`: devolve apenas pedidos da própria conta, sem expor comprovativos.
+- `adminListPaymentRequests`: lista pedidos apenas para administradores autorizados.
+- `adminSetPaymentStatus`: aprova/rejeita no servidor, grava o UID do administrador e cria registo de auditoria.
+- `submitFeedback`: recebe sugestões sem escrita direta na base de dados.
+- `activateApprovedLicense`: lê o pedido pelo ID, confirma estado aprovado e e-mail autenticado e só então cria a licença.
+
+O `index.html` foi alterado para enviar pedidos, consultar o próprio estado e submeter feedback através das funções. Foi criado `admin.html`, um painel de análise que chama exclusivamente funções protegidas.
+
+### Configurar o primeiro administrador
+
+A autorização administrativa é feita pela lista de UIDs confiáveis `ADMIN_UIDS` (ou custom claim `admin=true`). Não existe qualquer botão no site para um utilizador se tornar administrador.
+
+1. No Firebase Console → Authentication → Users, abrir a conta que será administradora e copiar o UID completo.
+2. Na pasta local do projeto, criar o ficheiro local `.env.remot-board` com uma linha: `ADMIN_UIDS=UID_COMPLETO`. Para mais administradores, separar UIDs por vírgula.
+3. Não colocar esse ficheiro no GitHub. Confirmar que está no `.gitignore`.
+4. Publicar as funções no projeto `remot-board` depois de instalar as dependências. O deploy carrega o parâmetro para o ambiente das funções.
+5. Entrar em `admin.html` com a conta Google cujo UID foi autorizado.
+
+**Ainda não está pronto para publicar as regras no Console:** os restantes módulos (avaliações, publicações e supervisão) ainda precisam de revisão/migração para as novas regras. O painel administrativo financeiro só funcionará depois do deploy das funções e da configuração de `ADMIN_UIDS`.
