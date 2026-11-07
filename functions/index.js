@@ -196,3 +196,62 @@ exports.getLicenseForAccount = onCall({ region: REGION }, async (request) => {
     requestId: lic.requestId || "", startedAt: lic.startedAt || null
   }};
 });
+
+exports.activateApprovedLicense = onCall({ region: REGION }, async (request) => {
+  const uid = requireAuth(request);
+  const email = String(request.auth.token.email || "").trim().toLowerCase();
+  const requestId = String(request.data?.requestId || "");
+  if (!email || !requestId || requestId.length > 180) {
+    throw new HttpsError("invalid-argument", "Pedido ou conta inválida.");
+  }
+  const requestsRef = db.ref("paymentRequests");
+  const snap = await requestsRef.get();
+  const requests = snap.val();
+  const list = Array.isArray(requests) ? requests : Object.values(requests || {});
+  const approved = list.find(item => item && String(item.id || "") === requestId);
+  if (!approved || approved.status !== "approved" ||
+      String(approved.email || approved.teacherEmail || "").trim().toLowerCase() !== email) {
+    throw new HttpsError("permission-denied", "A administração ainda não aprovou este pedido para esta conta.");
+  }
+  const plans = {
+    basic: { name: "Básico", students: 10, dailyClasses: 2, simultaneous: 1, duration: 2, storage: "10 GB temporários" },
+    professional: { name: "Profissional", students: 45, dailyClasses: 3, simultaneous: 2, duration: 4, storage: "50 GB temporários" },
+    school: { name: "Escola", students: 50, dailyClasses: 3, simultaneous: 5, duration: 6, storage: "100 GB temporários" },
+    trial: { name: "Teste — 4 aulas", students: 45, dailyClasses: 3, simultaneous: 1, duration: 4, storage: "Temporário" }
+  };
+  const planKey = String(approved.plan || "");
+  const plan = plans[planKey];
+  if (!plan) throw new HttpsError("failed-precondition", "O plano aprovado não é válido.");
+  const token = String(approved.accessToken || approved.existingAccessToken || "").trim() ||
+    require("crypto").randomUUID();
+  const licenseRef = db.ref("licenses/" + token);
+  const priorSnap = await licenseRef.get();
+  const prior = priorSnap.val() || {};
+  const completed = prior.trialCompletedSessions || {};
+  const used = Object.keys(completed).length;
+  const exhausted = planKey === "trial" && used >= 4;
+  const license = {
+    status: "active", trialExhausted: exhausted, boardAccess: !exhausted,
+    plan: planKey, planName: String(approved.planName || plan.name),
+    ...plan, startedAt: prior.startedAt || approved.approvedAt || new Date().toISOString(),
+    expiresAt: approved.expiresAt || null,
+    teacherName: String(approved.name || approved.teacherName || email),
+    teacherPhone: String(approved.phone || approved.teacherPhone || ""),
+    requestId, accessToken: token, teacherEmail: email,
+    ...(planKey === "trial" ? { trialSessionsLimit: 4, trialSessionsUsed: used, trialCompletedSessions: completed,
+      trialApprovedAt: prior.trialApprovedAt || approved.approvedAt || new Date().toISOString() } : {})
+  };
+  const updates = {};
+  updates["licenses/" + token] = license;
+  const oldToken = String(approved.existingAccessToken || "").trim();
+  if (oldToken && oldToken !== token) {
+    updates["licenses/" + oldToken + "/status"] = "replaced";
+    updates["licenses/" + oldToken + "/replacedBy"] = token;
+    updates["licenses/" + oldToken + "/replacedAt"] = ServerValue.TIMESTAMP;
+  }
+  const updatedRequests = list.map(item => item && String(item.id || "") === requestId
+    ? { ...item, accessToken: token, activatedAt: ServerValue.TIMESTAMP } : item);
+  updates["paymentRequests"] = updatedRequests;
+  await db.ref().update(updates);
+  return { ok: true, accessToken: token, plan: planKey, teacherName: license.teacherName };
+});
