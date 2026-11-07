@@ -1,0 +1,17 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /paymentProofs/{uid}/{fileName} {
+      // O professor autenticado só pode enviar ficheiros para a sua própria pasta.
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource != null
+        && request.resource.size > 0
+        && request.resource.size <= 4 * 1024 * 1024
+        && request.resource.contentType.matches('(image/png|image/jpeg|image/webp|application/pdf)');
+      // Os comprovativos são privados; apenas a Administração pode lê-los.
+      allow read: if request.auth != null
+        && request.auth.token.email == 'suporte@domingas.com';
+    }
+  }
+}
