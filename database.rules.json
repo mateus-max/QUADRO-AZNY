@@ -1,7 +1,7 @@
 {
   "rules": {
-    ".read": "auth != null && auth.token.email === 'suporte@domingas.com'",
-    ".write": "auth != null && auth.token.email === 'suporte@domingas.com'",
+    ".read": false,
+    ".write": false,
     "roomAccess": {
       ".read": false,
       ".write": false
@@ -124,8 +124,17 @@
       ".write": false
     },
     "paymentRequests": {
-      ".read": false,
-      ".write": false
+      ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || (query.orderByChild === 'uid' && query.equalTo === auth.uid))",
+      ".indexOn": [
+        "uid",
+        "email",
+        "status"
+      ],
+      "$requestId": {
+        ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || data.child('uid').val() === auth.uid)",
+        ".write": "auth != null && (auth.token.email === 'suporte@domingas.com' || (!data.exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending' && newData.child('accessGranted').val() === false))",
+        ".validate": "auth != null && (auth.token.email === 'suporte@domingas.com' || (newData.hasChildren(['id','uid','email','name','status','createdAt']) && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending' && newData.child('accessGranted').val() === false))"
+      }
     },
     "admin": {
       ".read": false,
