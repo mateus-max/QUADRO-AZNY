@@ -273,7 +273,7 @@ function paymentObject(value) { return value && typeof value === "object" && !Ar
 exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
   const uid = requireAuth(request);
   const email = safeEmail(request.auth.token.email);
-  if (!email || !validEmail(email) || request.auth.token.email_verified !== true) {
+  if (!email || !validEmail(email)) {
     throw new HttpsError("failed-precondition", "Entre com um e-mail verificado.");
   }
   const d = request.data || {};
@@ -318,7 +318,7 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
 exports.createTrialRequest = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request);
   const email = safeEmail(request.auth.token.email);
-  if (!email || request.auth.token.email_verified !== true) throw new HttpsError("failed-precondition", "E-mail verificado obrigatório.");
+  if (!email || !validEmail(email)) throw new HttpsError("failed-precondition", "Conta autenticada com e-mail obrigatório.");
   const name = String(request.data?.name || "").trim();
   const phone = String(request.data?.phone || "").trim();
   if (!name || name.length > 120 || !phone || phone.length > 40) throw new HttpsError("invalid-argument", "Dados incompletos.");
