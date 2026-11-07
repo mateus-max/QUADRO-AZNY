@@ -315,23 +315,58 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
   return { ok: true, existing: false, request: { id, status: "pending", plan, planName: item.planName, createdAt: item.createdAt } };
 });
 
-exports.createTrialRequest = onCall({ region: REGION }, async (request) => {
+exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
   const uid = requireAuth(request);
-  const email = safeEmail(request.auth.token.email);
-  if (!email || !validEmail(email)) throw new HttpsError("failed-precondition", "Conta autenticada com e-mail obrigatório.");
+  const email = safeEmail(request.auth?.token?.email);
+  if (!email || !validEmail(email)) {
+    throw new HttpsError("failed-precondition", "A conta autenticada precisa de um endereço de e-mail válido.");
+  }
   const name = String(request.data?.name || "").trim();
   const phone = String(request.data?.phone || "").trim();
-  if (!name || name.length > 120 || !phone || phone.length > 40) throw new HttpsError("invalid-argument", "Dados incompletos.");
-  const ref = db.ref("paymentRequests");
-  const snap = await ref.get();
-  const current = paymentObject(snap.val());
-  const duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email && x.status !== "rejected");
-  if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName } };
-  const id = "TRIAL-" + require("crypto").randomUUID();
-  const provider = String(request.auth?.token?.firebase?.sign_in_provider || "password");
-  const item = { id, uid, name, email, phone, authProvider: provider === "google.com" ? "google" : "password", requestType: "trial", plan: "trial", planName: "Plano de teste — 4 aulas", trialSessionsLimit: 4, trialSessionsUsed: 0, amount: 0, method: "Plano de teste", status: "pending", createdAt: new Date().toISOString() };
-  await ref.child(id).set(item);
-  return { ok: true, existing: false, request: { id, status: "pending", plan: "trial", planName: item.planName } };
+  if (!name || name.length > 120 || !phone || phone.length > 40) {
+    throw new HttpsError("invalid-argument", "Preencha o nome e o telefone corretamente.");
+  }
+  try {
+    const ref = db.ref("paymentRequests");
+    const snap = await ref.get();
+    const current = paymentObject(snap.val());
+    const duplicate = Object.values(current).find(x =>
+      x && safeEmail(x.email) === email && x.status !== "rejected"
+    );
+    if (duplicate) {
+      return { ok: true, existing: true, request: {
+        id: duplicate.id, status: duplicate.status, plan: duplicate.plan,
+        planName: duplicate.planName
+      }};
+    }
+    const id = "TRIAL-" + require("crypto").randomUUID();
+    const provider = String(request.auth?.token?.firebase?.sign_in_provider || "password");
+    const item = {
+      id, uid, name, email, phone,
+      authProvider: provider === "google.com" ? "google" : "password",
+      requestType: "trial", plan: "trial",
+      planName: "Plano de teste — 4 aulas",
+      trialSessionsLimit: 4, trialSessionsUsed: 0,
+      amount: 0, method: "Plano de teste",
+      status: "pending", createdAt: new Date().toISOString()
+    };
+    await ref.child(id).set(item);
+    return { ok: true, existing: false, request: {
+      id, status: "pending", plan: "trial", planName: item.planName,
+      createdAt: item.createdAt
+    }};
+  } catch (error) {
+    console.error("createTrialRequest failed", {
+      uid, email, code: error?.code, message: error?.message,
+      stack: error?.stack
+    });
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError(
+      "internal",
+      "Não foi possível gravar o pedido de teste na base de dados. A equipa técnica foi informada; tente novamente dentro de alguns minutos.",
+      { operation: "createTrialRequest", originalCode: String(error?.code || "unknown") }
+    );
+  }
 });
 
 exports.getMyPaymentRequests = onCall({ region: REGION }, async (request) => {
