@@ -935,10 +935,10 @@ async function submitTrialRequest(){
  const password=document.getElementById("licensePassword").value;
  const confirm=document.getElementById("licensePasswordConfirm").value;
  const btn=document.getElementById("requestTrial");
- const googleUser=!!(googleRegistrationEmail&&firebase.auth().currentUser&&String(firebase.auth().currentUser.email||"").trim().toLowerCase()===email);
+ const currentUser=firebase.auth().currentUser;
+ const googleUser=!!(googleRegistrationEmail&&currentUser&&!currentUser.isAnonymous&&String(currentUser.email||"").trim().toLowerCase()===email);
  if(!name||!email||!phone||(!googleUser&&(!password||!confirm))){
-  toast("Preencha nome, e-mail e telefone. Para registo por e-mail, indique a palavra-passe.");
-  return;
+  toast("Preencha nome, e-mail e telefone. Para registo por e-mail, indique a palavra-passe.");return;
  }
  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
   document.getElementById("licenseEmail").focus();toast("Introduza um endereço de e-mail válido.");return;
@@ -948,16 +948,23 @@ async function submitTrialRequest(){
  }
  btn.disabled=true;btn.textContent="A enviar pedido de teste...";
  try{
-  await ensureTeacherIdentity(email,password,googleUser);
+  let user=firebase.auth().currentUser;
+  if(googleUser){
+   if(!user||String(user.email||"").trim().toLowerCase()!==email)throw new Error("Volte a selecionar a conta Google pretendida.");
+  }else if(!user||user.isAnonymous||String(user.email||"").trim().toLowerCase()!==email){
+   try{user=(await firebase.auth().signInWithEmailAndPassword(email,password)).user;}
+   catch(authError){
+    if(authError.code==="auth/user-not-found"||authError.code==="auth/invalid-credential"||authError.code==="auth/email-already-in-use"){
+     try{user=(await firebase.auth().createUserWithEmailAndPassword(email,password)).user;}
+     catch(createError){if(createError.code==="auth/email-already-in-use")user=(await firebase.auth().signInWithEmailAndPassword(email,password)).user;else throw createError;}
+    }else throw authError;
+   }
+  }
+  await user.getIdToken(true);
   const callable=firebase.app().functions("us-central1").httpsCallable("createTrialRequest");
   const result=await callable({name,phone});
   const request=result.data?.request||{};
-  const item={
-   ...request,name,email,phone,requestType:"trial",plan:"trial",
-   planName:"Plano de teste — 4 aulas",
-   status:request.status||"pending",
-   createdAt:request.createdAt||new Date().toISOString()
-  };
+  const item={...request,name,email,phone,requestType:"trial",plan:"trial",planName:"Plano de teste — 4 aulas",status:request.status||"pending",createdAt:request.createdAt||new Date().toISOString()};
   googleRegistrationEmail="";
   showTeacherPaymentStatus(item);
   toast(result.data?.existing?"Já existe um pedido associado a esta conta.":"Pedido de teste enviado para aprovação.");
