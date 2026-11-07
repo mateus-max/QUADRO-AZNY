@@ -708,7 +708,7 @@ async function aznyInitRemote(){await AZNY_AUTH_READY;return true}
 const AZNY_REMOTE_READY=aznyInitRemote().catch(e=>{console.error("Firebase inicialização:",e);throw e});
 function normalizePhone(v){return String(v||"").replace(/\D/g,"")}
 function rwbFriendlyError(err,context){
- const code=String(err?.code||"").replace(/^functions\\//,"");
+ const code=String(err?.code||"").replace(/^functions\//,"");
  const raw=String(err?.message||"").trim();
  const messages={
   "unauthenticated":"A sessão expirou. Entre novamente e repita o pedido.",
