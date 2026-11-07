@@ -1506,7 +1506,7 @@ function serializeObject(el){
 function pushHistory(){undoStack.push(snapshot());if(undoStack.length>60)undoStack.shift();redoStack=[]}
 function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restore(undoStack.pop());scheduleSave()}
 function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(redoStack.pop());scheduleSave()}
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!isStudent&&!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,8)}}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,isStudent?35:8)}}
 function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage,pages:pageStates}));document.getElementById("storageState").textContent="● Guardado"}catch(e){toast(document.documentElement.lang==="en"?"Local Storage limit reached":"Limite do Local Storage atingido")}}
 /* Each teacher has a separate room/storage namespace; every new class starts with an empty board. */
 async function resetBoardForClassLifecycle(){
@@ -1812,7 +1812,7 @@ function publishLiveBoardState(){
     const ref=aznyRoomRef().child("board");
     const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP,lastEditorUid:aznyUid||""};
     ref.update(payload).catch(e=>{console.warn("AZNY live board:",e);showNetworkNotice("Não foi possível sincronizar esta alteração. Verifique a ligação.","bad")});
-   },isStudent?140:180);
+   },isStudent?70:90);
   }
  },25)
 }
@@ -2871,7 +2871,7 @@ function addStudentVideoCard(id,name,stream,track){
  let card=document.getElementById("student-"+id);
  if(!card){
   card=document.createElement("div");card.className="student";card.id="student-"+id;
-  card.innerHTML='<video autoplay playsinline></video><div class="azny-student-cam-off"><span>🎥</span><small>Câmara desligada</small></div><div class="label"></div><span class="azny-raised-hand" aria-label="Aluno com a mão levantada" title="Mão levantada">✋</span><div class="azny-camera-signal" aria-label="Estado da ligação"><i></i><i></i><i></i></div><div class="azny-student-device-controls"><button type="button" data-student-mic aria-label="Desligar microfone" title="Desligar microfone">🎙</button><button type="button" data-student-camera aria-label="Desligar câmera" title="Desligar câmera">📷</button></div>';
+  card.innerHTML='<video autoplay playsinline></video><div class="azny-student-cam-off"><span>🎥</span><small>Câmara desligada</small></div><div class="label"></div><span class="azny-raised-hand" aria-label="Aluno com a mão levantada" title="Mão levantada">✋</span><div class="azny-camera-signal" aria-label="Estado da ligação"><i></i><i></i><i></i></div><div class="azny-student-device-controls"><button type="button" data-student-camera aria-label="Ligar/desligar câmera" title="Ligar/desligar câmera">📷</button><span class="azny-camera-network-indicator is-connecting" data-student-network aria-label="A verificar rede"><span class="azny-network-bars"><i></i><i></i><i></i></span></span><button type="button" data-student-mic aria-label="Ligar/desligar microfone" title="Ligar/desligar microfone">🎙</button></div>';
   card._aznyRemoteStream=new MediaStream();wrap.appendChild(card);
   const signal=signalRef(id);
   const micBtn=card.querySelector("[data-student-mic]"),camBtn=card.querySelector("[data-student-camera]");
@@ -4956,6 +4956,161 @@ html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-camera
  function bind(){if(listenerBound||!window.firebase?.database)return;try{firebase.database().ref(".info/connected").on("value",snap=>{connected=snap.val()===true;paint()});listenerBound=true}catch(e){}}
  window.addEventListener("online",paint);window.addEventListener("offline",paint);paint();bind();
  let tries=0;const timer=setInterval(()=>{bind();paint();if(listenerBound||++tries>=30)clearInterval(timer)},1000);
+})();
+</script>
+
+
+<style id="azny-unified-camera-footer-all-views">
+/* Mesma disposição visual nos vídeos do professor e dos alunos: câmara | rede | microfone. */
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls{
+ position:absolute!important;left:3px!important;right:3px!important;bottom:1px!important;z-index:18!important;
+ display:flex!important;align-items:center!important;justify-content:space-between!important;gap:0!important;
+ padding:0!important;margin:0!important;background:transparent!important;border:0!important;
+ pointer-events:none!important;
+}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls button{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ flex:0 0 16px!important;width:16px!important;min-width:16px!important;max-width:16px!important;
+ height:16px!important;min-height:16px!important;max-height:16px!important;padding:0!important;margin:0!important;
+ border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+ color:#fff!important;font-size:11px!important;line-height:1!important;text-shadow:0 1px 3px #000,0 0 4px #000!important;
+ pointer-events:auto!important;touch-action:manipulation!important;
+}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls [data-student-camera]{order:1!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls [data-student-network]{order:2!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls [data-student-mic]{order:3!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls button.is-off{background:transparent!important;border:0!important;color:#ff7474!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls .azny-camera-network-indicator{
+ position:static!important;transform:none!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ flex:0 0 16px!important;width:16px!important;height:13px!important;padding:0!important;margin:0!important;
+ border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+ pointer-events:none!important;
+}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls .azny-network-bars{
+ display:flex!important;align-items:flex-end!important;justify-content:center!important;gap:1px!important;
+ width:13px!important;height:10px!important;filter:drop-shadow(0 1px 2px #000)!important;
+}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls .azny-network-bars i{
+ display:block!important;width:2px!important;border-radius:1px 1px 0 0!important;background:#ff6262!important;
+}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls .azny-network-bars i:nth-child(1){height:4px!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls .azny-network-bars i:nth-child(2){height:7px!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls .azny-network-bars i:nth-child(3){height:10px!important}
+.azny-camera-network-indicator.is-online .azny-network-bars i{background:#35e59a!important}
+.azny-camera-network-indicator.is-connecting .azny-network-bars i{background:#ffd15a!important}
+.azny-camera-network-indicator.is-offline .azny-network-bars i{background:#ff6262!important}
+
+/* Student screen: the teacher and the student's own preview use the same minimal footer. */
+.student-mode .student-video-card{position:relative!important;isolation:isolate!important}
+.student-mode .student-video-card .azny-video-footer{
+ position:absolute!important;left:3px!important;right:3px!important;bottom:1px!important;z-index:25!important;
+ display:flex!important;align-items:center!important;justify-content:space-between!important;gap:0!important;
+ pointer-events:none!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;
+}
+.student-mode .student-video-card .azny-video-footer .azny-video-device{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:16px!important;min-width:16px!important;height:16px!important;min-height:16px!important;
+ padding:0!important;margin:0!important;border:0!important;border-radius:0!important;
+ background:transparent!important;box-shadow:none!important;color:#fff!important;
+ font-size:11px!important;line-height:1!important;text-shadow:0 1px 3px #000,0 0 4px #000!important;
+ pointer-events:none!important;
+}
+.student-mode .student-video-card .azny-video-footer button.azny-video-device{
+ pointer-events:auto!important;cursor:pointer!important;touch-action:manipulation!important;
+}
+.student-mode .student-video-card .azny-video-footer .azny-camera-network-indicator{
+ position:static!important;transform:none!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ width:16px!important;height:13px!important;padding:0!important;margin:0!important;border:0!important;
+ border-radius:0!important;background:transparent!important;box-shadow:none!important;
+}
+.student-mode .student-video-card .azny-video-footer .azny-network-bars{
+ display:flex!important;align-items:flex-end!important;justify-content:center!important;gap:1px!important;
+ width:13px!important;height:10px!important;filter:drop-shadow(0 1px 2px #000)!important;
+}
+.student-mode .student-video-card .azny-video-footer .azny-network-bars i{
+ display:block!important;width:2px!important;border-radius:1px 1px 0 0!important;background:#ff6262!important;
+}
+.student-mode .student-video-card .azny-video-footer .azny-network-bars i:nth-child(1){height:4px!important}
+.student-mode .student-video-card .azny-video-footer .azny-network-bars i:nth-child(2){height:7px!important}
+.student-mode .student-video-card .azny-video-footer .azny-network-bars i:nth-child(3){height:10px!important}
+.student-mode .student-video-card .azny-video-footer .azny-network-bars.is-online i{background:#35e59a!important}
+.student-mode .student-video-card .azny-video-footer .azny-network-bars.is-connecting i{background:#ffd15a!important}
+.student-mode .student-video-card .azny-video-footer .azny-network-bars.is-offline i{background:#ff6262!important}
+.student-mode .student-video-card>span:not(.azny-self-raised-hand){z-index:20!important;bottom:20px!important;left:5px!important;font-size:10px!important}
+@media(max-width:700px){
+ body:not(.student-mode) .rightbar #students .student>.azny-student-device-controls button,
+ .student-mode .student-video-card .azny-video-footer .azny-video-device{width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;font-size:10px!important}
+}
+</style>
+<script id="azny-unified-camera-footer-behavior">
+(function(){
+ const $=id=>document.getElementById(id);
+ function networkState(pc,local){
+  if(navigator.onLine===false)return "offline";
+  if(pc){const state=pc.connectionState||pc.iceConnectionState;if(state==="connected"||state==="completed")return "online";if(state==="failed"||state==="disconnected"||state==="closed")return "offline";return "connecting"}
+  return local?"online":"connecting";
+ }
+ function paintBars(el,state){
+  if(!el)return;el.classList.remove("is-online","is-offline","is-connecting");el.classList.add("is-"+state);
+  const labels={online:"Rede em tempo real ligada",offline:"Sem ligação de rede",connecting:"A verificar ligação de rede"};
+  el.setAttribute("aria-label",labels[state]);el.title=labels[state];
+ }
+ function addStudentViewFooters(){
+  const pair=$("studentLive");if(!pair)return;
+  pair.querySelectorAll(".student-video-card").forEach(card=>{
+   if(card.querySelector(".azny-video-footer"))return;
+   const isSelf=card.classList.contains("azny-self-video-card");
+   const footer=document.createElement("div");footer.className="azny-video-footer";
+   const camera=isSelf?document.createElement("button"):document.createElement("span");
+   camera.className="azny-video-device";camera.dataset.videoCamera="1";camera.textContent="📷";
+   const net=document.createElement("span");net.className="azny-camera-network-indicator is-connecting";net.innerHTML='<span class="azny-network-bars"><i></i><i></i><i></i></span>';
+   const mic=isSelf?document.createElement("button"):document.createElement("span");
+   mic.className="azny-video-device";mic.dataset.videoMic="1";mic.textContent="🎙";
+   if(isSelf){
+    camera.type="button";camera.title="Ligar/desligar a sua câmara";camera.setAttribute("aria-label",camera.title);
+    mic.type="button";mic.title="Ligar/desligar o seu microfone";mic.setAttribute("aria-label",mic.title);
+    camera.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();$("studentCameraBtn")?.click()});
+    mic.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();$("studentMicBtn")?.click()});
+   }
+   footer.append(camera,net,mic);card.appendChild(footer);
+  });
+ }
+ function paintStudentView(){
+  addStudentViewFooters();
+  const selfVideo=$("studentSelfVideo"),teacherVideo=$("studentTeacherVideo");
+  const self=$("studentLive")?.querySelector(".azny-self-video-card");
+  const teacher=teacherVideo?.closest(".student-video-card");
+  const camOn=typeof studentCameraOn!=="undefined"?!!studentCameraOn:!!selfVideo?.srcObject?.getVideoTracks?.().some(t=>t.enabled&&t.readyState==="live");
+  const micOn=typeof studentMicOn!=="undefined"?!!studentMicOn:!!selfVideo?.srcObject?.getAudioTracks?.().some(t=>t.enabled&&t.readyState==="live");
+  const setIcon=(card,selector,on,kind)=>{const el=card?.querySelector(selector);if(!el)return;el.textContent=kind==="camera"?(on?"📷":"🚫"):(on?"🎙":"🔇");el.classList.toggle("is-off",!on);el.setAttribute("aria-label",(kind==="camera"?"Câmara ":"Microfone ")+(on?"ligado":"desligado"))};
+  setIcon(self,"[data-video-camera]",camOn,"camera");setIcon(self,"[data-video-mic]",micOn,"mic");
+  const teacherVideoTracks=teacherVideo?.srcObject?.getVideoTracks?.()||[];
+  const teacherAudioTracks=(typeof teacherAudioIn!=="undefined"?teacherAudioIn:null)?.getAudioTracks?.()||[];
+  setIcon(teacher,"[data-video-camera]",teacherVideoTracks.some(t=>t.readyState==="live"&&!t.muted),"camera");
+  setIcon(teacher,"[data-video-mic]",teacherAudioTracks.some(t=>t.readyState==="live"&&!t.muted),"mic");
+  const peer=typeof studentPeer!=="undefined"?studentPeer:null;
+  paintBars(self?.querySelector(".azny-camera-network-indicator"),networkState(peer,true));
+  paintBars(teacher?.querySelector(".azny-camera-network-indicator"),networkState(peer,false));
+ }
+ function paintTeacherStudentCards(){
+  document.querySelectorAll("body:not(.student-mode) .rightbar #students .student:not(.no-students)").forEach(card=>{
+   const pc=card._aznyPeerConnection||null;
+   const state=networkState(pc,!!card.querySelector("video")?.srcObject);
+   paintBars(card.querySelector("[data-student-network]"),state);
+   const v=card.querySelector("video"),tracks=v?.srcObject?.getTracks?.()||[];
+   const cameraAllowed=card._aznyTeacherControls?.camera!==false;
+   const micAllowed=card._aznyTeacherControls?.mic!==false;
+   const camera=card.querySelector("[data-student-camera]"),mic=card.querySelector("[data-student-mic]");
+   if(camera){camera.textContent=cameraAllowed&&tracks.some(t=>t.kind==="video"&&t.readyState==="live"&&!t.muted)?"📷":cameraAllowed?"📷":"🚫";camera.classList.toggle("is-off",!cameraAllowed)}
+   if(mic){mic.textContent=micAllowed&&tracks.some(t=>t.kind==="audio"&&t.readyState==="live"&&!t.muted)?"🎙":micAllowed?"🎙":"🔇";mic.classList.toggle("is-off",!micAllowed)}
+  });
+ }
+ function paintAll(){paintStudentView();paintTeacherStudentCards()}
+ const observer=new MutationObserver(()=>{addStudentViewFooters()});
+ const live=$("studentLive");if(live)observer.observe(live,{childList:true,subtree:true});
+ const students=$("students");if(students)observer.observe(students,{childList:true,subtree:true});
+ paintAll();setInterval(paintAll,450);
+ window.addEventListener("online",paintAll);window.addEventListener("offline",paintAll);
 })();
 </script>
 
