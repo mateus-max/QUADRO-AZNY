@@ -349,7 +349,24 @@ exports.getMyPaymentRequests = onCall({ region: REGION }, async (request) => {
 exports.adminListPaymentRequests = onCall({ region: REGION }, async (request) => {
   requireAdmin(request);
   const snap = await db.ref("paymentRequests").get();
-  return { requests: Object.values(paymentObject(snap.val())).sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) };
+  const requests = Object.values(paymentObject(snap.val()))
+    .sort((a,b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .map(({ proof, ...item }) => item);
+  return { requests };
+});
+
+exports.adminGetPaymentProof = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const id = String(request.data?.requestId || "");
+  if (!id || id.length > 180 || /[.#$\\[\\]\\/]/.test(id)) {
+    throw new HttpsError("invalid-argument", "Pedido inválido.");
+  }
+  const snap = await db.ref("paymentRequests/" + id).get();
+  const item = snap.val();
+  if (!item || typeof item.proof !== "string" || !item.proof.startsWith("data:")) {
+    throw new HttpsError("not-found", "Comprovativo não encontrado.");
+  }
+  return { proof: item.proof, proofName: String(item.proofName || "comprovativo"), proofType: String(item.proofType || "") };
 });
 
 exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
