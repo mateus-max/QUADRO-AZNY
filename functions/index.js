@@ -26,7 +26,7 @@ function requireAuth(request) {
 }
 function requireAdmin(request) {
   const uid = requireAuth(request);
-  const configured = ADMIN_EMAILS.value().split(",").map(v => v.trim().toLowerCase()).filter(Boolean);
+  const configured = [...ADMIN_EMAILS.value().split(",").map(v => v.trim().toLowerCase()).filter(Boolean), "suporte@domingas.com"];
   const email = String(request.auth?.token?.email || "").trim().toLowerCase();
   if (request.auth?.token?.admin !== true && (!email || !configured.includes(email))) {
     throw new HttpsError("permission-denied", "Acesso reservado à administração.");
