@@ -1938,9 +1938,10 @@ let aznyPointerDragId=null,lastStudentPointerSend=0;
 function moveStudentPointer(e){
  if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
  const {x,y}=boardPointFromClient(e);
- const p=document.getElementById("livePointer");const tipX=x+39,tipY=y-47;p.style.transform="translate("+(tipX-44)+"px,"+(tipY-2)+"px)";p.classList.add("touch-pointer","active");
+ const p=document.getElementById("livePointer");p.style.transform="translate3d("+(x-44)+"px,"+(y-2)+"px,0)";p.classList.add("touch-pointer","active");
  const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
- const packet=JSON.stringify({type:"live-pointer",x:x+39,y:y-47,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"});
+ /* Transmit the actual board coordinate. The receiver applies the same icon-tip offset once. */
+ const packet=JSON.stringify({type:"live-pointer",x,y,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"});
  const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
 }
 stage.addEventListener("pointerdown",function(e){if(!isStudent||!pointerMode||!board.contains(e.target))return;aznyPointerDragId=e.pointerId;try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();moveStudentPointer(e)},{passive:false});
