@@ -7,8 +7,14 @@
       ".write": false
     },
     "licenses": {
-      ".read": false,
-      ".write": false
+      ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || (query.orderByChild === 'teacherEmail' && query.equalTo === auth.token.email))",
+      ".indexOn": [
+        "teacherEmail"
+      ],
+      "$licenseId": {
+        ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || data.child('teacherUid').val() === auth.uid || data.child('teacherEmail').val() === auth.token.email)",
+        ".write": "auth != null && auth.token.email === 'suporte@domingas.com'"
+      }
     },
     "aznyRooms": {
       "$room": {
