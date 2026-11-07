@@ -1791,24 +1791,25 @@ function handleBoardChannelMessage(raw){
 function publishLiveBoardState(){
  if(remoteBoardApplying)return;
  clearTimeout(liveBoardTimer);
- /* Coalesce rapid pointer events into a steady frame rate instead of flooding
-    WebRTC with a complete board snapshot for every pointer movement. */
+ /* Coalesce pointer events briefly; Firebase is the shared source of truth for
+    every approved participant, while WebRTC remains the fast media/peer path. */
  liveBoardTimer=setTimeout(()=>{
   if(remoteBoardApplying)return;
   pageStates[currentPage-1]=snapshot();
   if(isStudent){
    if(studentBoardChannel?.readyState==="open")sendBoardSnapshotToChannel(studentBoardChannel);
-   return;
+  }else{
+   sendBoardSnapshotToAllPeers();
   }
-  sendBoardSnapshotToAllPeers();
   if(AZNY_DB){
    clearTimeout(firebaseBoardWriteTimer);
    firebaseBoardWriteTimer=setTimeout(()=>{
     const ref=aznyRoomRef().child("board");
-    ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY live board:",e));
-   },700);
+    const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP,lastEditorUid:aznyUid||""};
+    ref.update(payload).catch(e=>{console.warn("AZNY live board:",e);showNetworkNotice("Não foi possível sincronizar esta alteração. Verifique a ligação.","bad")});
+   },isStudent?140:180);
   }
- },30)
+ },25)
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
