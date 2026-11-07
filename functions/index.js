@@ -274,7 +274,7 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
   const uid = requireAuth(request);
   const email = safeEmail(request.auth.token.email);
   if (!email || !validEmail(email)) {
-    throw new HttpsError("failed-precondition", "Entre com um e-mail verificado.");
+    throw new HttpsError("failed-precondition", "A conta autenticada precisa de um endereço de e-mail válido.");
   }
   const d = request.data || {};
   const name = String(d.name || "").trim();
@@ -304,7 +304,7 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
   if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName, createdAt: duplicate.createdAt } };
   const id = "PAY-" + require("crypto").randomUUID();
   const item = {
-    id, uid, name, email, phone, authProvider: String(d.authProvider || "email").slice(0,40),
+    id, uid, name, email, phone, authProvider: String(request.auth?.token?.firebase?.sign_in_provider || (d.authProvider || "password")).slice(0,40) === "google.com" ? "google" : "password",
     existingAccessToken: String(d.existingAccessToken || "").slice(0,180),
     plan, planName: ({basic:"Básico",professional:"Profissional",school:"Escola"})[plan],
     period, months, amount, method: String(d.method || "").slice(0,50),
@@ -328,7 +328,8 @@ exports.createTrialRequest = onCall({ region: REGION }, async (request) => {
   const duplicate = Object.values(current).find(x => x && safeEmail(x.email) === email && x.status !== "rejected");
   if (duplicate) return { ok: true, existing: true, request: { id: duplicate.id, status: duplicate.status, plan: duplicate.plan, planName: duplicate.planName } };
   const id = "TRIAL-" + require("crypto").randomUUID();
-  const item = { id, uid, name, email, phone, authProvider: "email", requestType: "trial", plan: "trial", planName: "Plano de teste — 4 aulas", trialSessionsLimit: 4, trialSessionsUsed: 0, amount: 0, method: "Plano de teste", status: "pending", createdAt: new Date().toISOString() };
+  const provider = String(request.auth?.token?.firebase?.sign_in_provider || "password");
+  const item = { id, uid, name, email, phone, authProvider: provider === "google.com" ? "google" : "password", requestType: "trial", plan: "trial", planName: "Plano de teste — 4 aulas", trialSessionsLimit: 4, trialSessionsUsed: 0, amount: 0, method: "Plano de teste", status: "pending", createdAt: new Date().toISOString() };
   await ref.child(id).set(item);
   return { ok: true, existing: false, request: { id, status: "pending", plan: "trial", planName: item.planName } };
 });
