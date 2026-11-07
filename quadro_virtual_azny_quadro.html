@@ -2857,7 +2857,7 @@ function addStudentVideoCard(id,name,stream,track){
  let card=document.getElementById("student-"+id);
  if(!card){
   card=document.createElement("div");card.className="student";card.id="student-"+id;
-  card.innerHTML='<video autoplay playsinline></video><div class="label"></div><span class="azny-raised-hand" aria-label="Aluno com a mão levantada" title="Mão levantada">✋</span><div class="azny-camera-signal" aria-label="Estado da ligação"><i></i><i></i><i></i></div><div class="azny-student-device-controls"><button type="button" data-student-mic aria-label="Desligar microfone" title="Desligar microfone">🎙</button><button type="button" data-student-camera aria-label="Desligar câmera" title="Desligar câmera">📷</button></div>';
+  card.innerHTML='<video autoplay playsinline></video><div class="azny-student-cam-off"><span>🎥</span><small>Câmara desligada</small></div><div class="label"></div><span class="azny-raised-hand" aria-label="Aluno com a mão levantada" title="Mão levantada">✋</span><div class="azny-camera-signal" aria-label="Estado da ligação"><i></i><i></i><i></i></div><div class="azny-student-device-controls"><button type="button" data-student-mic aria-label="Desligar microfone" title="Desligar microfone">🎙</button><button type="button" data-student-camera aria-label="Desligar câmera" title="Desligar câmera">📷</button></div>';
   card._aznyRemoteStream=new MediaStream();wrap.appendChild(card);
   const signal=signalRef(id);
   const micBtn=card.querySelector("[data-student-mic]"),camBtn=card.querySelector("[data-student-camera]");
@@ -3067,12 +3067,13 @@ async function connectStudentPeer(id,d){
    // Se o aluno já saiu antes de o professor abrir/recuperar o painel, limpar
    // qualquer cartão antigo que tenha ficado no DOM.
    if(!online){removeStudentVideoCard(id);return}
+   addStudentVideoCard(id,d.name,null,null);
    return;
   }
   if(online===lastStudentOnline){if(!online)removeStudentVideoCard(id);return}
   lastStudentOnline=online;
   const en=document.documentElement.lang==="en",studentLabel=d.name||(en?"The student":"O aluno");
-  if(online){toast(en?studentLabel+" returned to the class.":studentLabel+" voltou à aula.");showNetworkNotice(en?studentLabel+" returned to the class.":studentLabel+" voltou à aula.","good")}
+  if(online){addStudentVideoCard(id,d.name,null,null);toast(en?studentLabel+" returned to the class.":studentLabel+" voltou à aula.");showNetworkNotice(en?studentLabel+" returned to the class.":studentLabel+" voltou à aula.","good")}
   else{ref.once("value").then(current=>{const currentData=current.val()||{},network=currentData.network||"unknown";if(network==="poor"||network==="disconnected"){toast(en?studentLabel+"'s network is unstable. The connection was lost.":"A rede de "+studentLabel+" está instável. A ligação foi perdida.");showNetworkNotice(en?studentLabel+"'s network is unstable or disconnected.":"A rede de "+studentLabel+" está instável ou sem ligação.","bad")}else{toast(en?studentLabel+" left the class.":studentLabel+" saiu da aula.");showNetworkNotice(en?studentLabel+" left the class.":studentLabel+" saiu da aula.","bad")}}).catch(()=>{toast(en?studentLabel+" left the class.":studentLabel+" saiu da aula.")})}
   if(!online){
    const departedPeer=window.aznyTeacherPeers?.[id];
@@ -4405,6 +4406,12 @@ body:not(.student-mode) .rightbar #students .student>.label{left:27px!important}
  body:not(.student-mode) .rightbar #students.students{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 </style>
+/* Cartão de participante antes da primeira imagem recebida. */
+body:not(.student-mode) .rightbar #students .student>.azny-student-cam-off{position:absolute!important;inset:0!important;z-index:2!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;background:#101d2d!important;color:#b9c7d6!important;pointer-events:none!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-cam-off span{font-size:22px!important}
+body:not(.student-mode) .rightbar #students .student>.azny-student-cam-off small{font-size:9px!important}
+body:not(.student-mode) .rightbar #students .student.azny-video-live>.azny-student-cam-off{display:none!important}
+
 </head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script></body></html>');w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
@@ -4784,7 +4791,7 @@ body:not(.student-mode) .rightbar #students #noStudents{grid-column:1/-1!importa
   setSignal(document.getElementById("teacherCameraSignal"),teacherLive);
   document.querySelectorAll("#students .student").forEach(card=>{
    const video=card.querySelector("video"),live=!!video?.srcObject?.getVideoTracks?.().some(t=>t.readyState==="live"&&t.enabled);
-   setSignal(card.querySelector(".azny-camera-signal"),live);
+   setSignal(card.querySelector(".azny-camera-signal"),live);card.classList.toggle("azny-video-live",live);
   });
  }
  refresh();setInterval(refresh,700);
