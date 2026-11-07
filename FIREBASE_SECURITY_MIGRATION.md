@@ -14,10 +14,11 @@ As páginas `index.html`, `dashboard.html` e `quadro_virtual_azny_quadro.html`, 
 ## Estado atual — novo projeto preparado, migração em andamento
 
 Foram adicionados e ligados ao portal:
-- `database.rules.json`: regras restritivas de base para Realtime Database; ainda não devem ser publicadas sem testes de compatibilidade.
+- `database.rules.json`: regras restritivas de base para Realtime Database; o nó do quadro permite leitura/escrita apenas a participantes aprovados e valida página atual, máximo de cinco páginas e UID do último editor. Ainda não publicar sem testes de compatibilidade.
 - `functions/index.js`: funções para validação de licença, pedidos de pagamento/teste, aprovação administrativa, comprovativos, feedback, aprovação de alunos e links curtos.
 - `functions/package.json` e `firebase.json`: configuração inicial de Cloud Functions e regras.
 - `index.html`: pedidos, consulta do estado, feedback e consulta/ativação de licença passam pelas Cloud Functions.
+- `quadro_virtual_azny_quadro.html`: professor e alunos aprovados publicam o estado do quadro no Firebase com debounce curto; o canal WebRTC continua ativo como via rápida entre participantes. O listener de estado partilhado distribui as alterações aos participantes.
 - `admin.html`: painel administrativo com login por e-mail/palavra-passe, lista de pedidos sem devolver comprovativos em massa e visualização de cada comprovativo através de uma função separada e protegida.
 
 **Ainda não publicar as regras.** As operações financeiras principais já foram transferidas para funções. A aprovação administrativa grava o estado no servidor; a ativação da licença ocorre quando o titular autenticado entra e chama `activateApprovedLicense`, que valida o e-mail e o pedido aprovado antes de criar/substituir a licença. É necessário testar este percurso completo no Emulator Suite antes do deploy.
@@ -47,9 +48,12 @@ Aluno aprovado:
 ## Antes de publicar
 
 1. Rever os restantes caminhos e operações RTDB do repositório, incluindo avaliações, presença, gravações, publicações e ferramentas do quadro.
-2. Confirmar que todas as leituras/escritas necessárias estão cobertas pelas regras e que nenhum cliente escreve diretamente em `licenses`, `paymentRequests`, `feedback` ou `roomAccess`.
-3. Manter criação, substituição, leitura e atualização de licenças exclusivamente nas funções; não abrir `licenses` a clientes.
-3. Instalar dependências e validar as Cloud Functions com Firebase Emulator Suite.
+2. Testar concorrência real: professor + dois ou mais alunos a escrever, desenhar, mover e apagar objetos ao mesmo tempo. Confirmar que nenhum snapshot atrasado apaga traços ou objetos de outro participante.
+3. Testar a sincronização em Android e computador, redes móveis lentas, perda de ligação e reconexão; medir latência e verificar recuperação do estado.
+4. Só depois confirmar todas as leituras/escritas necessárias nas regras.
+5. Confirmar que todas as leituras/escritas necessárias estão cobertas pelas regras e que nenhum cliente escreve diretamente em `licenses`, `paymentRequests`, `feedback` ou `roomAccess`.
+6. Manter criação, substituição, leitura e atualização de licenças exclusivamente nas funções; não abrir `licenses` a clientes.
+7. Instalar dependências e validar as Cloud Functions com Firebase Emulator Suite.
 4. Testar professor, aluno pendente, aluno aprovado, conta não autenticada, licenças expiradas e trial esgotado.
 5. Só depois publicar conjuntamente funções e regras com `firebase deploy --only functions,database`.
 
