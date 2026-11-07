@@ -4859,6 +4859,59 @@ body:not(.student-mode) .rightbar #students #noStudents{grid-column:1/-1!importa
  if(teacher)new MutationObserver(refresh).observe(teacher,{childList:true,subtree:true});
 })();
 </script>
+
+<style id="azny-camera-footer-left-right">
+/* Rodapé da câmara do professor: câmara à esquerda, microfone à direita. */
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera{
+ position:relative!important;overflow:hidden!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles{
+ position:absolute!important;left:7px!important;right:7px!important;
+ bottom:6px!important;top:auto!important;z-index:30!important;
+ display:flex!important;flex-direction:row!important;
+ align-items:center!important;justify-content:space-between!important;
+ width:auto!important;margin:0!important;padding:0!important;
+ background:transparent!important;border:0!important;box-shadow:none!important;
+ pointer-events:none!important;visibility:visible!important;opacity:1!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera #cameraBtn{
+ order:1!important;margin-right:auto!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera #micBtn{
+ order:2!important;margin-left:auto!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button{
+ display:flex!important;position:relative!important;flex:0 0 31px!important;
+ width:31px!important;min-width:31px!important;max-width:31px!important;
+ height:31px!important;min-height:31px!important;max-height:31px!important;
+ align-items:center!important;justify-content:center!important;
+ padding:0!important;margin-top:0!important;margin-bottom:0!important;
+ border:1px solid #ffffffa8!important;border-radius:50%!important;
+ background:#071b33e8!important;color:#fff!important;
+ box-shadow:0 1px 5px #0009!important;font:normal 17px/1 Arial,sans-serif!important;
+ cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button .azny-toggle-icon{
+ display:block!important;font-size:17px!important;line-height:1!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button .azny-toggle-label{
+ display:none!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button.is-on{
+ background:#087b58!important;border-color:#39e6a4!important;
+}
+html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .camera-label{
+ left:45px!important;right:45px!important;bottom:10px!important;
+}
+@media(max-width:950px) and (orientation:landscape),(max-height:520px) and (pointer:coarse){
+ html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles{left:5px!important;right:5px!important;bottom:4px!important}
+ html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button{
+  flex-basis:27px!important;width:27px!important;min-width:27px!important;max-width:27px!important;
+  height:27px!important;min-height:27px!important;max-height:27px!important;
+ }
+}
+</style>
+
 </body>
 </html>
 
