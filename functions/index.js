@@ -451,7 +451,7 @@ exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
   // de pedidos e comprovativos durante a aprovação.
   const ref = db.ref("paymentRequests/" + id);
   const tx = await ref.transaction(current => {
-    if (!current || !["pending","rejected"].includes(current.status)) return;
+    if (!current || !["pending","rejected","approved"].includes(current.status) || (current.status === "approved" && status !== "rejected")) return;
     return {
       ...current, status,
       accountStatus: status === "rejected" ? "rejected" : (current.accountStatus || "pending"),
@@ -465,6 +465,9 @@ exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
   const updated = tx.snapshot.val();
   // A aprovação passa a activar/criar a licença no mesmo fluxo da Direcção.
   if (status === "approved") await createLicenseForApprovedRequest(updated, id);
+  if (status === "rejected" && updated.accessToken) {
+    await db.ref("licenses/" + String(updated.accessToken)).update({ status: "suspended", boardAccess: false, revokedAt: ServerValue.TIMESTAMP, revokedBy: adminUid });
+  }
   await db.ref("auditLogs").push({ action: "payment_" + status, requestId: id, adminUid, at: ServerValue.TIMESTAMP });
   return { ok: true, requestId: id, status };
 });
