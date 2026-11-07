@@ -268,7 +268,7 @@ exports.activateApprovedLicense = onCall({ region: REGION }, async (request) => 
 });
 
 function safeEmail(value) { return String(value || "").trim().toLowerCase(); }
-function validEmail(value) { return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value); }
+function validEmail(value) { return /^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(value); }
 function paymentObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
 
 exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
@@ -292,7 +292,7 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
   };
   if (!name || name.length > 120 || !phone || phone.length > 40 || !plans[plan] ||
       !["monthly", "annual"].includes(period) || !proof.startsWith("data:") ||
-      proof.length > 5_600_000 || !/^data:(image\\/(png|jpeg|webp)|application\\/pdf);base64,/.test(proof)) {
+      proof.length > 5_600_000 || !/^data:(image\/(png|jpeg|webp)|application\/pdf);base64,/.test(proof)) {
     throw new HttpsError("invalid-argument", "Dados do pedido ou comprovativo inválidos.");
   }
   const months = period === "annual" ? 12 : Math.max(1, Math.min(12, Number(d.months) || 1));
@@ -358,7 +358,7 @@ exports.adminListPaymentRequests = onCall({ region: REGION }, async (request) =>
 exports.adminGetPaymentProof = onCall({ region: REGION }, async (request) => {
   requireAdmin(request);
   const id = String(request.data?.requestId || "");
-  if (!id || id.length > 180 || /[.#$\\[\\]\\/]/.test(id)) {
+  if (!id || id.length > 180 || /[.#$\\[\\]\/]/.test(id)) {
     throw new HttpsError("invalid-argument", "Pedido inválido.");
   }
   const snap = await db.ref("paymentRequests/" + id).get();
