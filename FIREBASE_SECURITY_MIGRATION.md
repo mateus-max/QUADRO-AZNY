@@ -84,12 +84,12 @@ O `index.html` foi alterado para enviar pedidos, consultar o próprio estado e s
 
 ### Configurar o primeiro administrador
 
-A autorização administrativa é feita pela lista de UIDs confiáveis `ADMIN_UIDS` (ou custom claim `admin=true`). Não existe qualquer botão no site para um utilizador se tornar administrador.
+O repositório administrativo existente `mateus-max/ADMN.QUADRO` foi inspecionado. O seu ficheiro `index.html` identifica a conta administrativa pelo e-mail `suporte@domingas.com` e autentica essa conta com Firebase Authentication (e-mail e palavra-passe). Por isso, a autorização das novas funções foi ajustada para aceitar o e-mail administrativo existente, em vez de exigir que o utilizador forneça manualmente um UID.
 
-1. No Firebase Console → Authentication → Users, abrir a conta que será administradora e copiar o UID completo.
-2. Na pasta local do projeto, criar o ficheiro local `.env.remot-board` com uma linha: `ADMIN_UIDS=UID_COMPLETO`. Para mais administradores, separar UIDs por vírgula.
-3. Não colocar esse ficheiro no GitHub. Confirmar que está no `.gitignore`.
-4. Publicar as funções no projeto `remot-board` depois de instalar as dependências. O deploy carrega o parâmetro para o ambiente das funções.
-5. Entrar em `admin.html` com a conta Google cujo UID foi autorizado.
+1. Configurar o parâmetro seguro `ADMIN_EMAILS=suporte@domingas.com` no ambiente de deploy das Cloud Functions do projeto `remot-board`.
+2. Publicar as funções.
+3. Entrar em `admin.html` usando a mesma conta Google/Firebase associada a esse e-mail. Se a conta administrativa existente não for Google, adaptar o painel para autenticação por e-mail e palavra-passe em vez de Google.
 
-**Ainda não está pronto para publicar as regras no Console:** os restantes módulos (avaliações, publicações e supervisão) ainda precisam de revisão/migração para as novas regras. O painel administrativo financeiro só funcionará depois do deploy das funções e da configuração de `ADMIN_UIDS`.
+**Atenção:** o ficheiro administrativo contém uma palavra-passe escrita diretamente no código. Não a reproduzo aqui. Recomendo alterá-la e removê-la do HTML; a autenticação deve depender exclusivamente do Firebase Authentication. O código atual também usa o projeto Firebase `quadro-azny`, enquanto o Remote Work Board está configurado para `remot-board`; as funções e o painel administrativo do Remote Work Board devem ser implantados no projeto correto.
+
+**Ainda não publicar as regras no Console:** os restantes módulos (avaliações, publicações e supervisão) ainda precisam de revisão/migração para as novas regras. As funções também precisam de deploy e validação no projeto Firebase antes de ativar as regras definitivas.
