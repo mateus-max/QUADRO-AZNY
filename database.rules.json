@@ -119,7 +119,11 @@
     },
     "paymentRequests": {
       ".read": false,
-      ".write": false
+      ".write": false,
+      ".indexOn": [
+        "uid",
+        "email"
+      ]
     },
     "admin": {
       ".read": false,
