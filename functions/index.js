@@ -284,7 +284,9 @@ async function createLicenseForApprovedRequest(approved, requestId) {
   const updates = {};
   updates["licenses/" + token] = license;
   updates["paymentRequests/" + requestId] = {
-    ...approved, accessToken: token,
+    ...approved, status: "approved",
+    accountStatus: "active", accessGranted: true,
+    accessToken: token,
     activatedAt: approved.activatedAt || ServerValue.TIMESTAMP
   };
   const oldToken = String(approved.existingAccessToken || "").trim();
@@ -338,7 +340,8 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10 }, asyn
       plan, planName: ({basic:"Básico",professional:"Profissional",school:"Escola"})[plan],
       period, months, amount, method: String(d.method || "").slice(0,50),
       proof, proofName: proofName.slice(0,180), proofType: proofType.slice(0,100),
-      status: "pending", createdAt: new Date().toISOString()
+      status: "pending", accountStatus: "pending", accessGranted: false,
+      createdAt: new Date().toISOString()
     };
     await requestsRef.child(id).set(item);
     return { ok: true, existing: false, request: { id, status: "pending", plan, planName: item.planName, createdAt: item.createdAt } };
@@ -374,7 +377,8 @@ exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async 
       planName: "Plano de teste — 4 aulas",
       trialSessionsLimit: 4, trialSessionsUsed: 0,
       amount: 0, method: "Plano de teste",
-      status: "pending", createdAt: new Date().toISOString()
+      status: "pending", accountStatus: "pending", accessGranted: false,
+      createdAt: new Date().toISOString()
     };
     // Grava apenas o pedido novo, tal como no fluxo antigo.
     await ref.child(id).set(item);
@@ -430,7 +434,10 @@ exports.adminSetPaymentStatus = onCall({ region: REGION }, async (request) => {
   const tx = await ref.transaction(current => {
     if (!current || !["pending","rejected"].includes(current.status)) return;
     return {
-      ...current, status, adminNote: note, approvedBy: adminUid,
+      ...current, status,
+      accountStatus: status === "rejected" ? "rejected" : (current.accountStatus || "pending"),
+      accessGranted: current.accessGranted === true,
+      adminNote: note, approvedBy: adminUid,
       approvedAt: status === "approved" ? new Date().toISOString() : null,
       reviewedAt: ServerValue.TIMESTAMP
     };
