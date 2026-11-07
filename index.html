@@ -832,17 +832,30 @@ async function chooseGoogleForRegistration(){
 async function firstAccess(){const box=document.getElementById("loginMessage"),en=document.documentElement.lang==="en";box.textContent=en?"Create your account from Buy plan, enter your email and password, and submit your proof of payment.":"Crie a conta em Comprar plano, introduza o e-mail e a senha e envie o comprovativo de pagamento."}
 let teacherRegistrationReady=false;
 async function ensureTeacherIdentity(email,password,googleUser){
+ // Espera a inicialização anónima terminar antes de trocar para a conta real.
+ // Sem esta espera, o signInAnonymously do arranque pode concluir depois e
+ // substituir a sessão do professor, fazendo falhar todos os pedidos de plano.
+ await AZNY_AUTH_READY;
  const auth=firebase.auth();let user=auth.currentUser;
  if(googleUser){
   if(!user||String(user.email||"").trim().toLowerCase()!==email)throw new Error("Volte a selecionar a conta Google que pretende utilizar.");
+  await user.getIdToken();
   return user;
  }
- if(user&&String(user.email||"").trim().toLowerCase()===email&&!user.isAnonymous)return user;
+ if(user&&String(user.email||"").trim().toLowerCase()===email&&!user.isAnonymous){await user.getIdToken();return user}
  if(user?.isAnonymous)await auth.signOut();
- try{const credential=await auth.createUserWithEmailAndPassword(email,password);return credential.user}
+ try{
+  const credential=await auth.createUserWithEmailAndPassword(email,password);
+  await credential.user.getIdToken();
+  return credential.user;
+ }
  catch(err){
   if(err.code==="auth/email-already-in-use"){
-   try{const credential=await auth.signInWithEmailAndPassword(email,password);return credential.user}
+   try{
+    const credential=await auth.signInWithEmailAndPassword(email,password);
+    await credential.user.getIdToken();
+    return credential.user;
+   }
    catch(loginErr){if(loginErr.code==="auth/wrong-password"||loginErr.code==="auth/invalid-credential")throw new Error("Este e-mail já tem uma conta. Entre com a palavra-passe dessa conta ou escolha Continuar com Google, se foi assim que se registou.");throw loginErr}
   }
   throw err;
