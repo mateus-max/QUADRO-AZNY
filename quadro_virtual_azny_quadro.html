@@ -3198,10 +3198,6 @@ async function restoreStudentSessionIfApproved(){
    const saved=JSON.parse(localStorage.getItem(aznyStudentSessionStorageKey())||"null");
    if(saved?.id){const snap=await studentRequestRef(saved.id)?.once("value");const d=snap?.val();if(d?.status==="approved")found={id:saved.id,data:d}}
   }catch(_){}
-  if(!found&&aznyUid){
-   const previous=await aznySessionRef().child("joinRequests").orderByChild("studentUid").equalTo(aznyUid).once("value");
-   previous.forEach(item=>{const d=item.val()||{};if(d.status==="approved")found={id:item.key,data:d}})
-  }
   if(!found){showStudentJoinReady();return false}
   studentRequestId=found.id;studentName=found.data.name||"";
   studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");
