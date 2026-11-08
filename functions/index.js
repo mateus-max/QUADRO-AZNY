@@ -24,6 +24,71 @@ exports.registerTeacherForApproval = onCall({region:REGION},async request=>{
   return {ok:true,uid:created.uid,status:"pending",message:"Pedido enviado à direcção. A conta ficará bloqueada até à aprovação."};
  }catch(error){if(created?.uid)await adminAuth.deleteUser(created.uid).catch(()=>{});if(error instanceof HttpsError)throw error;if(error.code==="auth/email-already-exists")throw new HttpsError("already-exists","Este e-mail já possui uma conta. Utilize Entrar ou contacte a administração.");console.error("registerTeacherForApproval",error);throw new HttpsError("internal","Não foi possível enviar o pedido de criação de conta.");}
 });
+
+exports.reviewTeacherPayment = onCall({region:REGION}, async request => {
+  const adminUid = requireAdmin(request);
+  const id = String(request.data?.id || "");
+  const action = String(request.data?.action || "");
+  const note = String(request.data?.note || "").trim().slice(0,500);
+  if (!/^PAY-[A-Za-z0-9_-]{5,100}$/.test(id) || !["approve","reject"].includes(action)) {
+    throw new HttpsError("invalid-argument","Pedido ou operação inválida.");
+  }
+  const ref = db.ref("paymentRequests/" + id);
+  const claim = await ref.transaction(value => {
+    if (!value || value.status !== "pending") return;
+    return {...value, status:"processing"};
+  });
+  if (!claim.committed) throw new HttpsError("failed-precondition","Este pedido já foi tratado ou não está pendente.");
+  const item = claim.snapshot.val();
+  try {
+    const uid = String(item.uid || "");
+    const email = safeEmail(item.email);
+    if (!uid || !validEmail(email)) throw new HttpsError("failed-precondition","O pedido não contém uma conta de professor válida.");
+    const accountRef = db.ref("teacherAccounts/" + uid);
+    const registrationRef = db.ref("teacherRegistrationRequests/" + uid);
+    const now = new Date().toISOString();
+    const updates = {};
+    if (action === "approve") {
+      const plans = {
+        trial:{name:"Teste experimental — 2 aulas",students:45,dailyClasses:3,simultaneous:1,duration:2,storage:"Temporário",trialSessionsLimit:2},
+        basic:{name:"Básico",students:10,dailyClasses:2,simultaneous:1,duration:2,storage:"10 GB temporários"},
+        professional:{name:"Profissional",students:45,dailyClasses:3,simultaneous:2,duration:4,storage:"50 GB temporários"},
+        school:{name:"Escola",students:50,dailyClasses:3,simultaneous:5,duration:6,storage:"100 GB temporários"}
+      };
+      const planKey = String(item.plan || "");
+      const plan = plans[planKey];
+      if (!plan) throw new HttpsError("failed-precondition","Plano não reconhecido: " + planKey);
+      const user = await adminAuth.getUser(uid);
+      if (user.email?.toLowerCase() !== email) throw new HttpsError("failed-precondition","O e-mail do pedido não corresponde à conta registada.");
+      await adminAuth.updateUser(uid,{disabled:false});
+      const token = String(item.accessToken || item.existingAccessToken || "").trim() || require("crypto").randomUUID();
+      const license = {
+        status:"active",trialExhausted:false,boardAccess:true,plan:planKey,
+        planName:String(item.planName || plan.name),...plan,
+        ...(planKey==="trial"?{trialSessionsLimit:2,trialSessionsUsed:0,trialCompletedSessions:{}}:{}),
+        startedAt:now,expiresAt:null,teacherName:String(item.name || email),
+        teacherPhone:String(item.phone || ""),requestId:id,accessToken:token,teacherEmail:email,teacherUid:uid
+      };
+      updates["licenses/"+token]=license;
+      updates["teacherAccounts/"+uid]={uid,name:String(item.name||email),email,role:"teacher",status:"approved",accountStatus:"active",plan:planKey,planName:license.planName,accessToken:token,approvedBy:adminUid,approvedAt:now,activatedAt:ServerValue.TIMESTAMP,updatedAt:ServerValue.TIMESTAMP};
+      updates["teacherRegistrationRequests/"+uid]={uid,name:String(item.name||email),email,role:"teacher",status:"approved",accountStatus:"active",approvedBy:adminUid,approvedAt:now,updatedAt:ServerValue.TIMESTAMP};
+      updates["paymentRequests/"+id]={...item,status:"approved",accountStatus:"active",accessGranted:true,accessToken:token,approvedBy:adminUid,approvedAt:now,activatedAt:ServerValue.TIMESTAMP,reviewedAt:ServerValue.TIMESTAMP};
+    } else {
+      updates["paymentRequests/"+id]={...item,status:"rejected",accountStatus:"rejected",accessGranted:false,adminNote:note,rejectedBy:adminUid,rejectedAt:now,reviewedAt:ServerValue.TIMESTAMP};
+      const token=String(item.accessToken||item.existingAccessToken||"").trim();
+      if(token){updates["licenses/"+token+"/status"]="suspended";updates["licenses/"+token+"/boardAccess"]=false;}
+    }
+    updates["auditLogs/"+db.ref("auditLogs").push().key]={action:"payment_"+action,requestId:id,adminUid,at:ServerValue.TIMESTAMP};
+    await db.ref().update(updates);
+    return {ok:true,action,id};
+  } catch(error) {
+    await ref.child("status").set("pending").catch(()=>{});
+    if(error instanceof HttpsError) throw error;
+    console.error("reviewTeacherPayment",error);
+    throw new HttpsError("internal","Falha ao aplicar a decisão no Firebase: "+String(error.message||error).slice(0,180));
+  }
+});
+
 exports.reviewTeacherRegistration = onCall({region:REGION},async request=>{
  const adminUid=requireAdmin(request),uid=String(request.data?.uid||""),action=String(request.data?.action||""),note=String(request.data?.note||"").trim().slice(0,500);
  if(!uid||uid.length>128||!["approve","reject","delete"].includes(action))throw new HttpsError("invalid-argument","Operação ou conta inválida.");
