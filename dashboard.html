@@ -141,6 +141,7 @@ async function init(){try{
  const snap=await db.ref("licenses/"+token).once("value"),license=snap.val();
  if(!license||!["active","trial_exhausted"].includes(String(license.status||""))||String(license.teacherEmail||"").toLowerCase()!==String(user.email).toLowerCase()||(license.teacherUid&&license.teacherUid!==user.uid)){status.className="badge warn";status.textContent="Acesso não validado";message.textContent="A licença desta conta não está ativa ou não corresponde ao utilizador autenticado. Contacte a administração.";return}
  const accessToken=license.accessToken||token;sessionStorage.setItem("azny_access_token",accessToken);document.getElementById("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");
+ const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date(),isTrial=license.plan==="trial",used=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length),limit=2,exhausted=isTrial&&(license.trialExhausted===true||license.status==="trial_exhausted"||used>=limit),upgrade=document.getElementById("upgradePlan");
  const teacherName=String(license.teacherName||"Professor");
  document.getElementById("userInitials").textContent=teacherName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
  const planLabels={trial:"Plano de teste",basic:"Plano básico",professional:"Plano profissional",school:"Plano escola"};
@@ -152,7 +153,6 @@ async function init(){try{
  document.getElementById("progressLabel").textContent=isTrial?used+"/"+limit+" aulas concluídas":"Plano activo";
  document.getElementById("lessonProgress").style.width=isTrial?Math.min(100,used/limit*100)+"%":"0%";
  document.getElementById("planDescription").textContent=isTrial?"Válido para "+limit+" aulas gratuitas.":(license.planName||"A sua licença está activa.");
- const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date(),isTrial=license.plan==="trial",used=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length),limit=2,exhausted=isTrial&&(license.trialExhausted===true||license.status==="trial_exhausted"||used>=limit),upgrade=document.getElementById("upgradePlan");
  if(isTrial&&!exhausted){status.className="badge";status.textContent="Plano de teste — "+used+"/"+limit+" aulas concluídas";message.textContent="Tem "+(limit-used)+" aula(s) disponível(is)."}
  else if(exhausted){status.className="badge warn";status.textContent="Teste concluído — 2/2 aulas";message.textContent="O teste terminou. Atualize o plano para voltar a dar aulas.";button.disabled=true;upgrade.hidden=false;upgrade.href="index.html?upgrade=1&acesso="+encodeURIComponent(accessToken)}
  else if(expired){status.className="badge warn";status.textContent="Plano expirado";message.textContent="Atualize o plano para voltar a utilizar o quadro.";button.disabled=true;upgrade.hidden=false;upgrade.href="index.html?upgrade=1&acesso="+encodeURIComponent(accessToken)}
