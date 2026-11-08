@@ -25,6 +25,7 @@ button,a{font:inherit}
 .top-actions{display:flex;align-items:center;gap:12px;color:var(--navy)}
 .icon-btn{width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--navy);font-size:19px}
 .user-chip{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#dceaff;color:#0756c9;font-weight:900;border:2px solid #fff;box-shadow:0 2px 8px #102c5018}
+.plan-time-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:999px;background:#e6f6eb;color:#176b37;font-size:12px;font-weight:800;white-space:nowrap;border:1px solid #c7ebd1}.plan-time-badge.warn{background:#fff3d9;color:#875800;border-color:#f4dfaa}.plan-time-badge[hidden]{display:none!important}
 .welcome{display:flex;align-items:center;justify-content:space-between;gap:20px;overflow:hidden;position:relative;background:linear-gradient(110deg,#08276b,#0862ce);border-radius:19px;padding:27px 30px;color:white;box-shadow:0 12px 28px #0a4ca51b}
 .welcome-copy{position:relative;z-index:1;min-width:0}
 .eyebrow{font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#bcd8ff;margin-bottom:7px}
@@ -105,7 +106,7 @@ button,a{font:inherit}
  .page-title{font-size:20px}
  .top-actions{gap:7px}
  .icon-btn{width:37px;height:37px}
- .user-chip{width:37px;height:37px}
+ .user-chip{width:37px;height:37px}.plan-time-badge{font-size:10px;padding:6px 8px;white-space:normal;max-width:190px;line-height:1.25}
  .welcome{padding:22px 19px;border-radius:16px}
  .welcome p{font-size:14px}
  .welcome-art{font-size:42px;padding:0}
@@ -134,7 +135,7 @@ button,a{font:inherit}
  <div class="side-bottom"><button class="btn" id="logoutSide" type="button">↪ Terminar sessão</button></div>
 </aside>
 <main class="main" id="inicio">
- <header class="topbar"><div class="page-title"><span class="cap">🎓</span><span id="currentPageTitle">Painel do Professor</span></div><div class="top-actions"><span aria-hidden="true">🔔</span><span class="user-chip" id="userInitials">P</span></div></header>
+ <header class="topbar"><div class="page-title"><span class="cap">🎓</span><span id="currentPageTitle">Painel do Professor</span></div><div class="top-actions"><span id="planTimeBadge" class="plan-time-badge" hidden></span><span class="user-chip" id="userInitials">P</span></div></header>
  <section class="view-panel" data-view-panel="inicio">
   <section class="welcome"><div class="welcome-copy"><div class="eyebrow">Área do professor</div><h1 id="hello">Bem-vindo ao seu painel</h1><p>Aceda ao quadro verde e acompanhe a utilização do seu plano.</p></div><div class="welcome-art" aria-hidden="true">🌍</div></section>
   <section class="stats" aria-label="Resumo da conta">
@@ -188,16 +189,37 @@ document.querySelectorAll(".nav [data-view],.side-bottom button").forEach(el=>el
 document.addEventListener("keydown",event=>{if(event.key==="Escape")setMobileMenu(false)});
 window.addEventListener("resize",()=>{if(window.innerWidth>700)setMobileMenu(false)});
 openView(location.hash.slice(1)||"inicio");
-async function init(){try{
- const user=auth.currentUser;
- if(!user||!user.email){status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta.";return}
- if(!token)throw new Error("Não foi encontrado o código de acesso da licença. Entre novamente pela página inicial.");
- const snap=await db.ref("licenses/"+token).once("value"),license=snap.val();
- if(!license||!["active","trial_exhausted"].includes(String(license.status||""))||String(license.teacherEmail||"").toLowerCase()!==String(user.email).toLowerCase()||(license.teacherUid&&license.teacherUid!==user.uid)){status.className="badge warn";status.textContent="Acesso não validado";message.textContent="A licença desta conta não está ativa ou não corresponde ao utilizador autenticado. Contacte a administração.";return}
- const accessToken=license.accessToken||token;sessionStorage.setItem("azny_access_token",accessToken);document.getElementById("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");
- const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date(),isTrial=license.plan==="trial",used=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length),limit=2,exhausted=isTrial&&(license.trialExhausted===true||license.status==="trial_exhausted"||used>=limit),upgrade=document.getElementById("upgradePlan");
- const teacherName=String(license.teacherName||"Professor");
- document.getElementById("userInitials").textContent=teacherName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
+function renderPlanTime(license){
+ window.aznyCurrentPlanExpiry=license.expiresAt||null;
+ const badge=document.getElementById("planTimeBadge");
+ if(!badge)return;
+ badge.hidden=false;
+ if(license.plan==="trial"){
+  const used=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length);
+  badge.className="plan-time-badge warn";
+  badge.textContent="Teste · "+Math.max(0,2-used)+" aulas restantes";
+  return;
+ }
+ if(!license.expiresAt){
+  badge.className="plan-time-badge warn";
+  badge.textContent="Renovação por definir";
+  return;
+ }
+ const expiry=new Date(license.expiresAt),now=new Date(),ms=expiry.getTime()-now.getTime();
+ if(!Number.isFinite(expiry.getTime())){badge.className="plan-time-badge warn";badge.textContent="Data de renovação inválida";return}
+ if(ms<=0){badge.className="plan-time-badge warn";badge.textContent="Plano expirado";return}
+ const days=Math.ceil(ms/86400000),months=Math.floor(days/30.4375),rest=days-months*30;
+ let label=months>0?(months+" "+(months===1?"mês":"meses")+(rest>0?" e "+rest+" "+(rest===1?"dia":"dias"):"")):(days+" "+(days===1?"dia":"dias"));
+ badge.className="plan-time-badge";
+ badge.textContent="Renovar em "+label;
+}
+function updateLicenseDisplay(license,accessToken){
+ const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();
+ const isTrial=license.plan==="trial";
+ const used=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length);
+ const limit=2;
+ const exhausted=isTrial&&(license.trialExhausted===true||license.status==="trial_exhausted"||used>=limit);
+ const upgrade=document.getElementById("upgradePlan");
  const planLabels={trial:"Plano de teste",basic:"Plano básico",professional:"Plano profissional",school:"Plano escola"};
  document.getElementById("planName").textContent=planLabels[license.plan]||"Plano activo";
  document.getElementById("planBoxName").textContent=planLabels[license.plan]||license.planName||"Plano activo";
@@ -206,12 +228,36 @@ async function init(){try{
  document.getElementById("availableLessons").textContent=isTrial?Math.max(0,limit-used):"—";
  document.getElementById("progressLabel").textContent=isTrial?used+"/"+limit+" aulas concluídas":"Plano activo";
  document.getElementById("lessonProgress").style.width=isTrial?Math.min(100,used/limit*100)+"%":"0%";
- document.getElementById("planDescription").textContent=isTrial?"Válido para "+limit+" aulas gratuitas.":(license.planName||"A sua licença está activa.");
+ document.getElementById("planDescription").textContent=isTrial?"Válido para "+limit+" aulas gratuitas.":(license.planName||"A sua licença está activa.")+(license.expiresAt?" · Renovação em "+new Date(license.expiresAt).toLocaleDateString("pt-AO"):"");
+ renderPlanTime(license);
  if(isTrial&&!exhausted){status.className="badge";status.textContent="Plano de teste — "+used+"/"+limit+" aulas concluídas";message.textContent="Tem "+(limit-used)+" aula(s) disponível(is)."}
- else if(exhausted){status.className="badge warn";status.textContent="Teste concluído — 2/2 aulas";message.textContent="O teste terminou. Atualize o plano para voltar a dar aulas.";button.disabled=true;upgrade.hidden=false;upgrade.href="index.html?upgrade=1&acesso="+encodeURIComponent(accessToken)}
- else if(expired){status.className="badge warn";status.textContent="Plano expirado";message.textContent="Atualize o plano para voltar a utilizar o quadro.";button.disabled=true;upgrade.hidden=false;upgrade.href="index.html?upgrade=1&acesso="+encodeURIComponent(accessToken)}
+ else if(exhausted){status.className="badge warn";status.textContent="Teste concluído — 2/2 aulas";message.textContent="O teste terminou. Atualize o plano para voltar a dar aulas."}
+ else if(expired){status.className="badge warn";status.textContent="Plano expirado";message.textContent="Atualize o plano para voltar a utilizar o quadro."}
  else{status.className="badge";status.textContent="Acesso ativo";message.textContent="A sua licença foi confirmada no Firebase Realtime Database."}
- if(!exhausted&&!expired)button.disabled=false;
+ button.disabled=!!(exhausted||expired);
+ upgrade.hidden=false;
+ upgrade.href="login-professor.html?upgrade=1&acesso="+encodeURIComponent(accessToken);
+ upgrade.textContent=isTrial?"↗  Atualizar plano":"↗  Renovar / actualizar plano";
+}
+async function init(){try{
+ const user=auth.currentUser;
+ if(!user||!user.email){status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta.";return}
+ if(!token)throw new Error("Não foi encontrado o código de acesso da licença. Entre novamente pela página inicial.");
+ const snap=await db.ref("licenses/"+token).once("value"),license=snap.val();
+ if(!license||!["active","trial_exhausted"].includes(String(license.status||""))||String(license.teacherEmail||"").toLowerCase()!==String(user.email).toLowerCase()||(license.teacherUid&&license.teacherUid!==user.uid)){status.className="badge warn";status.textContent="Acesso não validado";message.textContent="A licença desta conta não está ativa ou não corresponde ao utilizador autenticado. Contacte a administração.";return}
+ const accessToken=license.accessToken||token;sessionStorage.setItem("azny_access_token",accessToken);document.getElementById("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");
+ const teacherName=String(license.teacherName||"Professor");
+ document.getElementById("userInitials").textContent=teacherName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
+ updateLicenseDisplay(license,accessToken);
+ const liveLicenseRef=db.ref("licenses/"+accessToken);
+ liveLicenseRef.on("value",liveSnap=>{
+  const live=liveSnap.val();
+  if(!live||String(live.teacherUid||"")!==String(user.uid)||String(live.teacherEmail||"").toLowerCase()!==String(user.email).toLowerCase())return;
+  updateLicenseDisplay(live,accessToken);
+ });
+ if(window.aznyPlanCountdownTimer)clearInterval(window.aznyPlanCountdownTimer);
+ window.aznyPlanCountdownTimer=setInterval(()=>{const current=document.getElementById("planTimeBadge");if(current&&!current.hidden)renderPlanTime({plan:document.getElementById("planName").textContent==="Plano de teste"?"trial":"paid",expiresAt:window.aznyCurrentPlanExpiry});},60000);
+ window.aznyCurrentPlanExpiry=license.expiresAt||null;
 }catch(error){status.className="badge warn";status.textContent="Falha na validação";message.textContent=error.message||"Não foi possível confirmar o acesso.";console.error(error)}}
 button.onclick=async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(error){console.info("Orientação horizontal não disponível:",error)}location.href="aulas/?acesso="+encodeURIComponent(token)};
 const logout=async()=>{sessionStorage.removeItem("azny_access_token");await auth.signOut().catch(()=>{});location.href="index.html"};document.getElementById("logoutSide").onclick=logout;auth.onAuthStateChanged(user=>{if(user)init();else{status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta."}});
