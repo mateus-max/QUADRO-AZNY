@@ -127,7 +127,83 @@ h1 span{color:var(--gold);text-shadow:0 4px 22px #ffb90022}
  .footer-sub{font-size:11px}
  .footer-links{gap:11px;margin-top:15px}
  .footer-links a{font-size:12px}
-}</style>
+}
+/* Composição visual actualizada da página inicial — Remote Work Board */
+body{background:radial-gradient(ellipse at 14% 6%,#10508e 0,#073466 32%,#031b3e 68%,#020d21 100%)}
+body:before{top:-35vw;left:-27vw;width:85vw;height:85vw;border-color:#1ba5ff38;box-shadow:0 0 0 26px #168eff0b,0 0 0 68px #168eff08,0 0 75px #0a8dff18}
+body:after{right:-42vw;bottom:-55vw;width:95vw;height:95vw;border-color:#159fff35;box-shadow:0 0 0 25px #168eff0b,0 0 0 68px #168eff08,0 0 90px #087dff18}
+.page{width:min(1320px,calc(100% - 64px));padding-top:22px}
+.topbar{border-bottom:1px solid #9bcaff35;padding-bottom:19px}
+.brand img{width:88px;height:88px}
+.brand-text{font-size:clamp(24px,3vw,36px);letter-spacing:.04em}
+.brand-text span{font-size:clamp(13px,1.5vw,18px);letter-spacing:.18em}
+.top-tag{background:#082b55a8;border:1px solid #75bfff75;box-shadow:inset 0 1px #ffffff20,0 0 22px #087bff20}
+.hero{grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:20px 30px;padding:34px 0 20px}
+.hero-heading{grid-column:1/-1;text-align:center;position:relative;z-index:2;padding:4px 0 2px}
+.product-title{font-size:clamp(58px,8vw,100px);line-height:.98;margin:8px auto 17px;text-transform:none;letter-spacing:-.06em;text-shadow:0 8px 34px #00122f85}
+.eyebrow{font-size:clamp(11px,1.3vw,14px);padding:11px 25px;letter-spacing:.17em;border-width:1.5px;box-shadow:0 0 22px #148bff1c,inset 0 1px #ffffff22}
+.eyebrow:before{content:"✦";font-size:15px}
+.hero-copy{align-self:center;padding:12px 0 12px 4px}
+.hero-tagline{font-size:clamp(30px,4vw,49px);line-height:1.12;margin:0 0 20px;max-width:600px}
+.lead{font-size:clamp(16px,1.7vw,20px);line-height:1.68;max-width:590px}
+.hero-art{align-self:center;padding:0}
+.laptop-scene{max-width:700px}
+.actions{max-width:100%;grid-template-columns:1fr 1fr;gap:16px;margin-top:27px}
+.btn{min-height:76px;border-radius:20px;font-size:clamp(15px,1.6vw,19px);letter-spacing:-.01em}
+.primary{background:linear-gradient(110deg,#078aff,#0756d9);border:1.5px solid #40c8ff;box-shadow:0 12px 34px #006aff58,inset 0 1px #ffffff65}
+.secondary{background:linear-gradient(120deg,#ffffff20,#ffffff09);border:1.5px solid #a7d5ff80}
+.features{margin-top:35px;padding:24px 0}
+.feature{font-size:15px;min-height:105px}
+.feature-icon{width:52px;height:52px;color:#55caff;filter:drop-shadow(0 0 9px #0b9cff50)}
+.feature-icon svg{width:43px;height:43px}
+.footer{padding-top:31px}
+.footer-brand{font-size:20px;letter-spacing:.1em}
+.footer-sub{font-size:14px}
+.footer-links{margin-top:21px}
+.footer-links a{font-size:15px}
+@media(max-width:850px){
+ .page{width:min(700px,calc(100% - 36px));padding-top:17px}
+ .brand img{width:66px;height:66px}
+ .hero{grid-template-columns:1fr;gap:4px;padding:27px 0 9px}
+ .hero-heading{grid-column:1;text-align:center}
+ .product-title{font-size:clamp(56px,10vw,78px);margin:8px auto 12px}
+ .eyebrow{font-size:11px;padding:9px 18px}
+ .hero-copy{text-align:center;padding:18px 4px 4px}
+ .hero-tagline{font-size:clamp(28px,5.2vw,39px);margin:0 auto 13px}
+ .lead{margin:auto;max-width:600px;font-size:16px}
+ .hero-art{max-width:600px;margin:0 auto;width:100%}
+ .actions{max-width:620px;margin:15px auto 0}
+ .features{margin-top:26px}
+}
+@media(max-width:560px){
+ .page{width:calc(100% - 34px);padding:13px 0 18px}
+ .topbar{padding-bottom:13px}
+ .brand{gap:9px}.brand img{width:56px;height:56px}
+ .brand-divider{height:43px}
+ .brand-text{font-size:18px;letter-spacing:.02em}
+ .brand-text span{font-size:11px;letter-spacing:.15em;margin-top:4px}
+ .top-tag{padding:8px 10px;font-size:8px;gap:6px;letter-spacing:.04em}
+ .hero{padding:24px 0 4px;gap:0}
+ .product-title{font-size:clamp(49px,13vw,65px);line-height:.98;margin:10px auto 12px}
+ .eyebrow{padding:9px 15px;font-size:9px;letter-spacing:.13em}
+ .hero-copy{padding:22px 0 4px}
+ .hero-tagline{font-size:clamp(25px,7vw,33px);line-height:1.13;margin:0 auto 13px}
+ .lead{font-size:14px;line-height:1.62;max-width:440px}
+ .hero-art{width:calc(100% + 22px);margin:4px -11px 0}
+ .actions{grid-template-columns:1fr;gap:10px;margin-top:0}
+ .btn{min-height:65px;border-radius:17px;font-size:15px;padding:13px 15px}
+ .features{grid-template-columns:repeat(2,1fr);gap:0;margin-top:25px;padding:15px 0}
+ .feature{min-height:92px;padding:10px 7px;font-size:12px}
+ .feature:nth-child(2){border-right:0}
+ .feature:nth-child(-n+2){border-bottom:1px solid #1c9aff60}
+ .feature-icon{width:36px;height:36px}.feature-icon svg{width:32px;height:32px}
+ .footer{padding-top:21px}
+ .footer-brand{font-size:14px}
+ .footer-sub{font-size:11px}
+ .footer-links{gap:11px;margin-top:15px}
+ .footer-links a{font-size:12px}
+}
+</style>
 </head>
 <body>
 <main class="page">
@@ -137,13 +213,15 @@ h1 span{color:var(--gold);text-shadow:0 4px 22px #ffb90022}
   <span class="brand-divider" aria-hidden="true"></span>
   <div class="brand-text">REMOTE WORK<span>BOARD</span></div>
  </div>
- <div class="top-tag"><span></span> A SALA DE AULA DIGITAL</div>
+ <div class="top-tag"><span></span> PLATAFORMA DE ENSINO ONLINE</div>
 </header>
 
 <section class="hero">
- <div class="hero-copy">
+ <div class="hero-heading">
+  <h1 class="product-title">Quadro Virtual</h1>
   <div class="eyebrow">A sala de aula digital</div>
-  <h1 class="product-title">Quadro<br class="mobile-break"> Virtual</h1>
+ </div>
+ <div class="hero-copy">
   <div class="hero-tagline">Ensine e aprenda em <span>tempo real.</span></div>
   <p class="lead">Um quadro virtual colaborativo para professores e alunos. Crie a sua conta de professor, escolha um plano e envie o comprovativo para autorização da administração.</p>
  </div>
