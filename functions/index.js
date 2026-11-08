@@ -118,7 +118,7 @@ exports.recordTrialClass = onCall({ region: REGION }, async (request) => {
   });
   const lic = tx.snapshot.val() || {};
   return { trial: lic.plan === "trial",
-    exhausted: lic.plan === "trial" && (lic.trialExhausted === true || Number(lic.trialSessionsUsed || 0) >= 4),
+    exhausted: lic.plan === "trial" && (lic.trialExhausted === true || Number(lic.trialSessionsUsed || 0) >= 2),
     used: Number(lic.trialSessionsUsed || 0) };
 });
 
