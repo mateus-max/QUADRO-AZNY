@@ -308,6 +308,12 @@ async function createLicenseForApprovedRequest(approved, requestId) {
   };
   const updates = {};
   updates["licenses/" + token] = license;
+  if (approved.uid) updates["teacherAccounts/" + String(approved.uid)] = {
+    uid: String(approved.uid), name: license.teacherName, email,
+    role: "teacher", accountStatus: "active", plan: planKey,
+    planName: license.planName, accessToken: token,
+    activatedAt: ServerValue.TIMESTAMP, updatedAt: ServerValue.TIMESTAMP
+  };
   updates["paymentRequests/" + requestId] = {
     ...approved, status: "approved",
     accountStatus: "active", accessGranted: true,
@@ -323,6 +329,25 @@ async function createLicenseForApprovedRequest(approved, requestId) {
   await db.ref().update(updates);
   return { ok: true, accessToken: token, plan: planKey, teacherName: license.teacherName };
 }
+
+exports.registerTeacherAccount = onCall({ region: REGION, maxInstances: 10 }, async (request) => {
+  const uid = requireAuth(request);
+  const email = safeEmail(request.auth?.token?.email);
+  const name = String(request.data?.name || "").trim();
+  if (!email || !validEmail(email) || !name || name.length > 120) {
+    throw new HttpsError("invalid-argument", "Informe um nome e um e-mail válidos.");
+  }
+  const ref = db.ref("teacherAccounts/" + uid);
+  const prior = (await ref.get()).val() || {};
+  const profile = {
+    uid, name, email, role: "teacher",
+    accountStatus: prior.accountStatus === "active" ? "active" : "pending",
+    createdAt: prior.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  await ref.set({ ...prior, ...profile });
+  return { ok: true, accountStatus: profile.accountStatus };
+});
 
 exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10, memory: "1GiB", timeoutSeconds: 60 }, async (request) => {
   const uid = requireAuth(request);
@@ -343,7 +368,7 @@ exports.createPaymentRequest = onCall({ region: REGION, maxInstances: 10, memory
   };
   const allowedTypes = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
   const dataMatch = proofData.match(/^data:(image\/png|image\/jpeg|image\/webp|application\/pdf);base64,([A-Za-z0-9+/=]+)$/);
-  if (!name || name.length > 120 || !phone || phone.length > 40 || !plans[plan] ||
+  if (!name || name.length > 120 || phone.length > 40 || !plans[plan] ||
       !["monthly", "annual"].includes(period) || !allowedTypes.includes(proofType) ||
       !dataMatch || dataMatch[1] !== proofType || proofData.length > 6 * 1024 * 1024) {
     throw new HttpsError("invalid-argument", "Dados do pedido ou comprovativo inválidos. Anexe PNG, JPG, WEBP ou PDF até 4 MB.");
