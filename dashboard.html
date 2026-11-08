@@ -2,10 +2,133 @@
 <html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Remote Work Board — Quadro Virtual</title>
 <meta name="theme-color" content="#071b33">
 <style>
-*{box-sizing:border-box}body{margin:0;font:16px Inter,Segoe UI,Arial,sans-serif;background:#eef3f8;color:#172536;min-height:100vh}.top{background:#071b33;color:#fff;padding:18px 22px;font-weight:900;font-size:20px}.wrap{max-width:760px;margin:32px auto;padding:0 16px}.card{background:#fff;border:1px solid #dbe4ed;border-radius:18px;padding:26px;box-shadow:0 8px 25px #071b3310}.muted{color:#64748b;line-height:1.6}.badge{display:inline-block;border-radius:99px;padding:7px 12px;font-size:12px;font-weight:800;background:#e8f8ed;color:#17733a}.badge.warn{background:#fff3d8;color:#8a5b00}.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:11px;padding:14px 20px;background:#1677ff;color:#fff;font:800 16px Inter,Arial,sans-serif;cursor:pointer;text-decoration:none;min-height:48px}.btn:disabled{opacity:.5;cursor:not-allowed}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}.logout{background:#edf2f7;color:#172536}.status{margin:14px 0}@media(max-width:560px){.wrap{margin:18px auto}.card{padding:20px}.actions .btn{width:100%}}
+:root{--navy:#071b43;--blue:#1267e8;--ink:#14264a;--muted:#718096;--line:#dce6f3;--bg:#f3f7fd}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font:15px Inter,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+button,a{font:inherit}
+.app{min-height:100vh}
+.sidebar{position:fixed;inset:0 auto 0 0;width:224px;background:linear-gradient(180deg,#061a43,#082b68);color:#fff;padding:25px 14px 18px;display:flex;flex-direction:column;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 10px 34px;font-size:20px;font-weight:900;letter-spacing:-.4px}
+.brand-mark{font-size:31px}
+.brand small{display:block;font-size:10px;letter-spacing:2px;color:#a9c9ff;font-weight:800}
+.nav{display:grid;gap:9px}
+.nav a{display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:12px;color:#e9f1ff;text-decoration:none;font-weight:700;transition:.18s}
+.nav a:hover,.nav a.active{background:#1474ef;color:#fff;box-shadow:0 8px 20px #00143d55}
+.nav .ico{width:23px;text-align:center;font-size:19px}
+.side-bottom{margin-top:auto}
+.side-bottom .btn{width:100%;background:#ffffff12;border:1px solid #ffffff40;color:#fff}
+.main{margin-left:224px;padding:22px 26px 38px;max-width:1600px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 22px}
+.page-title{display:flex;align-items:center;gap:12px;font-size:25px;font-weight:900;letter-spacing:-.7px}
+.page-title .cap{font-size:27px}
+.top-actions{display:flex;align-items:center;gap:12px;color:var(--navy)}
+.icon-btn{width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--navy);font-size:19px}
+.user-chip{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#dceaff;color:#0756c9;font-weight:900;border:2px solid #fff;box-shadow:0 2px 8px #102c5018}
+.welcome{display:flex;align-items:center;justify-content:space-between;gap:20px;overflow:hidden;position:relative;background:linear-gradient(110deg,#08276b,#0862ce);border-radius:19px;padding:27px 30px;color:white;box-shadow:0 12px 28px #0a4ca51b}
+.welcome-copy{position:relative;z-index:1;min-width:0}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#bcd8ff;margin-bottom:7px}
+.welcome h1{font-size:clamp(24px,3vw,35px);line-height:1.15;letter-spacing:-.8px;margin:0 0 9px;color:#fff;overflow-wrap:anywhere}
+.welcome p{margin:0;color:#e3efff;font-size:16px;line-height:1.55}
+.welcome-art{font-size:72px;flex:0 0 auto;filter:drop-shadow(0 7px 10px #001b5066);padding:0 14px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:20px 0}
+.stat{min-height:126px;border-radius:16px;padding:18px 20px;border:1px solid #ffffff;background:linear-gradient(135deg,#e2f1ff,#cce7ff)}
+.stat:nth-child(2){background:linear-gradient(135deg,#e4fbf2,#c9f4e5)}
+.stat:nth-child(3){background:linear-gradient(135deg,#f0eaff,#e2d9ff)}
+.stat:nth-child(4){background:linear-gradient(135deg,#fff0e8,#ffe1d2)}
+.stat-icon{font-size:25px;margin-bottom:7px}
+.stat strong{display:block;font-size:29px;line-height:1.1;color:#10254b}
+.stat span{display:block;margin-top:5px;color:#334968;font-size:14px;font-weight:650}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:17px;padding:22px;box-shadow:0 7px 22px #0b2a5510;min-width:0}
+.panel h2{display:flex;align-items:center;gap:10px;margin:0 0 18px;font-size:20px;letter-spacing:-.4px}
+.panel h2 .panel-ico{font-size:23px}
+.board-panel{display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;min-height:310px;background:linear-gradient(145deg,#fff,#f8fbff)}
+.board-illustration{width:150px;height:94px;border:9px solid #f4b400;border-bottom-width:13px;border-radius:9px;background:linear-gradient(135deg,#08745b,#034a40);box-shadow:0 8px 0 #9b6500,0 13px 18px #06264b24;display:grid;place-items:center;color:#fff;font-size:43px;margin:5px 0 20px}
+.board-panel h2{font-size:25px;margin:0 0 7px}
+.board-panel p{margin:0 0 17px;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:12px;padding:14px 19px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer;text-decoration:none;min-height:50px;transition:filter .18s,transform .18s}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-green{background:#078c39;width:100%;max-width:440px}
+.btn-blue{width:100%;max-width:440px}
+.btn-light{background:#edf2f8;color:#172536}
+.btn:focus-visible,a:focus-visible{outline:3px solid #ffbf47;outline-offset:3px}
+.plan-box{background:#e2f9e9;border-radius:13px;padding:16px 18px;color:#155b2d;margin-bottom:14px}
+.plan-box strong{display:block;font-size:19px;margin-bottom:4px}
+.plan-box span{font-size:14px}
+.progress-label{text-align:right;font-size:13px;font-weight:800;margin:10px 0 7px}
+.progress{height:10px;border-radius:20px;background:#dce6f4;overflow:hidden;margin-bottom:18px}
+.progress>span{display:block;height:100%;background:#1681ec;border-radius:20px;width:0;transition:width .2s}
+.plan-actions{display:flex;gap:10px;flex-wrap:wrap}
+.plan-actions .btn{flex:1}
+.activity-empty{background:#f0f5fc;border-radius:14px;min-height:175px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;color:#64748b;line-height:1.55}
+.activity-empty .info{font-size:31px;color:#1267e8;margin-bottom:8px}
+.activity-empty strong{color:#182c50;font-size:16px;margin-bottom:4px}
+.status{margin:13px 0 0;color:var(--muted);line-height:1.5;min-height:22px}
+.badge{display:inline-block;border-radius:99px;padding:7px 12px;font-size:12px;font-weight:800;background:#e8f8ed;color:#17733a}
+.badge.warn{background:#fff3d8;color:#8a5b00}
+.plan-status{margin:0 0 14px}
+.quick-list{display:grid;gap:9px}
+.quick-link{display:flex;align-items:center;gap:13px;border:1px solid var(--line);border-radius:12px;padding:13px;color:var(--ink);text-decoration:none}
+.quick-link .quick-ico{font-size:22px;color:var(--blue);width:28px;text-align:center}
+.quick-link strong{display:block;font-size:14px}
+.quick-link small{display:block;color:var(--muted);margin-top:3px}
+.quick-link .arrow{margin-left:auto;color:#41618b;font-size:21px}
+.section-anchor{scroll-margin-top:18px}
+@media(max-width:1050px){.sidebar{width:190px}.main{margin-left:190px;padding:20px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.welcome-art{font-size:58px}}
+@media(max-width:700px){.sidebar{position:sticky;inset:0 0 auto;width:auto;height:auto;padding:10px 12px;display:block}.brand{padding:0 5px 10px;font-size:17px}.brand-mark{font-size:24px}.brand small{display:none}.nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}.nav a{white-space:nowrap;padding:9px 11px;font-size:12px;gap:6px}.nav .ico{font-size:15px;width:auto}.side-bottom{display:none}.main{margin:0;padding:16px 13px 28px}.topbar{margin-bottom:15px}.page-title{font-size:20px}.top-actions{gap:7px}.icon-btn{width:37px;height:37px}.user-chip{width:37px;height:37px}.welcome{padding:22px 19px;border-radius:16px}.welcome p{font-size:14px}.welcome-art{font-size:42px;padding:0}.stats{gap:10px;margin:14px 0}.stat{padding:14px;min-height:105px}.stat strong{font-size:25px}.stat span{font-size:12px}.grid{grid-template-columns:1fr;gap:13px}.panel{padding:18px}.board-panel{min-height:270px}.panel h2{font-size:18px}}
+@media(max-width:380px){.nav a{font-size:11px;padding:8px}.welcome-art{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-</head><body><header class="top">Remote Work Board</header><main class="wrap"><section class="card"><h1 id="hello">O seu quadro virtual</h1><p class="muted">Aceda diretamente ao quadro verde para iniciar ou continuar as suas aulas. Mantivemos apenas o acesso ao quadro, sem portal de alunos, publicação de cursos ou módulos de avaliações.</p><div id="licenseStatus" class="badge">A validar acesso…</div><div class="actions"><button class="btn" id="openBoard" disabled>Entrar no quadro verde</button><a class="btn" id="upgradePlan" href="#" hidden>Atualizar plano</a><button class="btn logout" id="logout">Terminar sessão</button></div><p id="message" class="muted status" role="status" aria-live="polite"></p></section></main>
+</head><body><div class="app">
+<aside class="sidebar" aria-label="Navegação do professor">
+ <div class="brand"><span class="brand-mark">📘</span><span>Quadro AZNY<small>REMOTE WORK BOARD</small></span></div>
+ <nav class="nav">
+  <a class="active" href="#inicio"><span class="ico">⌂</span>Início</a>
+  <a href="#quadro"><span class="ico">▣</span>Quadro Virtual</a>
+  <a href="#plano"><span class="ico">▤</span>Meu plano</a>
+ </nav>
+ <div class="side-bottom"><button class="btn" id="logoutSide" type="button">↪ Terminar sessão</button></div>
+</aside>
+<main class="main" id="inicio">
+ <header class="topbar"><div class="page-title"><span class="cap">🎓</span>Painel do Professor</div><div class="top-actions"><span aria-hidden="true">🔔</span><span class="user-chip" id="userInitials">P</span></div></header>
+ <section class="welcome">
+  <div class="welcome-copy"><div class="eyebrow">Área do professor</div><h1 id="hello">Bem-vindo ao seu painel</h1><p>Aceda ao quadro verde e acompanhe a utilização do seu plano.</p></div>
+  <div class="welcome-art" aria-hidden="true">🌍</div>
+ </section>
+ <section class="stats" aria-label="Resumo da conta">
+  <article class="stat"><div class="stat-icon">🎓</div><strong id="completedLessons">—</strong><span>Aulas concluídas</span></article>
+  <article class="stat"><div class="stat-icon">🗓️</div><strong id="availableLessons">—</strong><span>Aulas disponíveis</span></article>
+  <article class="stat"><div class="stat-icon">🎥</div><strong>—</strong><span>Gravações</span></article>
+  <article class="stat"><div class="stat-icon">🏅</div><strong id="planName">Plano</strong><span id="planShort">A validar</span></article>
+ </section>
+ <div class="grid">
+  <section class="panel board-panel section-anchor" id="quadro">
+   <div class="board-illustration" aria-hidden="true">▶</div><h2>Quadro Virtual</h2><p>Inicie a sua aula em tempo real.</p>
+   <button class="btn btn-green" id="openBoard" disabled>▶ &nbsp; Entrar no quadro verde</button>
+   <p id="message" class="status" role="status" aria-live="polite"></p>
+  </section>
+  <section class="panel section-anchor" id="plano">
+   <h2><span class="panel-ico">🏅</span>O meu plano</h2>
+   <div class="plan-box"><strong id="planBoxName">A validar o plano…</strong><span id="planDescription">Os detalhes do seu plano aparecerão aqui.</span></div>
+   <div class="plan-status"><span id="licenseStatus" class="badge">A validar acesso…</span></div>
+   <div class="progress-label" id="progressLabel">Aulas utilizadas</div><div class="progress"><span id="lessonProgress"></span></div>
+   <div class="plan-actions"><a class="btn btn-blue" id="upgradePlan" href="#" hidden>↗ &nbsp; Atualizar plano</a></div>
+  </section>
+  <section class="panel">
+   <h2><span class="panel-ico">⚡</span>Acesso rápido</h2>
+   <div class="quick-list">
+    <a class="quick-link" href="#quadro"><span class="quick-ico">▣</span><span><strong>Quadro Virtual</strong><small>Entrar na sala de aula</small></span><span class="arrow">›</span></a>
+    <a class="quick-link" href="#plano"><span class="quick-ico">🏅</span><span><strong>Meu plano</strong><small>Consultar acesso e utilização</small></span><span class="arrow">›</span></a>
+   </div>
+  </section>
+  <section class="panel">
+   <h2><span class="panel-ico">◷</span>Actividade recente</h2>
+   <div class="activity-empty"><span class="info">ⓘ</span><strong>A sua actividade aparecerá aqui.</strong><span>As informações de utilização serão apresentadas quando estiverem disponíveis.</span></div>
+  </section>
+ </div>
+</main></div>
 <script>
 (()=>{"use strict";
 const cfg={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remot-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};
@@ -18,6 +141,17 @@ async function init(){try{
  const snap=await db.ref("licenses/"+token).once("value"),license=snap.val();
  if(!license||!["active","trial_exhausted"].includes(String(license.status||""))||String(license.teacherEmail||"").toLowerCase()!==String(user.email).toLowerCase()||(license.teacherUid&&license.teacherUid!==user.uid)){status.className="badge warn";status.textContent="Acesso não validado";message.textContent="A licença desta conta não está ativa ou não corresponde ao utilizador autenticado. Contacte a administração.";return}
  const accessToken=license.accessToken||token;sessionStorage.setItem("azny_access_token",accessToken);document.getElementById("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");
+ const teacherName=String(license.teacherName||"Professor");
+ document.getElementById("userInitials").textContent=teacherName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
+ const planLabels={trial:"Plano de teste",basic:"Plano básico",professional:"Plano profissional",school:"Plano escola"};
+ document.getElementById("planName").textContent=planLabels[license.plan]||"Plano activo";
+ document.getElementById("planBoxName").textContent=planLabels[license.plan]||license.planName||"Plano activo";
+ document.getElementById("planShort").textContent=isTrial?"Plano de teste":(license.planName||"Acesso activo");
+ document.getElementById("completedLessons").textContent=isTrial?used:"—";
+ document.getElementById("availableLessons").textContent=isTrial?Math.max(0,limit-used):"—";
+ document.getElementById("progressLabel").textContent=isTrial?used+"/"+limit+" aulas concluídas":"Plano activo";
+ document.getElementById("lessonProgress").style.width=isTrial?Math.min(100,used/limit*100)+"%":"0%";
+ document.getElementById("planDescription").textContent=isTrial?"Válido para "+limit+" aulas gratuitas.":(license.planName||"A sua licença está activa.");
  const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date(),isTrial=license.plan==="trial",used=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length),limit=2,exhausted=isTrial&&(license.trialExhausted===true||license.status==="trial_exhausted"||used>=limit),upgrade=document.getElementById("upgradePlan");
  if(isTrial&&!exhausted){status.className="badge";status.textContent="Plano de teste — "+used+"/"+limit+" aulas concluídas";message.textContent="Tem "+(limit-used)+" aula(s) disponível(is)."}
  else if(exhausted){status.className="badge warn";status.textContent="Teste concluído — 2/2 aulas";message.textContent="O teste terminou. Atualize o plano para voltar a dar aulas.";button.disabled=true;upgrade.hidden=false;upgrade.href="index.html?upgrade=1&acesso="+encodeURIComponent(accessToken)}
@@ -26,7 +160,7 @@ async function init(){try{
  if(!exhausted&&!expired)button.disabled=false;
 }catch(error){status.className="badge warn";status.textContent="Falha na validação";message.textContent=error.message||"Não foi possível confirmar o acesso.";console.error(error)}}
 button.onclick=async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(error){console.info("Orientação horizontal não disponível:",error)}location.href="aulas/?acesso="+encodeURIComponent(token)};
-document.getElementById("logout").onclick=async()=>{sessionStorage.removeItem("azny_access_token");await auth.signOut().catch(()=>{});location.href="index.html"};auth.onAuthStateChanged(user=>{if(user)init();else{status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta."}});
+const logout=async()=>{sessionStorage.removeItem("azny_access_token");await auth.signOut().catch(()=>{});location.href="index.html"};document.getElementById("logoutSide").onclick=logout;auth.onAuthStateChanged(user=>{if(user)init();else{status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta."}});
 })();
 </script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js",{scope:"/QUADRO-AZNY/"}).catch(console.warn));}</script>
