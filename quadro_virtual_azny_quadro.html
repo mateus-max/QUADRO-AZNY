@@ -2684,7 +2684,7 @@ async function startRecording(forStudent=isStudent){
  if(previousBox){previousBox.style.display="none";previousBox.replaceChildren()}
  const button=document.getElementById(forStudent?"studentRecordBtn":"recordClassBtn"),boxId=forStudent?"studentRecordDownload":"recordDownload";
  if(button){button.textContent=document.documentElement.lang==="en"?"Preparing recording…":"A preparar gravação…";button.disabled=true}
- if(!window.MediaRecorder){toast("Este navegador não disponibiliza a gravação de vídeo.");return}
+ if(!window.MediaRecorder){if(button){button.disabled=false;button.textContent=forStudent?"⏺ Gravar":"⏺ Gravar aula";button.classList.remove("recording")}toast("Este navegador não disponibiliza a gravação de vídeo.");return}
  /* Use the same full-board capture path on phone and computer, for teacher and student.
     This avoids monitor/window cropping and keeps the whole board in the recording. */
  startBoardFallbackRecording(forStudent,button,boxId);return;
@@ -2777,21 +2777,27 @@ async function startTeacherFullScreenRecording(button,boxId){
  }
 }
 async function startBoardFallbackRecording(forStudent,button,boxId){
+ const resetRecordButton=()=>{
+  if(!button)return;
+  button.disabled=false;
+  button.textContent=forStudent?(document.documentElement.lang==="en"?"⏺ Record":"⏺ Gravar"):(document.documentElement.lang==="en"?"⏺ Record class":"⏺ Gravar aula");
+  button.classList.remove("recording");
+ };
  const target=document.querySelector(".app");
- if(!target||!window.MediaRecorder){toast(document.documentElement.lang==="en"?"Could not prepare recording in this browser.":"Não foi possível preparar a gravação neste navegador.");return}
+ if(!target||!window.MediaRecorder){resetRecordButton();toast(document.documentElement.lang==="en"?"Could not prepare recording in this browser.":"Não foi possível preparar a gravação neste navegador.");return}
  const loadHtml2Canvas=async()=>{
   if(window.html2canvas)return window.html2canvas;
   await new Promise((resolve,reject)=>{const script=document.createElement("script");script.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";script.onload=resolve;script.onerror=()=>reject(new Error("Motor de captura indisponível"));document.head.appendChild(script)});
   if(!window.html2canvas)throw new Error("Motor de captura indisponível");return window.html2canvas;
  };
  let html2canvas;
- try{toast(document.documentElement.lang==="en"?"Preparing high-quality board recording…":"A preparar a gravação do quadro em alta qualidade…");html2canvas=await loadHtml2Canvas()}catch(e){console.error("AZNY recording setup:",e);toast(document.documentElement.lang==="en"?"Could not start recording. Check your internet connection and try again.":"Não foi possível iniciar a gravação. Verifique a ligação à Internet e tente novamente.");return}
+ try{toast(document.documentElement.lang==="en"?"Preparing high-quality board recording…":"A preparar a gravação do quadro em alta qualidade…");html2canvas=await loadHtml2Canvas()}catch(e){resetRecordButton();console.error("AZNY recording setup:",e);toast(document.documentElement.lang==="en"?"Could not start recording. Check your internet connection and try again.":"Não foi possível iniciar a gravação. Verifique a ligação à Internet e tente novamente.");return}
  const bounds=target.getBoundingClientRect();
  const width=Math.max(320,Math.min(1920,Math.round(bounds.width||target.clientWidth||800)));
  const height=Math.max(240,Math.min(1440,Math.round(bounds.height||target.clientHeight||450)));
  const pixelRatio=Math.min(2.5,Math.max(2,window.devicePixelRatio||1));
  const canvas=document.createElement("canvas");canvas.width=Math.round(width*pixelRatio);canvas.height=Math.round(height*pixelRatio);
- const ctx=canvas.getContext("2d",{alpha:false});if(!ctx){toast("O navegador não permite preparar a gravação.");return}
+ const ctx=canvas.getContext("2d",{alpha:false});if(!ctx){resetRecordButton();toast("O navegador não permite preparar a gravação.");return}
  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
  let busy=false,stopped=false,frame=0,stream=null,audioContext=null,audioScan=null;
  const render=async()=>{
