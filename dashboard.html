@@ -75,6 +75,10 @@ button,a{font:inherit}
 .quick-link strong{display:block;font-size:14px}
 .quick-link small{display:block;color:var(--muted);margin-top:3px}
 .quick-link .arrow{margin-left:auto;color:#41618b;font-size:21px}
+.view-panel[hidden]{display:none!important}
+.view-panel{animation:viewIn .18s ease-out}
+@keyframes viewIn{from{opacity:.55;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.view-panel>.panel{max-width:980px}
 .section-anchor{scroll-margin-top:18px}
 @media(max-width:1050px){.sidebar{width:190px}.main{margin-left:190px;padding:20px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.welcome-art{font-size:58px}}
 @media(max-width:700px){.sidebar{position:sticky;inset:0 0 auto;width:auto;height:auto;padding:10px 12px;display:block}.brand{padding:0 5px 10px;font-size:17px}.brand-mark{font-size:24px}.brand small{display:none}.nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}.nav a{white-space:nowrap;padding:9px 11px;font-size:12px;gap:6px}.nav .ico{font-size:15px;width:auto}.side-bottom{display:none}.main{margin:0;padding:16px 13px 28px}.topbar{margin-bottom:15px}.page-title{font-size:20px}.top-actions{gap:7px}.icon-btn{width:37px;height:37px}.user-chip{width:37px;height:37px}.welcome{padding:22px 19px;border-radius:16px}.welcome p{font-size:14px}.welcome-art{font-size:42px;padding:0}.stats{gap:10px;margin:14px 0}.stat{padding:14px;min-height:105px}.stat strong{font-size:25px}.stat span{font-size:12px}.grid{grid-template-columns:1fr;gap:13px}.panel{padding:18px}.board-panel{min-height:270px}.panel h2{font-size:18px}}
@@ -84,56 +88,56 @@ button,a{font:inherit}
 </head><body><div class="app">
 <aside class="sidebar" aria-label="Navegação do professor">
  <div class="brand"><span class="brand-mark">📘</span><span>Quadro AZNY<small>REMOTE WORK BOARD</small></span></div>
- <nav class="nav">
-  <a class="active" href="#inicio"><span class="ico">⌂</span>Início</a>
-  <a href="#quadro"><span class="ico">▣</span>Quadro Virtual</a>
-  <a href="#plano"><span class="ico">▤</span>Meu plano</a>
+ <nav class="nav" aria-label="Menu do professor">
+  <a class="active" href="#inicio" data-view="inicio" aria-current="page"><span class="ico">⌂</span>Início</a>
+  <a href="#quadro" data-view="quadro"><span class="ico">▣</span>Quadro Virtual</a>
+  <a href="#plano" data-view="plano"><span class="ico">▤</span>Meu plano</a>
+  <a href="#atalhos" data-view="atalhos"><span class="ico">⚡</span>Acesso rápido</a>
+  <a href="#actividade" data-view="actividade"><span class="ico">◷</span>Actividade</a>
  </nav>
  <div class="side-bottom"><button class="btn" id="logoutSide" type="button">↪ Terminar sessão</button></div>
 </aside>
 <main class="main" id="inicio">
- <header class="topbar"><div class="page-title"><span class="cap">🎓</span>Painel do Professor</div><div class="top-actions"><span aria-hidden="true">🔔</span><span class="user-chip" id="userInitials">P</span></div></header>
- <section class="welcome">
-  <div class="welcome-copy"><div class="eyebrow">Área do professor</div><h1 id="hello">Bem-vindo ao seu painel</h1><p>Aceda ao quadro verde e acompanhe a utilização do seu plano.</p></div>
-  <div class="welcome-art" aria-hidden="true">🌍</div>
+ <header class="topbar"><div class="page-title"><span class="cap">🎓</span><span id="currentPageTitle">Painel do Professor</span></div><div class="top-actions"><span aria-hidden="true">🔔</span><span class="user-chip" id="userInitials">P</span></div></header>
+ <section class="view-panel" data-view-panel="inicio">
+  <section class="welcome"><div class="welcome-copy"><div class="eyebrow">Área do professor</div><h1 id="hello">Bem-vindo ao seu painel</h1><p>Aceda ao quadro verde e acompanhe a utilização do seu plano.</p></div><div class="welcome-art" aria-hidden="true">🌍</div></section>
+  <section class="stats" aria-label="Resumo da conta">
+   <article class="stat"><div class="stat-icon">🎓</div><strong id="completedLessons">—</strong><span>Aulas concluídas</span></article>
+   <article class="stat"><div class="stat-icon">🗓️</div><strong id="availableLessons">—</strong><span>Aulas disponíveis</span></article>
+   <article class="stat"><div class="stat-icon">🎥</div><strong>—</strong><span>Gravações</span></article>
+   <article class="stat"><div class="stat-icon">🏅</div><strong id="planName">Plano</strong><span id="planShort">A validar</span></article>
+  </section>
  </section>
- <section class="stats" aria-label="Resumo da conta">
-  <article class="stat"><div class="stat-icon">🎓</div><strong id="completedLessons">—</strong><span>Aulas concluídas</span></article>
-  <article class="stat"><div class="stat-icon">🗓️</div><strong id="availableLessons">—</strong><span>Aulas disponíveis</span></article>
-  <article class="stat"><div class="stat-icon">🎥</div><strong>—</strong><span>Gravações</span></article>
-  <article class="stat"><div class="stat-icon">🏅</div><strong id="planName">Plano</strong><span id="planShort">A validar</span></article>
+ <section class="view-panel" data-view-panel="quadro" id="quadro" hidden>
+  <section class="panel board-panel"><div class="board-illustration" aria-hidden="true">▶</div><h2>Quadro Virtual</h2><p>Inicie a sua aula em tempo real.</p><button class="btn btn-green" id="openBoard" disabled>▶ &nbsp; Entrar no quadro verde</button><p id="message" class="status" role="status" aria-live="polite"></p></section>
  </section>
- <div class="grid">
-  <section class="panel board-panel section-anchor" id="quadro">
-   <div class="board-illustration" aria-hidden="true">▶</div><h2>Quadro Virtual</h2><p>Inicie a sua aula em tempo real.</p>
-   <button class="btn btn-green" id="openBoard" disabled>▶ &nbsp; Entrar no quadro verde</button>
-   <p id="message" class="status" role="status" aria-live="polite"></p>
-  </section>
-  <section class="panel section-anchor" id="plano">
-   <h2><span class="panel-ico">🏅</span>O meu plano</h2>
-   <div class="plan-box"><strong id="planBoxName">A validar o plano…</strong><span id="planDescription">Os detalhes do seu plano aparecerão aqui.</span></div>
-   <div class="plan-status"><span id="licenseStatus" class="badge">A validar acesso…</span></div>
-   <div class="progress-label" id="progressLabel">Aulas utilizadas</div><div class="progress"><span id="lessonProgress"></span></div>
-   <div class="plan-actions"><a class="btn btn-blue" id="upgradePlan" href="#" hidden>↗ &nbsp; Atualizar plano</a></div>
-  </section>
-  <section class="panel">
-   <h2><span class="panel-ico">⚡</span>Acesso rápido</h2>
-   <div class="quick-list">
-    <a class="quick-link" href="#quadro"><span class="quick-ico">▣</span><span><strong>Quadro Virtual</strong><small>Entrar na sala de aula</small></span><span class="arrow">›</span></a>
-    <a class="quick-link" href="#plano"><span class="quick-ico">🏅</span><span><strong>Meu plano</strong><small>Consultar acesso e utilização</small></span><span class="arrow">›</span></a>
-   </div>
-  </section>
-  <section class="panel">
-   <h2><span class="panel-ico">◷</span>Actividade recente</h2>
-   <div class="activity-empty"><span class="info">ⓘ</span><strong>A sua actividade aparecerá aqui.</strong><span>As informações de utilização serão apresentadas quando estiverem disponíveis.</span></div>
-  </section>
- </div>
+ <section class="view-panel" data-view-panel="plano" id="plano" hidden>
+  <section class="panel"><h2><span class="panel-ico">🏅</span>O meu plano</h2><div class="plan-box"><strong id="planBoxName">A validar o plano…</strong><span id="planDescription">Os detalhes do seu plano aparecerão aqui.</span></div><div class="plan-status"><span id="licenseStatus" class="badge">A validar acesso…</span></div><div class="progress-label" id="progressLabel">Aulas utilizadas</div><div class="progress"><span id="lessonProgress"></span></div><div class="plan-actions"><a class="btn btn-blue" id="upgradePlan" href="#" hidden>↗ &nbsp; Atualizar plano</a></div></section>
+ </section>
+ <section class="view-panel" data-view-panel="atalhos" id="atalhos" hidden>
+  <section class="panel"><h2><span class="panel-ico">⚡</span>Acesso rápido</h2><div class="quick-list"><a class="quick-link" href="#quadro" data-open-view="quadro"><span class="quick-ico">▣</span><span><strong>Quadro Virtual</strong><small>Entrar na sala de aula</small></span><span class="arrow">›</span></a><a class="quick-link" href="#plano" data-open-view="plano"><span class="quick-ico">🏅</span><span><strong>Meu plano</strong><small>Consultar acesso e utilização</small></span><span class="arrow">›</span></a></div></section>
+ </section>
+ <section class="view-panel" data-view-panel="actividade" id="actividade" hidden>
+  <section class="panel"><h2><span class="panel-ico">◷</span>Actividade recente</h2><div class="activity-empty"><span class="info">ⓘ</span><strong>A sua actividade aparecerá aqui.</strong><span>As informações de utilização serão apresentadas quando estiverem disponíveis.</span></div></section>
+ </section>
 </main></div>
 <script>
 (()=>{"use strict";
 const cfg={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remot-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};
 if(!firebase.apps.length)firebase.initializeApp(cfg);const auth=firebase.auth(),db=firebase.database();
 const qs=new URLSearchParams(location.search),token=qs.get("acesso")||sessionStorage.getItem("azny_access_token")||"",status=document.getElementById("licenseStatus"),button=document.getElementById("openBoard"),message=document.getElementById("message");
+const viewTitles={inicio:"Painel do Professor",quadro:"Quadro Virtual",plano:"O meu plano",atalhos:"Acesso rápido",actividade:"Actividade recente"};
+function openView(name){
+ const selected=viewTitles[name]?name:"inicio";
+ document.querySelectorAll("[data-view-panel]").forEach(panel=>{panel.hidden=panel.dataset.viewPanel!==selected});
+ document.querySelectorAll(".nav [data-view]").forEach(link=>{const active=link.dataset.view===selected;link.classList.toggle("active",active);if(active)link.setAttribute("aria-current","page");else link.removeAttribute("aria-current")});
+ document.getElementById("currentPageTitle").textContent=viewTitles[selected];
+ if(location.hash!=="#"+selected)history.replaceState(null,"","#"+selected);
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll(".nav [data-view]").forEach(link=>link.addEventListener("click",event=>{event.preventDefault();openView(link.dataset.view)}));
+document.querySelectorAll("[data-open-view]").forEach(link=>link.addEventListener("click",event=>{event.preventDefault();openView(link.dataset.openView)}));
+openView(location.hash.slice(1)||"inicio");
 async function init(){try{
  const user=auth.currentUser;
  if(!user||!user.email){status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta.";return}
