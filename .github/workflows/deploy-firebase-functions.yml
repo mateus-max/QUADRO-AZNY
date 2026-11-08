@@ -1,10 +1,12 @@
-name: Legacy Firebase Functions (manual only)
-
-# O registo de professores, os pedidos de pagamento e a aprovação administrativa
-# funcionam directamente com Firebase Authentication + Realtime Database.
-# Este workflow fica manual para não publicar Cloud Functions automaticamente.
+name: Deploy Firebase approval functions
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "functions/**"
+      - "firebase.json"
+      - ".github/workflows/deploy-firebase-functions.yml"
   workflow_dispatch:
 
 permissions:
@@ -16,12 +18,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Validate legacy source only
+
+      - name: Validate Firebase function source
         working-directory: functions
         run: |
           node --check index.js
-          npm install --omit=dev
+          npm ci --omit=dev
+
+      - name: Deploy approval functions to Firebase
+        uses: w9jds/firebase-action@v13.24.0
+        with:
+          args: deploy --only functions --project remot-board --non-interactive
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_REMOT_BOARD }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
