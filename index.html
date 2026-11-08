@@ -95,7 +95,39 @@ h1 span{color:var(--gold);text-shadow:0 4px 22px #ffb90022}
  .footer-links a{font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
-</style>
+
+/* Identidade visual principal: Remote Work Board */
+.product-title{font-size:clamp(54px,7.2vw,88px);line-height:.98;letter-spacing:-.055em;margin:22px 0 14px;color:#fff;text-transform:capitalize;text-shadow:0 8px 28px #00122f65}
+.mobile-break{display:none}
+.hero-tagline{font-size:clamp(25px,3.4vw,42px);line-height:1.12;font-weight:900;letter-spacing:-.035em;color:#f7fbff;margin:0 0 18px}
+.hero-tagline span{color:var(--gold);text-shadow:0 4px 22px #ffb90022}
+.eyebrow{background:linear-gradient(110deg,#ffffff0d,#168eff12);border-color:#91caff70;box-shadow:inset 0 1px #ffffff20}
+@media(max-width:850px){
+ .product-title{font-size:clamp(54px,10vw,76px);margin:16px auto 9px}
+ .mobile-break{display:none}
+ .hero-tagline{font-size:clamp(24px,4.5vw,34px);margin:0 auto 13px}
+}
+@media(max-width:560px){
+ .hero{padding:25px 0 4px;gap:0}
+ .eyebrow{padding:8px 14px;font-size:10px;letter-spacing:.15em}
+ .product-title{font-size:clamp(49px,13vw,66px);line-height:.98;margin:17px auto 9px}
+ .mobile-break{display:inline}
+ .hero-tagline{font-size:clamp(24px,6.5vw,31px);line-height:1.13;margin:0 auto 14px}
+ .lead{font-size:14px;line-height:1.62;max-width:440px}
+ .hero-art{width:calc(100% + 20px);margin:3px -10px 0}
+ .actions{grid-template-columns:1fr;gap:10px;margin-top:0}
+ .btn{min-height:62px;border-radius:16px;font-size:15px;padding:13px 15px}
+ .features{grid-template-columns:repeat(2,1fr);gap:0;margin-top:25px;padding:15px 0}
+ .feature{min-height:92px;padding:10px 7px;font-size:12px}
+ .feature:nth-child(2){border-right:0}
+ .feature:nth-child(-n+2){border-bottom:1px solid #1c9aff60}
+ .feature-icon{width:36px;height:36px}.feature-icon svg{width:32px;height:32px}
+ .footer{padding-top:21px}
+ .footer-brand{font-size:14px}
+ .footer-sub{font-size:11px}
+ .footer-links{gap:11px;margin-top:15px}
+ .footer-links a{font-size:12px}
+}</style>
 </head>
 <body>
 <main class="page">
@@ -110,8 +142,9 @@ h1 span{color:var(--gold);text-shadow:0 4px 22px #ffb90022}
 
 <section class="hero">
  <div class="hero-copy">
-  <div class="eyebrow">Ensino colaborativo online</div>
-  <h1>Ensine e aprenda em <span>tempo real.</span></h1>
+  <div class="eyebrow">A sala de aula digital</div>
+  <h1 class="product-title">Quadro<br class="mobile-break"> Virtual</h1>
+  <div class="hero-tagline">Ensine e aprenda em <span>tempo real.</span></div>
   <p class="lead">Um quadro virtual colaborativo para professores e alunos. Crie a sua conta de professor, escolha um plano e envie o comprovativo para autorização da administração.</p>
  </div>
  <div class="hero-art" aria-label="Ilustração de uma aula colaborativa no quadro virtual">
