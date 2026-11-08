@@ -203,6 +203,11 @@ body:after{right:-42vw;bottom:-55vw;width:95vw;height:95vw;border-color:#159fff3
  .footer-links{gap:11px;margin-top:15px}
  .footer-links a{font-size:12px}
 }
+
+/* A página inicial termina no acesso do professor; remover conteúdo abaixo desse ponto. */
+.actions{grid-template-columns:minmax(0,680px);justify-content:center;margin:32px auto 0}
+@media(max-width:850px){.actions{grid-template-columns:minmax(0,620px);margin:22px auto 0}}
+@media(max-width:560px){.actions{grid-template-columns:1fr;margin-top:20px}}
 </style>
 </head>
 <body>
@@ -295,12 +300,7 @@ body:after{right:-42vw;bottom:-55vw;width:95vw;height:95vw;border-color:#159fff3
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5L12 3l9 6.5v1.8H3zM5 12v6h14v-6M9 18v-4h6v4M12 3V1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
   Sou professor · Entrar / Criar conta <span aria-hidden="true">→</span>
  </a>
- <a class="btn secondary" href="entrada.html">
-  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 20c.4-4 2.6-6 6.5-6s6.1 2 6.5 6M17 7a3 3 0 010 6m1 2c2.2.6 3.4 2.3 3.6 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-  Sou aluno · Entrar na aula <span aria-hidden="true">→</span>
- </a>
 </nav>
-
 <section class="features" aria-label="Funcionalidades">
  <div class="feature"><div class="feature-icon"><svg viewBox="0 0 40 40"><rect x="5" y="7" width="30" height="22" rx="3"/><path d="M15 34h10m-5-5v5m-1-19l8 5-8 5z"/></svg></div><span>Aulas ao vivo</span></div>
  <div class="feature"><div class="feature-icon"><svg viewBox="0 0 40 40"><circle cx="14" cy="13" r="5"/><circle cx="28" cy="15" r="4"/><path d="M4 33c0-7 4-11 10-11s10 4 10 11m-1-7c1-3 3-5 7-5s7 3 7 9"/></svg></div><span>Colaboração<br>em tempo real</span></div>
