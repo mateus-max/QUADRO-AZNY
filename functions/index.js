@@ -2,12 +2,43 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onValueWritten } = require("firebase-functions/v2/database");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase, ServerValue } = require("firebase-admin/database");
+const { getAuth } = require("firebase-admin/auth");
 const { defineString } = require("firebase-functions/params");
 const ADMIN_EMAIL = "suporte@domingas.com";
 
 initializeApp({ projectId: 'remot-board', databaseURL: 'https://remot-board-default-rtdb.firebaseio.com', storageBucket: 'remot-board.firebasestorage.app' });
 const db = getDatabase();
 const REGION = "us-central1";
+
+
+const adminAuth = getAuth();
+exports.registerTeacherForApproval = onCall({region:REGION},async request=>{
+ if(request.auth?.uid)throw new HttpsError("failed-precondition","Termine a sessão antes de submeter um novo registo.");
+ const name=String(request.data?.name||"").trim(),email=safeEmail(request.data?.email),password=String(request.data?.password||"");
+ if(name.length<3||name.length>120||!validEmail(email)||password.length<8||password.length>128)throw new HttpsError("invalid-argument","Informe nome, e-mail válido e senha com pelo menos 8 caracteres.");
+ let created;
+ try{
+  created=await adminAuth.createUser({email,password,displayName:name,disabled:true,emailVerified:false});
+  const now=new Date().toISOString(),record={uid:created.uid,name,email,role:"teacher",status:"pending",accountStatus:"pending",createdAt:now,updatedAt:now},updates={};
+  updates["teacherRegistrationRequests/"+created.uid]=record;updates["teacherAccounts/"+created.uid]=record;await db.ref().update(updates);
+  return {ok:true,uid:created.uid,status:"pending",message:"Pedido enviado à direcção. A conta ficará bloqueada até à aprovação."};
+ }catch(error){if(created?.uid)await adminAuth.deleteUser(created.uid).catch(()=>{});if(error instanceof HttpsError)throw error;if(error.code==="auth/email-already-exists")throw new HttpsError("already-exists","Este e-mail já possui uma conta. Utilize Entrar ou contacte a administração.");console.error("registerTeacherForApproval",error);throw new HttpsError("internal","Não foi possível enviar o pedido de criação de conta.");}
+});
+exports.reviewTeacherRegistration = onCall({region:REGION},async request=>{
+ const adminUid=requireAdmin(request),uid=String(request.data?.uid||""),action=String(request.data?.action||""),note=String(request.data?.note||"").trim().slice(0,500);
+ if(!uid||uid.length>128||!["approve","reject","delete"].includes(action))throw new HttpsError("invalid-argument","Operação ou conta inválida.");
+ const userRef=db.ref("teacherAccounts/"+uid),regRef=db.ref("teacherRegistrationRequests/"+uid),[profile,registration]=await Promise.all([userRef.get(),regRef.get()]);
+ if(!profile.exists()&&!registration.exists())throw new HttpsError("not-found","Conta não encontrada.");
+ if(action==="delete"){
+  await adminAuth.deleteUser(uid).catch(e=>{if(e.code!=="auth/user-not-found")throw e;});
+  const updates={};updates["teacherAccounts/"+uid]=null;updates["teacherRegistrationRequests/"+uid]=null;
+  const payments=await db.ref("paymentRequests").orderByChild("uid").equalTo(uid).get();payments.forEach(child=>updates["paymentRequests/"+child.key]=null);
+  await db.ref().update(updates);await db.ref("auditLogs").push({action:"teacher_account_deleted",targetUid:uid,adminUid,at:ServerValue.TIMESTAMP});return {ok:true,action};
+ }
+ if(action==="approve"){await adminAuth.updateUser(uid,{disabled:false});const patch={status:"approved",accountStatus:"approved",approvedBy:adminUid,approvedAt:new Date().toISOString(),updatedAt:ServerValue.TIMESTAMP};await Promise.all([userRef.update(patch),regRef.update(patch)]);}
+ else{await adminAuth.updateUser(uid,{disabled:true}).catch(e=>{if(e.code!=="auth/user-not-found")throw e;});const patch={status:"rejected",accountStatus:"rejected",adminNote:note,rejectedBy:adminUid,rejectedAt:new Date().toISOString(),updatedAt:ServerValue.TIMESTAMP};await Promise.all([userRef.update(patch),regRef.update(patch)]);}
+ await db.ref("auditLogs").push({action:"teacher_account_"+action,targetUid:uid,adminUid,note,at:ServerValue.TIMESTAMP});return {ok:true,action};
+});
 
 function hashKey(value) {
   let h = 2166136261;
