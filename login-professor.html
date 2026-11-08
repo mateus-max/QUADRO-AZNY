@@ -2,8 +2,8 @@
 <html lang="pt-AO">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#071b33"><meta name="description" content="Crie a sua conta de professor no AZNY Remote Webboard e comece a ensinar online.">
-<title>Criar conta · AZNY Remote Webboard</title>
+<meta name="theme-color" content="#071b33"><meta name="description" content="Crie a sua conta de professor no Remote Work Board e comece a ensinar online.">
+<title>Criar conta · Remote Work Board</title>
 <link rel="icon" href="icons/remote-work-board.svg" type="image/svg+xml">
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -41,19 +41,153 @@ body.upgrade-mode #trialPlanCard{display:none!important}.plan input{position:abs
 .payment-amount span{color:#64748b;font-size:13px}.payment-amount strong{font-size:19px;color:#10243b}
 .payment-detail .notice{margin-top:12px}
 @media(max-width:520px){.payment-options{grid-template-columns:1fr}.payment-option{display:grid;grid-template-columns:88px 1fr;column-gap:12px;align-items:center}.payment-option .express-logo,.payment-option .bank-icon{grid-row:span 3;width:88px;height:72px}.payment-option-title,.payment-option-sub,.payment-option .selected-mark{grid-column:2}.number-copy{align-items:flex-start;flex-direction:column}.number-copy .btn{width:100%}}
+ 
+/* Novo visual institucional Remote Work Board — mantendo os IDs e fluxos actuais */
+body{background:radial-gradient(ellipse at 50% 0%,#0d4a93 0,#062b60 46%,#031b43 100%);color:#10213e;min-height:100vh}
+.top{width:100%;max-width:none;padding:18px max(22px,calc((100vw - 1320px)/2));background:linear-gradient(110deg,#031b43,#063c82 58%,#0756aa);box-shadow:0 8px 28px #00133355}
+.brand{gap:15px}.brand img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 3px 8px #00102e70)}
+.brand-name{font-size:21px;letter-spacing:.12em;color:#fff}.brand-name span{font-size:17px;color:#d7eaff;letter-spacing:.26em;margin-top:3px}
+.top a{padding:14px 22px;border:2px solid #d8eaff;border-radius:40px;font-size:15px;color:#fff}
+.page-main{width:min(1320px,calc(100% - 40px));margin:32px auto 0;padding:0;flex:1;display:flex;flex-direction:column;justify-content:center}
+.signup-shell{display:grid;grid-template-columns:minmax(310px,.78fr) minmax(0,1.22fr);gap:0;padding:9px;border:2px solid #d9ebff;border-radius:40px;background:linear-gradient(130deg,#fff,#b8d8ff);box-shadow:0 26px 70px #00133355;overflow:hidden;min-height:650px}
+.promo-panel{position:relative;overflow:hidden;display:flex;flex-direction:column;padding:44px 38px 34px;border-radius:30px 0 0 30px;color:#fff;background:radial-gradient(circle at 85% 55%,#1267bf 0,#07458f 35%,#03245a 78%);isolation:isolate}
+.promo-panel:before{content:"";position:absolute;z-index:-1;width:420px;height:420px;border:1px solid #65baff35;border-radius:50%;right:-230px;top:-160px;box-shadow:0 0 0 35px #65baff0c,0 0 0 75px #65baff08}
+.promo-kicker{font-size:11px;letter-spacing:.24em;font-weight:900;color:#b9dcff}
+.promo-copy h1{font-size:clamp(31px,3.2vw,47px);line-height:1.12;letter-spacing:-.04em;margin:18px 0 17px;color:#fff}
+.promo-copy p{max-width:390px;font-size:17px;line-height:1.55;color:#e3efff;margin:0}
+.promo-illustration{width:100%;max-width:390px;margin:24px auto 15px;filter:drop-shadow(0 15px 16px #00133355)}
+.promo-illustration svg{display:block;width:100%;height:auto}
+.promo-features{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:13px;font-size:15px;color:#f3f8ff}
+.promo-features li{display:flex;align-items:center;gap:12px}
+.promo-features li span{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:50%;background:#12b981;color:white;font-weight:950;flex:0 0 25px}
+.promo-accent{position:absolute;bottom:-65px;left:-60px;width:120%;height:130px;background:linear-gradient(110deg,#087be4,#0c53ae 60%,#ffb31e 60.5%,#ffb31e 62%,transparent 62.5%);transform:rotate(-7deg);opacity:.95;z-index:-1}
+.form-side{min-width:0;display:flex;flex-direction:column;justify-content:center;padding:28px clamp(22px,4vw,55px) 28px;background:#fff;border-radius:0 30px 30px 0}
+.steps{justify-content:flex-start;gap:8px;margin:0 0 20px;flex-wrap:wrap}
+.step{background:#f1f6fc;border-color:#dce7f4;color:#72839b;padding:9px 14px}
+.step.active{background:#0755c7;border-color:#0755c7;box-shadow:0 6px 16px #0755c733}
+.step.done{background:#e9f8f0;color:#14804a;border-color:#b9e9cc}
+.card{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;margin:0 0 18px;overflow:visible}
+.card:before{display:none}
+.card h2{font-size:clamp(25px,2.5vw,37px);line-height:1.12;color:#071d45;margin:0}
+.form-title{display:flex;align-items:flex-start;gap:16px;margin:0 0 25px}
+.form-title-icon{display:flex;align-items:center;justify-content:center;width:54px;height:54px;flex:0 0 54px;border-radius:16px;background:#edf4ff;color:#0755a8;font-size:28px;box-shadow:0 5px 16px #062b6010}
+.account-card .sub{font-size:15px;line-height:1.5;margin:10px 0 0;color:#5b6c86}
+.register-fields{display:grid;gap:15px}
+.field-group label{font-size:14px;font-weight:850;color:#0c2043;margin:0 0 7px}
+.input-with-icon{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:stretch;min-height:56px;border:1.5px solid #d5e0ef;border-radius:16px;background:#fbfdff;overflow:hidden;box-shadow:0 3px 9px #102b4606}
+.input-with-icon:focus-within{border-color:#1769dc;box-shadow:0 0 0 4px #1677ff16}
+.input-with-icon>span{display:flex;align-items:center;justify-content:center;border-right:1px solid #e0e8f2;background:#f2f6fc;color:#0a3979;font-size:23px}
+.input-with-icon input{border:0;border-radius:0;min-height:56px;padding:13px 16px;background:transparent;font-size:15px;box-shadow:none!important;outline:0!important}
+.input-with-icon input:focus{background:#fff}
+.btn{border-radius:15px;background:linear-gradient(105deg,#0754c7,#0875ee);min-height:58px;font-size:16px;box-shadow:0 12px 24px #0754c72b}
+.btn.full{margin-top:4px}
+.account-switch{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px;background:#f2f6fc;color:#596b85;border-radius:16px;margin-top:0;font-size:14px}
+.account-switch .btn{min-height:42px;padding:8px 22px;border:1.5px solid #0b66df;background:#fff;color:#0755c7;box-shadow:none}
+#loginPanel label{color:#0c2043}#loginPanel input{min-height:56px;border-radius:15px}
+#planStep h2,#checkoutStep h2,#historyCard h2{font-size:26px}
+#planStep .sub,#checkoutStep .sub,#historyCard .sub{font-size:14px}
+.foot{width:min(1320px,calc(100% - 40px));max-width:none;padding:26px 10px 22px;margin:0 auto;color:#d5e6ff}
+.foot-benefits{display:flex;justify-content:center;gap:0;margin:0 auto 28px;color:#f4f8ff;font-size:14px}
+.foot-benefits span{padding:0 34px;border-right:1px solid #b7d7ff55}
+.foot-benefits span:last-child{border:0}
+.foot-rule{width:105px;height:4px;margin:0 auto 15px;background:linear-gradient(90deg,#06a6ff,#8bc7ff)}
+.foot-brand{font-size:15px;color:#fff;letter-spacing:.25em}
+.foot-copy{font-size:13px;color:#b7cce8;margin-top:14px}
+@media(max-width:900px){
+ .page-main{width:min(760px,calc(100% - 24px));margin-top:22px}
+ .signup-shell{grid-template-columns:1fr;min-height:0;border-radius:30px}
+ .promo-panel{border-radius:22px 22px 0 0;padding:30px 28px 24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.8fr);column-gap:10px;align-items:center}
+ .promo-copy{grid-column:1}.promo-copy h1{font-size:clamp(27px,5vw,38px);margin:10px 0}.promo-copy p{font-size:14px}
+ .promo-illustration{grid-column:2;grid-row:1/3;margin:0 auto;width:100%}
+ .promo-features{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;font-size:13px;margin-top:15px}
+ .promo-features li span{width:22px;height:22px;flex-basis:22px}
+ .promo-accent{bottom:-95px}
+ .form-side{border-radius:0 0 22px 22px;padding:28px}
+}
+@media(max-width:560px){
+ .top{padding:12px 14px}.brand{gap:9px}.brand img{width:54px;height:54px}.brand-name{font-size:15px}.brand-name span{font-size:13px}.top a{font-size:12px;padding:10px 12px}
+ .page-main{width:calc(100% - 18px);margin-top:14px}
+ .signup-shell{padding:5px;border-radius:25px}
+ .promo-panel{padding:23px 18px 20px;grid-template-columns:1fr 112px;column-gap:4px;border-radius:19px 19px 0 0}
+ .promo-kicker{font-size:9px;letter-spacing:.16em}
+ .promo-copy h1{font-size:25px;margin:8px 0}.promo-copy p{font-size:12px;line-height:1.4}
+ .promo-illustration{width:118%;margin-left:-8px}
+ .promo-features{font-size:11px;gap:8px 5px;margin-top:13px}
+ .promo-features li{gap:6px}.promo-features li span{width:19px;height:19px;flex-basis:19px;font-size:11px}
+ .form-side{padding:22px 16px 18px}
+ .steps{gap:5px;margin-bottom:17px}.step{font-size:10px;padding:8px 10px}
+ .form-title{gap:11px;margin-bottom:20px}.form-title-icon{width:43px;height:43px;flex-basis:43px;font-size:22px;border-radius:13px}
+ .card h2{font-size:25px}.account-card .sub{font-size:13px}
+ .input-with-icon{grid-template-columns:46px minmax(0,1fr);min-height:53px}.input-with-icon input{min-height:53px;font-size:14px;padding:11px 12px}.input-with-icon>span{font-size:20px}
+ .account-switch{gap:9px;font-size:12px;padding:12px 8px}
+ .account-switch .btn{min-height:38px;padding:6px 17px;font-size:13px}
+ .foot{width:calc(100% - 20px);padding:18px 5px}
+ .foot-benefits{gap:8px;flex-wrap:wrap;margin-bottom:20px;font-size:11px}
+ .foot-benefits span{padding:0 9px;border-right:1px solid #b7d7ff55}
+ .foot-brand{font-size:12px}.foot-copy{font-size:11px}
+}
 </style>
 </head>
 <body>
-<header class="top"><div class="brand"><img src="icons/remote-work-board.svg" alt="Logótipo Remote Webboard"><div class="brand-name">REMOTE<span>WEBBOARD</span></div></div><a href="entrada.html">Área de entrada →</a></header>
+<header class="top"><div class="brand"><img src="icons/remote-work-board.svg" alt="Logótipo oficial Remote Work Board"><div class="brand-name">REMOTE WORK<span>BOARD</span></div></div><a href="entrada.html"><span aria-hidden="true">♙</span> Área de entrada →</a></header>
+<main class="page-main">
+<div class="signup-shell">
+<aside class="promo-panel">
+  <div class="promo-copy">
+    <span class="promo-kicker">REMOTE WORK BOARD</span>
+    <h1>Junte-se ao<br>Remote Work Board</h1>
+    <p>Crie a sua conta de professor e comece a leccionar online com uma plataforma de ensino colaborativo.</p>
+  </div>
+  <div class="promo-illustration" aria-hidden="true">
+    <svg viewBox="0 0 420 260" role="img">
+      <defs>
+        <linearGradient id="boardFrame" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffbd45"/><stop offset="1" stop-color="#e87513"/></linearGradient>
+        <linearGradient id="boardGreen" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#078b63"/><stop offset="1" stop-color="#00533f"/></linearGradient>
+        <linearGradient id="globeBlue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#36c5ff"/><stop offset="1" stop-color="#0754c7"/></linearGradient>
+      </defs>
+      <ellipse cx="210" cy="238" rx="185" ry="12" fill="#001b4c" opacity=".45"/>
+      <rect x="73" y="18" width="276" height="174" rx="17" fill="url(#boardFrame)"/>
+      <rect x="84" y="29" width="254" height="151" rx="10" fill="url(#boardGreen)" stroke="#ffda85" stroke-width="3"/>
+      <path d="M105 52h212M105 68h116" stroke="#b7f5d8" stroke-width="3" opacity=".22"/>
+      <circle cx="211" cy="103" r="39" fill="#00bd86" opacity=".28"/>
+      <path d="M199 79q-5-4-5 4v40q0 8 7 4l36-21q7-4 0-8z" fill="#fff"/>
+      <rect x="92" y="194" width="240" height="13" rx="5" fill="#e7f2ff"/>
+      <rect x="106" y="207" width="211" height="9" rx="4" fill="#b8d5f5"/>
+      <g transform="translate(30 153)">
+        <rect x="0" y="42" width="105" height="17" rx="7" fill="#f5f8ff"/>
+        <rect x="7" y="28" width="105" height="17" rx="7" fill="#e6f0ff" stroke="#f4a02e" stroke-width="4"/>
+        <rect x="13" y="14" width="93" height="17" rx="7" fill="#fff" stroke="#e8a13b" stroke-width="4"/>
+        <path d="M18 21h80" stroke="#8db5df" stroke-width="3"/>
+      </g>
+      <g transform="translate(316 142)">
+        <circle cx="34" cy="36" r="31" fill="url(#globeBlue)" stroke="#ffd15c" stroke-width="4"/>
+        <path d="M8 34q25-18 51 0M13 18q20 14 42 0M14 51q20-14 41 0M34 5q-17 30 0 62M34 5q17 30 0 62" fill="none" stroke="#b9edff" stroke-width="2.5"/>
+        <path d="M34 67v17m-18 0h36" stroke="#ffbd45" stroke-width="5" stroke-linecap="round"/>
+      </g>
+      <g transform="translate(244 180)">
+        <path d="M0 24h44l-5 36H7z" fill="#f28b22"/><path d="M5 24h34l-4 7H9z" fill="#ffd05d"/>
+        <path d="M9 21L3 0m14 21L21-5m10 26L39 0" stroke="#22c6a0" stroke-width="5" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </div>
+  <ul class="promo-features">
+    <li><span>✓</span> Aulas em tempo real</li>
+    <li><span>✓</span> Quadro interactivo</li>
+    <li><span>✓</span> Partilha de materiais</li>
+    <li><span>✓</span> Acesso seguro</li>
+  </ul>
+  <div class="promo-accent"></div>
+</aside>
+<div class="form-side">
 <div class="steps" aria-label="Etapas da inscrição"><span class="step active" id="step1">1. Conta</span><span class="step" id="step2">2. Plano</span><span class="step" id="step3">3. Pagamento</span></div>
 <section class="card" id="accountStep">
 <h2>Conta do professor</h2><p class="sub">Crie a sua conta para contratar um plano e acompanhar a aprovação do acesso.</p>
-<div id="registerPanel">
-<label for="fullName">Nome completo</label><input id="fullName" autocomplete="name" placeholder="Nome do professor" maxlength="120">
-<label for="email">E-mail</label><input id="email" type="email" autocomplete="email" placeholder="professor@email.com">
-<label for="password">Senha</label><input id="password" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres">
-<button class="btn full" id="registerBtn">Criar conta e continuar</button>
-<div class="notice" style="background:#f4f7fb;color:#526274;text-align:center">Já tem uma conta? <button class="btn secondary" style="min-height:36px;padding:7px 12px;margin-left:5px" id="showLoginBtn" type="button">Entrar</button></div>
+<div id="registerPanel" class="register-fields">
+<div class="field-group"><label for="fullName">Nome completo</label><div class="input-with-icon"><span aria-hidden="true">♙</span><input id="fullName" autocomplete="name" placeholder="Nome do professor" maxlength="120"></div></div>
+<div class="field-group"><label for="email">E-mail</label><div class="input-with-icon"><span aria-hidden="true">✉</span><input id="email" type="email" autocomplete="email" placeholder="professor@email.com"></div></div>
+<div class="field-group"><label for="password">Senha</label><div class="input-with-icon"><span aria-hidden="true">♙</span><input id="password" type="password" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres"></div></div>
+<button class="btn full" id="registerBtn">Criar conta</button>
+<div class="notice account-switch">Já tem uma conta? <button class="btn secondary" id="showLoginBtn" type="button">Entrar</button></div>
 </div>
 <div id="loginPanel" class="hidden">
 <label for="loginEmail">E-mail da conta</label><input id="loginEmail" type="email" autocomplete="username" placeholder="seu@email.com">
@@ -117,7 +251,9 @@ body.upgrade-mode #trialPlanCard{display:none!important}.plan input{position:abs
 <div id="checkoutMsg" class="notice hidden" role="status" aria-live="polite"></div>
 </section>
 <section class="card hidden" id="historyCard"><h2>Estado do pedido</h2><p class="sub">Acompanhe a análise em tempo real. Depois da aprovação, o acesso ao painel será disponibilizado aqui.</p><div id="myRequests"><span class="small">Ainda não existem pedidos.</span></div></section>
-<div class="foot"><div class="foot-rule"></div><div class="foot-brand">REMOTE WEBBOARD</div><div class="foot-caption">Ensino colaborativo. Ligação em tempo real.</div><div class="foot-copy">© 2026 · Todos os direitos reservados.</div></div>
+</div>
+</div>
+<footer class="foot"><div class="foot-benefits"><span>▱ &nbsp; Ensino colaborativo</span><span>♧ &nbsp; Ligação em tempo real</span><span>♢ &nbsp; Ambiente seguro</span></div><div class="foot-rule"></div><div class="foot-brand">REMOTE WORK BOARD</div><div class="foot-copy">© 2026 · Todos os direitos reservados.</div></footer>
 </main>
 <script>
 (()=>{"use strict";
