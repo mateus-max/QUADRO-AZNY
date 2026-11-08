@@ -311,7 +311,7 @@ async function createLicenseForApprovedRequest(approved, requestId) {
     basic: { name: "Básico", students: 10, dailyClasses: 2, simultaneous: 1, duration: 2, storage: "10 GB temporários" },
     professional: { name: "Profissional", students: 45, dailyClasses: 3, simultaneous: 2, duration: 4, storage: "50 GB temporários" },
     school: { name: "Escola", students: 50, dailyClasses: 3, simultaneous: 5, duration: 6, storage: "100 GB temporários" },
-    trial: { name: "Teste — 4 aulas", students: 45, dailyClasses: 3, simultaneous: 1, duration: 4, storage: "Temporário" }
+    trial: { name: "Teste — 2 aulas", students: 45, dailyClasses: 3, simultaneous: 1, duration: 4, storage: "Temporário" }
   };
   const email = safeEmail(approved.email || approved.teacherEmail);
   const planKey = String(approved.plan || "");
@@ -334,7 +334,7 @@ async function createLicenseForApprovedRequest(approved, requestId) {
     teacherPhone: String(approved.phone || approved.teacherPhone || ""),
     requestId, accessToken: token, teacherEmail: email,
     ...(planKey === "trial" ? {
-      trialSessionsLimit: 4, trialSessionsUsed: used,
+      trialSessionsLimit: 2, trialSessionsUsed: used,
       trialCompletedSessions: completed,
       trialApprovedAt: prior.trialApprovedAt || approved.approvedAt || now
     } : {})
@@ -390,8 +390,8 @@ exports.createTrialRequest = onCall({ region: REGION, maxInstances: 10 }, async 
       id, uid, name, email, phone,
       authProvider: provider === "google.com" ? "google" : "password",
       requestType: "trial", plan: "trial",
-      planName: "Plano de teste — 4 aulas",
-      trialSessionsLimit: 4, trialSessionsUsed: 0,
+      planName: "Plano de teste — 2 aulas",
+      trialSessionsLimit: 2, trialSessionsUsed: 0,
       amount: 0, method: "Plano de teste",
       status: "pending", accountStatus: "pending", accessGranted: false,
       createdAt: new Date().toISOString()
