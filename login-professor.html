@@ -101,9 +101,14 @@ body.upgrade-mode #trialPlanCard{display:none!important}.plan input{position:abs
 <div class="notice">Depois de efectuar o pagamento, anexe o comprovativo abaixo. A direcção verificará o pagamento antes de activar o plano.</div>
 </div>
 <div class="payment-detail hidden" id="bankDetail">
-<div class="payment-detail-top"><div><span class="small">TRANSFERÊNCIA BANCÁRIA</span><h3>Dados da conta bancária</h3></div><span class="bank-icon" aria-hidden="true">▤</span></div>
-<p class="small">Esta opção está preparada no checkout. Os dados bancários oficiais ainda precisam de ser configurados pela administração para evitar transferências para uma conta incorrecta.</p>
-<div class="notice warn">Confirme com a administração os dados bancários antes de transferir. Pode anexar o comprovativo quando os dados da conta forem disponibilizados.</div>
+<div class="payment-detail-top"><div><span class="small">TRANSFERÊNCIA BANCÁRIA</span><h3>Dados para transferência</h3></div><span class="bank-icon" aria-hidden="true">▤</span></div>
+<div class="bank-account" style="padding:14px;border:1px solid var(--line);border-radius:12px;margin:12px 0">
+<div class="small">NÚMERO DA CONTA</div>
+<div class="number-copy"><strong id="bankAccountNumber">0006 0000 63503021301 57</strong><button type="button" class="btn secondary" id="copyBankAccount">Copiar número</button></div>
+<div class="small" style="margin-top:14px">TITULAR DA CONTA</div>
+<strong>APSAN, LDA</strong>
+</div>
+<div class="notice">Após efectuar a transferência, anexe o comprovativo abaixo. A direcção verificará o pagamento antes de activar o plano.</div>
 </div>
 <div class="notice" id="paymentInstructions">O comprovativo será enviado juntamente com o pedido e ficará guardado no Firebase Realtime Database. <b>O plano só será activado depois da aprovação da direcção.</b></div>
 <label for="proof">Comprovativo de pagamento</label><input id="proof" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,image/png,image/jpeg,image/webp,application/pdf">
@@ -141,6 +146,7 @@ function selectPayment(method){
 $("chooseExpress").onclick=()=>selectPayment($("method").value==="Multicaixa Express"?"":"Multicaixa Express");
 $("chooseBank").onclick=()=>selectPayment($("method").value==="Transferência bancária"?"":"Transferência bancária");
 $("copyExpress").onclick=async()=>{const value=$("expressNumber").textContent.trim();try{await navigator.clipboard.writeText(value);$("copyExpress").textContent="Número copiado";setTimeout(()=>$("copyExpress").textContent="Copiar número",1800)}catch(e){const field=document.createElement("textarea");field.value=value;document.body.appendChild(field);field.select();try{document.execCommand("copy");$("copyExpress").textContent="Número copiado";setTimeout(()=>$("copyExpress").textContent="Copiar número",1800)}catch(_){msg("checkoutMsg","Não foi possível copiar automaticamente. Seleccione o número e copie-o.","warn")}field.remove()}};
+$("copyBankAccount").onclick=async()=>{const value=$("bankAccountNumber").textContent.trim();try{await navigator.clipboard.writeText(value);$("copyBankAccount").textContent="Número copiado";setTimeout(()=>$("copyBankAccount").textContent="Copiar número",1800)}catch(e){const field=document.createElement("textarea");field.value=value;document.body.appendChild(field);field.select();try{document.execCommand("copy");$("copyBankAccount").textContent="Número copiado";setTimeout(()=>$("copyBankAccount").textContent="Copiar número",1800)}catch(_){msg("checkoutMsg","Não foi possível copiar automaticamente. Seleccione o número e copie-o.","warn")}field.remove()}};
 function msg(id,text,type){const el=$(id);el.textContent=text;el.className="notice "+(type||"");el.classList.remove("hidden")}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 document.querySelectorAll('input[name="plan"]').forEach(el=>el.addEventListener("change",()=>{updatePrice();updateCheckout()}));$("period").addEventListener("change",updatePrice);
