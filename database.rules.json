@@ -151,6 +151,18 @@
     "notifications": {
       ".read": false,
       ".write": false
+    },
+    "teacherAccounts": {
+      ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || query.orderByChild === 'uid' && query.equalTo === auth.uid)",
+      ".indexOn": [
+        "uid",
+        "email"
+      ],
+      "$uid": {
+        ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || auth.uid === $uid)",
+        ".write": "auth != null && (auth.token.email === 'suporte@domingas.com' || (!data.exists() && auth.uid === $uid && newData.child('uid').val() === auth.uid && newData.child('accountStatus').val() === 'pending'))",
+        ".validate": "auth != null && (auth.token.email === 'suporte@domingas.com' || (newData.hasChildren(['uid','name','email','role','accountStatus']) && newData.child('uid').val() === auth.uid && newData.child('email').val() === auth.token.email && newData.child('role').val() === 'teacher' && newData.child('accountStatus').val() === 'pending'))"
+      }
     }
   }
 }
