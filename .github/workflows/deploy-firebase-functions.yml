@@ -1,12 +1,10 @@
-name: Deploy AZNY Firebase Realtime Functions
+name: Legacy Firebase Functions (manual only)
+
+# O registo de professores, os pedidos de pagamento e a aprovação administrativa
+# funcionam directamente com Firebase Authentication + Realtime Database.
+# Este workflow fica manual para não publicar Cloud Functions automaticamente.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "functions/**"
-      - "firebase.json"
-      - ".github/workflows/deploy-firebase-functions.yml"
   workflow_dispatch:
 
 permissions:
@@ -18,33 +16,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      - name: Validate Cloud Functions source
+      - name: Validate legacy source only
         working-directory: functions
         run: |
           node --check index.js
           npm install --omit=dev
-
-      - name: Authenticate with Firebase project
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_REMOT_BOARD }}
-          project_id: remot-board
-
-      - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: remot-board
-
-      - name: Install Firebase CLI
-        run: npm install --global firebase-tools
-
-      - name: Deploy Cloud Functions
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.GOOGLE_GHA_CREDS_PATH }}
-        run: firebase deploy --only functions --project remot-board --non-interactive
