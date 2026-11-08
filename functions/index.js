@@ -33,6 +33,8 @@ exports.reviewTeacherRegistration = onCall({region:REGION},async request=>{
   await adminAuth.deleteUser(uid).catch(e=>{if(e.code!=="auth/user-not-found")throw e;});
   const updates={};updates["teacherAccounts/"+uid]=null;updates["teacherRegistrationRequests/"+uid]=null;
   const payments=await db.ref("paymentRequests").orderByChild("uid").equalTo(uid).get();payments.forEach(child=>updates["paymentRequests/"+child.key]=null);
+  const email=safeEmail(profile.val()?.email||registration.val()?.email);if(email){const licenses=await db.ref("licenses").orderByChild("teacherEmail").equalTo(email).get();licenses.forEach(child=>{updates["licenses/"+child.key+"/status"]="revoked";updates["licenses/"+child.key+"/boardAccess"]=false;updates["licenses/"+child.key+"/revokedAt"]=ServerValue.TIMESTAMP;updates["licenses/"+child.key+"/revokedBy"]=adminUid;});}
+  const token=String(profile.val()?.accessToken||registration.val()?.accessToken||"");if(token){updates["licenses/"+token+"/status"]="revoked";updates["licenses/"+token+"/boardAccess"]=false;}
   await db.ref().update(updates);await db.ref("auditLogs").push({action:"teacher_account_deleted",targetUid:uid,adminUid,at:ServerValue.TIMESTAMP});return {ok:true,action};
  }
  if(action==="approve"){await adminAuth.updateUser(uid,{disabled:false});const patch={status:"approved",accountStatus:"approved",approvedBy:adminUid,approvedAt:new Date().toISOString(),updatedAt:ServerValue.TIMESTAMP};await Promise.all([userRef.update(patch),regRef.update(patch)]);}
