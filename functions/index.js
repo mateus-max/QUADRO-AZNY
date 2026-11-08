@@ -52,7 +52,7 @@ exports.verifyTeacherAccess = onCall({ region: REGION }, async (request) => {
   }
   const used = Number(license.trialSessionsUsed ||
     Object.keys(license.trialCompletedSessions || {}).length);
-  if (license.plan === "trial" && (license.trialExhausted === true || used >= 4)) {
+  if (license.plan === "trial" && (license.trialExhausted === true || used >= 2)) {
     throw new HttpsError("permission-denied", "O período de teste terminou.");
   }
   await db.ref("roomAccess/" + roomId + "/" + uid).set({
@@ -107,9 +107,9 @@ exports.recordTrialClass = onCall({ region: REGION }, async (request) => {
     if (!completed[runId]) completed[runId] = Date.now();
     const used = Object.keys(completed).length;
     lic.trialCompletedSessions = completed;
-    lic.trialSessionsLimit = 4;
+    lic.trialSessionsLimit = 2;
     lic.trialSessionsUsed = used;
-    if (used >= 4) {
+    if (used >= 2) {
       lic.trialExhausted = true;
       lic.boardAccess = false;
       lic.trialCompletedAt = new Date().toISOString();
@@ -290,7 +290,7 @@ async function createLicenseForApprovedRequest(approved, requestId) {
   const prior = priorSnap.val() || {};
   const completed = prior.trialCompletedSessions || {};
   const used = Object.keys(completed).length;
-  const exhausted = planKey === "trial" && used >= 4;
+  const exhausted = planKey === "trial" && used >= 2;
   const now = new Date().toISOString();
   const license = {
     status: "active", trialExhausted: exhausted, boardAccess: !exhausted,
