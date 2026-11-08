@@ -1365,7 +1365,7 @@ async function provisionIsolatedGuestRoom(){
  const result=await create({roomId:guestRoom});
  if(!result.data?.ok||result.data.roomId!==guestRoom)throw new Error("O Firebase não autorizou a criação da sala temporária.");
  roomId=guestRoom;
- classSessionId="ROOM-"+String(roomId).replace(/[.#$\\[\\]\\/]/g,"_");
+ classSessionId="ROOM-"+String(roomId).replace(/[.#$\/\[\]]/g,"_");
  STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[^a-zA-Z0-9_-]/g,"_");
  try{roomChannel?.close()}catch(_){}
  roomChannel="BroadcastChannel" in window?new BroadcastChannel("azny-room-"+roomId):null;
