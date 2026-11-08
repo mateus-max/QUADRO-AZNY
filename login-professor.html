@@ -128,14 +128,14 @@ function showStep(n){["accountStep","planStep","checkoutStep"].forEach((id,i)=>$
 function updatePrice(){const key=selectedPlan(),period=$("period").value,p=plans[key],isTrial=key==="trial",amount=period==="annual"?p.annual:p.monthly;$("total").textContent=isTrial?"GRÁTIS":money(amount);$("planLabel").textContent=p.name+(isTrial?" · 2 aulas experimentais":" · "+(period==="annual"?"Anual":"Mensal"));document.querySelectorAll(".price").forEach(el=>{if(el.closest(".plan")?.querySelector('input[name="plan"]')?.value==="trial"){el.textContent="Grátis";return}const annual=period==="annual";el.innerHTML=(annual?el.dataset.annual:el.dataset.monthly)+" <small>Kz/"+(annual?"ano":"mês")+"</small>"})}
 function updateCheckout(){const key=selectedPlan(),period=$("period").value,p=plans[key],isTrial=key==="trial",amount=isTrial?0:(period==="annual"?p.annual:p.monthly);$("checkoutTotal").textContent=isTrial?"GRÁTIS":money(amount);$("checkoutAmount").textContent=isTrial?"GRÁTIS":money(amount);$("checkoutPlan").textContent=p.name+(isTrial?" · 2 aulas experimentais":" · "+(period==="annual"?"Anual":"Mensal"));$(`label[for="method"]`).classList.add("hidden");$("method").classList.add("hidden");$(`label[for="proof"]`).classList.toggle("hidden",isTrial);$("proof").classList.toggle("hidden",isTrial);$("proofHint").classList.toggle("hidden",isTrial);$("paymentInstructions").classList.toggle("hidden",isTrial);$("payHeading").classList.toggle("hidden",isTrial);$("paymentOptions").classList.toggle("hidden",isTrial);$("expressDetail").classList.add("hidden");$("bankDetail").classList.add("hidden");$("chooseExpress").classList.remove("selected");$("chooseBank").classList.remove("selected");$("chooseExpress").setAttribute("aria-pressed","false");$("chooseBank").setAttribute("aria-pressed","false");$("method").value="";$("submitBtn").textContent=isTrial?"Solicitar plano experimental":"Enviar para análise";$("checkoutMsg").classList.add("hidden");if(isTrial){$("proof").value="";proofData="";proofType="";proofName="";$("submitBtn").disabled=false}}
 function selectPayment(method){
- const isExpress=method==="Multicaixa Express";
+ const isExpress=method==="Multicaixa Express",isBank=method==="Transferência bancária";
  $("method").value=method;
  $("chooseExpress").classList.toggle("selected",isExpress);
- $("chooseBank").classList.toggle("selected",!isExpress);
+ $("chooseBank").classList.toggle("selected",isBank);
  $("chooseExpress").setAttribute("aria-pressed",String(isExpress));
- $("chooseBank").setAttribute("aria-pressed",String(!isExpress));
+ $("chooseBank").setAttribute("aria-pressed",String(isBank));
  $("expressDetail").classList.toggle("hidden",!isExpress);
- $("bankDetail").classList.toggle("hidden",isExpress);
+ $("bankDetail").classList.toggle("hidden",!isBank);
  $("checkoutMsg").classList.add("hidden");
 }
 $("chooseExpress").onclick=()=>selectPayment($("method").value==="Multicaixa Express"?"":"Multicaixa Express");
