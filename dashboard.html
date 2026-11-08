@@ -81,12 +81,48 @@ button,a{font:inherit}
 .view-panel>.panel{max-width:980px}
 .section-anchor{scroll-margin-top:18px}
 @media(max-width:1050px){.sidebar{width:190px}.main{margin-left:190px;padding:20px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.welcome-art{font-size:58px}}
-@media(max-width:700px){.sidebar{position:sticky;inset:0 0 auto;width:auto;height:auto;padding:10px 12px;display:block}.brand{padding:0 5px 10px;font-size:17px}.brand-mark{font-size:24px}.brand small{display:none}.nav{display:grid;grid-template-columns:1fr;gap:7px;overflow:visible;padding-bottom:0}.nav::-webkit-scrollbar{display:none}.nav a{width:100%;white-space:normal;padding:11px 13px;font-size:13px;gap:10px}.nav .ico{font-size:17px;width:23px}.side-bottom{display:none}.main{margin:0;padding:16px 13px 28px}.topbar{margin-bottom:15px}.page-title{font-size:20px}.top-actions{gap:7px}.icon-btn{width:37px;height:37px}.user-chip{width:37px;height:37px}.welcome{padding:22px 19px;border-radius:16px}.welcome p{font-size:14px}.welcome-art{font-size:42px;padding:0}.stats{gap:10px;margin:14px 0}.stat{padding:14px;min-height:105px}.stat strong{font-size:25px}.stat span{font-size:12px}.grid{grid-template-columns:1fr;gap:13px}.panel{padding:18px}.board-panel{min-height:270px}.panel h2{font-size:18px}}
+.mobile-topbar,.menu-backdrop{display:none}
+@media(max-width:700px){
+ .mobile-topbar{height:62px;position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:linear-gradient(110deg,#061a43,#082b68);color:#fff;box-shadow:0 3px 12px #071b4330}
+ .mobile-brand{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:900}
+ .mobile-brand .brand-mark{font-size:27px}
+ .menu-toggle{width:43px;height:43px;border:1px solid #ffffff55;border-radius:12px;background:#ffffff14;color:#fff;font-size:24px;display:grid;place-items:center;cursor:pointer}
+ .sidebar{position:fixed;inset:0 auto 0 0;width:min(82vw,300px);height:100dvh;padding:22px 14px 18px;display:flex;flex-direction:column;overflow-y:auto;transform:translateX(-105%);transition:transform .24s ease;z-index:31;box-shadow:12px 0 35px #00133335}
+ .sidebar.mobile-open{transform:translateX(0)}
+ .sidebar .brand{padding:2px 10px 30px;font-size:20px}
+ .sidebar .brand-mark{font-size:31px}
+ .sidebar .brand small{display:block}
+ .nav{display:grid;grid-template-columns:1fr;gap:7px;overflow:visible;padding-bottom:0}
+ .nav a{width:100%;white-space:normal;padding:12px 13px;font-size:14px;gap:10px}
+ .nav .ico{font-size:18px;width:23px}
+ .side-bottom{display:block}
+ .side-bottom .btn{width:100%}
+ .menu-backdrop{position:fixed;inset:0;z-index:30;border:0;background:#06152c99;opacity:0;pointer-events:none;transition:opacity .2s;display:block}
+ body.menu-open{overflow:hidden}
+ body.menu-open .menu-backdrop{opacity:1;pointer-events:auto}
+ .main{margin:0;padding:16px 13px 28px}
+ .topbar{margin-bottom:15px}
+ .page-title{font-size:20px}
+ .top-actions{gap:7px}
+ .icon-btn{width:37px;height:37px}
+ .user-chip{width:37px;height:37px}
+ .welcome{padding:22px 19px;border-radius:16px}
+ .welcome p{font-size:14px}
+ .welcome-art{font-size:42px;padding:0}
+ .stats{gap:10px;margin:14px 0}
+ .stat{padding:14px;min-height:105px}
+ .stat strong{font-size:25px}
+ .stat span{font-size:12px}
+ .grid{grid-template-columns:1fr;gap:13px}
+ .panel{padding:18px}
+ .board-panel{min-height:270px}
+ .panel h2{font-size:18px}
+}
 @media(max-width:380px){.nav a{font-size:11px;padding:8px}.welcome-art{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-</head><body><div class="app">
-<aside class="sidebar" aria-label="Navegação do professor">
+</head><body><div class="mobile-topbar"><div class="mobile-brand"><span class="brand-mark">📘</span><span>Quadro AZNY</span></div><button type="button" class="menu-toggle" id="mobileMenuToggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="teacherSidebar">☰</button></div><button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button><div class="app">
+<aside class="sidebar" id="teacherSidebar" aria-label="Navegação do professor">
  <div class="brand"><span class="brand-mark">📘</span><span>Quadro AZNY<small>REMOTE WORK BOARD</small></span></div>
  <nav class="nav" aria-label="Menu do professor">
   <a class="active" href="#inicio" data-view="inicio" aria-current="page"><span class="ico">⌂</span>Início</a>
@@ -137,6 +173,20 @@ function openView(name){
 }
 document.querySelectorAll(".nav [data-view]").forEach(link=>link.addEventListener("click",event=>{event.preventDefault();openView(link.dataset.view)}));
 document.querySelectorAll("[data-open-view]").forEach(link=>link.addEventListener("click",event=>{event.preventDefault();openView(link.dataset.openView)}));
+const menuToggle=document.getElementById("mobileMenuToggle"),sidebar=document.getElementById("teacherSidebar"),menuBackdrop=document.getElementById("menuBackdrop");
+function setMobileMenu(open){
+ const active=!!open&&window.matchMedia("(max-width:700px)").matches;
+ sidebar.classList.toggle("mobile-open",active);
+ document.body.classList.toggle("menu-open",active);
+ menuToggle.setAttribute("aria-expanded",String(active));
+ menuToggle.setAttribute("aria-label",active?"Fechar menu":"Abrir menu");
+ menuToggle.textContent=active?"×":"☰";
+}
+menuToggle.addEventListener("click",()=>setMobileMenu(!sidebar.classList.contains("mobile-open")));
+menuBackdrop.addEventListener("click",()=>setMobileMenu(false));
+document.querySelectorAll(".nav [data-view],.side-bottom button").forEach(el=>el.addEventListener("click",()=>setMobileMenu(false)));
+document.addEventListener("keydown",event=>{if(event.key==="Escape")setMobileMenu(false)});
+window.addEventListener("resize",()=>{if(window.innerWidth>700)setMobileMenu(false)});
 openView(location.hash.slice(1)||"inicio");
 async function init(){try{
  const user=auth.currentUser;
