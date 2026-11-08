@@ -190,6 +190,7 @@ document.addEventListener("keydown",event=>{if(event.key==="Escape")setMobileMen
 window.addEventListener("resize",()=>{if(window.innerWidth>700)setMobileMenu(false)});
 openView(location.hash.slice(1)||"inicio");
 function renderPlanTime(license){
+ window.aznyCurrentPlan=license;
  window.aznyCurrentPlanExpiry=license.expiresAt||null;
  const badge=document.getElementById("planTimeBadge");
  if(!badge)return;
@@ -256,7 +257,7 @@ async function init(){try{
   updateLicenseDisplay(live,accessToken);
  });
  if(window.aznyPlanCountdownTimer)clearInterval(window.aznyPlanCountdownTimer);
- window.aznyPlanCountdownTimer=setInterval(()=>{const current=document.getElementById("planTimeBadge");if(current&&!current.hidden)renderPlanTime({plan:document.getElementById("planName").textContent==="Plano de teste"?"trial":"paid",expiresAt:window.aznyCurrentPlanExpiry});},60000);
+ window.aznyPlanCountdownTimer=setInterval(()=>{if(window.aznyCurrentPlan)renderPlanTime(window.aznyCurrentPlan);},60000);
  window.aznyCurrentPlanExpiry=license.expiresAt||null;
 }catch(error){status.className="badge warn";status.textContent="Falha na validação";message.textContent=error.message||"Não foi possível confirmar o acesso.";console.error(error)}}
 button.onclick=async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(error){console.info("Orientação horizontal não disponível:",error)}location.href="aulas/?acesso="+encodeURIComponent(token)};
