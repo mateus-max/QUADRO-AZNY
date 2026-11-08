@@ -1,6 +1,209 @@
 <!doctype html>
 <html lang="pt-AO">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071b33"><meta name="description" content="AZNY Quadro Virtual — aulas online colaborativas em tempo real."><title>AZNY · Quadro Virtual</title><link rel="icon" href="icons/azny-board.svg" type="image/svg+xml">
-<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:22px;background:radial-gradient(ellipse at 20% 0,#17416a 0,#071b33 55%,#04101f 100%);font:16px Inter,system-ui,Segoe UI,Arial,sans-serif;color:#fff}.wrap{width:min(920px,100%);text-align:center}.brand{display:flex;align-items:center;justify-content:center;gap:14px;font-size:clamp(24px,5vw,38px);font-weight:950;letter-spacing:.02em}.brand img{width:62px;height:62px}.brand span{color:#83b8ff}.tag{display:inline-block;margin:30px 0 12px;padding:7px 13px;border:1px solid #8ebeff55;border-radius:30px;color:#a8ceff;font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}h1{font-size:clamp(32px,6vw,58px);line-height:1.06;margin:8px auto 16px;max-width:760px}p{color:#c4d4e7;line-height:1.7;max-width:640px;margin:0 auto}.actions{display:flex;justify-content:center;gap:13px;flex-wrap:wrap;margin:32px 0}.btn{display:inline-flex;align-items:center;justify-content:center;min-width:220px;min-height:54px;padding:14px 20px;border-radius:12px;text-decoration:none;font-weight:900}.primary{background:#1677ff;color:#fff;box-shadow:0 12px 30px #1677ff40}.secondary{background:#ffffff12;border:1px solid #ffffff35;color:#fff}.foot{margin-top:45px;color:#8da4bd;font-size:12px}.foot a{color:#9ec6ff;text-decoration:none;margin:0 8px}@media(max-width:520px){.btn{width:100%}.actions{gap:10px}.brand img{width:48px;height:48px}}</style>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#031b43">
+<meta name="description" content="Remote Work Board — plataforma de ensino colaborativo e aulas online em tempo real.">
+<title>Remote Work Board · Quadro Virtual</title>
+<link rel="icon" href="icons/remote-work-board.svg" type="image/svg+xml">
+<style>
+:root{--navy:#031b43;--blue:#0878f9;--cyan:#16c6f4;--gold:#ffbd19;--ink:#f5f9ff;--muted:#c0d3ec}
+*{box-sizing:border-box}
+html{min-height:100%;scroll-behavior:smooth}
+body{margin:0;min-height:100vh;min-height:100dvh;background:radial-gradient(ellipse at 12% 4%,#0c4b88 0,#062c5c 32%,#031b3e 67%,#020f25 100%);color:var(--ink);font:16px Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;overflow-x:hidden}
+body:before,body:after{content:"";position:fixed;pointer-events:none;z-index:0;border:1px solid #19a9ff24;border-radius:50%;width:70vw;height:70vw;max-width:950px;max-height:950px}
+body:before{top:-47vw;left:-24vw;box-shadow:0 0 0 22px #168eff08,0 0 0 55px #168eff06}
+body:after{right:-50vw;bottom:-58vw;box-shadow:0 0 0 24px #168eff08,0 0 0 60px #168eff06}
+.page{position:relative;z-index:1;width:min(1240px,calc(100% - 56px));margin:0 auto;padding:24px 0 22px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 0 24px;border-bottom:1px solid #9bcaff27}
+.brand{display:flex;align-items:center;gap:16px;min-width:0}
+.brand img{width:82px;height:82px;object-fit:contain;filter:drop-shadow(0 5px 12px #0008)}
+.brand-text{font-weight:950;font-size:clamp(22px,3vw,34px);line-height:1.05;letter-spacing:.06em;color:#fff}
+.brand-text span{display:block;font-size:clamp(12px,1.5vw,17px);font-weight:750;letter-spacing:.16em;color:#b8d8ff;margin-top:8px}
+.brand-divider{height:55px;width:2px;background:linear-gradient(#b9e5ff,#168bff);opacity:.8}
+.top-tag{display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border:1px solid #8bc7ff55;border-radius:40px;color:#d7ebff;font-size:13px;font-weight:850;letter-spacing:.1em;background:#ffffff08}
+.top-tag span{width:8px;height:8px;border-radius:50%;background:#19d7a0;box-shadow:0 0 12px #19d7a0}
+.hero{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);align-items:center;gap:24px;padding:48px 0 26px}
+.hero-copy{position:relative;z-index:2}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;padding:9px 17px;border:1px solid #9acbff55;border-radius:40px;color:#c5e1ff;font-size:12px;font-weight:950;letter-spacing:.16em;text-transform:uppercase;background:#ffffff08}
+.eyebrow:before{content:"✦";color:var(--gold);font-size:15px}
+h1{font-size:clamp(42px,6vw,72px);line-height:1.02;letter-spacing:-.045em;margin:24px 0 20px;color:#fff;max-width:650px}
+h1 span{color:var(--gold);text-shadow:0 4px 22px #ffb90022}
+.lead{font-size:clamp(16px,1.65vw,19px);line-height:1.72;color:#c6d9f0;max-width:570px;margin:0}
+.lead strong{color:#fff}
+.hero-art{position:relative;min-width:0;padding:8px 0}
+.hero-art:before{content:"";position:absolute;width:75%;height:70%;left:12%;top:15%;border-radius:50%;background:#087dff40;filter:blur(55px)}
+.laptop-scene{position:relative;width:100%;max-width:640px;margin:auto;filter:drop-shadow(0 25px 28px #0008)}
+.laptop-scene svg{display:block;width:100%;height:auto;overflow:visible}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:32px 0 0;max-width:640px}
+.btn{display:flex;align-items:center;justify-content:center;gap:13px;min-height:66px;padding:16px 20px;border-radius:17px;text-align:center;text-decoration:none;font-weight:900;font-size:clamp(14px,1.45vw,17px);line-height:1.25;transition:transform .18s,box-shadow .18s,border-color .18s}
+.btn:hover{transform:translateY(-3px)}
+.btn svg{width:27px;height:27px;flex:0 0 auto}
+.primary{color:#fff;background:linear-gradient(110deg,#0877ff,#0759d6);border:1px solid #37b7ff;box-shadow:0 12px 30px #006aff4a,inset 0 1px #ffffff55}
+.primary:hover{box-shadow:0 16px 35px #006aff65}
+.secondary{color:#f4f8ff;background:linear-gradient(120deg,#ffffff18,#ffffff08);border:1px solid #9ecbfa66;box-shadow:inset 0 1px #ffffff20}
+.secondary:hover{border-color:#47baff}
+.features{display:grid;grid-template-columns:repeat(4,1fr);margin:34px 0 0;padding:22px 0;border-top:1px solid #8ecaff2b;border-bottom:1px solid #8ecaff2b}
+.feature{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:4px 16px;border-right:1px solid #1c9aff60;color:#e5f1ff;font-size:14px;font-weight:700;line-height:1.35}
+.feature:last-child{border:0}
+.feature-icon{display:grid;place-items:center;width:48px;height:48px;color:#6fd5ff}
+.feature-icon svg{width:39px;height:39px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.footer{padding:27px 0 4px;text-align:center}
+.footer-brand{font-size:18px;font-weight:950;letter-spacing:.13em;color:#fff}
+.footer-sub{font-size:13px;color:#a9c4e5;margin-top:8px}
+.footer-links{display:flex;justify-content:center;align-items:center;gap:18px;margin-top:20px;flex-wrap:wrap}
+.footer-links a{color:#c0dcff;text-decoration:none;font-weight:750;font-size:14px}
+.footer-links a:hover{color:#fff;text-decoration:underline}
+.footer-links .dot{color:#399cff}
+@media(max-width:850px){
+ .page{width:min(700px,calc(100% - 36px));padding-top:18px}
+ .topbar{padding-bottom:17px}.brand img{width:65px;height:65px}
+ .hero{grid-template-columns:1fr;gap:8px;padding:35px 0 10px}
+ .hero-copy{text-align:center}.eyebrow{font-size:10px}
+ h1{font-size:clamp(40px,8vw,58px);margin:18px auto 14px}
+ .lead{margin:auto;max-width:600px;font-size:16px}
+ .hero-art{max-width:570px;margin:0 auto;width:100%}
+ .actions{max-width:620px;margin:12px auto 0}
+ .features{margin-top:25px}
+}
+@media(max-width:560px){
+ .page{width:calc(100% - 34px);padding:13px 0 18px}
+ .topbar{padding-bottom:13px}
+ .brand{gap:9px}.brand img{width:55px;height:55px}
+ .brand-divider{height:42px}
+ .brand-text{font-size:19px;letter-spacing:.04em}
+ .brand-text span{font-size:10px;letter-spacing:.12em;margin-top:5px}
+ .top-tag{padding:9px 11px;font-size:9px;gap:7px;letter-spacing:.06em}
+ .hero{padding:30px 0 4px;gap:0}
+ .eyebrow{padding:8px 12px;font-size:9px;letter-spacing:.12em}
+ h1{font-size:clamp(36px,10vw,48px);margin:17px auto 13px;line-height:1.04}
+ .lead{font-size:14px;line-height:1.62;max-width:440px}
+ .hero-art{width:calc(100% + 20px);margin:3px -10px 0}
+ .actions{grid-template-columns:1fr;gap:10px;margin-top:0}
+ .btn{min-height:59px;border-radius:15px;font-size:15px;padding:13px 15px}
+ .btn svg{width:24px;height:24px}
+ .features{grid-template-columns:repeat(2,1fr);gap:0;margin-top:25px;padding:15px 0}
+ .feature{min-height:92px;padding:10px 7px;font-size:12px}
+ .feature:nth-child(2){border-right:0}
+ .feature:nth-child(-n+2){border-bottom:1px solid #1c9aff60}
+ .feature-icon{width:36px;height:36px}.feature-icon svg{width:32px;height:32px}
+ .footer{padding-top:21px}
+ .footer-brand{font-size:14px}
+ .footer-sub{font-size:11px}
+ .footer-links{gap:11px;margin-top:15px}
+ .footer-links a{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
 </head>
-<body><main class="wrap"><div class="brand"><img src="icons/azny-board.svg" alt="">AZNY <span>QUADRO VIRTUAL</span></div><div class="tag">A sala de aula digital</div><h1>Ensine e aprenda em tempo real.</h1><p>Um quadro virtual colaborativo para professores e alunos. Crie a sua conta de professor, escolha um plano e envie o comprovativo para autorização da administração.</p><nav class="actions"><a class="btn primary" href="login-professor.html">Sou professor · Entrar / Criar conta</a><a class="btn secondary" href="entrada.html">Sou aluno · Entrar na aula</a></nav><div class="foot">AZNY · Remote Work Board<br><br><a href="admin.html">Administração</a> · <a href="como-funciona.html">Como funciona</a></div></main></body></html>
+<body>
+<main class="page">
+<header class="topbar">
+ <div class="brand">
+  <img src="icons/remote-work-board.svg" alt="Logótipo oficial Remote Work Board">
+  <span class="brand-divider" aria-hidden="true"></span>
+  <div class="brand-text">REMOTE WORK<span>BOARD</span></div>
+ </div>
+ <div class="top-tag"><span></span> A SALA DE AULA DIGITAL</div>
+</header>
+
+<section class="hero">
+ <div class="hero-copy">
+  <div class="eyebrow">Ensino colaborativo online</div>
+  <h1>Ensine e aprenda em <span>tempo real.</span></h1>
+  <p class="lead">Um quadro virtual colaborativo para professores e alunos. Crie a sua conta de professor, escolha um plano e envie o comprovativo para autorização da administração.</p>
+ </div>
+ <div class="hero-art" aria-label="Ilustração de uma aula colaborativa no quadro virtual">
+  <div class="laptop-scene">
+   <svg viewBox="0 0 650 450" role="img" aria-hidden="true">
+    <defs>
+     <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#102c4c"/><stop offset="1" stop-color="#06172c"/></linearGradient>
+     <linearGradient id="board" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#087e65"/><stop offset="1" stop-color="#034b42"/></linearGradient>
+     <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f4f8ff"/><stop offset=".45" stop-color="#a9c1df"/><stop offset="1" stop-color="#526d91"/></linearGradient>
+     <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0a9cff"/><stop offset="1" stop-color="#174bce"/></linearGradient>
+     <filter id="soft"><feGaussianBlur stdDeviation="13"/></filter>
+    </defs>
+    <ellipse cx="335" cy="407" rx="280" ry="19" fill="#000" opacity=".42" filter="url(#soft)"/>
+    <path d="M122 51Q122 27 148 27H540Q565 27 565 52V315H122Z" fill="#0b1930" stroke="#9dcfff" stroke-width="5"/>
+    <path d="M135 53Q135 41 150 41H536Q551 41 551 54V299H135Z" fill="url(#screen)"/>
+    <circle cx="344" cy="34" r="3.5" fill="#6cb7ff"/>
+    <rect x="151" y="57" width="383" height="226" rx="9" fill="#0b1d34"/>
+    <rect x="162" y="68" width="362" height="204" rx="6" fill="url(#board)"/>
+    <rect x="162" y="68" width="362" height="22" rx="6" fill="#173d61"/>
+    <circle cx="177" cy="79" r="3" fill="#ff7272"/><circle cx="188" cy="79" r="3" fill="#ffcf5b"/><circle cx="199" cy="79" r="3" fill="#5ee0a4"/>
+    <rect x="172" y="101" width="35" height="157" rx="6" fill="#124f76"/>
+    <g stroke="#d9efff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+     <path d="M182 119l15-12m-11 20l-5 6m8-2l-5 7"/>
+     <path d="M181 158h17m-8-9v18"/>
+     <rect x="181" y="190" width="17" height="15" rx="2"/>
+     <path d="M180 237l8-12 10 12z"/>
+    </g>
+    <g stroke="#d4f7e9" stroke-width="3" fill="none" opacity=".9">
+     <path d="M267 143l53-25 50 27-53 26zM267 143v69l50 27v-68m53-26v68l-53 26m0-68l53-26"/>
+     <path d="M317 171v68"/>
+    </g>
+    <g fill="#eafff5" font-family="Arial,sans-serif" font-size="18" font-weight="700">
+     <text x="255" y="132">a</text><text x="377" y="151">c</text><text x="318" y="258" text-anchor="middle" font-size="21">a² + b² = c²</text>
+    </g>
+    <rect x="411" y="101" width="101" height="71" rx="7" fill="#d8e8f8"/>
+    <rect x="415" y="105" width="93" height="63" rx="5" fill="#244a6d"/>
+    <circle cx="462" cy="125" r="12" fill="#e3b58e"/><path d="M441 162q3-23 21-23t22 23" fill="#1d314b"/>
+    <rect x="421" y="181" width="91" height="42" rx="6" fill="#173e61"/>
+    <circle cx="443" cy="198" r="9" fill="#e9bd9b"/><path d="M428 218q2-15 15-15t15 15" fill="#6da5d8"/>
+    <circle cx="484" cy="198" r="9" fill="#c98e69"/><path d="M469 218q2-15 15-15t15 15" fill="#d3e5f8"/>
+    <g transform="translate(270 246)">
+     <circle cx="0" cy="0" r="15" fill="#1a507b"/><path d="M-4-6l10 6-10 6z" fill="#fff"/>
+     <circle cx="43" cy="0" r="15" fill="#1a507b"/><path d="M36-5h14v10H36zM40 7h6" fill="none" stroke="#fff" stroke-width="2"/>
+     <circle cx="86" cy="0" r="15" fill="#1a507b"/><path d="M79-6h14v11H79z" fill="none" stroke="#fff" stroke-width="2"/>
+     <circle cx="129" cy="0" r="15" fill="#e43e54"/><path d="M123-5l12 10m0-10l-12 10" stroke="#fff" stroke-width="2.5"/>
+    </g>
+    <path d="M72 316H616L579 355Q572 362 552 362H134Q112 362 101 353Z" fill="url(#metal)" stroke="#e4f1ff" stroke-width="3"/>
+    <path d="M95 321H593L566 348H124Z" fill="#6f8fb3"/>
+    <path d="M282 324h126l-13 20H294z" fill="#8aa8c8" stroke="#d8e9fb" stroke-width="2"/>
+    <path d="M120 353H570" stroke="#f7fbff" stroke-width="3" opacity=".7"/>
+    <path d="M60 387q100-15 196 0t196 0q70-10 142 0" fill="none" stroke="url(#glow)" stroke-width="4" opacity=".9"/>
+    <g transform="translate(45 345) rotate(-8)">
+     <rect x="0" y="0" width="155" height="9" rx="4.5" fill="#d7e7fa"/>
+     <path d="M0 4.5h-14l14-4z" fill="#ffcf65"/>
+     <path d="M155 4.5l15-4v8z" fill="#1c3d63"/>
+    </g>
+    <g transform="translate(570 240)">
+     <path d="M0 82h54l-5 10H5z" fill="#b7d1ef"/>
+     <rect x="8" y="0" width="38" height="80" rx="8" fill="#153e68"/>
+     <path d="M17 12h20M17 25h20M17 38h20M17 51h20" stroke="#75caff" stroke-width="3" stroke-linecap="round"/>
+     <path d="M13 0l15-28 15 28" fill="#f5a928" stroke="#ffe3a2" stroke-width="2"/>
+    </g>
+   </svg>
+  </div>
+ </div>
+</section>
+
+<nav class="actions" aria-label="Acesso à plataforma">
+ <a class="btn primary" href="login-professor.html">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5L12 3l9 6.5v1.8H3zM5 12v6h14v-6M9 18v-4h6v4M12 3V1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+  Sou professor · Entrar / Criar conta <span aria-hidden="true">→</span>
+ </a>
+ <a class="btn secondary" href="entrada.html">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 20c.4-4 2.6-6 6.5-6s6.1 2 6.5 6M17 7a3 3 0 010 6m1 2c2.2.6 3.4 2.3 3.6 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  Sou aluno · Entrar na aula <span aria-hidden="true">→</span>
+ </a>
+</nav>
+
+<section class="features" aria-label="Funcionalidades">
+ <div class="feature"><div class="feature-icon"><svg viewBox="0 0 40 40"><rect x="5" y="7" width="30" height="22" rx="3"/><path d="M15 34h10m-5-5v5m-1-19l8 5-8 5z"/></svg></div><span>Aulas ao vivo</span></div>
+ <div class="feature"><div class="feature-icon"><svg viewBox="0 0 40 40"><circle cx="14" cy="13" r="5"/><circle cx="28" cy="15" r="4"/><path d="M4 33c0-7 4-11 10-11s10 4 10 11m-1-7c1-3 3-5 7-5s7 3 7 9"/></svg></div><span>Colaboração<br>em tempo real</span></div>
+ <div class="feature"><div class="feature-icon"><svg viewBox="0 0 40 40"><path d="M20 4l15 9-15 9L5 13zM5 20l15 9 15-9M5 27l15 9 15-9"/></svg></div><span>Partilha de<br>materiais</span></div>
+ <div class="feature"><div class="feature-icon"><svg viewBox="0 0 40 40"><path d="M20 4l13 5v10c0 8-5 13-13 17C12 32 7 27 7 19V9z"/><path d="M13 20l5 5 10-11"/></svg></div><span>Ambiente<br>seguro</span></div>
+</section>
+
+<footer class="footer">
+ <div class="footer-brand">REMOTE WORK BOARD</div>
+ <div class="footer-sub">Ensino colaborativo. Ligação em tempo real.</div>
+ <nav class="footer-links" aria-label="Links institucionais">
+  <a href="admin.html">Administração</a><span class="dot">·</span><a href="como-funciona.html">Como funciona</a>
+ </nav>
+</footer>
+</main>
+</body>
+</html>
