@@ -79,12 +79,12 @@ exports.registerTeacherForApproval = onCall({region:REGION},async request=>{
 });
 
 exports.reviewTeacherPayment = onCall({region:REGION}, async request => {
-  const adminUid = await requireAdmin(request);
+  const adminUid = requireAdmin(request);
   const id = String(request.data?.id || "");
   const action = String(request.data?.action || "");
   const note = String(request.data?.note || "").trim().slice(0,500);
-  if (!/^PAY-[A-Za-z0-9_-]{1,120}$/.test(id) || !["approve","reject"].includes(action) || (action === "reject" && !note)) {
-    throw new HttpsError("invalid-argument", action === "reject" && !note ? "Informe o motivo da rejeição." : "Pedido ou operação inválida.");
+  if (!/^PAY-[A-Za-z0-9_-]{5,100}$/.test(id) || !["approve","reject"].includes(action)) {
+    throw new HttpsError("invalid-argument","Pedido ou operação inválida.");
   }
   const ref = db.ref("paymentRequests/" + id);
   const claim = await ref.transaction(value => {
@@ -147,8 +147,8 @@ exports.reviewTeacherPayment = onCall({region:REGION}, async request => {
 });
 
 exports.reviewTeacherRegistration = onCall({region:REGION},async request=>{
- const adminUid=await requireAdmin(request),uid=String(request.data?.uid||""),action=String(request.data?.action||""),note=String(request.data?.note||"").trim().slice(0,500);
- if(!uid||uid.length>128||!["approve","reject","delete"].includes(action)||(action==="reject"&&!note))throw new HttpsError("invalid-argument",action==="reject"&&!note?"Informe o motivo da rejeição.":"Operação ou conta inválida.");
+ const adminUid=requireAdmin(request),uid=String(request.data?.uid||""),action=String(request.data?.action||""),note=String(request.data?.note||"").trim().slice(0,500);
+ if(!uid||uid.length>128||!["approve","reject","delete"].includes(action))throw new HttpsError("invalid-argument","Operação ou conta inválida.");
  const userRef=db.ref("teacherAccounts/"+uid),regRef=db.ref("teacherRegistrationRequests/"+uid),[profile,registration]=await Promise.all([userRef.get(),regRef.get()]);
  if(!profile.exists()&&!registration.exists())throw new HttpsError("not-found","Conta não encontrada.");
  if(action==="delete"){
@@ -160,7 +160,7 @@ exports.reviewTeacherRegistration = onCall({region:REGION},async request=>{
   await db.ref().update(updates);await db.ref("auditLogs").push({action:"teacher_account_deleted",targetUid:uid,adminUid,at:ServerValue.TIMESTAMP});return {ok:true,action};
  }
  if(action==="approve"){await adminAuth.updateUser(uid,{disabled:false});const patch={status:"approved",accountStatus:"approved",approvedBy:adminUid,approvedAt:new Date().toISOString(),updatedAt:ServerValue.TIMESTAMP};await Promise.all([userRef.update(patch),regRef.update(patch)]);}
- else{await adminAuth.updateUser(uid,{disabled:false});const patch={status:"rejected",accountStatus:"rejected",adminNote:note,rejectedBy:adminUid,rejectedAt:new Date().toISOString(),updatedAt:ServerValue.TIMESTAMP};await Promise.all([userRef.update(patch),regRef.update(patch)]);}
+ else{await adminAuth.updateUser(uid,{disabled:true}).catch(e=>{if(e.code!=="auth/user-not-found")throw e;});const patch={status:"rejected",accountStatus:"rejected",adminNote:note,rejectedBy:adminUid,rejectedAt:new Date().toISOString(),updatedAt:ServerValue.TIMESTAMP};await Promise.all([userRef.update(patch),regRef.update(patch)]);}
  await db.ref("auditLogs").push({action:"teacher_account_"+action,targetUid:uid,adminUid,note,at:ServerValue.TIMESTAMP});return {ok:true,action};
 });
 
@@ -179,17 +179,13 @@ function requireAuth(request) {
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Autenticação necessária.");
   return request.auth.uid;
 }
-async function requireAdmin(request) {
+function requireAdmin(request) {
   const uid = requireAuth(request);
   const email = String(request.auth?.token?.email || "").trim().toLowerCase();
-  if (request.auth?.token?.admin === true || email === ADMIN_EMAIL) return uid;
-  try {
-    const account = await adminAuth.getUser(uid);
-    if (safeEmail(account.email) === ADMIN_EMAIL && !account.disabled) return uid;
-  } catch (error) {
-    console.error("Falha ao validar conta administrativa:", error?.code || error?.message);
+  if (request.auth?.token?.admin !== true && email !== ADMIN_EMAIL) {
+    throw new HttpsError("permission-denied", "Acesso reservado à administração.");
   }
-  throw new HttpsError("permission-denied", "Acesso reservado à administração.");
+  return uid;
 }
 function teacherRoomAllowed(roomId, token) {
   const scope = hashKey(token);
