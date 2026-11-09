@@ -1904,9 +1904,9 @@ function publishLiveBoardState(){
     const ref=aznyRoomRef().child("board");
     const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP,lastEditorUid:aznyUid||""};
     ref.update(payload).catch(e=>{console.error("AZNY live board write rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
-   },isStudent?40:40);
+   },20);
   }
- },25)
+ },12)
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
@@ -3041,7 +3041,7 @@ function addStudentVideoCard(id,name,stream,track){
  let card=document.getElementById("student-"+id);
  if(!card){
   card=document.createElement("div");card.className="student";card.id="student-"+id;
-  card.innerHTML='<video autoplay playsinline></video><div class="azny-student-cam-off"><span>🎥</span><small>Câmara desligada</small></div><div class="label"></div><span class="azny-raised-hand" aria-label="Aluno com a mão levantada" title="Mão levantada">✋</span><div class="azny-camera-signal" aria-label="Estado da ligação"><i></i><i></i><i></i></div><div class="azny-student-device-controls"><button type="button" data-student-camera aria-label="Ligar/desligar câmera" title="Ligar/desligar câmera">📷</button><span class="azny-camera-network-indicator is-connecting" data-student-network aria-label="A verificar rede"><span class="azny-network-bars"><i></i><i></i><i></i></span></span><button type="button" data-student-mic aria-label="Ligar/desligar microfone" title="Ligar/desligar microfone">🎙</button></div>';
+  card.innerHTML='<video autoplay playsinline></video><div class="azny-student-cam-off"><span>🎥</span><small>Câmara desligada</small></div><div class="label"></div><span class="azny-raised-hand" aria-label="Aluno com a mão levantada" title="Mão levantada">✋</span><div class="azny-camera-signal" aria-label="Estado da ligação"><i></i><i></i><i></i></div><div class="azny-student-device-controls"><button type="button" data-student-mic aria-label="Ligar/desligar microfone" title="Ligar/desligar microfone">🎙</button><span class="azny-camera-network-indicator is-connecting" data-student-network aria-label="A verificar rede"><span class="azny-network-bars"><i></i><i></i><i></i></span></span><button type="button" data-student-camera aria-label="Ligar/desligar câmera" title="Ligar/desligar câmera">📷</button></div>';
   card._aznyRemoteStream=new MediaStream();wrap.appendChild(card);
   const signal=signalRef(id);
   const micBtn=card.querySelector("[data-student-mic]"),camBtn=card.querySelector("[data-student-camera]");
@@ -5423,3 +5423,13 @@ body:not(.student-mode) .rightbar #students .student>.azny-student-device-contro
 
 
 
+
+<style id="azny-student-camera-controls-match-teacher">
+/* Controlos do vídeo de cada aluno: microfone à esquerda, rede ao centro e câmara à direita. */
+body:not(.student-mode) .student:not(.no-students)>.azny-student-device-controls{left:5px!important;right:5px!important;bottom:5px!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;justify-content:space-between!important;align-items:center!important;gap:0!important;width:auto!important;padding:0!important;background:transparent!important;pointer-events:none!important}
+body:not(.student-mode) .student>.azny-student-device-controls button{display:flex!important;flex:0 0 30px!important;width:30px!important;min-width:30px!important;max-width:30px!important;height:28px!important;min-height:28px!important;align-items:center!important;justify-content:center!important;padding:0!important;border:0!important;border-radius:50%!important;background:#10243ad9!important;color:#fff!important;font-size:17px!important;line-height:1!important;box-shadow:0 1px 4px #0006!important;pointer-events:auto!important}
+body:not(.student-mode) .student>.azny-student-device-controls button.is-off{background:#a91f2bdc!important;color:#fff!important}
+body:not(.student-mode) .student>.azny-student-device-controls [data-student-mic]{order:1!important}
+body:not(.student-mode) .student>.azny-student-device-controls [data-student-network]{order:2!important;position:static!important;display:flex!important;flex:0 0 30px!important;width:30px!important;height:28px!important;align-items:center!important;justify-content:center!important;margin:0!important}
+body:not(.student-mode) .student>.azny-student-device-controls [data-student-camera]{order:3!important}
+</style>
