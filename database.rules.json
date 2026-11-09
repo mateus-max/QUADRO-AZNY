@@ -233,6 +233,8 @@
       }
     },
     "settings": {
+      ".read": false,
+      ".write": false,
       "teacherDirectoryAdminWhatsapp": {
         ".read": true,
         ".write": "auth != null && auth.token.email == 'suporte@domingas.com'"
