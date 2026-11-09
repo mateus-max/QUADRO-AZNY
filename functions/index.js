@@ -1,5 +1,5 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { onValueWritten } = require("firebase-functions/v2/database");
+const { onValueWritten, onValueCreated } = require("firebase-functions/v2/database");
 const { initializeApp } = require("firebase-admin/app");
 const { getDatabase, ServerValue } = require("firebase-admin/database");
 const { getAuth } = require("firebase-admin/auth");
@@ -12,6 +12,59 @@ const REGION = "us-central1";
 
 
 const adminAuth = getAuth();
+
+const FORMSPREE_NOTIFICATION_ENDPOINT = "https://formspree.io/f/xdeeykja";
+async function sendDirectionWhatsAppNotification(eventName, fields = {}) {
+  const payload = {
+    _subject: "[QUADRO AZNY] " + eventName,
+    evento: eventName,
+    plataforma: "Quadro AZNY",
+    data: new Date().toLocaleString("pt-AO", { timeZone: "Africa/Luanda" }),
+    ...Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined && value !== null && value !== ""))
+  };
+  const response = await fetch(FORMSPREE_NOTIFICATION_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error("Formspree HTTP " + response.status + ": " + detail.slice(0, 300));
+  }
+  return true;
+}
+
+// Aviso adicional: não altera nem substitui os registos existentes no Realtime Database.
+exports.notifyDirectionNewTeacherRegistration = onValueCreated({
+  ref: "/teacherRegistrationRequests/{uid}", region: REGION, retry: true
+}, async event => {
+  const teacher = event.data.val() || {};
+  await sendDirectionWhatsAppNotification("NOVA CONTA DE PROFESSOR — AGUARDA APROVAÇÃO", {
+    nome_professor: teacher.name || "Não informado",
+    email_professor: teacher.email || "Não informado",
+    estado: "Pendente de aprovação",
+    uid: event.params.uid
+  });
+});
+
+exports.notifyDirectionNewPlanRequest = onValueCreated({
+  ref: "/paymentRequests/{requestId}", region: REGION, retry: true
+}, async event => {
+  const request = event.data.val() || {};
+  await sendDirectionWhatsAppNotification(
+    request.plan === "trial" ? "NOVO PEDIDO DE TESTE — AGUARDA APROVAÇÃO" : "NOVO PEDIDO DE PLANO/PAGAMENTO — AGUARDA APROVAÇÃO",
+    {
+      nome_professor: request.name || "Não informado",
+      email_professor: request.email || "Não informado",
+      plano: request.planName || request.plan || "Não informado",
+      valor: Number(request.amount || 0).toLocaleString("pt-AO") + " Kz",
+      metodo_pagamento: request.method || "Não informado",
+      pedido: request.id || event.params.requestId,
+      estado: "Pendente de análise"
+    }
+  );
+});
+
 exports.registerTeacherForApproval = onCall({region:REGION},async request=>{
  if(request.auth?.uid)throw new HttpsError("failed-precondition","Termine a sessão antes de submeter um novo registo.");
  const name=String(request.data?.name||"").trim(),email=safeEmail(request.data?.email),password=String(request.data?.password||"");
