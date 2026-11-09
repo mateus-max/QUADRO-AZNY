@@ -144,21 +144,5 @@ async function reviewPaymentDirect(id,action,note,item){
  }
  await db.ref().update(updates);
 }
-async function decide(id,status,button){
- const current=allRequests[id];
- if(!current||current.status!=="pending"){alert("Este pedido já não está pendente. Actualize a lista.");return;}
- const action=status==="approved"?"approve":"reject";
- const note=action==="reject"?(prompt("Escreva o motivo da rejeição. O professor verá este motivo ao iniciar sessão:")||"").trim():"";
- if(action==="reject"&&!note){alert("É obrigatório informar o motivo da rejeição.");return;}
- if(!confirm(action==="approve"?"Confirmar aprovação? A conta será desbloqueada e a licença activada.":"Confirmar rejeição deste pedido?"))return;
- button.disabled=true;const original=button.textContent;button.textContent=action==="approve"?"A aprovar…":"A rejeitar…";
- try{
-   const result=await functions.httpsCallable("reviewTeacherPayment")({id,action,note});
-   button.textContent=action==="approve"?"Aprovado":"Rejeitado";
- }catch(e){
-   console.error("Decisão de pagamento:",e);
-   alert("Não foi possível concluir a aprovação no Firebase. Código: "+(e.code||"sem código")+" — "+(e.message||"erro desconhecido"));
-   button.disabled=false;button.textContent=original;
- }
-}
+
 </script></body></html>
