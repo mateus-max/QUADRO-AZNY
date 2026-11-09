@@ -1369,13 +1369,13 @@ async function initAZNYRealtime(){
      unsubscribe=AZNY_AUTH.onAuthStateChanged(user=>finish(user||null),()=>finish(null));
     });
    }
-   if(current){aznyUid=current.uid;return true}
-   /* Só os alunos/participantes podem usar autenticação anónima.
-      A conta do professor nunca deve ser substituída por uma sessão anónima. */
-   if(!isStudent&&!AZNY_ISOLATED_MODE){
-    console.warn("AZNY: sessão do professor ainda não está autenticada.");
-    return false;
+   if(current){
+    if(!isStudent&&current.isAnonymous){await AZNY_AUTH.signOut();aznyUid="";console.warn("AZNY: sessão anónima recusada para professor; entre com a conta de e-mail.");return false;}
+    if(!isStudent&&!current.email){console.warn("AZNY: professor sem e-mail autenticado.");return false;}
+    aznyUid=current.uid;return true;
    }
+   /* Alunos entram apenas com nome; UID anónimo é interno para proteger as regras RTDB. */
+   if(!isStudent&&!AZNY_ISOLATED_MODE){console.warn("AZNY: professor precisa de autenticar-se com e-mail e palavra-passe.");return false;}
    try{
     const cred=await AZNY_AUTH.signInAnonymously();
     aznyUid=cred.user?.uid||"";
@@ -1400,9 +1400,7 @@ async function provisionIsolatedGuestRoom(){
   guestRoom="AZNY-GUEST-"+Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
   try{localStorage.setItem(key,guestRoom)}catch(_){}
  }
- const create=firebase.functions("us-central1").httpsCallable("createIsolatedGuestRoom");
- const result=await create({roomId:guestRoom});
- if(!result.data?.ok||result.data.roomId!==guestRoom)throw new Error("O Firebase não autorizou a criação da sala temporária.");
+ throw new Error("O modo de sala isolada não está disponível na arquitectura exclusiva de Realtime Database.");
  roomId=guestRoom;
  classSessionId="ROOM-"+String(roomId).replace(/[.#$\/\[\]]/g,"_");
  STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[^a-zA-Z0-9_-]/g,"_");
@@ -1430,11 +1428,10 @@ async function validateTeacherLicenseAccess(){
    toast("A licença não corresponde à conta autenticada. Volte ao painel do professor para confirmar o acesso.");
    return false;
   }
-  const verify=firebase.functions("us-central1").httpsCallable("verifyTeacherAccess");
-  const verified=await verify({accessToken:AZNY_ACCESS_TOKEN,roomId:roomId});
-  if(!verified.data?.ok)throw new Error("O servidor não confirmou a autorização desta sala.");
-  aznyTeacherPlanKey=String(verified.data.plan||license.plan||"");
-  aznyTeacherDisplayName=String(verified.data.teacherName||license.teacherName||"Professor");
+  const accessRef=AZNY_DB.ref("roomAccess/"+aznyRoomKey()+"/"+user.uid);
+  await accessRef.set({role:"teacher",status:"approved",licenseToken:AZNY_ACCESS_TOKEN,teacherEmail:user.email,teacherUid:user.uid,verifiedAt:firebase.database.ServerValue.TIMESTAMP});
+  aznyTeacherPlanKey=String(license.plan||"");
+  aznyTeacherDisplayName=String(license.teacherName||license.name||"Professor");
   return true;
  }catch(e){
   console.error("Validação da licença no Realtime Database:",e);
@@ -2793,10 +2790,17 @@ async function restoreActiveTeacherSession(){
 }
 async function aznyCountCompletedTrialClass(){
  if(isStudent||!AZNY_ACCESS_TOKEN)return {trial:false,exhausted:false,used:0};
+ const user=AZNY_AUTH?.currentUser;if(!user||user.isAnonymous)throw new Error("Sessão do professor inválida.");
+ const licenseRef=AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN),licenseSnap=await licenseRef.once("value"),license=licenseSnap.val();
+ if(!license||license.plan!=="trial")return {trial:false,exhausted:false,used:0};
  const run=classRunId||("RUN-END-"+Date.now()+"-"+Math.random().toString(36).slice(2,9));
- const record=firebase.functions("us-central1").httpsCallable("recordTrialClass");
- const result=await record({accessToken:AZNY_ACCESS_TOKEN,roomId:roomId,runId:run});
- return result.data||{trial:false,exhausted:false,used:0};
+ const usageRef=licenseRef.child("trialCompletedSessions");
+ const result=await usageRef.transaction(current=>{const sessions=current||{};if(sessions[run])return sessions;if(Object.keys(sessions).length>=Number(license.trialSessionsLimit||2))return;return {...sessions,[run]:firebase.database.ServerValue.TIMESTAMP}});
+ if(!result.committed)throw new Error("Limite de aulas de teste atingido ou registo recusado.");
+ const used=Object.keys(result.snapshot.val()||{}).length;
+ await licenseRef.child("trialSessionsUsed").set(used);
+ if(used>=Number(license.trialSessionsLimit||2))await licenseRef.update({trialExhausted:true,boardAccess:false});
+ return {trial:true,exhausted:used>=Number(license.trialSessionsLimit||2),used};
 }
 async function endClass(){if(!classStarted)return;let trialResult={trial:false,exhausted:false,used:0};try{trialResult=await aznyCountCompletedTrialClass()}catch(e){console.error("Contagem da aula de teste:",e);const isTrial=aznyTeacherPlanKey==="trial";if(isTrial){toast("Não foi possível registar a aula de teste por falta de ligação. Restabeleça a internet e tente encerrar novamente.");return}}classStarted=false;await resetBoardForClassLifecycle();aznyObservedClassStatus="ended";clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;document.getElementById("classTimer").textContent="00:00:00";document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;try{stopCamera()}catch(e){console.warn("AZNY camera cleanup:",e)}try{stopMic()}catch(e){console.warn("AZNY microphone cleanup:",e)}try{if(AZNY_DB&&classSessionId){const ref=aznySessionRef();await Promise.all([ref.child("status").set("ended"),ref.child("endedAt").set(firebase.database.ServerValue.TIMESTAMP),ref.child("teacherPresence").update({online:false,network:"offline",updatedAt:firebase.database.ServerValue.TIMESTAMP})])}}catch(e){console.warn("AZNY class end status:",e);showNetworkNotice("O Firebase não confirmou o encerramento da aula: "+(e.message||e.code||"erro"),"bad")}try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){}clearTeacherStudentCameras();Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}removeStudentVideoCard(id)});window.aznyTeacherPeers={};roomChannel?.postMessage({type:"class-ended",session:classSessionId});if(isStudent)showClassEnded();toast("Aula encerrada. As câmeras dos alunos foram removidas.");if(trialResult.trial){if(trialResult.exhausted){aznyTeacherAccessValidated=false;setTimeout(()=>{alert("Concluiu as duas aulas experimentais do plano de teste. Para continuar a utilizar o quadro, atualize o seu plano.");location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN))},350)}else{toast("Aula de teste concluída: "+trialResult.used+"/2.")}}}
 
@@ -3070,7 +3074,7 @@ function aznySpeakTeacherNotice(message){try{if(!window.speechSynthesis||!window
 function announceJoinRequest(studentName,requestId){try{if(isStudent||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;let said=[];try{said=JSON.parse(sessionStorage.getItem("azny-join-voice-"+String(classSessionId))||"[]")}catch(_){}if(said.includes(requestId))return;said.push(requestId);try{sessionStorage.setItem("azny-join-voice-"+String(classSessionId),JSON.stringify(said.slice(-100)))}catch(_){}const en=document.documentElement.lang==="en",person=aznyPersonType(studentName);const message=en?"Attention, Teacher "+aznyTeacherDisplayName+". Student "+studentName+" is requesting permission to join the class.":"Atenção, senhor "+aznyTeacherDisplayName+". O "+person+" "+studentName+" está à espera da sua autorização para entrar na aula.";aznySpeakTeacherNotice(message)}catch(e){console.warn("AZNY join announcement:",e)}}
 prepareJoinVoice();
 aznyInitAudioOutputPicker();
-function renderJoinRequest(name,requestId){const wrap=document.getElementById("cameraJoinRequests");if(!wrap)return;const id="jr-"+requestId;if(document.getElementById(id))return;const en=document.documentElement.lang==="en",el=document.createElement("div");el.dataset.requestId=requestId;el.className="join-request";announceJoinRequest(name,requestId);el.id=id;el.innerHTML='<div>'+(en?"Join request":"Pedido para entrar")+'</div><div class="jr-name">'+escapeHtml(name)+'</div><div class="jr-actions"><button data-accept>'+(en?"✓ Approve":"✓ Aceitar")+'</button><button data-reject>'+(en?"✕ Reject":"✕ Rejeitar")+'</button></div>';el.querySelector("[data-accept]").onclick=async()=>{try{await firebase.functions("us-central1").httpsCallable("approveStudentRequest")({roomId:roomId,sessionId:classSessionId,requestId:requestId});roomChannel?.postMessage({type:"join-response",name,approved:true});el.remove();toast(en?name+" was admitted to the class":name+" foi aceite")}catch(e){toast(en?"Could not approve this student.":"Não foi possível aceitar o aluno.")}};el.querySelector("[data-reject]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"rejected",rejectedAt:firebase.database.ServerValue.TIMESTAMP,teacherUid:aznyUid||""});roomChannel?.postMessage({type:"join-response",name,approved:false});el.remove();toast(en?name+" was denied access":name+" foi rejeitado")}catch(e){toast(en?"Could not reject this student.":"Não foi possível rejeitar o aluno.")}};wrap.appendChild(el)}
+function renderJoinRequest(name,requestId){const wrap=document.getElementById("cameraJoinRequests");if(!wrap)return;const id="jr-"+requestId;if(document.getElementById(id))return;const en=document.documentElement.lang==="en",el=document.createElement("div");el.dataset.requestId=requestId;el.className="join-request";announceJoinRequest(name,requestId);el.id=id;el.innerHTML='<div>'+(en?"Join request":"Pedido para entrar")+'</div><div class="jr-name">'+escapeHtml(name)+'</div><div class="jr-actions"><button data-accept>'+(en?"✓ Approve":"✓ Aceitar")+'</button><button data-reject>'+(en?"✕ Reject":"✕ Rejeitar")+'</button></div>';el.querySelector("[data-accept]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"approved",teacherUid:aznyUid||"",approvedAt:firebase.database.ServerValue.TIMESTAMP});roomChannel?.postMessage({type:"join-response",name,approved:true});el.remove();toast(en?name+" was admitted to the class":name+" foi aceite")}catch(e){console.error("AZNY approve student:",e);toast(en?"Could not approve this student.":"Não foi possível aceitar o aluno.")}};el.querySelector("[data-reject]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"rejected",rejectedAt:firebase.database.ServerValue.TIMESTAMP,teacherUid:aznyUid||""});roomChannel?.postMessage({type:"join-response",name,approved:false});el.remove();toast(en?name+" was denied access":name+" foi rejeitado")}catch(e){toast(en?"Could not reject this student.":"Não foi possível rejeitar o aluno.")}};wrap.appendChild(el)}
 function notifyTeacherStudentPresence(ref){
  if(!ref||!isStudent||!studentRequestId)return;
  try{ref.child("studentOnline").onDisconnect().set(false)}catch(_){}
@@ -3546,9 +3550,8 @@ async function getClassLink(){
  target.searchParams.set("aluno","1");target.searchParams.set("sala",roomId);target.searchParams.set("sess",permanentSession);
  const currentParams=new URLSearchParams(location.search);
  
- const code=aznyHashKey("class:"+roomId).toUpperCase().padStart(7,"0").slice(-7);
- try{if(!AZNY_DB)throw new Error("Firebase indisponível");const create=firebase.functions("us-central1").httpsCallable("createClassShortLink");const result=await create({roomId:roomId,code:code,target:target.href});if(result.data?.code===code&&result.data?.target===target.href)return location.origin+"/c/"+code;throw new Error("Código curto em conflito.");}
- catch(err){console.error("Link curto da aula:",err);toast("Não foi possível gerar o link curto. Verifique a ligação e tente novamente.");return "";}
+ try{if(!AZNY_DB)throw new Error("Firebase indisponível");return target.href;}
+ catch(err){console.error("Link da aula:",err);toast("Não foi possível preparar o link da aula.");return "";}
 }
 async function copyClassLink(){const link=await getClassLink();if(!link)return;try{await navigator.clipboard.writeText(link);toast(document.documentElement.lang==="en"?"Class link copied":"Link da aula copiado")}catch(e){prompt("Copie o link da aula:",link)}}
 async function shareWhatsApp(){const link=await getClassLink();if(!link)return;const title=document.getElementById("boardTitle").value.trim()||"Aula";const text="Convite para a aula \""+title+"\" no Remote Work Board: "+link;window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");}
