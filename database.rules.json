@@ -4,7 +4,13 @@
     ".write": "auth != null && auth.token.email === 'suporte@domingas.com'",
     "roomAccess": {
       ".read": false,
-      ".write": false
+      ".write": false,
+      "$room": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid && data.child('status').val() === 'approved'",
+          ".write": "auth != null && auth.uid === $uid && ((newData.child('role').val() === 'teacher' && newData.child('status').val() === 'approved' && newData.child('teacherUid').val() === auth.uid && newData.child('teacherEmail').val() === auth.token.email && root.child('licenses').child(newData.child('licenseToken').val()).child('status').val() === 'active' && root.child('licenses').child(newData.child('licenseToken').val()).child('boardAccess').val() !== false && root.child('licenses').child(newData.child('licenseToken').val()).child('teacherEmail').val() === auth.token.email && (!root.child('licenses').child(newData.child('licenseToken').val()).child('teacherUid').exists() || root.child('licenses').child(newData.child('licenseToken').val()).child('teacherUid').val() === auth.uid)) || (newData.child('role').val() === 'student' && newData.child('status').val() === 'approved' && newData.child('requestId').isString() && root.child('aznyRooms').child($room).child('sessions').child(newData.child('sessionId').val()).child('joinRequests').child(newData.child('requestId').val()).child('status').val() === 'approved' && root.child('aznyRooms').child($room).child('sessions').child(newData.child('sessionId').val()).child('joinRequests').child(newData.child('requestId').val()).child('studentUid').val() === auth.uid))"
+        }
+      }
     },
     "licenses": {
       ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || (query.orderByChild === 'teacherEmail' && query.equalTo === auth.token.email))",
