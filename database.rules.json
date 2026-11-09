@@ -22,17 +22,19 @@
         ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || data.child('teacherUid').val() === auth.uid || data.child('teacherEmail').val() === auth.token.email)",
         ".write": "auth != null && auth.token.email === 'suporte@domingas.com'",
         "trialCompletedSessions": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.numChildren() <= (data.parent().child('trialSessionsLimit').val() || 2) && newData.numChildren() >= data.numChildren()",
-          ".validate": "newData.hasChildren()"
+          "$runId": {
+            ".write": "auth != null && auth.token.email === data.parent().parent().child('teacherEmail').val() && data.parent().parent().child('plan').val() === 'trial' && !data.exists() && data.parent().parent().child('trialSessionsUsed').val() < (data.parent().parent().child('trialSessionsLimit').val() || 2)",
+            ".validate": "newData.isNumber()"
+          }
         },
         "trialSessionsUsed": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.isNumber() && newData.val() === data.parent().child('trialCompletedSessions').numChildren()"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.isNumber() && newData.val() >= (data.val() || 0) && newData.val() <= (data.parent().child('trialSessionsLimit').val() || 2)"
         },
         "trialExhausted": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.val() === true && data.parent().child('trialCompletedSessions').numChildren() >= (data.parent().child('trialSessionsLimit').val() || 2)"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.val() === true && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').val() || 2)"
         },
         "boardAccess": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.val() === false && data.parent().child('trialCompletedSessions').numChildren() >= (data.parent().child('trialSessionsLimit').val() || 2)"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.val() === false && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').val() || 2)"
         }
       }
     },
@@ -45,7 +47,7 @@
         "board": {
           ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
           ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' || root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student')",
-          ".validate": "newData.hasChildren(['currentPage','pages']) && newData.child('currentPage').isNumber() && newData.child('currentPage').val() >= 1 && newData.child('currentPage').val() <= 5 && newData.child('pages').hasChildren() && newData.child('pages').numChildren() <= 5 && (!newData.child('lastEditorUid').exists() || newData.child('lastEditorUid').val() === auth.uid)"
+          ".validate": "newData.hasChildren(['currentPage','pages']) && newData.child('currentPage').isNumber() && newData.child('currentPage').val() >= 1 && newData.child('currentPage').val() <= 5 && newData.child('pages').hasChildren() && (!newData.child('lastEditorUid').exists() || newData.child('lastEditorUid').val() === auth.uid)"
         },
         "sharedBrowser": {
           ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
