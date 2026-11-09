@@ -44,24 +44,21 @@ function renderAccounts(){
    const action=button.dataset.review,uid=button.dataset.uid,account=allAccounts[uid]||{};
    const labels={approve:"aprovar esta conta",reject:"rejeitar esta solicitação",delete:"eliminar esta conta do sistema"};
    const note=action==="reject"?(prompt("Escreva o motivo da rejeição. O professor verá este motivo quando tentar iniciar sessão:")||"").trim():"";
-   if(action==="reject"&&!note){alert("É obrigatório informar o motivo da rejeição.");return;}
+   if(action==="reject"&&!note)return;
    const original=button.textContent;button.disabled=true;button.textContent=action==="approve"?"A aprovar…":action==="reject"?"A rejeitar…":"A eliminar…";
+   $("accountMessage").textContent=action==="approve"?"A aprovar a conta…":action==="reject"?"A guardar a rejeição…":"A eliminar a conta…";
    try{
     const related=Object.entries(allRequests).find(([,request])=>request&&request.uid===uid&&request.status==="pending");
-    if(action!=="delete"&&related){
-     await reviewPaymentDirect(related[0],action,note,related[1]);
-    }else{
-     await reviewAccountDirect(uid,action,note,account);
-    }
-    $("accountMessage").textContent=action==="approve"?"Aprovação concluída e licença activada/conta actualizada no Realtime Database.":action==="reject"?"Rejeição concluída; o motivo foi guardado no Realtime Database.":"Conta removida dos registos activos e licenças revogadas no Realtime Database.";
+    if(action!=="delete"&&related)await reviewPaymentDirect(related[0],action,note,related[1]);
+    else await reviewAccountDirect(uid,action,note,account);
+    $("accountMessage").textContent=action==="approve"?"Conta aprovada e licença activada.":action==="reject"?"Conta rejeitada. O motivo foi guardado.":"Conta removida dos registos activos e licenças revogadas.";
     await load();await loadAccountsOnce();
    }catch(error){
-    console.error("Acção de administração no Realtime Database:",error);
-    alert("Não foi possível "+labels[action]+". Realtime Database: "+(error.code||"erro")+" — "+(error.message||"verifique as regras de teacherAccounts, teacherRegistrationRequests e licenses."));
-    button.disabled=false;button.textContent=original;
-   }
-  };
- });
+    console.error("Acção administrativa:",error);
+    $("accountMessage").textContent="Falha: "+(error.message||error.code||"erro");
+    alert("Não foi possível "+labels[action]+". "+(error.message||error.code||"Erro desconhecido"));
+   }finally{button.disabled=false;button.textContent=original}
+  }; });
 }
 function render(){
  const items=Object.entries(allRequests).filter(([,x])=>x).map(([dbKey,x])=>({...x,_dbKey:dbKey})).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
@@ -74,103 +71,121 @@ function render(){
 }
 function viewProof(id){const x=allRequests[id];const box=$("proof-"+id);if(!box)return;const proof=String(x?.proof||"");box.classList.remove("hidden");if(!/^data:(image\/(png|jpeg|webp)|application\/pdf);base64,/.test(proof)){box.innerHTML='<div class="row" style="justify-content:space-between"><b>Comprovativo</b><button type="button" class="secondary" data-close-proof>Fechar</button></div><p class="error">Comprovativo não encontrado ou formato inválido.</p>';}else{const media=proof.startsWith("data:application/pdf")?'<iframe class="proof" title="Comprovativo PDF" src="'+proof+'"></iframe>':'<img class="proof" style="object-fit:contain" alt="Comprovativo de pagamento" src="'+proof+'">';box.innerHTML='<div class="row" style="justify-content:space-between;margin-bottom:10px"><b>Comprovativo de pagamento</b><button type="button" class="secondary" data-close-proof>Fechar</button></div>'+media;}box.querySelector("[data-close-proof]").onclick=()=>{box.innerHTML="";box.classList.add("hidden")};}
 
-async function loadAccountsOnce(){const snap=await db.ref("teacherAccounts").once("value");allAccounts=snap.val()||{};renderAccounts();}
-function adminStamp(){return new Date().toISOString();}
-function newAccessToken(){return "AZNY-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,12).toUpperCase();}
+async function loadAccountsOnce(){
+ const snap=await db.ref("teacherAccounts").once("value");
+ allAccounts=snap.val()||{};
+ renderAccounts();
+}
+function adminStamp(){return new Date().toISOString()}
+function newAccessToken(){return "AZNY-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,12).toUpperCase()}
+async function adminWrite(path,value){
+ await ensureAdminSession();
+ try{await db.ref(path).set(value)}
+ catch(error){throw new Error("Falha ao gravar /"+path+" ("+(error.code||"database/error")+"): "+(error.message||String(error)))}
+}
+async function adminUpdate(path,values){
+ await ensureAdminSession();
+ try{await db.ref(path).update(values)}
+ catch(error){throw new Error("Falha ao actualizar /"+path+" ("+(error.code||"database/error")+"): "+(error.message||String(error)))}
+}
 async function reviewAccountDirect(uid,action,note,account){
  await ensureAdminSession();
- const now=adminStamp(),updates={},base=account||{};
+ if(!uid)throw new Error("UID do professor em falta.");
+ const now=adminStamp(),base=account||{};
  if(action==="approve"){
-  const patch={status:"approved",accountStatus:"active",approvedBy:auth.currentUser.uid,approvedAt:now,updatedAt:now};
-  updates["teacherAccounts/"+uid]={...base,uid,...patch};
-  updates["teacherRegistrationRequests/"+uid]={...(await db.ref("teacherRegistrationRequests/"+uid).once("value")).val(),uid,name:base.name||"",email:base.email||"",role:"teacher",...patch};
- }else if(action==="reject"){
-  const patch={status:"rejected",accountStatus:"rejected",adminNote:note,rejectedBy:auth.currentUser.uid,rejectedAt:now,updatedAt:now};
-  updates["teacherAccounts/"+uid]={...base,uid,...patch};
   const reg=(await db.ref("teacherRegistrationRequests/"+uid).once("value")).val()||{};
-  updates["teacherRegistrationRequests/"+uid]={...reg,uid,name:base.name||reg.name||"",email:base.email||reg.email||"",role:"teacher",...patch};
-  const email=String(base.email||reg.email||"").trim().toLowerCase();
-  if(email){
-   const licenses=await db.ref("licenses").orderByChild("teacherEmail").equalTo(email).once("value");
-   licenses.forEach(child=>{updates["licenses/"+child.key+"/status"]="suspended";updates["licenses/"+child.key+"/boardAccess"]=false;updates["licenses/"+child.key+"/suspendedAt"]=now;});
-  }
- }else if(action==="delete"){
+  await adminWrite("teacherAccounts/"+uid,{...base,uid,status:"approved",accountStatus:"active",approvedBy:auth.currentUser.uid,approvedAt:now,updatedAt:now});
+  await adminWrite("teacherRegistrationRequests/"+uid,{...reg,uid,name:base.name||reg.name||"",email:base.email||reg.email||"",role:"teacher",status:"approved",accountStatus:"active",approvedBy:auth.currentUser.uid,approvedAt:now,updatedAt:now});
+  return;
+ }
+ if(action==="reject"){
+  if(!String(note||"").trim())throw new Error("O motivo da rejeição é obrigatório.");
+  const reg=(await db.ref("teacherRegistrationRequests/"+uid).once("value")).val()||{};
+  const patch={status:"rejected",accountStatus:"rejected",adminNote:String(note).trim(),rejectedBy:auth.currentUser.uid,rejectedAt:now,updatedAt:now};
+  await adminUpdate("teacherAccounts/"+uid,{...patch,uid});
+  await adminWrite("teacherRegistrationRequests/"+uid,{...reg,uid,name:base.name||reg.name||"",email:base.email||reg.email||"",role:"teacher",...patch});
+  return;
+ }
+ if(action==="delete"){
   const email=String(base.email||"").trim().toLowerCase();
   const requests=await db.ref("paymentRequests").orderByChild("uid").equalTo(uid).once("value");
-  requests.forEach(child=>{updates["paymentRequests/"+child.key]=null;});
-  const reg=(await db.ref("teacherRegistrationRequests/"+uid).once("value")).val()||{};
-  updates["teacherRegistrationRequests/"+uid]=null;
-  // Mantém um registo mínimo de bloqueio: o Realtime Database não pode apagar
-  // identidades do Firebase Authentication sem Admin SDK.
-  updates["teacherAccounts/"+uid]={uid,name:base.name||reg.name||"",email,role:"teacher",status:"deleted",accountStatus:"deleted",deletedAt:now,deletedBy:auth.currentUser.uid};
-  if(email){
-   const licenses=await db.ref("licenses").orderByChild("teacherEmail").equalTo(email).once("value");
-   licenses.forEach(child=>{updates["licenses/"+child.key+"/status"]="revoked";updates["licenses/"+child.key+"/boardAccess"]=false;updates["licenses/"+child.key+"/revokedAt"]=now;});
-  }
- }else throw new Error("Acção desconhecida.");
- await db.ref().update(updates);
+  const requestKeys=[];requests.forEach(child=>requestKeys.push(child.key));
+  const licenses=email?await db.ref("licenses").orderByChild("teacherEmail").equalTo(email).once("value"):null;
+  const licenseKeys=[];if(licenses)licenses.forEach(child=>licenseKeys.push(child.key));
+  await adminWrite("teacherAccounts/"+uid,{uid,name:base.name||"",email,role:"teacher",status:"deleted",accountStatus:"deleted",deletedAt:now,deletedBy:auth.currentUser.uid});
+  await adminWrite("teacherRegistrationRequests/"+uid,null);
+  for(const key of requestKeys)await adminWrite("paymentRequests/"+key,null);
+  for(const key of licenseKeys)await adminUpdate("licenses/"+key,{status:"revoked",boardAccess:false,revokedAt:now});
+  return;
+ }
+ throw new Error("Acção administrativa desconhecida: "+action);
 }
 async function deleteRequestAccount(uid,button){
  if(!uid){alert("Este pedido não está associado a uma conta válida.");return;}
  const original=button.textContent;button.disabled=true;button.textContent="A eliminar…";
  try{
   const snap=await db.ref("teacherAccounts/"+uid).once("value");
-  await reviewAccountDirect(uid,"delete","",snap.val()||{uid});
+  await reviewAccountDirect(uid,"delete","",snap.val()||{uid,email:""});
+  $("accountMessage").textContent="Conta removida dos registos activos e licenças revogadas.";
   await load();await loadAccountsOnce();
-  alert("Registos removidos e licenças revogadas no Realtime Database. A identidade de autenticação permanece no Firebase Authentication.");
- }catch(error){console.error(error);alert("Não foi possível remover a conta: "+(error.code||"erro")+" — "+(error.message||""));button.disabled=false;button.textContent=original;}
+ }catch(error){
+  console.error("Eliminar conta:",error);
+  alert("Não foi possível eliminar a conta. "+(error.message||error.code||"Erro desconhecido"));
+ }finally{button.disabled=false;button.textContent=original}
 }
 async function decide(id,status,button){
  const current=allRequests[id];
- if(!current||current.status!=="pending"){alert("Este pedido já não está pendente. Actualize a lista.");return;}
+ if(!current){alert("Pedido não encontrado. Actualize a lista.");return;}
+ if(current.status!=="pending"){alert("Este pedido já foi processado.");return;}
  const action=status==="approved"?"approve":"reject";
  const note=action==="reject"?(prompt("Escreva o motivo da rejeição. O professor verá este motivo ao iniciar sessão:")||"").trim():"";
- if(action==="reject"&&!note){alert("É obrigatório informar o motivo da rejeição.");return;}
- button.disabled=true;const original=button.textContent;button.textContent=action==="approve"?"A aprovar…":"A rejeitar…";
+ if(action==="reject"&&!note)return;
+ const original=button.textContent;button.disabled=true;button.textContent=action==="approve"?"A aprovar…":"A rejeitar…";
+ $("message").textContent=action==="approve"?"A aprovar pedido e activar licença…":"A registar rejeição…";
  try{
   await reviewPaymentDirect(id,action,note,current);
-  button.textContent=action==="approve"?"Aprovado":"Rejeitado";
+  $("message").textContent=action==="approve"?"Pedido aprovado e licença activada com sucesso.":"Pedido rejeitado. O motivo foi guardado.";
   await load();await loadAccountsOnce();
  }catch(error){
-  console.error("Decisão de pagamento via Realtime Database:",error);
-  alert("Não foi possível concluir a operação. Realtime Database: "+(error.code||"erro")+" — "+(error.message||"verifique as regras de paymentRequests, teacherAccounts e licenses."));
-  button.disabled=false;button.textContent=original;
- }
+  console.error("Decisão do pedido:",error);
+  $("message").textContent="Falha: "+(error.message||error.code||"erro desconhecido");
+  alert("Não foi possível concluir a operação. "+(error.message||error.code||"Erro desconhecido"));
+ }finally{button.disabled=false;button.textContent=original}
 }
 async function reviewPaymentDirect(id,action,note,item){
  await ensureAdminSession();
- const uid=String(item.uid||""),email=String(item.email||"").trim().toLowerCase(),now=adminStamp(),updates={};
+ const uid=String(item.uid||""),email=String(item.email||"").trim().toLowerCase(),now=adminStamp();
  if(!uid||!email)throw new Error("O pedido não contém UID e e-mail do professor.");
  if(action==="reject"){
-  updates["paymentRequests/"+id]={...item,status:"rejected",accountStatus:"rejected",accessGranted:false,adminNote:note,rejectedBy:auth.currentUser.uid,rejectedAt:now,reviewedAt:now};
+  if(!String(note||"").trim())throw new Error("O motivo da rejeição é obrigatório.");
   if(item.requestType!=="plan_upgrade"&&item.requestType!=="renewal"){
    const acc=(await db.ref("teacherAccounts/"+uid).once("value")).val()||{};
    const reg=(await db.ref("teacherRegistrationRequests/"+uid).once("value")).val()||{};
-   const patch={status:"rejected",accountStatus:"rejected",adminNote:note,rejectedAt:now,updatedAt:now};
-   updates["teacherAccounts/"+uid]={...acc,uid,...patch};
-   updates["teacherRegistrationRequests/"+uid]={...reg,uid,email,name:item.name||acc.name||"",role:"teacher",...patch};
+   const patch={status:"rejected",accountStatus:"rejected",adminNote:String(note).trim(),rejectedBy:auth.currentUser.uid,rejectedAt:now,updatedAt:now};
+   await adminUpdate("teacherAccounts/"+uid,{...patch,uid});
+   await adminWrite("teacherRegistrationRequests/"+uid,{...reg,uid,email,name:item.name||acc.name||"",role:"teacher",...patch});
   }
-  // A rejeição de renovação/upgrade não suspende a licença paga que já está activa.
- }else{
-  const plans={
-   trial:{name:"Teste experimental — 2 aulas",students:45,dailyClasses:3,simultaneous:1,duration:2,storage:"Temporário",trialSessionsLimit:2},
-   basic:{name:"Básico",students:10,dailyClasses:2,simultaneous:1,duration:2,storage:"10 GB temporários"},
-   professional:{name:"Profissional",students:45,dailyClasses:3,simultaneous:2,duration:4,storage:"50 GB temporários"},
-   school:{name:"Escola",students:50,dailyClasses:3,simultaneous:5,duration:6,storage:"100 GB temporários"}
-  };
-  const planKey=String(item.plan||""),plan=plans[planKey];if(!plan)throw new Error("Plano não reconhecido: "+planKey);
-  const months=planKey==="trial"?0:(item.period==="annual"||Number(item.months)>=12?12:Math.max(1,Number(item.months)||1));
-  const expiry=new Date(now);if(months)expiry.setMonth(expiry.getMonth()+months);
-  const token=String(item.accessToken||item.existingAccessToken||"").trim()||newAccessToken();
-  const license={status:"active",trialExhausted:false,boardAccess:true,plan:planKey,planName:String(item.planName||plan.name),...plan,...(planKey==="trial"?{trialSessionsLimit:Number(item.trialSessionsLimit)||2,trialSessionsUsed:0,trialCompletedSessions:{}}:{}),startedAt:now,expiresAt:months?expiry.toISOString():null,teacherName:String(item.name||email),teacherPhone:String(item.phone||""),requestId:id,accessToken:token,teacherEmail:email,teacherUid:uid};
-  const acc=(await db.ref("teacherAccounts/"+uid).once("value")).val()||{};
-  const reg=(await db.ref("teacherRegistrationRequests/"+uid).once("value")).val()||{};
-  updates["licenses/"+token]=license;
-  updates["teacherAccounts/"+uid]={...acc,uid,name:item.name||acc.name||email,email,role:"teacher",status:"approved",accountStatus:"active",plan:planKey,planName:license.planName,accessToken:token,approvedBy:auth.currentUser.uid,approvedAt:now,activatedAt:now,updatedAt:now};
-  updates["teacherRegistrationRequests/"+uid]={...reg,uid,name:item.name||reg.name||email,email,role:"teacher",status:"approved",accountStatus:"active",approvedBy:auth.currentUser.uid,approvedAt:now,updatedAt:now};
-  updates["paymentRequests/"+id]={...item,status:"approved",accountStatus:"active",accessGranted:true,accessToken:token,expiresAt:license.expiresAt,approvedBy:auth.currentUser.uid,approvedAt:now,activatedAt:now,reviewedAt:now};
+  await adminUpdate("paymentRequests/"+id,{status:"rejected",accountStatus:"rejected",accessGranted:false,adminNote:String(note).trim(),rejectedBy:auth.currentUser.uid,rejectedAt:now,reviewedAt:now});
+  return;
  }
- await db.ref().update(updates);
+ const plans={
+  trial:{name:"Teste experimental — 2 aulas",students:45,dailyClasses:3,simultaneous:1,duration:2,storage:"Temporário",trialSessionsLimit:2},
+  basic:{name:"Básico",students:10,dailyClasses:2,simultaneous:1,duration:2,storage:"10 GB temporários"},
+  professional:{name:"Profissional",students:45,dailyClasses:3,simultaneous:2,duration:4,storage:"50 GB temporários"},
+  school:{name:"Escola",students:50,dailyClasses:3,simultaneous:5,duration:6,storage:"100 GB temporários"}
+ };
+ const planKey=String(item.plan||"").toLowerCase(),plan=plans[planKey];
+ if(!plan)throw new Error("Plano não reconhecido no pedido: "+String(item.plan||"(vazio)")+".");
+ const months=planKey==="trial"?0:(item.period==="annual"||Number(item.months)>=12?12:Math.max(1,Number(item.months)||1));
+ const expiry=new Date(now);if(months)expiry.setMonth(expiry.getMonth()+months);
+ const token=String(item.accessToken||item.existingAccessToken||"").trim()||newAccessToken();
+ const license={status:"active",trialExhausted:false,boardAccess:true,plan:planKey,planName:String(item.planName||plan.name),...plan,...(planKey==="trial"?{trialSessionsLimit:Number(item.trialSessionsLimit)||2,trialSessionsUsed:0,trialCompletedSessions:{}}:{}),startedAt:now,expiresAt:months?expiry.toISOString():null,teacherName:String(item.name||email),teacherPhone:String(item.phone||""),requestId:id,accessToken:token,teacherEmail:email,teacherUid:uid};
+ const acc=(await db.ref("teacherAccounts/"+uid).once("value")).val()||{};
+ const reg=(await db.ref("teacherRegistrationRequests/"+uid).once("value")).val()||{};
+ await adminWrite("licenses/"+token,license);
+ await adminWrite("teacherAccounts/"+uid,{...acc,uid,name:item.name||acc.name||email,email,role:"teacher",status:"approved",accountStatus:"active",plan:planKey,planName:license.planName,accessToken:token,approvedBy:auth.currentUser.uid,approvedAt:now,activatedAt:now,updatedAt:now});
+ await adminWrite("teacherRegistrationRequests/"+uid,{...reg,uid,name:item.name||reg.name||email,email,role:"teacher",status:"approved",accountStatus:"active",approvedBy:auth.currentUser.uid,approvedAt:now,updatedAt:now});
+ await adminUpdate("paymentRequests/"+id,{status:"approved",accountStatus:"active",accessGranted:true,accessToken:token,expiresAt:license.expiresAt,approvedBy:auth.currentUser.uid,approvedAt:now,activatedAt:now,reviewedAt:now});
 }
 
 </script></body></html>
