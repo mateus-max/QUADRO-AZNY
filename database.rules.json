@@ -22,17 +22,17 @@
         ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || data.child('teacherUid').val() == auth.uid || data.child('teacherEmail').val() == auth.token.email)",
         ".write": "auth != null && auth.token.email == 'suporte@domingas.com'",
         "trialCompletedSessions": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.hasChildren()",
-          ".validate": "newData.hasChildren()"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.hasChildren() && newData.numChildren() <= data.parent().child('trialSessionsLimit').val() && data.parent().child('trialSessionsUsed').val() < data.parent().child('trialSessionsLimit').val()",
+          ".validate": "newData.hasChildren() && newData.numChildren() <= data.parent().child('trialSessionsLimit').val()"
         },
         "trialSessionsUsed": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.isNumber() && newData.val() <= 2 && ((!data.exists() && newData.val() == 1) || (data.isNumber() && newData.val() == data.val() + 1))"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.isNumber() && newData.val() <= data.parent().child('trialSessionsLimit').val() && ((!data.exists() && newData.val() == 1) || (data.isNumber() && newData.val() == data.val() + 1))"
         },
         "trialExhausted": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == true && data.parent().child('trialSessionsUsed').val() >= 2"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == true && data.parent().child('trialSessionsUsed').val() >= data.parent().child('trialSessionsLimit').val()"
         },
         "boardAccess": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == false && data.parent().child('trialSessionsUsed').val() >= 2"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == false && data.parent().child('trialSessionsUsed').val() >= data.parent().child('trialSessionsLimit').val()"
         }
       }
     },
