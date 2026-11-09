@@ -32,7 +32,8 @@ function renderAccounts(){
    const action=button.dataset.review,uid=button.dataset.uid;
    const labels={approve:"aprovar esta conta",reject:"rejeitar esta solicitação",delete:"eliminar definitivamente esta conta e os seus pedidos"};
    if(!confirm("Confirma que pretende "+labels[action]+"?"))return;
-   const note=action==="reject"?(prompt("Motivo da rejeição (opcional):")||""):"";
+   const note=action==="reject"?(prompt("Escreva o motivo da rejeição. Este motivo será apresentado ao professor quando tentar iniciar sessão:")||"").trim():"";
+   if(action==="reject"&&!note){alert("É obrigatório informar o motivo da rejeição.");return;}
    const original=button.textContent;
    button.disabled=true;button.textContent=action==="approve"?"A aprovar…":action==="reject"?"A rejeitar…":"A eliminar…";
    try{
@@ -63,7 +64,8 @@ async function decide(id,status,button){
  const current=allRequests[id];
  if(!current||current.status!=="pending"){alert("Este pedido já não está pendente. Actualize a lista.");return;}
  const action=status==="approved"?"approve":"reject";
- const note=action==="reject"?(prompt("Motivo da rejeição (opcional):")||""):"";
+ const note=action==="reject"?(prompt("Escreva o motivo da rejeição. O professor verá este motivo ao iniciar sessão:")||"").trim():"";
+ if(action==="reject"&&!note){alert("É obrigatório informar o motivo da rejeição.");return;}
  if(!confirm(action==="approve"?"Confirmar aprovação? A conta será desbloqueada e a licença activada.":"Confirmar rejeição deste pedido?"))return;
  button.disabled=true;const original=button.textContent;button.textContent=action==="approve"?"A aprovar…":"A rejeitar…";
  try{
