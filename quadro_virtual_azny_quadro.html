@@ -2775,8 +2775,6 @@ async function startClass(){
  if(startButton)startButton.disabled=true;
  try{
   aznyTrialAutoEnding=false;
-  /* Reserva uma das duas aulas no início. A reserva é idempotente e não é devolvida ao actualizar a página. */
-  await aznyCountCompletedTrialClass(newRunId,false);
   await clearPreviousClassDataForNewRun();
   await resetBoardForClassLifecycle();
   /* As regras Firebase autorizam os campos da sessão individualmente.
@@ -2789,6 +2787,9 @@ async function startClass(){
    sessionRef.child("teacherPresence").update({online:true,network:navigator.onLine?"online":"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})
   ]);
   await aznyRoomRef().child("activeSessionId").set(classSessionId);
+  /* Reserva a aula de teste imediatamente antes de a publicar como activa.
+     A reserva é idempotente e não é devolvida ao actualizar a página. */
+  await aznyCountCompletedTrialClass(newRunId,false);
   /* Publicar "active" por último: os alunos só recebem o sinal depois de todos os dados prontos. */
   await sessionRef.child("status").set("active");
   try{await sessionRef.child("teacherPresence").onDisconnect().update({online:false,network:"disconnected",updatedAt:firebase.database.ServerValue.TIMESTAMP})}catch(disconnectError){console.warn("AZNY teacher onDisconnect:",disconnectError)}
