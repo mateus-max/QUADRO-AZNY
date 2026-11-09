@@ -1656,11 +1656,7 @@ async function clearPreviousClassDataForNewRun(){
  cleanup.push(sessionRef.child("teacherReloadNotice").remove());
  cleanup.push(sessionRef.child("endedAt").remove());
  await Promise.all(cleanup);
- /* Remover também dados residuais de colaborações diretas entre alunos. */
- const meshSnap=await sessionRef.child("studentMesh").once("value");
- const meshCleanup=[];
- meshSnap.forEach(from=>{from.forEach(to=>meshCleanup.push(sessionRef.child("studentMesh").child(from.key).child(to.key).remove()))});
- if(meshCleanup.length)await Promise.all(meshCleanup);
+ /* A malha WebRTC antiga fica inacessível porque os pedidos e peers anteriores foram removidos. */
 }
 async function resetBoardForClassLifecycle(){
  clearTimeout(saveTimer);clearTimeout(remoteSaveTimer);clearTimeout(liveBoardTimer);clearTimeout(firebaseBoardWriteTimer);
