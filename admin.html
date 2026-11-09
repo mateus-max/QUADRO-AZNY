@@ -57,9 +57,24 @@ function renderAccounts(){
   };
  });
 }
-function render(){const items=Object.values(allRequests).filter(Boolean).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));if(!items.length){$("message").textContent="Não existem pedidos de pagamento."; $("requests").innerHTML="";return}$("message").textContent=items.length+" pedido(s) — actualização em tempo real pelo Realtime Database.";$("requests").innerHTML=items.map(x=>'<article class="request"><div><h3>'+esc(x.name)+' <span class="pill">'+esc(x.status)+'</span></h3><p><b>E-mail:</b> '+esc(x.email)+'<br><b>Plano:</b> '+esc(x.planName||x.plan)+'<br><b>Valor:</b> '+money(x.amount)+'<br><b>Método:</b> '+esc(x.method||"")+'<br><b>Data:</b> '+esc(x.createdAt)+'</p><p>'+esc(x.adminNote||"")+'</p><div class="row">'+(x.plan==="trial"||!x.proof?"":'<button class="secondary" data-proof="'+esc(x.id)+'">Ver comprovativo</button>')+''+(x.status==="pending"?'<button data-id="'+esc(x.id)+'" data-status="approved">Aprovar</button><button class="danger" data-id="'+esc(x.id)+'" data-status="rejected">Rejeitar</button>':"")+'</div></div><div id="proof-'+esc(x.id)+'" class="proof-panel hidden" aria-live="polite"></div></article>').join("");$("requests").querySelectorAll("button[data-id]").forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.status,b));$("requests").querySelectorAll("button[data-proof]").forEach(b=>b.onclick=()=>viewProof(b.dataset.proof));}
+function render(){const items=Object.values(allRequests).filter(Boolean).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));if(!items.length){$("message").textContent="Não existem pedidos de pagamento."; $("requests").innerHTML="";return}$("message").textContent=items.length+" pedido(s) — actualização em tempo real pelo Realtime Database.";$("requests").innerHTML=items.map(x=>'<article class="request"><div><h3>'+esc(x.name)+' <span class="pill">'+esc(x.status)+'</span></h3><p><b>E-mail:</b> '+esc(x.email)+'<br><b>Plano:</b> '+esc(x.planName||x.plan)+'<br><b>Valor:</b> '+money(x.amount)+'<br><b>Método:</b> '+esc(x.method||"")+'<br><b>Data:</b> '+esc(x.createdAt)+'</p><p>'+esc(x.adminNote||"")+'</p><div class="row">'+(x.plan==="trial"||!x.proof?"":'<button class="secondary" data-proof="'+esc(x.id)+'">Ver comprovativo</button>')+''+(x.status==="pending"?'<button data-id="'+esc(x.id)+'" data-status="approved">Aprovar</button><button class="danger" data-id="'+esc(x.id)+'" data-status="rejected">Rejeitar</button>':"")+(x.uid?'<button class="danger" data-delete-account="'+esc(x.uid)+'">Eliminar conta</button>':"")+'</div></div><div id="proof-'+esc(x.id)+'" class="proof-panel hidden" aria-live="polite"></div></article>').join("");$("requests").querySelectorAll("button[data-id]").forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.status,b));$("requests").querySelectorAll("button[data-proof]").forEach(b=>b.onclick=()=>viewProof(b.dataset.proof));$("requests").querySelectorAll("button[data-delete-account]").forEach(b=>b.onclick=()=>deleteRequestAccount(b.dataset.deleteAccount,b));}
 function viewProof(id){const x=allRequests[id];const box=$("proof-"+id);if(!box)return;const proof=String(x?.proof||"");box.classList.remove("hidden");if(!/^data:(image\/(png|jpeg|webp)|application\/pdf);base64,/.test(proof)){box.innerHTML='<div class="row" style="justify-content:space-between"><b>Comprovativo</b><button type="button" class="secondary" data-close-proof>Fechar</button></div><p class="error">Comprovativo não encontrado ou formato inválido.</p>';}else{const media=proof.startsWith("data:application/pdf")?'<iframe class="proof" title="Comprovativo PDF" src="'+proof+'"></iframe>':'<img class="proof" style="object-fit:contain" alt="Comprovativo de pagamento" src="'+proof+'">';box.innerHTML='<div class="row" style="justify-content:space-between;margin-bottom:10px"><b>Comprovativo de pagamento</b><button type="button" class="secondary" data-close-proof>Fechar</button></div>'+media;}box.querySelector("[data-close-proof]").onclick=()=>{box.innerHTML="";box.classList.add("hidden")};}
 
+async function deleteRequestAccount(uid,button){
+ if(!uid){alert("Este pedido não está associado a uma conta válida.");return;}
+ if(!confirm("Eliminar definitivamente esta conta, os pedidos associados e revogar as respectivas licenças? Esta operação não pode ser desfeita."))return;
+ const original=button.textContent;button.disabled=true;button.textContent="A eliminar…";
+ try{
+  const result=await functions.httpsCallable("reviewTeacherRegistration")({uid,action:"delete",note:""});
+  if(!result?.data?.ok)throw new Error("O servidor não confirmou a eliminação.");
+  load();loadAccounts();
+  alert("Conta eliminada e acessos revogados com sucesso.");
+ }catch(error){
+  console.error("Eliminar conta a partir do pedido:",error);
+  alert("Não foi possível eliminar a conta. Código: "+(error.code||"sem código")+" — "+(error.message||"erro desconhecido"));
+  button.disabled=false;button.textContent=original;
+ }
+}
 async function decide(id,status,button){
  const current=allRequests[id];
  if(!current||current.status!=="pending"){alert("Este pedido já não está pendente. Actualize a lista.");return;}
