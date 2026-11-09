@@ -2727,7 +2727,7 @@ async function startCamera(){
   syncTeacherMediaToPeers();updateTeacherMediaStatus();toast("Câmera do professor ligada e disponível em tempo real")
  }catch(e){
   if(teacherStream){teacherStream.getTracks().forEach(t=>{try{t.stop()}catch(_){}});teacherStream=null}
-  const v=document.getElementById("teacherVideo");if(v){v.srcObject=null;v.hidden=true}
+  const v=document.getElementById("teacherVideo");if(v){v.pause?.();v.srcObject=null;v.hidden=true;v.style.display="none"}const off=document.querySelector("#teacherCamera .cam-off");if(off)off.style.display="flex";
   if(btn)btn.disabled=false;
   updateTeacherMediaStatus();
   const msg=e.name==="NotAllowedError"?"Permissão da câmera recusada. Autorize a câmera nas configurações do navegador.":e.name==="NotReadableError"||e.name==="AbortError"?"A câmera está ocupada ou o controlador não respondeu. Feche outros programas que usam a câmera e tente novamente.":"Não foi possível ligar a câmera: "+(e.name||e.message);
