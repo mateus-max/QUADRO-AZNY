@@ -111,6 +111,10 @@ exports.reviewTeacherPayment = onCall({region:REGION}, async request => {
       const planKey = String(item.plan || "");
       const plan = plans[planKey];
       if (!plan) throw new HttpsError("failed-precondition","Plano não reconhecido: " + planKey);
+      const paidMonths = planKey === "trial" ? 0 : (item.period === "annual" || Number(item.months) >= 12 ? 12 : Math.max(1, Number(item.months) || 1));
+      const expiryDate = new Date(now);
+      if (paidMonths) expiryDate.setMonth(expiryDate.getMonth() + paidMonths);
+      const expiresAt = paidMonths ? expiryDate.toISOString() : null;
       const user = await adminAuth.getUser(uid);
       if (user.email?.toLowerCase() !== email) throw new HttpsError("failed-precondition","O e-mail do pedido não corresponde à conta registada.");
       await adminAuth.updateUser(uid,{disabled:false});
@@ -119,13 +123,13 @@ exports.reviewTeacherPayment = onCall({region:REGION}, async request => {
         status:"active",trialExhausted:false,boardAccess:true,plan:planKey,
         planName:String(item.planName || plan.name),...plan,
         ...(planKey==="trial"?{trialSessionsLimit:2,trialSessionsUsed:0,trialCompletedSessions:{}}:{}),
-        startedAt:now,expiresAt:null,teacherName:String(item.name || email),
+        startedAt:now,expiresAt,teacherName:String(item.name || email),
         teacherPhone:String(item.phone || ""),requestId:id,accessToken:token,teacherEmail:email,teacherUid:uid
       };
       updates["licenses/"+token]=license;
       updates["teacherAccounts/"+uid]={uid,name:String(item.name||email),email,role:"teacher",status:"approved",accountStatus:"active",plan:planKey,planName:license.planName,accessToken:token,approvedBy:adminUid,approvedAt:now,activatedAt:ServerValue.TIMESTAMP,updatedAt:ServerValue.TIMESTAMP};
       updates["teacherRegistrationRequests/"+uid]={uid,name:String(item.name||email),email,role:"teacher",status:"approved",accountStatus:"active",approvedBy:adminUid,approvedAt:now,updatedAt:ServerValue.TIMESTAMP};
-      updates["paymentRequests/"+id]={...item,status:"approved",accountStatus:"active",accessGranted:true,accessToken:token,approvedBy:adminUid,approvedAt:now,activatedAt:ServerValue.TIMESTAMP,reviewedAt:ServerValue.TIMESTAMP};
+      updates["paymentRequests/"+id]={...item,status:"approved",accountStatus:"active",accessGranted:true,accessToken:token,expiresAt,approvedBy:adminUid,approvedAt:now,activatedAt:ServerValue.TIMESTAMP,reviewedAt:ServerValue.TIMESTAMP};
     } else {
       updates["paymentRequests/"+id]={...item,status:"rejected",accountStatus:"rejected",accessGranted:false,adminNote:note,rejectedBy:adminUid,rejectedAt:now,reviewedAt:ServerValue.TIMESTAMP};
       const token=String(item.accessToken||item.existingAccessToken||"").trim();
