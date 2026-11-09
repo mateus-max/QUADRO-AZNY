@@ -2775,6 +2775,8 @@ async function startClass(){
  if(startButton)startButton.disabled=true;
  try{
   aznyTrialAutoEnding=false;
+  /* Reserva uma das duas aulas no início. A reserva é idempotente e não é devolvida ao actualizar a página. */
+  await aznyCountCompletedTrialClass(newRunId,false);
   await clearPreviousClassDataForNewRun();
   await resetBoardForClassLifecycle();
   /* As regras Firebase autorizam os campos da sessão individualmente.
@@ -2831,21 +2833,28 @@ async function restoreActiveTeacherSession(){
   toast("Aula activa restaurada após actualizar a página");
  }catch(e){console.warn("AZNY session restore:",e);showNetworkNotice("Não foi possível recuperar o estado da aula. Verifique a autorização Firebase.","bad")}
 }
-async function aznyCountCompletedTrialClass(){
- if(isStudent||!AZNY_ACCESS_TOKEN)return {trial:false,exhausted:false,used:0};
+async function aznyCountCompletedTrialClass(runOverride,finalize=false){
+ if(isStudent||!AZNY_ACCESS_TOKEN)return {trial:false,exhausted:false,limitReached:false,used:0};
  const user=AZNY_AUTH?.currentUser;if(!user||user.isAnonymous)throw new Error("Sessão do professor inválida.");
  const licenseRef=AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN),licenseSnap=await licenseRef.once("value"),license=licenseSnap.val();
- if(!license||license.plan!=="trial")return {trial:false,exhausted:false,used:0};
- const run=classRunId||("RUN-END-"+Date.now()+"-"+Math.random().toString(36).slice(2,9));
+ if(!license||license.plan!=="trial")return {trial:false,exhausted:false,limitReached:false,used:0};
+ const limit=Math.max(1,Number(license.trialSessionsLimit||2));
+ const run=runOverride||classRunId||("RUN-END-"+Date.now()+"-"+Math.random().toString(36).slice(2,9));
  const usageRef=licenseRef.child("trialCompletedSessions");
- const result=await usageRef.transaction(current=>{const sessions=current||{};if(sessions[run])return sessions;if(Object.keys(sessions).length>=Number(license.trialSessionsLimit||2))return;return {...sessions,[run]:firebase.database.ServerValue.TIMESTAMP}});
- if(!result.committed)throw new Error("Limite de aulas de teste atingido ou registo recusado.");
+ const result=await usageRef.transaction(current=>{const sessions=current||{};if(sessions[run])return sessions;if(Object.keys(sessions).length>=limit)return;return {...sessions,[run]:firebase.database.ServerValue.TIMESTAMP}});
+ if(!result.committed){
+  const usedNow=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length);
+  if(usedNow>=limit)await Promise.all([licenseRef.child("trialExhausted").set(true),licenseRef.child("boardAccess").set(false)]).catch(e=>console.warn("AZNY trial lock:",e));
+  throw new Error("Limite de "+limit+" aulas experimentais atingido. Actualize o plano para continuar.");
+ }
  const used=Object.keys(result.snapshot.val()||{}).length;
- await licenseRef.child("trialSessionsUsed").set(used);
- if(used>=Number(license.trialSessionsLimit||2)){await licenseRef.child("trialExhausted").set(true);await licenseRef.child("boardAccess").set(false);}
- return {trial:true,exhausted:used>=Number(license.trialSessionsLimit||2),used};
+ const previousUsed=Number(license.trialSessionsUsed||0);
+ if(used>previousUsed)await licenseRef.child("trialSessionsUsed").set(used);
+ const exhausted=used>=limit;
+ if(finalize&&exhausted){await licenseRef.child("trialExhausted").set(true);await licenseRef.child("boardAccess").set(false);}
+ return {trial:true,exhausted:finalize&&exhausted,limitReached:exhausted,used};
 }
-async function endClass(){if(!classStarted)return;let trialResult={trial:false,exhausted:false,used:0};try{trialResult=await aznyCountCompletedTrialClass()}catch(e){console.error("Contagem da aula de teste:",e);const isTrial=aznyTeacherPlanKey==="trial";if(isTrial){toast("Não foi possível registar a aula de teste por falta de ligação. Restabeleça a internet e tente encerrar novamente.");return}}classStarted=false;await resetBoardForClassLifecycle();aznyObservedClassStatus="ended";clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;document.getElementById("classTimer").textContent="00:00:00";document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;try{stopCamera()}catch(e){console.warn("AZNY camera cleanup:",e)}try{stopMic()}catch(e){console.warn("AZNY microphone cleanup:",e)}try{if(AZNY_DB&&classSessionId){const ref=aznySessionRef();await Promise.all([ref.child("status").set("ended"),ref.child("endedAt").set(firebase.database.ServerValue.TIMESTAMP),ref.child("teacherPresence").update({online:false,network:"offline",updatedAt:firebase.database.ServerValue.TIMESTAMP})])}}catch(e){console.warn("AZNY class end status:",e);showNetworkNotice("O Firebase não confirmou o encerramento da aula: "+(e.message||e.code||"erro"),"bad")}try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){}clearTeacherStudentCameras();Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}removeStudentVideoCard(id)});window.aznyTeacherPeers={};roomChannel?.postMessage({type:"class-ended",session:classSessionId});if(isStudent)showClassEnded();toast("Aula encerrada. As câmeras dos alunos foram removidas.");if(trialResult.trial){if(trialResult.exhausted){aznyTeacherAccessValidated=false;setTimeout(()=>{alert("Concluiu as duas aulas experimentais do plano de teste. Para continuar a utilizar o quadro, atualize o seu plano.");location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN))},350)}else{toast("Aula de teste concluída: "+trialResult.used+"/2.")}}}
+async function endClass(){if(!classStarted)return;let trialResult={trial:false,exhausted:false,used:0};try{trialResult=await aznyCountCompletedTrialClass(classRunId,true)}catch(e){console.error("Contagem da aula de teste:",e);const isTrial=aznyTeacherPlanKey==="trial";if(isTrial){toast("Não foi possível registar a aula de teste por falta de ligação. Restabeleça a internet e tente encerrar novamente.");return}}classStarted=false;await resetBoardForClassLifecycle();aznyObservedClassStatus="ended";clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;document.getElementById("classTimer").textContent="00:00:00";document.getElementById("startClassBtn").disabled=false;document.getElementById("endClassBtn").disabled=true;try{stopCamera()}catch(e){console.warn("AZNY camera cleanup:",e)}try{stopMic()}catch(e){console.warn("AZNY microphone cleanup:",e)}try{if(AZNY_DB&&classSessionId){const ref=aznySessionRef();await Promise.all([ref.child("status").set("ended"),ref.child("endedAt").set(firebase.database.ServerValue.TIMESTAMP),ref.child("teacherPresence").update({online:false,network:"offline",updatedAt:firebase.database.ServerValue.TIMESTAMP})])}}catch(e){console.warn("AZNY class end status:",e);showNetworkNotice("O Firebase não confirmou o encerramento da aula: "+(e.message||e.code||"erro"),"bad")}try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){}clearTeacherStudentCameras();Object.entries(window.aznyTeacherPeers||{}).forEach(([id,pc])=>{try{pc._aznyBoardChannel?.close()}catch(_){}try{pc.close()}catch(_){}removeStudentVideoCard(id)});window.aznyTeacherPeers={};roomChannel?.postMessage({type:"class-ended",session:classSessionId});if(isStudent)showClassEnded();toast("Aula encerrada. As câmeras dos alunos foram removidas.");if(trialResult.trial){if(trialResult.exhausted){aznyTeacherAccessValidated=false;setTimeout(()=>{alert("Concluiu as duas aulas experimentais do plano de teste. Para continuar a utilizar o quadro, atualize o seu plano.");location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN))},350)}else{toast("Aula de teste concluída: "+trialResult.used+"/2.")}}}
 
 async function aznyToggleScreenShare(forStudent){
  const button=document.getElementById(forStudent?"studentScreenShareBtn":"teacherScreenShareBtn");
