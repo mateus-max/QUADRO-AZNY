@@ -225,7 +225,7 @@ function renderPlanTime(license){
  if(license.plan==="trial"){
   const used=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length);
   badge.className="plan-time-badge warn";
-  badge.textContent="Teste · "+Math.max(0,2-used)+" aulas restantes";
+  const limit=Math.max(1,Number(license.trialSessionsLimit||2));badge.textContent="Teste · "+Math.max(0,limit-used)+" "+(limit-used===1?"aula restante":"aulas restantes");
   return;
  }
  if(!license.expiresAt){
@@ -259,7 +259,7 @@ function updateLicenseDisplay(license,accessToken){
  document.getElementById("planDescription").textContent=isTrial?"Válido para "+limit+" aulas gratuitas, com máximo de 15 minutos cada.":(license.planName||"A sua licença está activa.")+(license.expiresAt?" · Renovação em "+new Date(license.expiresAt).toLocaleDateString("pt-AO"):"");
  renderPlanTime(license);
  if(isTrial&&!exhausted){status.className="badge";status.textContent="Plano de teste — "+used+"/"+limit+" aulas concluídas";message.textContent="Tem "+(limit-used)+" aula(s) disponível(is)."}
- else if(exhausted){status.className="badge warn";status.textContent="Teste concluído — 2/2 aulas";message.textContent="O teste terminou. Atualize o plano para voltar a dar aulas."}
+ else if(exhausted){status.className="badge warn";status.textContent="Teste concluído — "+limit+"/"+limit+" aulas";message.textContent="O teste terminou. Atualize o plano para voltar a dar aulas."}
  else if(expired){status.className="badge warn";status.textContent="Plano expirado";message.textContent="Atualize o plano para voltar a utilizar o quadro."}
  else{status.className="badge";status.textContent="Acesso ativo";message.textContent="A sua licença foi confirmada no Firebase Realtime Database."}
  button.disabled=!!(exhausted||expired);
