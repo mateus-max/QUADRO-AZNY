@@ -120,11 +120,38 @@ button,a{font:inherit}
  .panel h2{font-size:18px}
 }
 @media(max-width:380px){.nav a{font-size:11px;padding:8px}.welcome-art{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Painel simples Remote Whiteboard; navegação e componentes funcionais mantidos */
+:root{--navy:#082b5c;--blue:#0868df;--ink:#183452;--muted:#718096;--line:#dce5ef;--bg:#f4f7fb}
+body{background:#f4f7fb}
+.sidebar{background:#082b5c;padding:20px 12px}
+.brand{font-size:17px;letter-spacing:0;padding:4px 8px 26px}
+.brand-mark{font-size:0;display:inline-flex;width:38px;height:38px;align-items:center;justify-content:center;flex:0 0 38px}
+.brand-mark img{width:38px;height:38px;object-fit:contain}
+.brand small{font-size:9px;letter-spacing:1.2px}
+.nav{gap:5px}.nav a{border-radius:8px;padding:11px 12px;font-size:14px}
+.nav a:hover,.nav a.active{background:#126ee0;box-shadow:none}
+.main{padding:22px 24px}
+.welcome{background:#fff;color:#183452;border:1px solid var(--line);border-radius:12px;box-shadow:none;padding:22px 24px}
+.welcome h1{color:#102e52}.welcome p{color:#60738b}.eyebrow{color:#47709c}
+.welcome-art{display:none}
+.stat,.stat:nth-child(2),.stat:nth-child(3),.stat:nth-child(4){background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:none}
+.stat strong{color:#12365e}.stat span{color:#60738b}
+.panel{border:1px solid var(--line);border-radius:11px;box-shadow:none;padding:19px}
+.board-panel{background:#fff}
+.btn{border-radius:8px;box-shadow:none}
+.plan-box{background:#eef5ff;color:#164578}
+.activity-empty{background:#f5f8fc;border:1px solid #e5ebf2;border-radius:10px}
+.mobile-topbar{background:#082b5c;box-shadow:none}
+.mobile-brand{font-size:15px}.mobile-brand .brand-mark{font-size:0;width:34px;height:34px}
+.mobile-brand .brand-mark img{width:34px;height:34px;object-fit:contain}
+@media(max-width:700px){.main{padding:14px 12px 24px}.welcome{padding:18px}.panel{padding:15px}.stats{gap:9px}}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-</head><body><div class="mobile-topbar"><div class="mobile-brand"><span class="brand-mark">📘</span><span>Quadro AZNY</span></div><button type="button" class="menu-toggle" id="mobileMenuToggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="teacherSidebar">☰</button></div><button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button><div class="app">
+</head><body><div class="mobile-topbar"><div class="mobile-brand"><span class="brand-mark"><img src="icons/remote-work-board.svg" alt=""></span><span>Remote Whiteboard</span></div><button type="button" class="menu-toggle" id="mobileMenuToggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="teacherSidebar">☰</button></div><button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button><div class="app">
 <aside class="sidebar" id="teacherSidebar" aria-label="Navegação do professor">
- <div class="brand"><span class="brand-mark">📘</span><span>Quadro AZNY<small>REMOTE WORK BOARD</small></span></div>
+ <div class="brand"><span class="brand-mark"><img src="icons/remote-work-board.svg" alt="Remote Whiteboard"></span><span>Remote Whiteboard<small>PLATAFORMA DE ENSINO</small></span></div>
  <nav class="nav" aria-label="Menu do professor">
   <a class="active" href="#inicio" data-view="inicio" aria-current="page"><span class="ico">⌂</span>Início</a>
   <a href="#quadro" data-view="quadro"><span class="ico">▣</span>Quadro Virtual</a>

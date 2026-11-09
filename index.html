@@ -208,6 +208,37 @@ body:after{right:-42vw;bottom:-55vw;width:95vw;height:95vw;border-color:#159fff3
 .actions{grid-template-columns:minmax(0,680px);justify-content:center;margin:32px auto 0}
 @media(max-width:850px){.actions{grid-template-columns:minmax(0,620px);margin:22px auto 0}}
 @media(max-width:560px){.actions{grid-template-columns:1fr;margin-top:20px}}
+
+/* Visual simples Remote Whiteboard — sem alterar links ou funcionalidades */
+body:before,body:after{display:none!important}
+body{background:#f4f7fb;color:#10213e}
+.page{width:min(1120px,calc(100% - 36px));padding:16px 0}
+.topbar{padding:0 0 14px;border-bottom:1px solid #dce5ef}
+.brand img{width:54px;height:54px;filter:none}
+.brand-divider{display:none}
+.brand-text{font-size:19px;letter-spacing:0;color:#092b5c}
+.brand-text span{font-size:12px;letter-spacing:.08em;color:#35628e;margin-top:3px}
+.top-tag{background:#fff;border:1px solid #dce5ef;color:#315273;box-shadow:none;font-size:11px}
+.hero{grid-template-columns:1fr 1fr;gap:24px;padding:42px 0 20px}
+.hero-heading{grid-column:1/-1;text-align:left;padding:0}
+.product-title{font-size:clamp(42px,6vw,64px);color:#092b5c;text-shadow:none;margin:8px 0}
+.eyebrow{background:#eaf2ff;border:1px solid #cbdcf2;color:#24558d;box-shadow:none}
+.hero-copy{padding:8px 0}
+.hero-tagline{font-size:clamp(26px,3vw,38px);color:#102b50}
+.lead{color:#52657d;font-size:16px}
+.hero-art:before{display:none}.laptop-scene{filter:none}
+.actions{margin:22px 0 0;max-width:440px}
+.btn{min-height:54px;border-radius:10px;box-shadow:none}
+.primary{background:#0868df;border:1px solid #0868df}
+.secondary{background:#fff;color:#17416e;border:1px solid #cbd8e7}
+.features{grid-template-columns:repeat(4,1fr);border-color:#dce5ef;margin-top:20px}
+.feature{color:#294665;border-color:#dce5ef;font-size:13px}
+.feature-icon{color:#0868df;filter:none}
+.footer{color:#60738b}.footer-brand{color:#12365e}
+.footer-sub,.footer-links a{color:#60738b}
+@media(max-width:700px){.hero{grid-template-columns:1fr;gap:10px;padding:28px 0 12px}.hero-heading{text-align:center}.hero-copy{text-align:center}.hero-tagline{margin:0 auto 12px}.actions{margin:18px auto 0}.features{margin-top:16px}}
+@media(max-width:560px){.page{width:calc(100% - 28px)}.brand img{width:46px;height:46px}.brand-text{font-size:16px}.top-tag{font-size:8px;padding:7px 9px}.product-title{font-size:43px}.hero-art{margin:0;width:100%}.features{gap:0}.feature{font-size:11px}}
+
 </style>
 </head>
 <body>
