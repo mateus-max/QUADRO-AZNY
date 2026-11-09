@@ -1920,7 +1920,7 @@ function aznyMergeCollaborativeBoardState(server,local){
   const a=oldPages[index]||{strokes:[],objects:[],title:incoming.title||"Nova aula"},b=newPages[index]||{strokes:[],objects:[],title:a.title||incoming.title||"Nova aula"};
   const objects=new Map();
   (a.objects||[]).forEach(o=>{if(o&&o.id&&!deletedObjects.has(aznyObjectKey(o)))objects.set(String(o.id),o)});
-  (b.objects||[]).forEach(o=>{if(!o||!o.id||deletedObjects.has(aznyObjectKey(o)))return;const id=String(o.id),old=objects.get(id);if(!old||localBoardEditing||selected?.dataset?.id===id||(Number(o.updatedAt)||0)>=(Number(old.updatedAt)||0))objects.set(id,o)});
+  (b.objects||[]).forEach(o=>{if(!o||!o.id||deletedObjects.has(aznyObjectKey(o)))return;const id=String(o.id),old=objects.get(id);if(!old||localBoardEditing||(Number(o.updatedAt)||0)>=(Number(old.updatedAt)||0))objects.set(id,o)});
   const strokes=new Map();
   (a.strokes||[]).forEach((st,i)=>{const id=String(st?.id||("legacy-"+index+"-"+i));if(!deletedStrokes.has(id))strokes.set(id,st)});
   (b.strokes||[]).forEach((st,i)=>{const id=String(st?.id||("legacy-"+index+"-"+i));if(!deletedStrokes.has(id))strokes.set(id,st)});
@@ -2498,6 +2498,7 @@ stage.addEventListener("pointerup",e=>{
 
 stage.addEventListener("pointermove",e=>{if(!drawing)return;if(e.cancelable)e.preventDefault();drawMove(e)},{passive:false});
 stage.addEventListener("pointerup",e=>{if(drawing){if(e.cancelable)e.preventDefault();drawUp()}},{passive:false});
+stage.addEventListener("pointerup",()=>{if(selected?.isConnected){selected.dataset.aznyUpdatedAt=String(Date.now());scheduleSave()}},{passive:true});
 stage.addEventListener("pointercancel",()=>{if(drawing)drawUp()});
 stage.addEventListener("lostpointercapture",()=>{if(drawing)drawUp()});
 addEventListener("mousemove",drawMove);addEventListener("mouseup",drawUp);
