@@ -288,7 +288,7 @@ function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;",
 document.querySelectorAll('input[name="plan"]').forEach(el=>el.addEventListener("change",()=>{updatePrice();updateCheckout()}));$("period").addEventListener("change",updatePrice);
 $("registerBtn").onclick=async()=>{
  const name=$("fullName").value.trim(),email=$("email").value.trim().toLowerCase(),password=$("password").value;
- if(name.length<3||name.length>120||!/^\\S+@\\S+\\.\\S+$/.test(email)||password.length<8||password.length>128){
+ if(name.length<3||name.length>120||!/^\S+@\S+\.\S+$/.test(email)||password.length<8||password.length>128){
   msg("accountMsg","Informe o nome completo, um e-mail válido e uma senha com pelo menos 8 caracteres.","error");return
  }
  if(auth.currentUser){msg("accountMsg","Termine a sessão actual antes de criar uma nova conta.","error");return}
