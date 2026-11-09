@@ -26,13 +26,13 @@
           ".validate": "newData.hasChildren()"
         },
         "trialSessionsUsed": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.isNumber() && newData.val() >= (data.val() || 0) && newData.val() <= (data.parent().child('trialSessionsLimit').val() || 2)"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.parent().child('trialSessionsLimit').exists() ? data.parent().child('trialSessionsLimit').val() : 2)"
         },
         "trialExhausted": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == true && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').val() || 2)"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == true && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').exists() ? data.parent().child('trialSessionsLimit').val() : 2)"
         },
         "boardAccess": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == false && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').val() || 2)"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == false && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').exists() ? data.parent().child('trialSessionsLimit').val() : 2)"
         }
       }
     },
