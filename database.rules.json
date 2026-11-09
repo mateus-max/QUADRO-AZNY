@@ -193,6 +193,41 @@
         ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (!data.exists() && auth.uid == $uid && newData.child('uid').val() == auth.uid && newData.child('accountStatus').val() == 'pending'))",
         ".validate": "auth != null && (auth.token.email == 'suporte@domingas.com' || (newData.hasChildren(['uid','name','email','role','accountStatus']) && newData.child('uid').val() == auth.uid && newData.child('email').val() == auth.token.email && newData.child('role').val() == 'teacher' && newData.child('accountStatus').val() == 'pending'))"
       }
+    },
+    "teacherProfiles": {
+      ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
+      "$uid": {
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)"
+      }
+    },
+    "teacherCourseSubmissions": {
+      ".read": "auth != null && auth.token.email == 'suporte@domingas.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
+        ".indexOn": [
+          "status",
+          "createdAt"
+        ]
+      }
+    },
+    "publicTeacherProfiles": {
+      ".read": true,
+      "$uid": {
+        ".write": "auth != null && auth.token.email == 'suporte@domingas.com'"
+      }
+    },
+    "publicTeacherCourses": {
+      ".read": true,
+      ".indexOn": [
+        "category",
+        "province",
+        "teacherUid",
+        "status"
+      ],
+      "$courseId": {
+        ".write": "auth != null && auth.token.email == 'suporte@domingas.com'"
+      }
     }
   }
 }
