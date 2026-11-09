@@ -1636,6 +1636,32 @@ function redo(){if(!redoStack.length)return;undoStack.push(snapshot());restore(r
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,250);if(!remoteBoardApplying){clearTimeout(remoteSaveTimer);remoteSaveTimer=setTimeout(publishLiveBoardState,isStudent?35:8)}}
 function save(){try{pageStates[currentPage-1]=snapshot();localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage,pages:pageStates}));document.getElementById("storageState").textContent="● Guardado"}catch(e){toast(document.documentElement.lang==="en"?"Local Storage limit reached":"Limite do Local Storage atingido")}}
 /* Each teacher has a separate room/storage namespace; every new class starts with an empty board. */
+async function clearPreviousClassDataForNewRun(){
+ if(!AZNY_DB||!classSessionId)throw new Error("Firebase ou sessão da aula indisponível para iniciar uma sala limpa.");
+ const sessionRef=aznySessionRef(),roomRef=aznyRoomRef();
+ /* Bloquear a sessão anterior antes de limpar os dados partilhados. */
+ await sessionRef.child("status").set("waiting");
+ const requestsSnap=await sessionRef.child("joinRequests").once("value");
+ const cleanup=[];
+ requestsSnap.forEach(item=>{
+  const id=item.key;
+  cleanup.push(sessionRef.child("peers").child(id).remove());
+  cleanup.push(sessionRef.child("joinRequests").child(id).remove());
+ });
+ cleanup.push(roomRef.child("sharedBrowser").remove());
+ cleanup.push(roomRef.child("pianoEvent").remove());
+ cleanup.push(roomRef.child("spreadsheet").remove());
+ cleanup.push(roomRef.child("webDocument").remove());
+ cleanup.push(sessionRef.child("teacherPresence").set({online:false,network:"offline"}));
+ cleanup.push(sessionRef.child("teacherReloadNotice").remove());
+ cleanup.push(sessionRef.child("endedAt").remove());
+ await Promise.all(cleanup);
+ /* Remover também dados residuais de colaborações diretas entre alunos. */
+ const meshSnap=await sessionRef.child("studentMesh").once("value");
+ const meshCleanup=[];
+ meshSnap.forEach(from=>{from.forEach(to=>meshCleanup.push(sessionRef.child("studentMesh").child(from.key).child(to.key).remove()))});
+ if(meshCleanup.length)await Promise.all(meshCleanup);
+}
 async function resetBoardForClassLifecycle(){
  clearTimeout(saveTimer);clearTimeout(remoteSaveTimer);clearTimeout(liveBoardTimer);clearTimeout(firebaseBoardWriteTimer);
  remoteBoardApplying=true;
@@ -2733,6 +2759,7 @@ async function startClass(){
  if(startButton)startButton.disabled=true;
  try{
   aznyTrialAutoEnding=false;
+  await clearPreviousClassDataForNewRun();
   await resetBoardForClassLifecycle();
   /* As regras Firebase autorizam os campos da sessão individualmente.
      Não escrever/ler o nó pai sessions/{session}, que está deliberadamente fechado. */
