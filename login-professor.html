@@ -279,7 +279,7 @@ body:has(#choicePanel:not(.hidden)) .form-side,body:has(#loginPanel:not(.hidden)
 <div class="notice hidden" id="accountMsg" role="status" aria-live="polite"></div>
 </section>
 <section class="card hidden" id="planStep">
-<h2>2. Escolha o seu plano</h2><p class="sub">Selecione o plano que pretende contratar e avance para o checkout.</p>
+<h2>2. Escolha o seu plano</h2><p class="sub">Selecione um plano. Para o teste gratuito, envie uma solicitação à direcção; para os planos pagos, avance para o checkout.</p>
 <div class="plan-grid">
 <label class="plan" id="trialPlanCard"><input type="radio" name="plan" value="trial" checked><span class="recommended">GRÁTIS</span><h3>Teste experimental</h3><div class="price">Grátis</div><p><b>2 aulas experimentais · 15 minutos cada</b><br>Teste gratuitamente o quadro virtual. Cada aula termina automaticamente ao fim de 15 minutos.</p></label>
 <label class="plan"><input type="radio" name="plan" value="basic"><h3>Básico</h3><div class="price" data-monthly="10 000" data-annual="60 000">10 000 <small>Kz/mês</small></div><p>Até 10 alunos<br>2 aulas por dia<br>1 aula simultânea</p></label>
@@ -390,7 +390,7 @@ $("registerBtn").onclick=async()=>{
   $("registerPanel").classList.add("hidden");$("loginPanel").classList.add("hidden");$("signedInPanel").classList.remove("hidden");
   $("continueAccountBtn").disabled=false;$("continueAccountBtn").textContent="Continuar para escolher o plano →";
   $("switchAccountBtn").classList.remove("hidden");
-  $("signedInSummary").textContent="Conta criada com sucesso. Agora escolha o seu plano, avance para o pagamento e envie o comprovativo para análise da direcção.";
+  $("signedInSummary").textContent="Conta criada com sucesso. Agora escolha o seu plano. Se optar pelo teste gratuito, envie a solicitação à direcção para aprovação; os planos pagos seguem para checkout.";
   $("accountMsg").classList.add("hidden");$("historyCard").classList.add("hidden");
   $("continueAccountBtn").onclick=()=>showStep(2);
   attachRequests(createdUser);
