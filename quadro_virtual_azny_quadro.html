@@ -1340,7 +1340,7 @@ let classSessionId=isStudent?(AZNY_URL_PARAMS.get("sess")||""):"ROOM-"+String(ro
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 let roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
-const AZNY_FIREBASE_CONFIG={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remot-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};const AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";
+const AZNY_FIREBASE_CONFIG={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remote-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};let AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";try{AZNY_ACCESS_TOKEN=AZNY_ACCESS_TOKEN||sessionStorage.getItem("azny_access_token")||""}catch(_){}
 if(!isStudent&&!AZNY_ACCESS_TOKEN&&!AZNY_ISOLATED_MODE){location.replace("index.html?acesso=necessario");throw new Error("Acesso de professor não autorizado sem sessão.");}
 
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
@@ -1348,7 +1348,42 @@ const aznyRoomKey=()=>String(roomId).replace(/[.#$\[\]\/]/g,"_");
 const aznyRoomRef=()=>AZNY_DB?AZNY_DB.ref("aznyRooms/"+aznyRoomKey()):null;
 /* Uma sessão permanente por sala: o link antigo continua válido entre aulas. */
 if(!isStudent&&!classSessionId)classSessionId="ROOM-"+aznyRoomKey();
-async function initAZNYRealtime(){for(let attempt=0;attempt<12;attempt++){try{if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();if(AZNY_AUTH.currentUser){aznyUid=AZNY_AUTH.currentUser.uid;return true}try{const cred=await AZNY_AUTH.signInAnonymously();aznyUid=cred.user?.uid||"";if(aznyUid)return true}catch(authError){console.warn("AZNY Authentication anónima indisponível; acesso bloqueado.",authError)}}catch(e){console.warn("AZNY ligação:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid=""}await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)))}return false}
+async function initAZNYRealtime(){
+ for(let attempt=0;attempt<12;attempt++){
+  try{
+   if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}
+   if(!firebase.apps.length)firebase.initializeApp(AZNY_FIREBASE_CONFIG);
+   AZNY_DB=firebase.database();AZNY_AUTH=firebase.auth();
+   /* Esperar a restauração da sessão persistida antes de tentar login anónimo.
+      Caso contrário, o login anónimo pode substituir a sessão do professor. */
+   let current=AZNY_AUTH.currentUser;
+   if(!current){
+    current=await new Promise(resolve=>{
+     let settled=false,unsubscribe=null;
+     const finish=user=>{if(settled)return;settled=true;if(unsubscribe)unsubscribe();clearTimeout(timer);resolve(user||null)};
+     const timer=setTimeout(()=>finish(AZNY_AUTH.currentUser||null),8000);
+     unsubscribe=AZNY_AUTH.onAuthStateChanged(user=>finish(user||null),()=>finish(null));
+    });
+   }
+   if(current){aznyUid=current.uid;return true}
+   /* Só os alunos/participantes podem usar autenticação anónima.
+      A conta do professor nunca deve ser substituída por uma sessão anónima. */
+   if(!isStudent&&!AZNY_ISOLATED_MODE){
+    console.warn("AZNY: sessão do professor ainda não está autenticada.");
+    return false;
+   }
+   try{
+    const cred=await AZNY_AUTH.signInAnonymously();
+    aznyUid=cred.user?.uid||"";
+    if(aznyUid)return true;
+   }catch(authError){console.warn("AZNY Authentication anónima indisponível.",authError)}
+  }catch(e){
+   console.warn("AZNY ligação:",e);AZNY_DB=null;AZNY_AUTH=null;aznyUid="";
+  }
+  await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)));
+ }
+ return false;
+}
 let aznyRealtimeBound=false;
 async function provisionIsolatedGuestRoom(){
  if(!AZNY_ISOLATED_MODE||isStudent)return true;
@@ -1375,14 +1410,21 @@ async function provisionIsolatedGuestRoom(){
 async function validateTeacherLicenseAccess(){
  if(AZNY_ISOLATED_MODE){aznyTeacherPlanKey="isolado";aznyTeacherDisplayName="Professor";return true;}
  if(isStudent)return true;
- if(!AZNY_ACCESS_TOKEN){location.replace("index.html?acesso=necessario");return false}
+ if(!AZNY_ACCESS_TOKEN){
+  toast("O código de acesso da licença não foi encontrado. Volte ao painel do professor e entre no quadro por lá.");
+  return false;
+ }
  try{
   const user=AZNY_AUTH&&AZNY_AUTH.currentUser;
-  if(!user||user.isAnonymous||!user.email){location.replace("index.html?acesso=necessario");return false}
+  if(!user||user.isAnonymous||!user.email){
+   toast("A sessão do professor ainda não foi restaurada. Aguarde alguns segundos e tente novamente; não será retirado do quadro.");
+   return false;
+  }
   const snap=await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).once("value");
   const license=snap.val();
   if(!license||license.status!=="active"||String(license.teacherEmail||"").trim().toLowerCase()!==String(user.email).trim().toLowerCase()||(license.teacherUid&&license.teacherUid!==user.uid)){
-   location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));return false;
+   toast("A licença não corresponde à conta autenticada. Volte ao painel do professor para confirmar o acesso.");
+   return false;
   }
   const verify=firebase.functions("us-central1").httpsCallable("verifyTeacherAccess");
   const verified=await verify({accessToken:AZNY_ACCESS_TOKEN,roomId:roomId});
@@ -1392,7 +1434,7 @@ async function validateTeacherLicenseAccess(){
   return true;
  }catch(e){
   console.error("Validação da licença no Realtime Database:",e);
-  toast("Não foi possível validar a licença no Firebase Realtime Database: "+(e.message||"verifique as regras e a ligação."));
+  toast("Não foi possível validar a licença no Firebase Realtime Database: "+(e.message||"verifique a ligação e a autorização da sala."));
   return false;
  }
 }
