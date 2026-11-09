@@ -1335,13 +1335,17 @@ function aznyObjectKey(o){return String(o?.id||o?.dataset?.id||"")+"::"+String(o
 function aznyFilterDeletedPages(pages){return pages.map(page=>{if(!page)return page;const out=JSON.parse(JSON.stringify(page));out.objects=(out.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o)));return out})}
 let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0,aznyTeacherScreenTrack=null,aznyStudentScreenTrack=null,classRunId="",aznyTeacherAccessValidated=false,aznyTeacherPlanKey="",aznyTrialAutoEnding=false;
-const AZNY_URL_PARAMS=new URLSearchParams(location.search);const AZNY_ISOLATED_MODE=AZNY_URL_PARAMS.get("isolado")==="1";let isStudent=AZNY_URL_PARAMS.get("aluno")==="1"; document.body.classList.toggle("student-mode",isStudent); document.body.classList.toggle("teacher-mode",!isStudent);const aznyHashKey=value=>{let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};const aznyAccessScope=AZNY_ISOLATED_MODE?"isolado":aznyHashKey(AZNY_URL_PARAMS.get("acesso")||"");const aznyTeacherRoomStorageKey="azny_teacher_room_v1_"+aznyAccessScope;let aznySavedRoom="";try{aznySavedRoom=AZNY_ISOLATED_MODE?"":(localStorage.getItem(aznyTeacherRoomStorageKey)||"")}catch(_){};const aznyRequestedRoom=AZNY_URL_PARAMS.get("sala");let roomId;if(AZNY_ISOLATED_MODE){roomId="AZNY-ISOLADO"}else if(isStudent){roomId=aznyRequestedRoom||aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope)}else{roomId=aznyRequestedRoom?(aznyRequestedRoom.startsWith("AZNY-"+aznyAccessScope+"-")?aznyRequestedRoom:("AZNY-"+aznyAccessScope+"-"+aznyRequestedRoom)):(aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope));if(!aznyRequestedRoom){try{localStorage.setItem(aznyTeacherRoomStorageKey,roomId)}catch(_){}}}STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[^a-zA-Z0-9_-]/g,"_");
+const AZNY_URL_PARAMS=new URLSearchParams(location.search);let AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";try{AZNY_ACCESS_TOKEN=AZNY_ACCESS_TOKEN||sessionStorage.getItem("azny_access_token")||""}catch(_){};if(AZNY_ACCESS_TOKEN&&!AZNY_URL_PARAMS.has("acesso")){AZNY_URL_PARAMS.set("acesso",AZNY_ACCESS_TOKEN);try{history.replaceState(history.state,"",location.pathname+"?"+AZNY_URL_PARAMS.toString()+location.hash)}catch(_){}}const AZNY_ISOLATED_MODE=AZNY_URL_PARAMS.get("isolado")==="1";let isStudent=AZNY_URL_PARAMS.get("aluno")==="1"; document.body.classList.toggle("student-mode",isStudent); document.body.classList.toggle("teacher-mode",!isStudent);const aznyHashKey=value=>{let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};const aznyAccessScope=AZNY_ISOLATED_MODE?"isolado":aznyHashKey(AZNY_ACCESS_TOKEN||"");const aznyTeacherRoomStorageKey="azny_teacher_room_v1_"+aznyAccessScope;let aznySavedRoom="";try{aznySavedRoom=AZNY_ISOLATED_MODE?"":(localStorage.getItem(aznyTeacherRoomStorageKey)||"")}catch(_){};const aznyRequestedRoom=AZNY_URL_PARAMS.get("sala");let roomId;if(AZNY_ISOLATED_MODE){roomId="AZNY-ISOLADO"}else if(isStudent){roomId=aznyRequestedRoom||aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope)}else{roomId=aznyRequestedRoom?(aznyRequestedRoom.startsWith("AZNY-"+aznyAccessScope+"-")?aznyRequestedRoom:("AZNY-"+aznyAccessScope+"-"+aznyRequestedRoom)):(aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope));if(!aznyRequestedRoom){try{localStorage.setItem(aznyTeacherRoomStorageKey,roomId)}catch(_){}}}STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[^a-zA-Z0-9_-]/g,"_");
 let classSessionId=isStudent?(AZNY_URL_PARAMS.get("sess")||""):"ROOM-"+String(roomId).replace(/[.#$\[\]\/]/g,"_");
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 let roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
-const AZNY_FIREBASE_CONFIG={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remot-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};let AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";try{AZNY_ACCESS_TOKEN=AZNY_ACCESS_TOKEN||sessionStorage.getItem("azny_access_token")||""}catch(_){}
-if(!isStudent&&!AZNY_ACCESS_TOKEN&&!AZNY_ISOLATED_MODE){location.replace("index.html?acesso=necessario");throw new Error("Acesso de professor não autorizado sem sessão.");}
+const AZNY_FIREBASE_CONFIG={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remot-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};
+/* Não redirecionar automaticamente: preservar a página e mostrar a causa.
+   A sincronização continuará bloqueada até existir uma licença validada. */
+if(!isStudent&&!AZNY_ACCESS_TOKEN&&!AZNY_ISOLATED_MODE){
+ console.warn("Remote Work Board: código de acesso do professor ausente; o quadro ficará em modo local até recuperar a sessão.");
+}
 
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
 const aznyRoomKey=()=>String(roomId).replace(/[.#$\[\]\/]/g,"_");
@@ -1411,7 +1415,7 @@ async function validateTeacherLicenseAccess(){
  if(AZNY_ISOLATED_MODE){aznyTeacherPlanKey="isolado";aznyTeacherDisplayName="Professor";return true;}
  if(isStudent)return true;
  if(!AZNY_ACCESS_TOKEN){
-  toast("O código de acesso da licença não foi encontrado. Volte ao painel do professor e entre no quadro por lá.");
+  toast("Sessão do professor não encontrada. O quadro foi mantido aberto; volte a autenticar-se no painel para activar a sincronização.");
   return false;
  }
  try{
@@ -3657,6 +3661,43 @@ function showTeacherReloadNotice(){
  aznyScheduleStudentReconnect("teacher-page-restored",300);
 }
 setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(async ready=>{if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário");return}if(!isStudent){const authorized=await ensureAZNYRealtime();if(authorized){toast("Sala autorizada. Sincronização em tempo real activa.");await restoreActiveTeacherSession()}}}).catch(e=>console.error(e));
+/* Persistência da posição de trabalho: actualizar o navegador mantém a rota,
+   ferramenta, zoom, página do quadro e painéis abertos na mesma sessão. */
+const AZNY_VIEW_STATE_KEY="azny_view_state_v2_"+aznyAccessScope+"_"+aznyRoomKey();
+function aznySaveCurrentViewState(){
+ try{
+  const activeTool=document.querySelector(".tools .tool.active")?.dataset?.tool||"select";
+  const openPanels=["aznyExcelPanel","aznySharedBrowser","aznyWebDocument","aznyMusicPanel","aznyChartsModal"].filter(id=>{
+   const el=document.getElementById(id);return !!el&&(el.classList.contains("show")||el.classList.contains("azny-excel-open")||el.classList.contains("azny-web-open")||el.getAttribute("aria-hidden")==="false");
+  });
+  sessionStorage.setItem(AZNY_VIEW_STATE_KEY,JSON.stringify({
+   href:location.href,activeTool,currentPage:Number(currentPage)||0,zoom:Number(zoom)||1,
+   scrollX:window.scrollX||0,scrollY:window.scrollY||0,openPanels,
+   boardTitle:document.getElementById("boardTitle")?.value||"",
+   savedAt:Date.now()
+  }));
+ }catch(e){console.debug("AZNY view state could not be saved:",e)}
+}
+function aznyRestoreCurrentViewState(){
+ try{
+  const raw=sessionStorage.getItem(AZNY_VIEW_STATE_KEY);if(!raw)return;
+  const state=JSON.parse(raw);if(!state||Date.now()-Number(state.savedAt)>12*60*60*1000)return;
+  if(state.href&&new URL(state.href).pathname!==location.pathname)return;
+  if(state.boardTitle&&document.getElementById("boardTitle"))document.getElementById("boardTitle").value=state.boardTitle;
+  if(Number.isFinite(Number(state.currentPage))&&Array.isArray(pageStates)&&pageStates.length){
+   currentPage=Math.max(0,Math.min(pageStates.length-1,Number(state.currentPage)));
+  }
+  if(Number.isFinite(Number(state.zoom)))setZoom(Math.max(.25,Math.min(3,Number(state.zoom))));
+  if(state.activeTool&&document.querySelector('.tools .tool[data-tool="'+state.activeTool+'"]')){
+   document.querySelectorAll(".tools .tool").forEach(el=>el.classList.toggle("active",el.dataset.tool===state.activeTool));
+   if(typeof setTool==="function")setTool(state.activeTool);
+  }
+  requestAnimationFrame(()=>window.scrollTo(Number(state.scrollX)||0,Number(state.scrollY)||0));
+ }catch(e){console.debug("AZNY view state restore skipped:",e)}
+}
+window.addEventListener("pagehide",aznySaveCurrentViewState,{capture:true});
+window.addEventListener("beforeunload",aznySaveCurrentViewState,{capture:true});
+window.addEventListener("pageshow",()=>{setTimeout(aznyRestoreCurrentViewState,250)});
 window.addEventListener("beforeunload",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Atualizar/fechar o separador não encerra a sessão da aula. */});
 window.addEventListener("resize",resizeCanvas);
 if(!isStudent)load();setTimeout(()=>{setZoom(1);updateZoomExtent();resizeCanvas()},80);
