@@ -48,9 +48,14 @@ function renderAccounts(){
    if(action==="reject"&&!note){alert("É obrigatório informar o motivo da rejeição.");return;}
    const original=button.textContent;button.disabled=true;button.textContent=action==="approve"?"A aprovar…":action==="reject"?"A rejeitar…":"A eliminar…";
    try{
-    await reviewAccountDirect(uid,action,note,account);
-    $("accountMessage").textContent=action==="approve"?"Conta aprovada directamente no Realtime Database.":action==="reject"?"Conta rejeitada e motivo guardado no Realtime Database.":"Conta removida dos registos activos e acesso revogado no Realtime Database.";
-    await loadAccountsOnce();
+    const related=Object.entries(allRequests).find(([,request])=>request&&request.uid===uid&&request.status==="pending");
+    if(action!=="delete"&&related){
+     await reviewPaymentDirect(related[0],action,note,related[1]);
+    }else{
+     await reviewAccountDirect(uid,action,note,account);
+    }
+    $("accountMessage").textContent=action==="approve"?"Aprovação concluída e licença activada/conta actualizada no Realtime Database.":action==="reject"?"Rejeição concluída; o motivo foi guardado no Realtime Database.":"Conta removida dos registos activos e licenças revogadas no Realtime Database.";
+    await load();await loadAccountsOnce();
    }catch(error){
     console.error("Acção de administração no Realtime Database:",error);
     alert("Não foi possível "+labels[action]+". Realtime Database: "+(error.code||"erro")+" — "+(error.message||"verifique as regras de teacherAccounts, teacherRegistrationRequests e licenses."));
@@ -59,7 +64,15 @@ function renderAccounts(){
   };
  });
 }
-function render(){const items=Object.values(allRequests).filter(Boolean).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));if(!items.length){$("message").textContent="Não existem pedidos de pagamento."; $("requests").innerHTML="";return}$("message").textContent=items.length+" pedido(s) — actualização em tempo real pelo Realtime Database.";$("requests").innerHTML=items.map(x=>'<article class="request"><div><h3>'+esc(x.name)+' <span class="pill">'+esc(x.status)+'</span></h3><p><b>E-mail:</b> '+esc(x.email)+'<br><b>Plano:</b> '+esc(x.planName||x.plan)+'<br><b>Valor:</b> '+money(x.amount)+'<br><b>Método:</b> '+esc(x.method||"")+'<br><b>Data:</b> '+esc(x.createdAt)+'</p><p>'+esc(x.adminNote||"")+'</p><div class="row">'+(x.plan==="trial"||!x.proof?"":'<button class="secondary" data-proof="'+esc(x.id)+'">Ver comprovativo</button>')+''+(x.status==="pending"?'<button data-id="'+esc(x.id)+'" data-status="approved">Aprovar</button><button class="danger" data-id="'+esc(x.id)+'" data-status="rejected">Rejeitar</button>':"")+(x.uid?'<button class="danger" data-delete-account="'+esc(x.uid)+'">Eliminar conta</button>':"")+'</div></div><div id="proof-'+esc(x.id)+'" class="proof-panel hidden" aria-live="polite"></div></article>').join("");$("requests").querySelectorAll("button[data-id]").forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.status,b));$("requests").querySelectorAll("button[data-proof]").forEach(b=>b.onclick=()=>viewProof(b.dataset.proof));$("requests").querySelectorAll("button[data-delete-account]").forEach(b=>b.onclick=()=>deleteRequestAccount(b.dataset.deleteAccount,b));}
+function render(){
+ const items=Object.entries(allRequests).filter(([,x])=>x).map(([dbKey,x])=>({...x,_dbKey:dbKey})).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+ if(!items.length){$("message").textContent="Não existem pedidos de pagamento."; $("requests").innerHTML="";return}
+ $("message").textContent=items.length+" pedido(s) — actualização em tempo real pelo Realtime Database.";
+ $("requests").innerHTML=items.map(x=>'<article class="request"><div><h3>'+esc(x.name)+' <span class="pill">'+esc(x.status)+'</span></h3><p><b>E-mail:</b> '+esc(x.email)+'<br><b>Plano:</b> '+esc(x.planName||x.plan)+'<br><b>Valor:</b> '+money(x.amount)+'<br><b>Método:</b> '+esc(x.method||"")+'<br><b>Data:</b> '+esc(x.createdAt)+'</p><p>'+esc(x.adminNote||"")+'</p><div class="row">'+(x.plan==="trial"||!x.proof?"":'<button class="secondary" data-proof="'+esc(x._dbKey)+'">Ver comprovativo</button>')+(x.status==="pending"?'<button data-id="'+esc(x._dbKey)+'" data-status="approved">Aprovar</button><button class="danger" data-id="'+esc(x._dbKey)+'" data-status="rejected">Rejeitar</button>':"")+(x.uid?'<button class="danger" data-delete-account="'+esc(x.uid)+'">Eliminar conta</button>':"")+'</div></div><div id="proof-'+esc(x._dbKey)+'" class="proof-panel hidden" aria-live="polite"></div></article>').join("");
+ $("requests").querySelectorAll("button[data-id]").forEach(b=>b.onclick=()=>decide(b.dataset.id,b.dataset.status,b));
+ $("requests").querySelectorAll("button[data-proof]").forEach(b=>b.onclick=()=>viewProof(b.dataset.proof));
+ $("requests").querySelectorAll("button[data-delete-account]").forEach(b=>b.onclick=()=>deleteRequestAccount(b.dataset.deleteAccount,b));
+}
 function viewProof(id){const x=allRequests[id];const box=$("proof-"+id);if(!box)return;const proof=String(x?.proof||"");box.classList.remove("hidden");if(!/^data:(image\/(png|jpeg|webp)|application\/pdf);base64,/.test(proof)){box.innerHTML='<div class="row" style="justify-content:space-between"><b>Comprovativo</b><button type="button" class="secondary" data-close-proof>Fechar</button></div><p class="error">Comprovativo não encontrado ou formato inválido.</p>';}else{const media=proof.startsWith("data:application/pdf")?'<iframe class="proof" title="Comprovativo PDF" src="'+proof+'"></iframe>':'<img class="proof" style="object-fit:contain" alt="Comprovativo de pagamento" src="'+proof+'">';box.innerHTML='<div class="row" style="justify-content:space-between;margin-bottom:10px"><b>Comprovativo de pagamento</b><button type="button" class="secondary" data-close-proof>Fechar</button></div>'+media;}box.querySelector("[data-close-proof]").onclick=()=>{box.innerHTML="";box.classList.add("hidden")};}
 
 async function loadAccountsOnce(){const snap=await db.ref("teacherAccounts").once("value");allAccounts=snap.val()||{};renderAccounts();}
@@ -135,8 +148,7 @@ async function reviewPaymentDirect(id,action,note,item){
    updates["teacherAccounts/"+uid]={...acc,uid,...patch};
    updates["teacherRegistrationRequests/"+uid]={...reg,uid,email,name:item.name||acc.name||"",role:"teacher",...patch};
   }
-  const oldToken=String(item.accessToken||item.existingAccessToken||"");
-  if(oldToken){updates["licenses/"+oldToken+"/status"]="suspended";updates["licenses/"+oldToken+"/boardAccess"]=false;}
+  // A rejeição de renovação/upgrade não suspende a licença paga que já está activa.
  }else{
   const plans={
    trial:{name:"Teste experimental — 2 aulas",students:45,dailyClasses:3,simultaneous:1,duration:2,storage:"Temporário",trialSessionsLimit:2},
