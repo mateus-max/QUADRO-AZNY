@@ -1910,6 +1910,23 @@ function handleBoardChannelMessage(raw){
   }
  }catch(e){console.warn("AZNY board packet:",e)}
 }
+function aznyMergeCollaborativeBoardState(server,local){
+ const base=server&&typeof server==="object"?server:{},incoming=local&&typeof local==="object"?local:{};
+ const deletedObjects=new Set([...(base.deletedObjectIds||[]),...(incoming.deletedObjectIds||[])].map(String));
+ const deletedStrokes=new Set([...(base.deletedStrokeIds||[]),...(incoming.deletedStrokeIds||[])].map(String));
+ const oldPages=Array.isArray(base.pages)?base.pages:[],newPages=Array.isArray(incoming.pages)?incoming.pages:[];
+ const pages=Array.from({length:5},(_,index)=>{
+  const a=oldPages[index]||{strokes:[],objects:[],title:incoming.title||"Nova aula"},b=newPages[index]||{strokes:[],objects:[],title:a.title||incoming.title||"Nova aula"};
+  const objects=new Map();
+  (a.objects||[]).forEach(o=>{if(o&&o.id&&!deletedObjects.has(aznyObjectKey(o)))objects.set(String(o.id),o)});
+  (b.objects||[]).forEach(o=>{if(!o||!o.id||deletedObjects.has(aznyObjectKey(o)))return;const id=String(o.id),old=objects.get(id);if(!old||localBoardEditing||selected?.dataset?.id===id||(Number(o.updatedAt)||0)>=(Number(old.updatedAt)||0))objects.set(id,o)});
+  const strokes=new Map();
+  (a.strokes||[]).forEach((st,i)=>{const id=String(st?.id||("legacy-"+index+"-"+i));if(!deletedStrokes.has(id))strokes.set(id,st)});
+  (b.strokes||[]).forEach((st,i)=>{const id=String(st?.id||("legacy-"+index+"-"+i));if(!deletedStrokes.has(id))strokes.set(id,st)});
+  return{...a,...b,objects:[...objects.values()],strokes:[...strokes.values()]};
+ });
+ return{...base,...incoming,pages,deletedObjectIds:[...deletedObjects],deletedStrokeIds:[...deletedStrokes],updatedAt:firebase.database.ServerValue.TIMESTAMP};
+}
 function publishLiveBoardState(){
  if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;
  clearTimeout(liveBoardTimer);
