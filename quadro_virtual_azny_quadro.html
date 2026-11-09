@@ -1333,7 +1333,7 @@ let pageStates=Array(5).fill(null);
 let deletedObjectIds=new Set();
 let deletedStrokeIds=new Set();
 function aznyObjectKey(o){return String(o?.id||o?.dataset?.id||"")+"::"+String(o?.createdBy||o?.dataset?.createdBy||"teacher")}
-function aznyFilterDeletedPages(pages){return pages.map(page=>{if(!page)return page;const out=JSON.parse(JSON.stringify(page));out.objects=(out.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o)));return out})}
+function aznyFilterDeletedPages(pages){return pages.map(page=>{if(!page)return page;const out=JSON.parse(JSON.stringify(page));out.objects=(out.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o)));out.strokes=(out.strokes||[]).filter((st,i)=>!deletedStrokeIds.has(String(st.id||("legacy-"+(pages.indexOf(page))+"-"+i))));return out})}
 let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0,aznyTeacherScreenTrack=null,aznyStudentScreenTrack=null,classRunId="",aznyTeacherAccessValidated=false,aznyTeacherPlanKey="",aznyTrialAutoEnding=false;
 const AZNY_URL_PARAMS=new URLSearchParams(location.search);let AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";try{AZNY_ACCESS_TOKEN=AZNY_ACCESS_TOKEN||sessionStorage.getItem("azny_access_token")||"";if(AZNY_ACCESS_TOKEN)sessionStorage.setItem("azny_access_token",AZNY_ACCESS_TOKEN)}catch(_){};if(AZNY_ACCESS_TOKEN&&!AZNY_URL_PARAMS.has("acesso")){AZNY_URL_PARAMS.set("acesso",AZNY_ACCESS_TOKEN);try{history.replaceState(history.state,"",location.pathname+"?"+AZNY_URL_PARAMS.toString()+location.hash)}catch(_){}}const AZNY_ISOLATED_MODE=AZNY_URL_PARAMS.get("isolado")==="1";let isStudent=AZNY_URL_PARAMS.get("aluno")==="1"; document.body.classList.toggle("student-mode",isStudent); document.body.classList.toggle("teacher-mode",!isStudent);const aznyHashKey=value=>{let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};const aznyAccessScope=AZNY_ISOLATED_MODE?"isolado":aznyHashKey(AZNY_ACCESS_TOKEN||"");const aznyTeacherRoomStorageKey="azny_teacher_room_v1_"+aznyAccessScope;let aznySavedRoom="";try{aznySavedRoom=AZNY_ISOLATED_MODE?"":(localStorage.getItem(aznyTeacherRoomStorageKey)||"")}catch(_){};const aznyRequestedRoom=AZNY_URL_PARAMS.get("sala");let roomId;if(AZNY_ISOLATED_MODE){roomId="AZNY-ISOLADO"}else if(isStudent){roomId=aznyRequestedRoom||aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope)}else{roomId=aznyRequestedRoom?(aznyRequestedRoom.startsWith("AZNY-"+aznyAccessScope+"-")?aznyRequestedRoom:("AZNY-"+aznyAccessScope+"-"+aznyRequestedRoom)):(aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope));if(!aznyRequestedRoom){try{localStorage.setItem(aznyTeacherRoomStorageKey,roomId)}catch(_){}}}STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[^a-zA-Z0-9_-]/g,"_");
@@ -1623,7 +1623,7 @@ function boardPointFromClient(e){const r=board.getBoundingClientRect(),cs=getCom
 function localPoint(e){return boardPointFromClient(e)}
 function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),deletedStrokeIds:[...deletedStrokeIds],objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds]}}
 function serializeObject(el){
- const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:parseFloat(el.style.width)||el.offsetWidth,height:parseFloat(el.style.height)||el.offsetHeight,id:el.dataset.id,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null};
+ const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:parseFloat(el.style.width)||el.offsetWidth,height:parseFloat(el.style.height)||el.offsetHeight,id:el.dataset.id,updatedAt:Number(el.dataset.aznyUpdatedAt)||0,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null};
  if(el.classList.contains("textobj"))return{kind:"text",...b,textUpdatedAt:Number(el.dataset.aznyTextUpdatedAt)||0,html:el.innerHTML,anchorId:el.dataset.anchorId||null,anchorX:el.dataset.anchorX==null?null:+el.dataset.anchorX,anchorY:el.dataset.anchorY==null?null:+el.dataset.anchorY,anchorW:el.dataset.anchorW==null?null:+el.dataset.anchorW,anchorH:el.dataset.anchorH==null?null:+el.dataset.anchorH,anchorFontSize:el.dataset.anchorFontSize==null?null:+el.dataset.anchorFontSize,style:{fontSize:el.style.fontSize,fontFamily:el.style.fontFamily,fontWeight:el.style.fontWeight,fontStyle:el.style.fontStyle,textDecoration:el.style.textDecoration,color:el.style.color,textAlign:el.style.textAlign}};
  if(el.classList.contains("mediaobj"))return{kind:"image",...b,src:el.querySelector("img").src};
  if(el.classList.contains("chartobj"))return{kind:"chart",...b,chartType:el.dataset.chartType||"bar",title:el.dataset.title||"Gráfico",values:el.dataset.values||"12,19,8,15,10"};
@@ -1752,7 +1752,7 @@ function applyRemoteBoardState(d){
  /* Queue updates while a participant is typing or manipulating a document instead of silently dropping them. */
  if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer,.textobj[contenteditable]")){queueRemoteBoardState(d);return;}
  try{
-  if(Array.isArray(d.deletedObjectIds))d.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
+  if(Array.isArray(d.deletedObjectIds))d.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));if(Array.isArray(d.deletedStrokeIds))d.deletedStrokeIds.forEach(id=>deletedStrokeIds.add(String(id)));
   if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
   if(Array.isArray(d.pages)){
    const incomingPages=aznyFilterDeletedPages(normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize));
@@ -1986,7 +1986,7 @@ function setupBoardRealtime(){
  /* Do not publish local state on startup: it could overwrite the last saved board before the remote state arrives. */
 }
 function restore(s){
- if(Array.isArray(s?.deletedObjectIds))s.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
+ if(Array.isArray(s?.deletedObjectIds))s.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));if(Array.isArray(s?.deletedStrokeIds))s.deletedStrokeIds.forEach(id=>deletedStrokeIds.add(String(id)));
  const selectedId=selected?.dataset?.id||"";
  /* Keep already-open documents mounted. Remote board snapshots often arrive
     while other people work; rebuilding a PDF viewer on every snapshot reloads it.
@@ -2160,7 +2160,8 @@ function createText(x,y,anchor){
 }
 function selectObject(el){document.querySelectorAll(".object.selected").forEach(x=>x.classList.remove("selected"));selected=el;if(el)el.classList.add("selected");updateObjectActions()}
 /* Keep text within the green writing area as it grows, including text restored from sync. */
-document.addEventListener("input",e=>{const el=e.target;if(el&&el.classList&&el.classList.contains("textobj")){constrainTextToBoard(el);scheduleSave()}},true);
+let aznyTextEditingTimer=null;
+document.addEventListener("input",e=>{const el=e.target;if(el&&el.classList&&el.classList.contains("textobj")){constrainTextToBoard(el);el.dataset.aznyTextUpdatedAt=String(Date.now());el.dataset.aznyUpdatedAt=String(Date.now());localBoardEditing=true;clearTimeout(aznyTextEditingTimer);aznyTextEditingTimer=setTimeout(()=>{localBoardEditing=false;if(pendingRemoteBoardState)flushPendingRemoteBoardState()},700);scheduleSave()}},true);
 window.addEventListener("resize",()=>board.querySelectorAll(".textobj").forEach(constrainTextToBoard),{passive:true});
 function anchorTextToObject(text,anchor,x,y){
  const b=anchorBox(anchor);text.dataset.anchorId=anchor.dataset.id;text.dataset.anchorX=(x-b.x)/b.w;text.dataset.anchorY=(y-b.y)/b.h;text.dataset.anchorW=b.w;text.dataset.anchorH=b.h;text.dataset.anchorFontSize=parseFloat(text.style.fontSize)||16;
