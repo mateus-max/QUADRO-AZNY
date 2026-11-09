@@ -204,7 +204,7 @@
       ".read": "auth != null && auth.token.email == 'suporte@domingas.com'",
       "$uid": {
         ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
-        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (auth.uid == $uid && newData.child('status').val() == 'pending'))",
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (auth.uid == $uid && (!newData.exists() || newData.child('status').val() == data.child('status').val() || newData.child('status').val() == 'approved')))",
         ".indexOn": [
           "status",
           "createdAt"
@@ -214,7 +214,7 @@
     "publicTeacherProfiles": {
       ".read": true,
       "$uid": {
-        ".write": "auth != null && auth.token.email == 'suporte@domingas.com'"
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)"
       }
     },
     "publicTeacherCourses": {
@@ -226,6 +226,12 @@
         "status"
       ],
       "$courseId": {
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (newData.exists() && newData.child('teacherUid').val() == auth.uid) || (!newData.exists() && data.child('teacherUid').val() == auth.uid))"
+      }
+    },
+    "settings": {
+      "teacherDirectoryAdminWhatsapp": {
+        ".read": true,
         ".write": "auth != null && auth.token.email == 'suporte@domingas.com'"
       }
     }
