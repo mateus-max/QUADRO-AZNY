@@ -472,6 +472,7 @@ auth.onAuthStateChanged(async user=>{
    }
   }
   const snap=await db.ref("teacherAccounts/"+user.uid).once("value"),profile=snap.val();
+  if(!upgradeMode&&profile&&profile.role==="teacher"&&["pending","processing"].includes(String(profile.status||profile.accountStatus||""))){manualLoginRequested=false;registrationCompleted=false;pendingLoginNotice="A sua conta ainda está pendente de aprovação pela direcção. Assim que for aprovada, poderá iniciar sessão e entrar directamente no painel do professor.";await auth.signOut().catch(()=>{});return}
   if(profile&&profile.role==="teacher"&&profile.name&&profile.email){
    teacherName=String(profile.name);$("fullName").value=teacherName;$("email").value=profile.email;
    $("registerPanel").classList.add("hidden");$("loginPanel").classList.add("hidden");$("signedInPanel").classList.remove("hidden");
