@@ -33,7 +33,7 @@ function load(){ $("message").textContent="A ligar ao Firebase Realtime Database
 
 function loadAccounts(){if(accountsRef&&accountsHandler)accountsRef.off("value",accountsHandler);accountsRef=db.ref("teacherAccounts");accountsHandler=s=>{allAccounts=s.val()||{};renderAccounts()};accountsRef.on("value",accountsHandler,e=>{$("accountMessage").textContent="Erro ao receber contas: "+e.message})}
 function renderAccounts(){
- const rows=Object.entries(allAccounts).map(([uid,x])=>({uid,...(x||{})}));
+ const rows=Object.entries(allAccounts).map(([uid,x])=>({...((x&&typeof x==="object")?x:{}),uid:(x&&x.uid)||uid}));
  $("accountMessage").textContent=rows.length+" pedido(s) de conta — sincronização em tempo real.";
  $("teacherAccounts").innerHTML=rows.map(x=>{
   const st=x.status||"pending";
@@ -43,7 +43,6 @@ function renderAccounts(){
   button.onclick=async()=>{
    const action=button.dataset.review,uid=button.dataset.uid,account=allAccounts[uid]||{};
    const labels={approve:"aprovar esta conta",reject:"rejeitar esta solicitação",delete:"eliminar esta conta do sistema"};
-   if(!confirm("Confirma que pretende "+labels[action]+"?"))return;
    const note=action==="reject"?(prompt("Escreva o motivo da rejeição. O professor verá este motivo quando tentar iniciar sessão:")||"").trim():"";
    if(action==="reject"&&!note){alert("É obrigatório informar o motivo da rejeição.");return;}
    const original=button.textContent;button.disabled=true;button.textContent=action==="approve"?"A aprovar…":action==="reject"?"A rejeitar…":"A eliminar…";
@@ -90,6 +89,11 @@ async function reviewAccountDirect(uid,action,note,account){
   updates["teacherAccounts/"+uid]={...base,uid,...patch};
   const reg=(await db.ref("teacherRegistrationRequests/"+uid).once("value")).val()||{};
   updates["teacherRegistrationRequests/"+uid]={...reg,uid,name:base.name||reg.name||"",email:base.email||reg.email||"",role:"teacher",...patch};
+  const email=String(base.email||reg.email||"").trim().toLowerCase();
+  if(email){
+   const licenses=await db.ref("licenses").orderByChild("teacherEmail").equalTo(email).once("value");
+   licenses.forEach(child=>{updates["licenses/"+child.key+"/status"]="suspended";updates["licenses/"+child.key+"/boardAccess"]=false;updates["licenses/"+child.key+"/suspendedAt"]=now;});
+  }
  }else if(action==="delete"){
   const email=String(base.email||"").trim().toLowerCase();
   const requests=await db.ref("paymentRequests").orderByChild("uid").equalTo(uid).once("value");
@@ -108,7 +112,6 @@ async function reviewAccountDirect(uid,action,note,account){
 }
 async function deleteRequestAccount(uid,button){
  if(!uid){alert("Este pedido não está associado a uma conta válida.");return;}
- if(!confirm("Remover esta conta dos registos activos, eliminar os pedidos associados e revogar as licenças?"))return;
  const original=button.textContent;button.disabled=true;button.textContent="A eliminar…";
  try{
   const snap=await db.ref("teacherAccounts/"+uid).once("value");
@@ -123,7 +126,6 @@ async function decide(id,status,button){
  const action=status==="approved"?"approve":"reject";
  const note=action==="reject"?(prompt("Escreva o motivo da rejeição. O professor verá este motivo ao iniciar sessão:")||"").trim():"";
  if(action==="reject"&&!note){alert("É obrigatório informar o motivo da rejeição.");return;}
- if(!confirm(action==="approve"?"Confirmar aprovação? O acesso e a licença serão activados no Realtime Database.":"Confirmar rejeição deste pedido?"))return;
  button.disabled=true;const original=button.textContent;button.textContent=action==="approve"?"A aprovar…":"A rejeitar…";
  try{
   await reviewPaymentDirect(id,action,note,current);
