@@ -1924,8 +1924,8 @@ function publishLiveBoardState(){
    clearTimeout(firebaseBoardWriteTimer);
    firebaseBoardWriteTimer=setTimeout(()=>{
     const ref=aznyRoomRef().child("board");
-    const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP,lastEditorUid:aznyUid||""};
-    ref.update(payload).catch(e=>{console.error("AZNY live board write rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
+    const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],updatedAt:Date.now(),lastEditorUid:aznyUid||""};
+    ref.transaction(server=>aznyMergeCollaborativeBoardState(server,payload),undefined,false).catch(e=>{console.error("AZNY live board transaction rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
    },20);
   }
  },12)
