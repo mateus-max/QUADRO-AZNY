@@ -91,7 +91,8 @@
               "$request": {
                 ".read": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $request))",
                 ".write": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $request))"
-              }
+              },
+              ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
             },
             "studentMesh": {
               "$from": {
