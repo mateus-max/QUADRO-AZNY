@@ -26,7 +26,7 @@
           ".validate": "newData.hasChildren()"
         },
         "trialSessionsUsed": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.isNumber() && newData.val() >= 0 && newData.val() <= 2"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.isNumber() && newData.val() <= 2 && ((!data.exists() && newData.val() == 1) || (data.isNumber() && newData.val() == data.val() + 1))"
         },
         "trialExhausted": {
           ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == true && data.parent().child('trialSessionsUsed').val() >= 2"
