@@ -1,67 +1,67 @@
 {
   "rules": {
-    ".read": "auth != null && auth.token.email === 'suporte@domingas.com'",
-    ".write": "auth != null && auth.token.email === 'suporte@domingas.com'",
+    ".read": "auth != null && auth.token.email == 'suporte@domingas.com'",
+    ".write": "auth != null && auth.token.email == 'suporte@domingas.com'",
     "roomAccess": {
       ".read": false,
       ".write": false,
       "$room": {
         "$uid": {
-          ".read": "auth != null && auth.uid === $uid && data.child('status').val() === 'approved'",
-          ".write": "auth != null && auth.uid === $uid && ((newData.child('role').val() === 'teacher' && newData.child('status').val() === 'approved' && newData.child('teacherUid').val() === auth.uid && newData.child('teacherEmail').val() === auth.token.email && newData.child('licenseToken').isString() && root.child('licenses').child(newData.child('licenseToken').val()).child('status').val() === 'active' && root.child('licenses').child(newData.child('licenseToken').val()).child('boardAccess').val() !== false && root.child('licenses').child(newData.child('licenseToken').val()).child('trialExhausted').val() !== true && root.child('licenses').child(newData.child('licenseToken').val()).child('teacherEmail').val() === auth.token.email && (!root.child('licenses').child(newData.child('licenseToken').val()).child('teacherUid').exists() || root.child('licenses').child(newData.child('licenseToken').val()).child('teacherUid').val() === auth.uid)) || (newData.child('role').val() === 'student' && newData.child('status').val() === 'approved' && newData.child('requestId').isString() && newData.child('sessionId').isString() && newData.child('name').isString() && root.child('aznyRooms').child($room).child('sessions').child(newData.child('sessionId').val()).child('joinRequests').child(newData.child('requestId').val()).child('status').val() === 'approved' && root.child('aznyRooms').child($room).child('sessions').child(newData.child('sessionId').val()).child('joinRequests').child(newData.child('requestId').val()).child('studentUid').val() === auth.uid))",
-          ".validate": "newData.hasChildren(['role','status']) && ((newData.child('role').val() === 'teacher' && newData.child('status').val() === 'approved' && newData.hasChildren(['licenseToken','teacherUid','teacherEmail'])) || (newData.child('role').val() === 'student' && newData.child('status').val() === 'approved' && newData.hasChildren(['requestId','sessionId','name'])))"
+          ".read": "auth != null && auth.uid == $uid && data.child('status').val() == 'approved'",
+          ".write": "auth != null && auth.uid == $uid && ((newData.child('role').val() == 'teacher' && newData.child('status').val() == 'approved' && newData.child('teacherUid').val() == auth.uid && newData.child('teacherEmail').val() == auth.token.email && newData.child('licenseToken').isString() && root.child('licenses').child(newData.child('licenseToken').val()).child('status').val() == 'active' && root.child('licenses').child(newData.child('licenseToken').val()).child('boardAccess').val() != false && root.child('licenses').child(newData.child('licenseToken').val()).child('trialExhausted').val() != true && root.child('licenses').child(newData.child('licenseToken').val()).child('teacherEmail').val() == auth.token.email && (!root.child('licenses').child(newData.child('licenseToken').val()).child('teacherUid').exists() || root.child('licenses').child(newData.child('licenseToken').val()).child('teacherUid').val() == auth.uid)) || (newData.child('role').val() == 'student' && newData.child('status').val() == 'approved' && newData.child('requestId').isString() && newData.child('sessionId').isString() && newData.child('name').isString() && root.child('aznyRooms').child($room).child('sessions').child(newData.child('sessionId').val()).child('joinRequests').child(newData.child('requestId').val()).child('status').val() == 'approved' && root.child('aznyRooms').child($room).child('sessions').child(newData.child('sessionId').val()).child('joinRequests').child(newData.child('requestId').val()).child('studentUid').val() == auth.uid))",
+          ".validate": "newData.hasChildren(['role','status']) && ((newData.child('role').val() == 'teacher' && newData.child('status').val() == 'approved' && newData.hasChildren(['licenseToken','teacherUid','teacherEmail'])) || (newData.child('role').val() == 'student' && newData.child('status').val() == 'approved' && newData.hasChildren(['requestId','sessionId','name'])))"
         }
       }
     },
     "licenses": {
-      ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || (query.orderByChild === 'teacherEmail' && query.equalTo === auth.token.email))",
+      ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || (query.orderByChild == 'teacherEmail' && query.equalTo == auth.token.email))",
       ".indexOn": [
         "teacherEmail"
       ],
       "$licenseId": {
-        ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || data.child('teacherUid').val() === auth.uid || data.child('teacherEmail').val() === auth.token.email)",
-        ".write": "auth != null && auth.token.email === 'suporte@domingas.com'",
+        ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || data.child('teacherUid').val() == auth.uid || data.child('teacherEmail').val() == auth.token.email)",
+        ".write": "auth != null && auth.token.email == 'suporte@domingas.com'",
         "trialCompletedSessions": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.hasChildren()",
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.hasChildren()",
           ".validate": "newData.hasChildren()"
         },
         "trialSessionsUsed": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.isNumber() && newData.val() >= (data.val() || 0) && newData.val() <= (data.parent().child('trialSessionsLimit').val() || 2)"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.isNumber() && newData.val() >= (data.val() || 0) && newData.val() <= (data.parent().child('trialSessionsLimit').val() || 2)"
         },
         "trialExhausted": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.val() === true && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').val() || 2)"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == true && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').val() || 2)"
         },
         "boardAccess": {
-          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.val() === false && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').val() || 2)"
+          ".write": "auth != null && data.parent().child('teacherEmail').val() == auth.token.email && data.parent().child('plan').val() == 'trial' && newData.val() == false && data.parent().child('trialSessionsUsed').val() >= (data.parent().child('trialSessionsLimit').val() || 2)"
         }
       }
     },
     "aznyRooms": {
       "$room": {
         "activeSessionId": {
-          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
-          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'",
+          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
         },
         "board": {
-          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
-          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' || root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student')",
-          ".validate": "newData.hasChildren(['currentPage','pages']) && newData.child('currentPage').isNumber() && newData.child('currentPage').val() >= 1 && newData.child('currentPage').val() <= 5 && newData.child('pages').hasChildren() && (!newData.child('lastEditorUid').exists() || newData.child('lastEditorUid').val() === auth.uid)"
+          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'",
+          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' || root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'student')",
+          ".validate": "newData.hasChildren(['currentPage','pages']) && newData.child('currentPage').isNumber() && newData.child('currentPage').val() >= 1 && newData.child('currentPage').val() <= 5 && newData.child('pages').hasChildren() && (!newData.child('lastEditorUid').exists() || newData.child('lastEditorUid').val() == auth.uid)"
         },
         "sharedBrowser": {
-          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
-          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'",
+          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
         },
         "pianoEvent": {
-          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
-          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'",
+          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
         },
         "spreadsheet": {
-          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
-          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' || root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student')"
+          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'",
+          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' || root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'student')"
         },
         "webDocument": {
-          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
-          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' || root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student')"
+          ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'",
+          ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' || root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'student')"
         },
         "sessions": {
           "$session": {
@@ -69,55 +69,55 @@
             ".write": false,
             "status": {
               ".read": "auth != null",
-              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
             },
             "teacherPresence": {
               ".read": "auth != null",
-              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
             },
             "teacherReloadNotice": {
               ".read": "auth != null",
-              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
             },
             "runId": {
               ".read": "auth != null",
-              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
             },
             "startedAt": {
               ".read": "auth != null",
-              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
             },
             "endedAt": {
               ".read": "auth != null",
-              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
             },
             "title": {
               ".read": "auth != null",
-              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
             },
             "teacherUid": {
               ".read": "auth != null",
-              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'"
+              ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'"
             },
             "joinRequests": {
-              ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'",
+              ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'",
               "$request": {
-                ".read": "auth != null && (data.child('studentUid').val() === auth.uid || (root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved'))",
-                ".write": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (!data.exists() && newData.child('studentUid').val() === auth.uid && newData.child('status').val() === 'pending') || (data.child('studentUid').val() === auth.uid && newData.child('studentUid').val() === auth.uid && newData.child('status').val() === data.child('status').val()))",
-                ".validate": "!newData.exists() || (newData.hasChildren(['studentUid','name','status']) && newData.child('studentUid').isString() && newData.child('name').isString() && newData.child('status').isString() && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (newData.child('status').val() === 'pending' || newData.child('status').val() === 'approved' || newData.child('status').val() === 'rejected')) || (newData.child('studentUid').val() === auth.uid && (newData.child('status').val() === 'pending' || newData.child('status').val() === data.child('status').val()))))"
+                ".read": "auth != null && (data.child('studentUid').val() == auth.uid || (root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved'))",
+                ".write": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved') || (!data.exists() && newData.child('studentUid').val() == auth.uid && newData.child('status').val() == 'pending') || (data.child('studentUid').val() == auth.uid && newData.child('studentUid').val() == auth.uid && newData.child('status').val() == data.child('status').val()))",
+                ".validate": "!newData.exists() || (newData.hasChildren(['studentUid','name','status']) && newData.child('studentUid').isString() && newData.child('name').isString() && newData.child('status').isString() && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved' && (newData.child('status').val() == 'pending' || newData.child('status').val() == 'approved' || newData.child('status').val() == 'rejected')) || (newData.child('studentUid').val() == auth.uid && (newData.child('status').val() == 'pending' || newData.child('status').val() == data.child('status').val()))))"
               }
             },
             "peers": {
               "$request": {
-                ".read": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $request))",
-                ".write": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $request))"
+                ".read": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() == $request))",
+                ".write": "auth != null && ((root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'teacher' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved') || (root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved' && root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() == $request))"
               }
             },
             "studentMesh": {
               "$from": {
                 "$to": {
-                  ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to)",
-                  ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() === 'student' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() === 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() === $to)"
+                  ".read": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'student' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() == $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() == $to)",
+                  ".write": "auth != null && root.child('roomAccess').child($room).child(auth.uid).child('role').val() == 'student' && root.child('roomAccess').child($room).child(auth.uid).child('status').val() == 'approved' && (root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() == $from || root.child('roomAccess').child($room).child(auth.uid).child('requestId').val() == $to)"
                 }
               }
             }
@@ -144,16 +144,16 @@
       ".write": false
     },
     "paymentRequests": {
-      ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || (query.orderByChild === 'uid' && query.equalTo === auth.uid))",
+      ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || (query.orderByChild == 'uid' && query.equalTo == auth.uid))",
       ".indexOn": [
         "uid",
         "email",
         "status"
       ],
       "$requestId": {
-        ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || data.child('uid').val() === auth.uid)",
-        ".write": "auth != null && (auth.token.email === 'suporte@domingas.com' || (!data.exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending' && newData.child('accessGranted').val() === false))",
-        ".validate": "auth != null && (auth.token.email === 'suporte@domingas.com' || (newData.hasChildren(['id','uid','email','name','status','createdAt']) && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending' && newData.child('accessGranted').val() === false))"
+        ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || data.child('uid').val() == auth.uid)",
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (!data.exists() && newData.child('uid').val() == auth.uid && newData.child('status').val() == 'pending' && newData.child('accessGranted').val() == false))",
+        ".validate": "auth != null && (auth.token.email == 'suporte@domingas.com' || (newData.hasChildren(['id','uid','email','name','status','createdAt']) && newData.child('uid').val() == auth.uid && newData.child('status').val() == 'pending' && newData.child('accessGranted').val() == false))"
       }
     },
     "admin": {
@@ -173,15 +173,15 @@
       ".write": false
     },
     "teacherAccounts": {
-      ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || query.orderByChild === 'uid' && query.equalTo === auth.uid)",
+      ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || query.orderByChild == 'uid' && query.equalTo == auth.uid)",
       ".indexOn": [
         "uid",
         "email"
       ],
       "$uid": {
-        ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || auth.uid === $uid)",
-        ".write": "auth != null && (auth.token.email === 'suporte@domingas.com' || (!data.exists() && auth.uid === $uid && newData.child('uid').val() === auth.uid && newData.child('accountStatus').val() === 'pending'))",
-        ".validate": "auth != null && (auth.token.email === 'suporte@domingas.com' || (newData.hasChildren(['uid','name','email','role','accountStatus']) && newData.child('uid').val() === auth.uid && newData.child('email').val() === auth.token.email && newData.child('role').val() === 'teacher' && newData.child('accountStatus').val() === 'pending'))"
+        ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (!data.exists() && auth.uid == $uid && newData.child('uid').val() == auth.uid && newData.child('accountStatus').val() == 'pending'))",
+        ".validate": "auth != null && (auth.token.email == 'suporte@domingas.com' || (newData.hasChildren(['uid','name','email','role','accountStatus']) && newData.child('uid').val() == auth.uid && newData.child('email').val() == auth.token.email && newData.child('role').val() == 'teacher' && newData.child('accountStatus').val() == 'pending'))"
       }
     }
   }
