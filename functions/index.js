@@ -137,24 +137,36 @@ function teacherRoomAllowed(roomId, token) {
 
 exports.verifyTeacherAccess = onCall({ region: REGION }, async (request) => {
   const uid = requireAuth(request);
-  const token = String(request.data?.accessToken || "");
+  const token = String(request.data?.accessToken || "").trim();
   const roomId = cleanKey(request.data?.roomId);
   if (!token || !roomId || !teacherRoomAllowed(roomId, token)) {
     throw new HttpsError("permission-denied", "Licença ou sala inválida.");
   }
   const licenseSnap = await db.ref("licenses/" + token).get();
   const license = licenseSnap.val();
-  if (!license || license.status !== "active" ||
-      (license.expiresAt && new Date(license.expiresAt).getTime() <= Date.now())) {
-    throw new HttpsError("permission-denied", "Licença inativa ou expirada.");
+  const email = String(request.auth?.token?.email || "").trim().toLowerCase();
+  if (!license || license.status !== "active" || license.boardAccess === false) {
+    throw new HttpsError("permission-denied", "A licença não está activa ou o acesso ao quadro foi suspenso.");
   }
-  const used = Number(license.trialSessionsUsed ||
-    Object.keys(license.trialCompletedSessions || {}).length);
-  if (license.plan === "trial" && (license.trialExhausted === true || used >= 2)) {
+  if (license.teacherUid && String(license.teacherUid) !== uid) {
+    throw new HttpsError("permission-denied", "Esta licença pertence a outra conta de professor.");
+  }
+  if (license.teacherEmail && email && String(license.teacherEmail).trim().toLowerCase() !== email) {
+    throw new HttpsError("permission-denied", "O e-mail autenticado não corresponde à licença.");
+  }
+  if (license.expiresAt) {
+    const expiry = new Date(license.expiresAt).getTime();
+    if (!Number.isFinite(expiry) || expiry <= Date.now()) {
+      throw new HttpsError("permission-denied", "A licença está expirada ou tem uma data de validade inválida.");
+    }
+  }
+  const used = Number(license.trialSessionsUsed || Object.keys(license.trialCompletedSessions || {}).length);
+  if (license.plan === "trial" && (license.trialExhausted === true || used >= Number(license.trialSessionsLimit || 2))) {
     throw new HttpsError("permission-denied", "O período de teste terminou.");
   }
   await db.ref("roomAccess/" + roomId + "/" + uid).set({
-    role: "teacher", status: "approved", verifiedAt: ServerValue.TIMESTAMP
+    role: "teacher", status: "approved", licenseToken: token,
+    plan: String(license.plan || ""), verifiedAt: ServerValue.TIMESTAMP
   });
   return { ok: true, plan: String(license.plan || ""), teacherName: String(license.teacherName || license.name || license.fullName || license.nome || "Professor") };
 });
@@ -226,16 +238,28 @@ exports.createClassShortLink = onCall({ region: REGION }, async (request) => {
   const code = String(request.data?.code || "").toUpperCase();
   const target = String(request.data?.target || "");
   const access = await db.ref("roomAccess/" + roomId + "/" + uid).get();
-  if (access.val()?.role !== "teacher" || access.val()?.status !== "approved" ||
-      !/^[A-Z0-9]{7}$/.test(code) || !target.startsWith("https://")) {
-    throw new HttpsError("permission-denied", "Não foi possível criar o link.");
+  if (access.val()?.role !== "teacher" || access.val()?.status !== "approved") {
+    throw new HttpsError("permission-denied", "O professor ainda não tem autorização para esta sala.");
+  }
+  if (!/^[A-Z0-9]{7}$/.test(code) || !target.startsWith("https://")) {
+    throw new HttpsError("invalid-argument", "Código ou endereço do convite inválido.");
+  }
+  const sessionId = "ROOM-" + roomId;
+  const sessionRef = db.ref("aznyRooms/" + roomId + "/sessions/" + sessionId);
+  const [statusSnap, teacherSnap] = await Promise.all([
+    sessionRef.child("status").get(), sessionRef.child("teacherUid").get()
+  ]);
+  if (statusSnap.val() !== "active" || String(teacherSnap.val() || "") !== uid) {
+    throw new HttpsError("failed-precondition", "Inicie a aula antes de gerar o link de convite.");
   }
   const ref = db.ref("aznyShortLinks/" + code);
   const result = await ref.transaction(current => current || {
-    target, type: "class", createdAt: ServerValue.TIMESTAMP
+    target, type: "class", roomId, sessionId, createdBy: uid, createdAt: ServerValue.TIMESTAMP
   });
   const value = result.snapshot.val();
-  if (!value || value.target !== target) throw new HttpsError("already-exists", "Código curto em conflito.");
+  if (!value || value.target !== target || value.createdBy && value.createdBy !== uid) {
+    throw new HttpsError("already-exists", "Código curto em conflito.");
+  }
   return { code, target: value.target };
 });
 
