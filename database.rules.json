@@ -204,7 +204,7 @@
       ".read": "auth != null && auth.token.email == 'suporte@domingas.com'",
       "$uid": {
         ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
-        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (auth.uid == $uid && newData.child('status').val() == 'pending'))",
         ".indexOn": [
           "status",
           "createdAt"
