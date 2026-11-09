@@ -204,11 +204,14 @@
       ".read": "auth != null && auth.token.email == 'suporte@domingas.com'",
       "$uid": {
         ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
-        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (auth.uid == $uid && (!newData.exists() || newData.child('status').val() == data.child('status').val() || newData.child('status').val() == 'approved')))",
+        ".write": "auth != null && auth.token.email == 'suporte@domingas.com'",
         ".indexOn": [
           "status",
           "createdAt"
-        ]
+        ],
+        "$courseId": {
+          ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (auth.uid == $uid && (!newData.exists() || newData.child('status').val() == data.child('status').val() || newData.child('status').val() == 'approved')))"
+        }
       }
     },
     "publicTeacherProfiles": {
