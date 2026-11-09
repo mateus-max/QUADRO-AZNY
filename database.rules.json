@@ -195,8 +195,8 @@
       }
     },
     "teacherProfiles": {
-      ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
       "$uid": {
+        ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
         ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)"
       }
     },
