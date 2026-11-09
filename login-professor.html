@@ -447,6 +447,13 @@ auth.onAuthStateChanged(async user=>{
  if(user.isAnonymous||provider==="anonymous"){manualLoginRequested=false;await auth.signOut().catch(()=>{});return}
  try{
   if(!upgradeMode&&!registrationCompleted){
+   const profileSnap=await db.ref("teacherAccounts/"+user.uid).once("value");
+   const accountProfile=profileSnap.val();
+   if(accountProfile&&accountProfile.role==="teacher"&&String(accountProfile.status||accountProfile.accountStatus||"")==="rejected"){
+    manualLoginRequested=false;registrationCompleted=false;
+    pendingLoginNotice="A sua conta foi rejeitada pela direcção. "+(accountProfile.adminNote?"Motivo: "+accountProfile.adminNote:"Contacte a administração para mais informações.")+" A conta não tem acesso ao painel.";
+    await auth.signOut().catch(()=>{});return;
+   }
    const approvedSnap=await db.ref("licenses").orderByChild("teacherEmail").equalTo(user.email).once("value");
    const approvedLicenses=approvedSnap.val()||{};
    const approvedEntry=Object.entries(approvedLicenses).find(([key,license])=>license&&["active","trial_exhausted"].includes(String(license.status||""))&&String(license.teacherEmail||"").toLowerCase()===String(user.email||"").toLowerCase()&&(!license.teacherUid||String(license.teacherUid)===String(user.uid))&&(license.accessToken||key));
