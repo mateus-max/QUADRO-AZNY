@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "functions/**"
+      - "database.rules.json"
       - "firebase.json"
       - ".github/workflows/deploy-firebase-functions.yml"
   workflow_dispatch:
@@ -40,10 +41,10 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy approval functions to Firebase
+      - name: Deploy Firebase functions and Realtime Database rules
         uses: w9jds/firebase-action@v13.24.0
         with:
-          args: deploy --only functions --project remot-board --non-interactive
+          args: deploy --only functions,database --project remot-board --non-interactive
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_REMOT_BOARD }}
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
