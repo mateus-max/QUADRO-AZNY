@@ -175,6 +175,13 @@
       ".read": false,
       ".write": false
     },
+    "teacherRegistrationRequests": {
+      ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
+      "$uid": {
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (!data.exists() && auth.uid == $uid && newData.child('uid').val() == auth.uid && newData.child('role').val() == 'teacher' && newData.child('status').val() == 'pending' && newData.child('accountStatus').val() == 'pending'))",
+        ".validate": "auth != null && (auth.token.email == 'suporte@domingas.com' || (newData.hasChildren(['uid','name','email','role','status','accountStatus','createdAt']) && newData.child('uid').val() == auth.uid && newData.child('email').val() == auth.token.email && newData.child('role').val() == 'teacher' && newData.child('status').val() == 'pending' && newData.child('accountStatus').val() == 'pending'))"
+      }
+    },
     "teacherAccounts": {
       ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || query.orderByChild == 'uid' && query.equalTo == auth.uid)",
       ".indexOn": [
