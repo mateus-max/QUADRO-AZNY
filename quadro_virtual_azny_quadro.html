@@ -1483,22 +1483,42 @@ function bindClassSessionRealtime(){
   else if(studentApproved&&status==="ended"){showClassEnded()}
   else{showStudentWaitingForClass()}
  });
- /* A lista completa de pedidos e a sinalização dos pares são privadas do professor. */
+ /* Pedidos completos são visíveis ao professor; cada sinalização WebRTC é
+    subscrita individualmente para respeitar as regras por participante. */
  if(isStudent)return;
+ const peerListeners=new Map();
  sref.child("joinRequests").on("value",snap=>{
   const data=snap.val()||{};
   if(aznyObservedClassStatus!=="active"){
    document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());
    return;
   }
-  const pending=new Set();
-  Object.entries(data).forEach(([id,d])=>{if(d&&d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}});
+  const pending=new Set(),approved=new Set();
+  Object.entries(data).forEach(([id,d])=>{
+   if(!d)return;
+   if(d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}
+   if(d.status==="approved"){
+    approved.add(id);
+    if(!peerListeners.has(id)){
+     const ref=signalRef(id);
+     const handler=peerSnap=>{
+      if(aznyObservedClassStatus!=="active")return;
+      const peer=peerSnap.val()||{};
+      if(peer.offer&&peer.name)connectStudentPeer(id,peer);
+     };
+     peerListeners.set(id,{ref,handler});ref.on("value",handler);
+    }
+   }
+  });
   document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()});
+  for(const [id,entry] of peerListeners){
+   if(!approved.has(id)){
+    entry.ref.off("value",entry.handler);peerListeners.delete(id);
+    try{window.aznyTeacherPeers?.[id]?.close()}catch(_){}
+    removeStudentVideoCard(id);
+   }
+  }
  });
- const handlePeer=snap=>{if(aznyObservedClassStatus!=="active")return;const d=snap.val()||{};if(d.offer&&d.name)connectStudentPeer(snap.key,d)};
- const peers=sref.child("peers");
- peers.on("child_added",handlePeer);
- peers.on("child_changed",handlePeer);
 }
 
 /* Presença e estado da rede: a aula permanece aberta durante falhas temporárias. */
