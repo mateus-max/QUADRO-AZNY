@@ -1405,6 +1405,11 @@ async function ensureAZNYRealtime(){
    aznyTeacherAccessValidated=true;
   }catch(e){console.error("AZNY autorização da sala:",e);toast("Não foi possível autorizar a sala no Firebase: "+(e.code||e.message||"verifique a configuração."));return false}
  }
+ /* Só ligar o quadro depois de existir autorização para esta sala. */
+ if(isStudent&&!studentApproved){
+  if(!sessionRealtimeBound)bindClassSessionRealtime();
+  return true;
+ }
  if(!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}
  return true
 }
@@ -1420,7 +1425,35 @@ function clearTeacherStudentCameras(){
  if(wrap)wrap.innerHTML='<div class="no-students" id="noStudents">Nenhum aluno entrou na aula.</div>';
  document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());
 }
-function bindClassSessionRealtime(){if(!AZNY_DB||!classSessionId||sessionRealtimeBound)return;sessionRealtimeBound=true;const sref=aznySessionRef();sref.child("status").on("value",snap=>{const status=snap.val()||"waiting";aznyObservedClassStatus=status;if(!isStudent){if(status!=="active")clearTeacherStudentCameras();return}if(status==="active"){if(!studentApproved)showStudentJoinReady()}else if(studentApproved&&status==="ended"){showClassEnded()}else{showStudentWaitingForClass()}});sref.child("joinRequests").on("value",snap=>{if(isStudent)return;if(aznyObservedClassStatus!=="active"){document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());return}const data=snap.val()||{};const pending=new Set();Object.entries(data).forEach(([id,d])=>{if(d&&d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}});document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()})});const handlePeer=snap=>{if(isStudent||aznyObservedClassStatus!=="active")return;const d=snap.val()||{};if(d.offer&&d.name)connectStudentPeer(snap.key,d)};const peers=sref.child("peers");peers.on("child_added",handlePeer);peers.on("child_changed",handlePeer)}
+function bindClassSessionRealtime(){
+ if(!AZNY_DB||!classSessionId||sessionRealtimeBound)return;
+ sessionRealtimeBound=true;
+ const sref=aznySessionRef();
+ sref.child("status").on("value",snap=>{
+  const status=snap.val()||"waiting";
+  aznyObservedClassStatus=status;
+  if(!isStudent){if(status!=="active")clearTeacherStudentCameras();return}
+  if(status==="active"){if(!studentApproved)showStudentJoinReady()}
+  else if(studentApproved&&status==="ended"){showClassEnded()}
+  else{showStudentWaitingForClass()}
+ });
+ /* A lista completa de pedidos e a sinalização dos pares são privadas do professor. */
+ if(isStudent)return;
+ sref.child("joinRequests").on("value",snap=>{
+  const data=snap.val()||{};
+  if(aznyObservedClassStatus!=="active"){
+   document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());
+   return;
+  }
+  const pending=new Set();
+  Object.entries(data).forEach(([id,d])=>{if(d&&d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}});
+  document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()});
+ });
+ const handlePeer=snap=>{if(aznyObservedClassStatus!=="active")return;const d=snap.val()||{};if(d.offer&&d.name)connectStudentPeer(snap.key,d)};
+ const peers=sref.child("peers");
+ peers.on("child_added",handlePeer);
+ peers.on("child_changed",handlePeer);
+}
 
 /* Presença e estado da rede: a aula permanece aberta durante falhas temporárias. */
 let aznyPresenceWatchBound=false;
@@ -1559,7 +1592,7 @@ async function resetBoardForClassLifecycle(){
  try{sendBoardSnapshotToAllPeers()}catch(_){}
  try{roomChannel?.postMessage({type:"board-cleared",room:roomId})}catch(_){}
 }
-function publishBoardState(){if(remoteBoardApplying||!AZNY_DB)return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
+function publishBoardState(){if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
 function sendBoardSnapshotToChannel(ch){return false}
 function sendBoardSnapshotToPeer(pc){return false}
 function sendBoardSnapshotToAllPeers(){return false}
@@ -1793,7 +1826,7 @@ function handleBoardChannelMessage(raw){
  }catch(e){console.warn("AZNY board packet:",e)}
 }
 function publishLiveBoardState(){
- if(remoteBoardApplying)return;
+ if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;
  clearTimeout(liveBoardTimer);
  /* Coalesce pointer events briefly; Firebase is the shared source of truth for
     every approved participant, while WebRTC remains the fast media/peer path. */
@@ -3027,7 +3060,7 @@ async function toggleStudentCamera(){
  const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo)selfVideo.style.opacity=studentCameraOn?"1":".22";
  toast(document.documentElement.lang==="en"?(studentCameraOn?"Camera on.":"Camera off."):(studentCameraOn?"Câmera ligada.":"Câmera desligada."));
 }
-function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);toast(document.documentElement.lang==="en"?"The teacher approved your entry.":"Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
+function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);if(!await ensureAZNYRealtime()){toast("Entrada aprovada, mas a sincronização do quadro não ficou disponível.");return}toast(document.documentElement.lang==="en"?"The teacher approved your entry.":"Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
 async function syncTeacherMediaToPeer(pc){
  if(!pc||pc.connectionState==="closed")return;
  const cam=aznyTeacherScreenTrack||teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
@@ -3225,6 +3258,7 @@ async function restoreStudentSessionIfApproved(){
   if(!found){showStudentJoinReady();return false}
   studentRequestId=found.id;studentName=found.data.name||"";
   studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");
+  if(!await ensureAZNYRealtime())return false;
   const modal=document.getElementById("studentNameModal");modal?.classList.remove("show");
   document.getElementById("studentControls").style.display="flex";
   const input=document.getElementById("studentNameInput");if(input)input.value=studentName;
@@ -3371,7 +3405,7 @@ async function leaveStudentClass(){
  toast(document.documentElement.lang==="en"?"You left the class. The connection was closed.":"Saiu da aula. A ligação foi fechada.");
 }
 function showClassEnded(){if(!isStudent)return;let endedNotice=document.getElementById("aznyClassEndedNotice");if(!endedNotice){endedNotice=document.createElement("div");endedNotice.id="aznyClassEndedNotice";endedNotice.setAttribute("role","alert");endedNotice.setAttribute("aria-live","assertive");endedNotice.style.cssText="position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(5,16,31,.94);color:#fff;text-align:center;font-size:clamp(30px,6vw,64px);font-weight:900;line-height:1.2";endedNotice.textContent="A AULA FOI ENCERRADA PELO PROFESSOR";document.body.appendChild(endedNotice)}endedNotice.style.display="flex";aznyStopStudentMesh();studentApproved=false;try{studentPeer?.close()}catch(_){}studentPeer=null;try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}studentLocalStream=null;document.getElementById("studentControls").style.display="none";document.getElementById("studentNameModal").classList.add("show");document.getElementById("studentJoinBtn").disabled=false;document.getElementById("studentWaiting").textContent="A aula foi encerrada. Pode voltar a entrar por este mesmo link quando o professor iniciar outra aula.";document.getElementById("studentWaiting").style.display="block";const remoteVideo=document.getElementById("studentTeacherVideo");if(remoteVideo){remoteVideo.pause?.();remoteVideo.srcObject=null;remoteVideo.removeAttribute("src");remoteVideo.load?.();remoteVideo.style.display="none"}const remoteCard=remoteVideo?.closest(".student-video-card");if(remoteCard)remoteCard.classList.add("teacher-camera-ended");toast(document.documentElement.lang==="en"?"The teacher has ended the class.":"A aula foi encerrada pelo professor.")}
-function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;const endedNotice=document.getElementById("aznyClassEndedNotice");if(endedNotice)endedNotice.style.display="none";document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";toast("Entrada aprovada pelo professor");startStudentWebRTC()}else{document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended"&&m.session===classSessionId)showClassEnded()}}
+function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;const endedNotice=document.getElementById("aznyClassEndedNotice");if(endedNotice)endedNotice.style.display="none";document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";ensureAZNYRealtime().then(ready=>{if(ready){toast("Entrada aprovada pelo professor");startStudentWebRTC()}else toast("Entrada aprovada, mas a sincronização ainda não está disponível.")})}else{document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended"&&m.session===classSessionId)showClassEnded()}}
 async function getClassLink(){
  if(!await ensureAZNYRealtime()){toast("A sala ainda não foi autorizada no Firebase. Não é possível criar o link.");return ""}
  /* Endereço curto e profissional para participantes; o ficheiro HTML fica oculto. */
@@ -3580,7 +3614,7 @@ function showTeacherReloadNotice(){
  showNetworkNotice(en?"The teacher's class is back. Reconnecting automatically…":"O professor recuperou a aula. A restabelecer a ligação automaticamente…","good");
  aznyScheduleStudentReconnect("teacher-page-restored",300);
 }
-setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(async ready=>{if(ready&&!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom();toast("Ligação em tempo real ativa")}else if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário")}if(ready&&!isStudent)await restoreActiveTeacherSession()}).catch(e=>console.error(e));
+setupObjectActions();const AZNY_READY=initAZNYRealtime();if(isStudent)setupStudent();setupRoomChannel();AZNY_READY.then(async ready=>{if(!ready){console.warn("AZNY realtime aguardará nova tentativa quando necessário");return}if(!isStudent){const authorized=await ensureAZNYRealtime();if(authorized){toast("Sala autorizada. Sincronização em tempo real activa.");await restoreActiveTeacherSession()}}}).catch(e=>console.error(e));
 window.addEventListener("beforeunload",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Atualizar/fechar o separador não encerra a sessão da aula. */});
 window.addEventListener("resize",resizeCanvas);
 if(!isStudent)load();setTimeout(()=>{setZoom(1);updateZoomExtent();resizeCanvas()},80);
