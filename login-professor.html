@@ -449,9 +449,9 @@ auth.onAuthStateChanged(async user=>{
   if(!upgradeMode&&!registrationCompleted){
    const profileSnap=await db.ref("teacherAccounts/"+user.uid).once("value");
    const accountProfile=profileSnap.val();
-   if(accountProfile&&accountProfile.role==="teacher"&&String(accountProfile.status||accountProfile.accountStatus||"")==="rejected"){
+   if(accountProfile&&accountProfile.role==="teacher"&&["rejected","deleted"].includes(String(accountProfile.status||accountProfile.accountStatus||""))){
     manualLoginRequested=false;registrationCompleted=false;
-    pendingLoginNotice="A sua conta foi rejeitada pela direcção. "+(accountProfile.adminNote?"Motivo: "+accountProfile.adminNote:"Contacte a administração para mais informações.")+" A conta não tem acesso ao painel.";
+    pendingLoginNotice=String(accountProfile.status||accountProfile.accountStatus)==="deleted"?"Esta conta foi eliminada pela administração e já não tem acesso ao painel.":"A sua conta foi rejeitada pela direcção. "+(accountProfile.adminNote?"Motivo: "+accountProfile.adminNote:"Contacte a administração para mais informações.")+" A conta não tem acesso ao painel.";
     await auth.signOut().catch(()=>{});return;
    }
    const approvedSnap=await db.ref("licenses").orderByChild("teacherEmail").equalTo(user.email).once("value");
