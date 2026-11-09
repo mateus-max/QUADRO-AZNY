@@ -4734,7 +4734,43 @@ html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teache
 html body:not(.student-mode) .rightbar .camera-panel>.azny-teacher-media-toggles{display:none!important}
 @media(max-width:950px) and (orientation:landscape),(max-height:520px) and (pointer:coarse){html body:not(.student-mode) .rightbar .camera-panel #teacherCamera .azny-teacher-media-toggles button{width:27px!important;min-width:27px!important;max-width:27px!important;height:27px!important;min-height:27px!important;max-height:27px!important}}
 </style>
-</head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()});
+</head><body><h2>'+esc(current().name)+'</h2><table>'+table+'</table><script>window.onload=()=>window.print()<\/script>
+<style id="azny-mobile-student-cameras-vertical">
+/* Apenas no painel do professor em telefones: câmaras dos alunos em coluna,
+   com a mesma largura e proporção visual da câmara do professor. */
+@media (max-width: 600px){
+ body:not(.student-mode) .rightbar #students.students{
+  display:flex!important;
+  flex-direction:column!important;
+  grid-template-columns:none!important;
+  grid-auto-rows:auto!important;
+  align-items:stretch!important;
+  gap:7px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  min-height:0!important;
+ }
+ body:not(.student-mode) .rightbar #students.students>.student{
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-direction:column!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:auto!important;
+ }
+ body:not(.student-mode) .rightbar #students.students>.student video{
+  display:block!important;
+  width:100%!important;
+  height:clamp(92px,14vh,122px)!important;
+  min-height:92px!important;
+  max-height:122px!important;
+  object-fit:cover!important;
+ }
+}
+</style>
+
+</body></html>`);w.document.close()});
     const webOpen=()=>{panel.classList.remove("azny-excel-open");webPanel?.classList.add("azny-web-open");if(typeof ensureAZNYRealtime==="function")ensureAZNYRealtime().then(()=>{webRef=aznyRoomRef().child("webDocument");webRef.on("value",snap=>{const v=snap.val();if(!v)return;if(v.visible)webPanel.classList.add("azny-web-open");else if(isStudent)webPanel.classList.remove("azny-web-open");if(document.activeElement!==webEditor&&typeof v.html==="string")webEditor.innerHTML=v.html}) ;if(!isStudent)webRef.update({visible:true})});};
     document.getElementById("teacherWebBtn")?.addEventListener("click",webOpen);
     document.getElementById("aznyWebClose")?.addEventListener("click",()=>{webPanel.classList.remove("azny-web-open");if(!isStudent&&webRef)webRef.update({visible:false})});
