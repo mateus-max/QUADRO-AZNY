@@ -245,7 +245,7 @@ function updateLicenseDisplay(license,accessToken){
  const expired=license.expiresAt&&new Date(license.expiresAt)<=new Date();
  const isTrial=license.plan==="trial";
  const used=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length);
- const limit=2;
+ const limit=Math.max(1,Number(license.trialSessionsLimit||2));
  const exhausted=isTrial&&(license.trialExhausted===true||license.status==="trial_exhausted"||used>=limit);
  const upgrade=document.getElementById("upgradePlan");
  const planLabels={trial:"Plano de teste",basic:"Plano básico",professional:"Plano profissional",school:"Plano escola"};
