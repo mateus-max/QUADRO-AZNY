@@ -471,11 +471,14 @@ async function createLicenseForApprovedRequest(approved, requestId) {
   const used = Object.keys(completed).length;
   const exhausted = planKey === "trial" && used >= 2;
   const now = new Date().toISOString();
+  const subscriptionMonths = planKey === "trial" ? 0 : Math.max(1, Number(approved.months || (approved.period === "annual" ? 12 : 1)));
+  const expiryDate = new Date(approved.approvedAt || now);
+  if (subscriptionMonths) expiryDate.setMonth(expiryDate.getMonth() + subscriptionMonths);
   const license = {
     status: "active", trialExhausted: exhausted, boardAccess: !exhausted,
     plan: planKey, planName: String(approved.planName || plan.name),
-    ...plan, startedAt: prior.startedAt || approved.approvedAt || now,
-    expiresAt: approved.expiresAt || null,
+    ...plan, startedAt: approved.approvedAt || now,
+    expiresAt: approved.expiresAt || (subscriptionMonths ? expiryDate.toISOString() : null),
     teacherName: String(approved.name || approved.teacherName || email),
     teacherPhone: String(approved.phone || approved.teacherPhone || ""),
     requestId, accessToken: token, teacherEmail: email,
