@@ -229,7 +229,7 @@ function updateLicenseDisplay(license,accessToken){
  document.getElementById("availableLessons").textContent=isTrial?Math.max(0,limit-used):"—";
  document.getElementById("progressLabel").textContent=isTrial?used+"/"+limit+" aulas concluídas":"Plano activo";
  document.getElementById("lessonProgress").style.width=isTrial?Math.min(100,used/limit*100)+"%":"0%";
- document.getElementById("planDescription").textContent=isTrial?"Válido para "+limit+" aulas gratuitas.":(license.planName||"A sua licença está activa.")+(license.expiresAt?" · Renovação em "+new Date(license.expiresAt).toLocaleDateString("pt-AO"):"");
+ document.getElementById("planDescription").textContent=isTrial?"Válido para "+limit+" aulas gratuitas, com máximo de 15 minutos cada.":(license.planName||"A sua licença está activa.")+(license.expiresAt?" · Renovação em "+new Date(license.expiresAt).toLocaleDateString("pt-AO"):"");
  renderPlanTime(license);
  if(isTrial&&!exhausted){status.className="badge";status.textContent="Plano de teste — "+used+"/"+limit+" aulas concluídas";message.textContent="Tem "+(limit-used)+" aula(s) disponível(is)."}
  else if(exhausted){status.className="badge warn";status.textContent="Teste concluído — 2/2 aulas";message.textContent="O teste terminou. Atualize o plano para voltar a dar aulas."}
