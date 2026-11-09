@@ -14,9 +14,21 @@ const auth=firebase.auth(),db=firebase.database();const $=id=>document.getElemen
 const planSpecs={basic:{name:"Básico",students:10,dailyClasses:2,simultaneous:1,duration:2,storage:"10 GB temporários"},professional:{name:"Profissional",students:45,dailyClasses:3,simultaneous:2,duration:4,storage:"50 GB temporários"},school:{name:"Escola",students:50,dailyClasses:3,simultaneous:5,duration:6,storage:"100 GB temporários"},trial:{name:"Teste experimental — 2 aulas",students:45,dailyClasses:3,simultaneous:1,duration:2,storage:"Temporário",trialSessionsLimit:2}};
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function money(v){return Number(v||0).toLocaleString("pt-AO")+" Kz"}
+async function ensureAdminSession(){
+ const user=auth.currentUser;
+ if(!user)throw new Error("Sessão administrativa terminada. Entre novamente.");
+ await user.getIdToken(true);
+ const result=await user.getIdTokenResult(true);
+ const claimEmail=String(result.claims.email||"").trim().toLowerCase();
+ const accountEmail=String(user.email||"").trim().toLowerCase();
+ if(accountEmail!=="suporte@domingas.com"||claimEmail!=="suporte@domingas.com"){
+  throw new Error("A sessão não apresenta a autorização administrativa exigida pelo Realtime Database. Conta: "+(accountEmail||"sem e-mail")+"; token: "+(claimEmail||"sem claim email")+". Termine a sessão e entre novamente com suporte@domingas.com.");
+ }
+ return {uid:user.uid,email:claimEmail};
+}
 $("loginBtn").onclick=async()=>{const email=$("adminEmail").value.trim().toLowerCase(),password=$("adminPassword").value;if(email!=="suporte@domingas.com"){$("loginMsg").textContent="Use o e-mail administrativo autorizado.";return}if(!password){$("loginMsg").textContent="Introduza a senha.";return}$("loginBtn").disabled=true;try{await auth.signInWithEmailAndPassword(email,password)}catch(e){$("loginMsg").textContent="Não foi possível entrar: "+e.message}finally{$("loginBtn").disabled=false}};
 $("logout").onclick=()=>auth.signOut();$("refresh").onclick=()=>{load();loadAccounts()};
-auth.onAuthStateChanged(user=>{if(!user){if(requestsRef&&realtimeHandler)requestsRef.off("value",realtimeHandler);if(accountsRef&&accountsHandler)accountsRef.off("value",accountsHandler);requestsRef=null;realtimeHandler=null;accountsRef=null;accountsHandler=null;$("login").classList.remove("hidden");$("panel").classList.add("hidden");$("logout").classList.add("hidden");return}if((user.email||"").toLowerCase()!=="suporte@domingas.com"){auth.signOut();return}$("login").classList.add("hidden");$("panel").classList.remove("hidden");$("logout").classList.remove("hidden");$("identity").textContent=user.email||user.uid;load();loadAccounts()});
+auth.onAuthStateChanged(async user=>{if(!user){if(requestsRef&&realtimeHandler)requestsRef.off("value",realtimeHandler);if(accountsRef&&accountsHandler)accountsRef.off("value",accountsHandler);requestsRef=null;realtimeHandler=null;accountsRef=null;accountsHandler=null;$("login").classList.remove("hidden");$("panel").classList.add("hidden");$("logout").classList.add("hidden");return}try{const session=await ensureAdminSession();$("login").classList.add("hidden");$("panel").classList.remove("hidden");$("logout").classList.remove("hidden");$("identity").textContent=session.email+" · "+session.uid;load();loadAccounts()}catch(error){$("loginMsg").textContent=error.message;await auth.signOut().catch(()=>{});}});
 function load(){ $("message").textContent="A ligar ao Firebase Realtime Database…";if(requestsRef&&realtimeHandler)requestsRef.off("value",realtimeHandler);requestsRef=db.ref("paymentRequests");realtimeHandler=snap=>{allRequests=snap.val()||{};render()};requestsRef.on("value",realtimeHandler,error=>{$("message").textContent="Falha ao ler pedidos: "+error.message});}
 
 function loadAccounts(){if(accountsRef&&accountsHandler)accountsRef.off("value",accountsHandler);accountsRef=db.ref("teacherAccounts");accountsHandler=s=>{allAccounts=s.val()||{};renderAccounts()};accountsRef.on("value",accountsHandler,e=>{$("accountMessage").textContent="Erro ao receber contas: "+e.message})}
@@ -54,6 +66,7 @@ async function loadAccountsOnce(){const snap=await db.ref("teacherAccounts").onc
 function adminStamp(){return new Date().toISOString();}
 function newAccessToken(){return "AZNY-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,12).toUpperCase();}
 async function reviewAccountDirect(uid,action,note,account){
+ await ensureAdminSession();
  const now=adminStamp(),updates={},base=account||{};
  if(action==="approve"){
   const patch={status:"approved",accountStatus:"active",approvedBy:auth.currentUser.uid,approvedAt:now,updatedAt:now};
@@ -110,6 +123,7 @@ async function decide(id,status,button){
  }
 }
 async function reviewPaymentDirect(id,action,note,item){
+ await ensureAdminSession();
  const uid=String(item.uid||""),email=String(item.email||"").trim().toLowerCase(),now=adminStamp(),updates={};
  if(!uid||!email)throw new Error("O pedido não contém UID e e-mail do professor.");
  if(action==="reject"){
