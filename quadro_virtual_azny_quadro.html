@@ -2871,12 +2871,12 @@ async function aznyCountCompletedTrialClass(runOverride,finalize=false){
  const usageRef=licenseRef.child("trialCompletedSessions");
  const result=await usageRef.transaction(current=>{const sessions=current||{};if(sessions[run])return sessions;if(Object.keys(sessions).length>=limit)return;return {...sessions,[run]:firebase.database.ServerValue.TIMESTAMP}});
  if(!result.committed){
-  const usedNow=Number(license.trialSessionsUsed||Object.keys(license.trialCompletedSessions||{}).length);
+  const usedNow=Math.max(Number(license.trialSessionsUsed||0),Object.keys(license.trialCompletedSessions||{}).length);
   if(usedNow>=limit)await Promise.all([licenseRef.child("trialExhausted").set(true),licenseRef.child("boardAccess").set(false)]).catch(e=>console.warn("AZNY trial lock:",e));
   throw new Error("Limite de "+limit+" aulas experimentais atingido. Actualize o plano para continuar.");
  }
  const used=Object.keys(result.snapshot.val()||{}).length;
- const previousUsed=Number(license.trialSessionsUsed||0);
+ const previousUsed=Math.max(Number(license.trialSessionsUsed||0),Object.keys(license.trialCompletedSessions||{}).length);
  if(used>previousUsed)await licenseRef.child("trialSessionsUsed").set(used);
  const exhausted=used>=limit;
  if(finalize&&exhausted){await licenseRef.child("trialExhausted").set(true);await licenseRef.child("boardAccess").set(false);}
