@@ -1424,7 +1424,7 @@ async function validateTeacherLicenseAccess(){
   }
   const snap=await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).once("value");
   const license=snap.val();
-  if(!license||license.status!=="active"||String(license.teacherEmail||"").trim().toLowerCase()!==String(user.email).trim().toLowerCase()||(license.teacherUid&&license.teacherUid!==user.uid)){
+  if(!license||license.status!=="active"||license.boardAccess===false||license.trialExhausted===true||String(license.teacherEmail||"").trim().toLowerCase()!==String(user.email).trim().toLowerCase()||(license.teacherUid&&license.teacherUid!==user.uid)){
    toast("A licença não corresponde à conta autenticada. Volte ao painel do professor para confirmar o acesso.");
    return false;
   }
