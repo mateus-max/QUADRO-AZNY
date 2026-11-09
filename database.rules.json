@@ -22,10 +22,8 @@
         ".read": "auth != null && (auth.token.email === 'suporte@domingas.com' || data.child('teacherUid').val() === auth.uid || data.child('teacherEmail').val() === auth.token.email)",
         ".write": "auth != null && auth.token.email === 'suporte@domingas.com'",
         "trialCompletedSessions": {
-          "$runId": {
-            ".write": "auth != null && auth.token.email === data.parent().parent().child('teacherEmail').val() && data.parent().parent().child('plan').val() === 'trial' && !data.exists() && data.parent().parent().child('trialSessionsUsed').val() < (data.parent().parent().child('trialSessionsLimit').val() || 2)",
-            ".validate": "newData.isNumber()"
-          }
+          ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.hasChildren()",
+          ".validate": "newData.hasChildren()"
         },
         "trialSessionsUsed": {
           ".write": "auth != null && data.parent().child('teacherEmail').val() === auth.token.email && data.parent().child('plan').val() === 'trial' && newData.isNumber() && newData.val() >= (data.val() || 0) && newData.val() <= (data.parent().child('trialSessionsLimit').val() || 2)"
