@@ -1944,9 +1944,9 @@ function publishLiveBoardState(){
     const ref=aznyRoomRef().child("board");
     const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],updatedAt:Date.now(),lastEditorUid:aznyUid||""};
     ref.transaction(server=>aznyMergeCollaborativeBoardState(server,payload),undefined,false).catch(e=>{console.error("AZNY live board transaction rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
-   },20);
+   },8);
   }
- },12)
+ },5)
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
@@ -2720,7 +2720,7 @@ async function startCamera(){
    catch(e){lastError=e;if(e.name==="NotAllowedError"||e.name==="SecurityError")throw e;await new Promise(resolve=>setTimeout(resolve,350))}
   }
   if(!teacherStream)throw lastError||new Error("A câmara não devolveu uma transmissão.");
-  if(v){v.srcObject=teacherStream;v.autoplay=true;v.muted=true;v.playsInline=true;v.removeAttribute("hidden");v.hidden=false;v.style.cssText+=";display:block!important;visibility:visible!important;opacity:1!important;width:100%;height:100%;min-height:60px;object-fit:cover;background:#0b1828;position:absolute;inset:0;z-index:2";v.onloadedmetadata=()=>{v.play?.().catch(()=>{})};await new Promise(resolve=>{if(v.readyState>=2){resolve();return}const done=()=>resolve();v.addEventListener("loadeddata",done,{once:true});setTimeout(done,1200)});try{await v.play()}catch(playError){console.warn("AZNY camera play:",playError);toast(document.documentElement.lang==="en"?"The camera is on. Tap the video to start the image.":"A câmara está ligada. Toque no vídeo para iniciar a imagem.");v.addEventListener("pointerdown",()=>v.play?.().catch(()=>{}),{once:true})}}
+  if(v){const off=document.querySelector("#teacherCamera .cam-off");if(off)off.style.display="none";v.pause?.();v.srcObject=teacherStream;v.autoplay=true;v.muted=true;v.defaultMuted=true;v.playsInline=true;v.removeAttribute("hidden");v.hidden=false;v.style.cssText+=";display:block!important;visibility:visible!important;opacity:1!important;width:100%;height:100%;min-height:60px;object-fit:cover;background:#0b1828;position:absolute;inset:0;z-index:4";const playVideo=async()=>{try{await v.play()}catch(err){console.warn("AZNY camera play:",err)}};v.onloadedmetadata=playVideo;v.onloadeddata=playVideo;v.oncanplay=playVideo;await playVideo();await new Promise(resolve=>{if(v.videoWidth>0&&v.readyState>=2){resolve();return}const done=()=>resolve();v.addEventListener("loadeddata",done,{once:true});setTimeout(done,1800)});if(!v.videoWidth)throw new Error("A câmara foi aberta, mas não está a fornecer fotogramas de vídeo.")}
   document.querySelector("#teacherCamera .cam-off").style.display="none";
   document.getElementById("camStatus").textContent=document.documentElement.lang==="en"?"On":"Ligada";
   if(btn)btn.disabled=false;
@@ -2736,7 +2736,7 @@ async function startCamera(){
 }
 function stopCamera(){
  if(teacherStream){teacherStream.getTracks().forEach(t=>t.stop());teacherStream=null}
- const v=document.getElementById("teacherVideo");v.srcObject=null;v.hidden=true;
+ const v=document.getElementById("teacherVideo");v.pause?.();v.srcObject=null;v.hidden=true;v.style.display="none";
  document.querySelector("#teacherCamera .cam-off").style.display="flex";
  document.getElementById("camStatus").textContent=document.documentElement.lang==="en"?"Off":"Desligada";
  document.getElementById("cameraBtn").disabled=false;
@@ -5476,3 +5476,5 @@ body:not(.student-mode) .student>.azny-student-device-controls [data-student-mic
 body:not(.student-mode) .student>.azny-student-device-controls [data-student-network]{order:2!important;position:static!important;display:flex!important;flex:0 0 30px!important;width:30px!important;height:28px!important;align-items:center!important;justify-content:center!important;margin:0!important}
 body:not(.student-mode) .student>.azny-student-device-controls [data-student-camera]{order:3!important}
 </style>
+
+<style id="azny-fixed-board-frame-and-video">#stage{overflow:auto!important}#board{box-sizing:border-box!important;resize:none!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;border:8px solid #8b5a2b!important;flex:none!important}#board::before,#board::after{pointer-events:none!important}#teacherCamera{position:relative!important;overflow:hidden!important;background:#091626!important}#teacherCamera #teacherVideo{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;display:block!important;visibility:visible!important;opacity:1!important;object-fit:cover!important;z-index:4!important;background:#091626!important}#teacherCamera .cam-off{position:absolute!important;inset:0!important;z-index:1!important;pointer-events:none!important}#teacherCamera .camera-label,#teacherCamera .cam-status,#teacherCamera .azny-teacher-media-toggles,#teacherCamera .azny-camera-signal{z-index:6!important}</style>
