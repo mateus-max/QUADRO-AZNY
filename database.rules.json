@@ -275,6 +275,13 @@
     "maintenanceMode": {
       ".read": true,
       ".write": "auth != null && auth.token.email == 'suporte@domingas.com'"
+    },
+    "publications": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email == 'suporte@domingas.com'",
+      "$publicationId": {
+        ".validate": "newData.hasChildren(['type','url','caption','createdAt','author','storagePath','createdBy']) && (newData.child('type').val() == 'image' || newData.child('type').val() == 'video') && newData.child('url').isString() && newData.child('caption').isString() && newData.child('createdAt').isNumber() && newData.child('author').isString() && newData.child('storagePath').isString() && newData.child('createdBy').isString()"
+      }
     }
   }
 }

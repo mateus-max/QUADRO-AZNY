@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "database.rules.json"
+      - "storage.rules"
       - "firebase.json"
       - ".github/workflows/deploy-firebase-database-rules.yml"
   workflow_dispatch:
@@ -37,10 +38,10 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy only Realtime Database rules
+      - name: Deploy Realtime Database and Storage rules
         uses: w9jds/firebase-action@v13.24.0
         with:
-          args: deploy --only database --project remot-board --non-interactive
+          args: deploy --only database,storage --project remot-board --non-interactive
         env:
           GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_REMOT_BOARD }}
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
