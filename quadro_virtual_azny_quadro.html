@@ -1411,7 +1411,9 @@ async function provisionIsolatedGuestRoom(){
  setupRoomChannel();
  return true;
 }
+let aznyTrialUsedSessions=0,aznyTrialSessionLimit=2;
 function aznyUpdateTrialLessonsBadge(used,limit=2,exhausted=false){
+ aznyTrialUsedSessions=Math.max(0,Number(used)||0);aznyTrialSessionLimit=Math.max(1,Number(limit)||2);
  const badge=document.getElementById("trialLessonsBadge");
  if(!badge)return;
  if(isStudent||aznyTeacherPlanKey!=="trial"){badge.hidden=true;return}
@@ -1542,6 +1544,8 @@ function bindClassSessionRealtime(){
 /* Presença e estado da rede: a aula permanece aberta durante falhas temporárias. */
 let aznyPresenceWatchBound=false;
 function showNetworkNotice(message,kind){
+ /* Ocultar apenas alertas técnicos de gravação/sincronização recusada pelo Firebase; manter avisos úteis de ligação e estado da aula. */
+ if(/firebase recusou a (gravação|sincronização)/i.test(String(message||"")))return;
  let box=document.getElementById("aznyNetworkNotice");
  if(!box){box=document.createElement("div");box.id="aznyNetworkNotice";Object.assign(box.style,{position:"fixed",left:"50%",top:"54px",transform:"translateX(-50%)",zIndex:"10050",maxWidth:"min(92vw,560px)",padding:"10px 14px",borderRadius:"10px",fontSize:"12px",fontWeight:"750",textAlign:"center",boxShadow:"0 6px 22px #0003",transition:"opacity .2s"});document.body.appendChild(box)}
  box.textContent=message;box.style.background=kind==="bad"?"#fff0e6":kind==="good"?"#e4f8eb":"#fff8d9";box.style.color="#10243a";box.style.border="1px solid "+(kind==="bad"?"#e8a36e":kind==="good"?"#6bc58a":"#e5c65c");box.style.opacity="1";
@@ -2891,8 +2895,14 @@ async function endClass(){
  }catch(e){
   console.error("Contagem da aula de teste:",e);
   if(aznyTeacherPlanKey==="trial"){
-   toast("Não foi possível confirmar a aula experimental no Firebase. Restabeleça a internet e tente encerrar novamente.");
-   return;
+   /* A reserva da aula foi feita no início. Mesmo que a confirmação final falhe,
+      nunca deixar a aula aberta: se era a última sessão, fechar o acesso ao plano. */
+   const exhausted=aznyTrialUsedSessions>=aznyTrialSessionLimit;
+   trialResult={trial:true,exhausted,used:aznyTrialUsedSessions,limit:aznyTrialSessionLimit};
+   if(exhausted){
+    try{await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).update({trialExhausted:true,boardAccess:false})}
+    catch(lockError){console.error("AZNY trial lock retry:",lockError)}
+   }
   }
  }
  classStarted=false;
@@ -2928,8 +2938,13 @@ async function endClass(){
  if(trialResult.trial){
   if(trialResult.exhausted){
    aznyTeacherAccessValidated=false;
+   const startButton=document.getElementById("startClassBtn"),endButton=document.getElementById("endClassBtn");
+   if(startButton)startButton.disabled=true;if(endButton)endButton.disabled=true;
+   /* Confirmar o bloqueio no registo da licença antes de sair do quadro. */
+   try{await AZNY_DB.ref("licenses/"+AZNY_ACCESS_TOKEN).update({trialExhausted:true,boardAccess:false})}
+   catch(lockError){console.error("AZNY trial final lock:",lockError)}
    setTimeout(()=>{
-    alert("As "+trialResult.limit+" aulas experimentais foram utilizadas. Actualize o plano para continuar. O novo plano ficará activo assim que a direcção aprovar.");
+    alert("As "+trialResult.limit+" aulas experimentais foram utilizadas. O acesso ao quadro foi encerrado. Actualize o plano e aguarde a aprovação da direcção para voltar a utilizar o quadro.");
     location.replace("dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN));
    },350);
   }else{
