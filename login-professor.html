@@ -437,10 +437,10 @@ function attachRequests(user){if(requestListener)db.ref("paymentRequests").order
 auth.onAuthStateChanged(async user=>{
  currentUser=user;
  if(registrationInProgress)return;
- showStep(1);
+ showStep(upgradeMode?2:1);
  if(!user){
   if(registrationCompleted)return;
-  if(upgradeMode){$("choicePanel").classList.add("hidden");$("registerPanel").classList.add("hidden");$("loginPanel").classList.remove("hidden");$("signedInPanel").classList.add("hidden");msg("accountMsg","Entre na sua conta para continuar directamente para os planos pagos.","warn");return}
+  if(upgradeMode){showStep(1);$("choicePanel").classList.add("hidden");$("registerPanel").classList.add("hidden");$("loginPanel").classList.remove("hidden");$("signedInPanel").classList.add("hidden");msg("accountMsg","Entre na sua conta para continuar directamente para os planos pagos.","warn");return}
   $("choicePanel").classList.remove("hidden");
   $("registerPanel").classList.add("hidden");
   $("loginPanel").classList.toggle("hidden",!pendingLoginNotice);
