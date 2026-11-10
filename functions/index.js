@@ -111,6 +111,22 @@ exports.reviewTeacherPayment = onCall({region:REGION}, async request => {
       const planKey = String(item.plan || "");
       const plan = plans[planKey];
       if (!plan) throw new HttpsError("failed-precondition","Plano não reconhecido: " + planKey);
+      if (planKey === "trial") {
+        const [licenseHistory, requestHistory] = await Promise.all([
+          db.ref("licenses").orderByChild("teacherUid").equalTo(uid).get(),
+          db.ref("paymentRequests").orderByChild("uid").equalTo(uid).get()
+        ]);
+        const hadActivatedTrial = Object.values(licenseHistory.val() || {}).some(license =>
+          license && license.plan === "trial" && !!(license.startedAt || license.trialSessionsUsed || license.trialExhausted)
+        );
+        const hadApprovedTrial = Object.entries(requestHistory.val() || {}).some(([requestId, previous]) =>
+          requestId !== id && previous && previous.plan === "trial" &&
+          (previous.status === "approved" || previous.accessGranted === true)
+        );
+        if (hadActivatedTrial || hadApprovedTrial) {
+          throw new HttpsError("failed-precondition","Este professor já utilizou o plano de teste. Apenas os planos pagos estão disponíveis.");
+        }
+      }
       const paidMonths = planKey === "trial" ? 0 : (item.period === "annual" || Number(item.months) >= 12 ? 12 : Math.max(1, Number(item.months) || 1));
       const expiryDate = new Date(now);
       if (paidMonths) expiryDate.setMonth(expiryDate.getMonth() + paidMonths);
