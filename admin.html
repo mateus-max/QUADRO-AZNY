@@ -176,6 +176,15 @@ async function reviewPaymentDirect(id,action,note,item){
  };
  const planKey=String(item.plan||"").toLowerCase(),plan=plans[planKey];
  if(!plan)throw new Error("Plano não reconhecido no pedido: "+String(item.plan||"(vazio)")+".");
+ if(planKey==="trial"){
+  const [licenseHistory,requestHistory]=await Promise.all([
+   db.ref("licenses").orderByChild("teacherUid").equalTo(uid).once("value"),
+   db.ref("paymentRequests").orderByChild("uid").equalTo(uid).once("value")
+  ]);
+  const hadActivatedTrial=Object.values(licenseHistory.val()||{}).some(x=>x&&x.plan==="trial"&&(x.startedAt||x.trialSessionsUsed||x.trialExhausted));
+  const hadApprovedTrial=Object.entries(requestHistory.val()||{}).some(([requestId,x])=>requestId!==id&&x&&x.plan==="trial"&&(x.status==="approved"||x.accessGranted===true));
+  if(hadActivatedTrial||hadApprovedTrial)throw new Error("Este professor já utilizou o plano de teste. Apenas os planos pagos estão disponíveis.");
+ }
  const months=planKey==="trial"?0:(item.period==="annual"||Number(item.months)>=12?12:Math.max(1,Number(item.months)||1));
  const expiry=new Date(now);if(months)expiry.setMonth(expiry.getMonth()+months);
  const token=String(item.accessToken||item.existingAccessToken||"").trim()||newAccessToken();
