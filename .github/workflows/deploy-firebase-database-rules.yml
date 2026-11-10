@@ -1,0 +1,46 @@
+name: Deploy Firebase Realtime Database rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "database.rules.json"
+      - "firebase.json"
+      - ".github/workflows/deploy-firebase-database-rules.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-database-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate Realtime Database rules JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('database.rules.json','utf8')); console.log('Realtime Database rules JSON is valid')"
+
+      - name: Check Firebase deployment credentials
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_REMOT_BOARD }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          if [ -z "$GCP_SA_KEY" ] && [ -z "$FIREBASE_TOKEN" ]; then
+            echo "::error::Faltam credenciais Firebase. Configure FIREBASE_SERVICE_ACCOUNT_REMOT_BOARD ou FIREBASE_TOKEN em Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Deploy only Realtime Database rules
+        uses: w9jds/firebase-action@v13.24.0
+        with:
+          args: deploy --only database --project remot-board --non-interactive
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_REMOT_BOARD }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
