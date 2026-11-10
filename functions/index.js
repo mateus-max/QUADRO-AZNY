@@ -113,7 +113,7 @@ exports.reviewTeacherPayment = onCall({region:REGION}, async request => {
       if (!plan) throw new HttpsError("failed-precondition","Plano não reconhecido: " + planKey);
       if (planKey === "trial") {
         const [licenseHistory, requestHistory] = await Promise.all([
-          db.ref("licenses").orderByChild("teacherUid").equalTo(uid).get(),
+          db.ref("licenses").orderByChild("teacherEmail").equalTo(email).get(),
           db.ref("paymentRequests").orderByChild("uid").equalTo(uid).get()
         ]);
         const hadActivatedTrial = Object.values(licenseHistory.val() || {}).some(license =>
