@@ -303,6 +303,25 @@ body:has(.view-panel[data-view-panel="suporte"]:not([hidden])) .view-panel[data-
  .view-panel[data-view-panel="suporte"] .support-chat-messages{flex:1 1 0!important;min-height:0!important}
  .view-panel[data-view-panel="suporte"] .support-chat-compose{flex:0 0 auto!important}
 }
+
+/* Teclado móvel: ajustar a janela do chat à área realmente visível */
+@media(max-width:700px){
+ .view-panel[data-view-panel="suporte"] .support-chat{
+  top:var(--support-vvtop,0px)!important;
+  height:var(--support-vh,100dvh)!important;
+  bottom:auto!important;
+  transition:none!important;
+ }
+ .view-panel[data-view-panel="suporte"] .support-chat-compose{
+  position:relative!important;bottom:auto!important;
+  flex-shrink:0!important;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom))!important;
+ }
+ .view-panel[data-view-panel="suporte"] .support-chat-messages{
+  min-height:0!important;flex:1 1 0!important;
+  scroll-padding-bottom:18px!important;
+ }
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 </head><body><div class="mobile-topbar"><div class="mobile-brand"><span class="brand-mark"><img src="icons/remote-work-board.svg" alt=""></span><span>Remote Whiteboard</span></div><button type="button" class="menu-toggle" id="mobileMenuToggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="teacherSidebar">☰</button></div><button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button><div class="app">
@@ -478,4 +497,26 @@ const logout=async()=>{sessionStorage.removeItem("azny_access_token");await auth
 })();
 </script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js",{scope:"/QUADRO-AZNY/"}).catch(console.warn));}</script>
+<script>
+/* Mantém o campo de mensagem acima do teclado virtual */
+(function(){
+ const input=document.getElementById("supportChatInput");
+ const chat=document.querySelector('.view-panel[data-view-panel="suporte"] .support-chat');
+ if(!input||!chat)return;
+ const adjust=()=>{
+  const vv=window.visualViewport;
+  if(vv){
+   document.documentElement.style.setProperty("--support-vh",Math.round(vv.height)+"px");
+   document.documentElement.style.setProperty("--support-vvtop",Math.max(0,Math.round(vv.offsetTop))+"px");
+  }
+  if(document.activeElement===input){
+   requestAnimationFrame(()=>input.scrollIntoView({block:"nearest",inline:"nearest",behavior:"auto"}));
+  }
+ };
+ input.addEventListener("focus",()=>{adjust();setTimeout(adjust,80);setTimeout(adjust,250);setTimeout(adjust,450)});
+ window.visualViewport?.addEventListener("resize",adjust);
+ window.visualViewport?.addEventListener("scroll",adjust);
+ window.addEventListener("orientationchange",()=>setTimeout(adjust,250));
+})();
+</script>
 </body></html>
