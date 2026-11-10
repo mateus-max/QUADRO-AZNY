@@ -148,6 +148,25 @@ function activateCourseVideos(){
 function render(){if(!coursesReady)return;renderCourses();courses.forEach(c=>bindCourseInteractions(c._key||c.id));const courseHash=decodeURIComponent(location.hash.replace("#curso-",""));if(courseHash){const target=document.getElementById("curso-"+courseHash);if(target)setTimeout(()=>target.scrollIntoView({behavior:"smooth",block:"start"}),250)}activateCourseVideos();if(teachersReady)renderTeachers()}
 $("search").addEventListener("input",render);
 $("gridView").onclick=()=>{$("teachers").classList.remove("list");$("gridView").classList.add("active");$("listView").classList.remove("active")};$("listView").onclick=()=>{$("teachers").classList.add("list");$("listView").classList.add("active");$("gridView").classList.remove("active")};
+
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("button");if(!b)return;
+ const like=b.dataset.courseLike,commentToggle=b.dataset.courseComments,shareToggle=b.dataset.courseShare;
+ if(like){const name=courseVisitorName();if(!name)return;const ref=db.ref("courseInteractions/"+like+"/likes/"+courseVisitorId),snap=await ref.once("value");if(snap.exists())await ref.remove();else await ref.set({name:name,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});return}
+ if(commentToggle){const box=document.querySelector('[data-course-comments-box="'+CSS.escape(commentToggle)+'"]');if(box)box.classList.toggle("open");return}
+ if(shareToggle){const box=document.querySelector('[data-course-share-box="'+CSS.escape(shareToggle)+'"]');if(box)box.classList.toggle("open");return}
+ if(b.dataset.courseShareMode){try{await shareCourse(b.dataset.courseId,b.dataset.courseShareMode)}catch(err){alert("Não foi possível partilhar o curso: "+(err.message||err))}return}
+ if(b.dataset.courseReply){const form=document.querySelector('[data-course-reply-form="'+CSS.escape(b.dataset.courseReply)+'"]');if(form){form.scrollIntoView({behavior:"smooth",block:"center"});const input=form.querySelector("input");if(input)input.focus()}return}
+});
+document.addEventListener("submit",async e=>{
+ const form=e.target;if(!form.matches("[data-course-comment-form],[data-course-reply-form]"))return;e.preventDefault();
+ const id=form.dataset.courseCommentForm||form.dataset.courseId,parentId=form.dataset.courseReplyForm||null,name=courseVisitorName(),input=form.querySelector("input"),text=String(input&&input.value||"").trim();if(!name||!text)return;
+ const button=form.querySelector("button");if(button)button.disabled=true;
+ try{await db.ref("courseInteractions/"+id+"/comments").push({author:name,text:text,parentId:parentId,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});input.value=""}
+ catch(err){alert("Não foi possível enviar o comentário: "+(err.message||err))}
+ finally{if(button)button.disabled=false}
+});
+
 document.addEventListener("click",e=>{const author=e.target.closest("[data-course-author]");if(author){openProfileByUid(author.dataset.courseAuthor);return}const more=e.target.closest("[data-profile-index]");if(more)openProfile(Number(more.dataset.profileIndex));const vc=e.target.closest("[data-teacher-courses]");if(vc){const uid=vc.dataset.teacherCourses;const list=courses.filter(c=>c.teacherUid===uid);if(list.length){$("search").value=list[0].title;render()}$("courses-section").scrollIntoView({behavior:"smooth"})}});
 /* Com ligação disponível, carregar sempre a versão actual do Realtime Database; a cache não deve substituir o conteúdo real. */
 db.ref("publicTeacherProfiles").on("value",snap=>{teachers=[];profilesByUid={};snap.forEach(ch=>{const p=ch.val();if(p&&p.uid&&p.name){teachers.push({...p,_key:ch.key});profilesByUid[p.uid]=p}});teachers.sort((a,b)=>Number(b.updatedAt||b.createdAt||0)-Number(a.updatedAt||a.createdAt||0));teachersReady=true;if(coursesReady)render()},err=>{teachersReady=true;console.warn("AZNY: erro ao carregar perfis",err)});
