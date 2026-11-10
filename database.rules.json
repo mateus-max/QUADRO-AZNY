@@ -239,6 +239,29 @@
         ".read": true,
         ".write": "auth != null && auth.token.email == 'suporte@domingas.com'"
       }
+    },
+    "courseInteractions": {
+      ".read": true,
+      "$courseId": {
+        ".read": true,
+        ".write": false,
+        "likes": {
+          "$visitorId": {
+            ".write": true,
+            ".validate": "newData.hasChildren(['name','visitorId','createdAt']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 60 && newData.child('visitorId').val() == $visitorId && newData.child('createdAt').isNumber()"
+          }
+        },
+        "comments": {
+          "$commentId": {
+            ".write": true,
+            ".validate": "newData.hasChildren(['author','text','visitorId','createdAt']) && newData.child('author').isString() && newData.child('author').val().length > 0 && newData.child('author').val().length <= 60 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 1500 && newData.child('visitorId').isString() && newData.child('createdAt').isNumber() && (!newData.child('parentId').exists() || newData.child('parentId').isString())"
+          }
+        },
+        "shares": {
+          ".write": true,
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        }
+      }
     }
   }
 }
