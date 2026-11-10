@@ -148,16 +148,44 @@ exports.reviewTeacherPayment = onCall({region:REGION}, async request => {
 
 exports.reviewTeacherRegistration = onCall({region:REGION},async request=>{
  const adminUid=requireAdmin(request),uid=String(request.data?.uid||""),action=String(request.data?.action||""),note=String(request.data?.note||"").trim().slice(0,500);
+ const requestId=String(request.data?.requestId||"").trim(),requestIdLabel=String(request.data?.requestIdLabel||"").trim();
  if(!uid||uid.length>128||!["approve","reject","delete"].includes(action))throw new HttpsError("invalid-argument","Operação ou conta inválida.");
- const userRef=db.ref("teacherAccounts/"+uid),regRef=db.ref("teacherRegistrationRequests/"+uid),[profile,registration]=await Promise.all([userRef.get(),regRef.get()]);
- if(!profile.exists()&&!registration.exists())throw new HttpsError("not-found","Conta não encontrada.");
+ const userRef=db.ref("teacherAccounts/"+uid),regRef=db.ref("teacherRegistrationRequests/"+uid);
+ const [profileSnap,registrationSnap]=await Promise.all([userRef.get(),regRef.get()]);
+ if(!profileSnap.exists()&&!registrationSnap.exists()&&action!=="delete")throw new HttpsError("not-found","Conta não encontrada.");
  if(action==="delete"){
-  await adminAuth.deleteUser(uid).catch(e=>{if(e.code!=="auth/user-not-found")throw e;});
-  const updates={};updates["teacherAccounts/"+uid]=null;updates["teacherRegistrationRequests/"+uid]=null;
-  const payments=await db.ref("paymentRequests").orderByChild("uid").equalTo(uid).get();payments.forEach(child=>updates["paymentRequests/"+child.key]=null);
-  const email=safeEmail(profile.val()?.email||registration.val()?.email);if(email){const licenses=await db.ref("licenses").orderByChild("teacherEmail").equalTo(email).get();licenses.forEach(child=>{updates["licenses/"+child.key+"/status"]="revoked";updates["licenses/"+child.key+"/boardAccess"]=false;updates["licenses/"+child.key+"/revokedAt"]=ServerValue.TIMESTAMP;updates["licenses/"+child.key+"/revokedBy"]=adminUid;});}
-  const token=String(profile.val()?.accessToken||registration.val()?.accessToken||"");if(token){updates["licenses/"+token+"/status"]="revoked";updates["licenses/"+token+"/boardAccess"]=false;}
-  await db.ref().update(updates);await db.ref("auditLogs").push({action:"teacher_account_deleted",targetUid:uid,adminUid,at:ServerValue.TIMESTAMP});return {ok:true,action};
+  try{
+   const profile=profileSnap.val()||{},registration=registrationSnap.val()||{};
+   const email=safeEmail(profile.email||registration.email);
+   const [paymentsSnap,licensesSnap]=await Promise.all([db.ref("paymentRequests").get(),email?db.ref("licenses").get():Promise.resolve(null)]);
+   const updates={};
+   updates["teacherAccounts/"+uid]=null;
+   updates["teacherRegistrationRequests/"+uid]=null;
+   if(paymentsSnap&&paymentsSnap.exists())paymentsSnap.forEach(child=>{
+    const item=child.val()||{};
+    if(child.key===requestId||String(item.uid||"")===uid||(requestIdLabel&&String(item.id||"")===requestIdLabel))updates["paymentRequests/"+child.key]=null;
+   });
+   const tokens=new Set([String(profile.accessToken||""),String(registration.accessToken||""),String(profile.existingAccessToken||"")].filter(Boolean));
+   if(licensesSnap&&licensesSnap.exists())licensesSnap.forEach(child=>{
+    const license=child.val()||"";
+    if((email&&safeEmail(license.teacherEmail)===email)||tokens.has(child.key)){
+     updates["licenses/"+child.key+"/status"]="revoked";
+     updates["licenses/"+child.key+"/boardAccess"]=false;
+     updates["licenses/"+child.key+"/revokedAt"]=ServerValue.TIMESTAMP;
+     updates["licenses/"+child.key+"/revokedBy"]=adminUid;
+    }
+   });
+   // Apaga primeiro a identidade de autenticação. Se já não existir, a operação continua de forma idempotente.
+   await adminAuth.deleteUser(uid).catch(error=>{if(error.code!=="auth/user-not-found")throw error;});
+   const auditKey=db.ref("auditLogs").push().key;
+   updates["auditLogs/"+auditKey]={action:"teacher_account_deleted",targetUid:uid,adminUid,at:ServerValue.TIMESTAMP};
+   await db.ref().update(updates);
+   return {ok:true,action,uid};
+  }catch(error){
+   if(error instanceof HttpsError)throw error;
+   console.error("reviewTeacherRegistration delete failed",{uid,code:error.code,message:error.message});
+   throw new HttpsError("internal","Não foi possível concluir a eliminação da conta. Nenhuma confirmação de sucesso foi enviada.");
+  }
  }
  if(action==="approve"){await adminAuth.updateUser(uid,{disabled:false});const patch={status:"approved",accountStatus:"approved",approvedBy:adminUid,approvedAt:new Date().toISOString(),updatedAt:ServerValue.TIMESTAMP};await Promise.all([userRef.update(patch),regRef.update(patch)]);}
  else{await adminAuth.updateUser(uid,{disabled:true}).catch(e=>{if(e.code!=="auth/user-not-found")throw e;});const patch={status:"rejected",accountStatus:"rejected",adminNote:note,rejectedBy:adminUid,rejectedAt:new Date().toISOString(),updatedAt:ServerValue.TIMESTAMP};await Promise.all([userRef.update(patch),regRef.update(patch)]);}
