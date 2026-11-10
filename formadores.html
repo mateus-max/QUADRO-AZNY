@@ -48,6 +48,23 @@ main{max-width:1500px;margin:0 auto;padding:16px 4.2% 42px}.section-head{display
 #courses .course-footer{border-top:1px solid #edf1f6;padding-top:13px}
 .feed-author-profile:hover b{text-decoration:underline;color:#0b63b6}
 @media(max-width:540px){#courses .feed-post{border-radius:12px} .feed-author{padding:12px}#courses .course-cover{max-height:420px;min-height:170px}#courses .course-body{padding:13px}#courses .course-body h3{font-size:19px}}
+
+.course-social{border-top:1px solid #edf1f6;background:#fbfcfe;padding:10px 14px 12px}
+.course-social-stats{display:flex;justify-content:space-between;gap:8px;color:#64758a;font-size:12px;padding:0 2px 8px}
+.course-social-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.course-social-actions button{border:0;background:transparent;color:#40536a;border-radius:8px;padding:9px 4px;font:700 13px Arial,sans-serif;cursor:pointer}
+.course-social-actions button.active{color:#0878ce}.course-social-actions button:active{background:#eaf3fc}
+.course-comments{display:none;padding:12px 14px;background:#f5f8fc;border-top:1px solid #e3eaf2}.course-comments.open{display:block}
+.course-comment-form,.course-reply-form{display:grid;gap:7px;margin:8px 0}
+.course-comment-form input,.course-reply-form input{min-width:0;width:100%;padding:10px 12px;border:1px solid #d0dbe8;border-radius:10px;font:inherit}
+.course-comment-form button,.course-reply-form button,.course-share-options button{border:1px solid #cbd8e6;background:#fff;color:#17466e;border-radius:18px;padding:8px 12px;font-weight:750;cursor:pointer}
+.course-comment-row{display:flex;gap:8px}.course-comment-row input{flex:1}.course-comment-row button{background:#0874e8;color:#fff;border-color:#0874e8}
+.course-comment{padding:9px 0;border-bottom:1px solid #e2e8f0}.course-comment-bubble{background:#e9eef5;border-radius:12px;padding:9px 11px;overflow-wrap:anywhere}
+.course-comment-author{font-weight:850;color:#1b3048;margin-bottom:3px}.course-comment-tools{display:flex;gap:12px;padding:5px 8px;color:#64758a;font-size:12px}
+.course-comment-tools button{border:0;background:none;color:#1769aa;font-weight:750;cursor:pointer}
+.course-replies{margin-left:18px;padding-left:10px;border-left:2px solid #d4e0ed}
+.course-share-options{display:none;gap:7px;flex-wrap:wrap;padding:10px 14px;background:#f5f8fc;border-top:1px solid #e3eaf2}.course-share-options.open{display:flex}
+@media(max-width:540px){.course-social{padding:9px 10px}.course-social-actions button{font-size:12px}.course-social-stats{font-size:11px}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
