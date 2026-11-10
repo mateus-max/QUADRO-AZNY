@@ -262,6 +262,15 @@
           ".validate": "newData.isNumber() && newData.val() >= 0"
         }
       }
+    },
+    "teacherCourseIndex": {
+      "$uid": {
+        ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || auth.uid == $uid)",
+        "$courseId": {
+          ".validate": "!newData.exists() || (newData.hasChildren(['title','category','createdAt']) && newData.child('title').isString() && newData.child('category').isString() && newData.child('createdAt').isNumber())"
+        }
+      }
     }
   }
 }
