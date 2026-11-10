@@ -5487,6 +5487,15 @@ body:not(.student-mode) .rightbar #students .student>.azny-student-device-contro
 })();
 </script>
 
+
+<style id="azny-stable-live-tools-and-objects">
+/* Ferramentas e objectos do quadro não devem oscilar por transições visuais durante a sincronização. */
+#livePointer,.azny-remote-pointer,.azny-live-surface-pointer{transition:none!important;animation:none!important}
+#board .object,#board .object *{animation:none!important}
+#board .object{transition:none!important;transform-origin:center center}
+#board .object.selected{animation:none!important}
+.leftbar .tools .tool,.toolbar .mini,.toolbar .select{animation:none!important;transform:none!important}
+</style>
 </body>
 </html>
 
