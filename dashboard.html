@@ -147,6 +147,24 @@ body{background:#f4f7fb}
 .mobile-brand .brand-mark img{width:34px;height:34px;object-fit:contain}
 @media(max-width:700px){.main{padding:14px 12px 24px}.welcome{padding:18px}.panel{padding:15px}.stats{gap:9px}}
 
+
+/* Chat de suporte — conversas privadas por UID */
+.support-chat{max-width:980px;margin:0 auto;background:#fff;border:1px solid #dce6f3;border-radius:16px;overflow:hidden;box-shadow:0 8px 28px #071b3310;display:flex;flex-direction:column;min-height:min(70vh,720px)}
+.support-chat-head{display:flex;align-items:center;gap:12px;padding:15px 18px;background:#082b60;color:#fff}
+.support-chat-avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#1677ff;font-weight:900;font-size:18px}
+.support-chat-head strong,.support-chat-head small{display:block}.support-chat-head small{color:#c8dcf7;font-size:12px;margin-top:3px}
+.support-chat-messages{flex:1;min-height:320px;max-height:56vh;overflow:auto;padding:18px;background:#edf3f8;display:flex;flex-direction:column;gap:9px}
+.support-chat-empty{margin:auto;text-align:center;color:#6b7b8e;font-size:13px;line-height:1.6;max-width:340px;padding:24px}
+.support-msg{max-width:min(78%,620px);padding:9px 12px 7px;border-radius:12px;background:#fff;box-shadow:0 1px 2px #102b4612;align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap;color:#1b2b3c;font-size:14px;line-height:1.45}
+.support-msg.mine{align-self:flex-end;background:#d9fdd3;border-top-right-radius:4px}.support-msg:not(.mine){border-top-left-radius:4px}
+.support-msg-meta{display:flex;justify-content:flex-end;gap:7px;color:#718096;font-size:10px;margin-top:5px}.support-msg-status{color:#1677ff;font-weight:800}
+.support-chat-compose{padding:12px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;align-items:flex-end;gap:8px}
+.support-chat-compose textarea{flex:1;min-width:0;min-height:42px;max-height:120px;resize:vertical;border:1px solid #cbd5e1;border-radius:22px;padding:11px 15px;background:#fff;outline:none;font:14px/1.4 inherit}
+.support-chat-compose textarea:focus{border-color:#1677ff;box-shadow:0 0 0 3px #1677ff18}
+.support-chat-send{height:42px;min-width:46px;border:0;border-radius:50%;background:#0878ee;color:#fff;font-size:19px;font-weight:800;cursor:pointer}.support-chat-send:disabled{opacity:.5;cursor:wait}
+.support-chat-tools{display:flex;gap:5px;padding:0 14px 10px;background:#f8fafc}.support-chat-tools button{border:0;background:transparent;border-radius:8px;padding:5px 7px;font-size:18px;cursor:pointer}
+.support-unread{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:20px;background:#16a34a;color:#fff;font-size:10px;font-weight:800}
+@media(max-width:700px){.support-chat{min-height:calc(100dvh - 190px);border-radius:12px}.support-chat-messages{max-height:none;min-height:260px;padding:12px}.support-msg{max-width:88%}.support-chat-compose{padding:9px}.support-chat-head{padding:12px}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head><body><div class="mobile-topbar"><div class="mobile-brand"><span class="brand-mark"><img src="icons/remote-work-board.svg" alt=""></span><span>Remote Whiteboard</span></div><button type="button" class="menu-toggle" id="mobileMenuToggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="teacherSidebar">☰</button></div><button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button><div class="app">
@@ -158,6 +176,7 @@ body{background:#f4f7fb}
   <a href="#plano" data-view="plano"><span class="ico">▤</span>Meu plano</a>
   <a href="#atalhos" data-view="atalhos"><span class="ico">⚡</span>Acesso rápido</a>
   <a href="#actividade" data-view="actividade"><span class="ico">◷</span>Actividade</a>
+  <a href="#suporte" data-view="suporte"><span class="ico">☏</span>Chat de suporte <span id="supportUnreadBadge" class="support-unread" hidden>0</span></a>
   <a href="publicar-cursos.html" id="publishCoursesLink"><span class="ico">📣</span>Publicar cursos</a>
  </nav>
  <div class="side-bottom"><button class="btn" id="logoutSide" type="button">↪ Terminar sessão</button></div>
@@ -182,6 +201,12 @@ body{background:#f4f7fb}
  <section class="view-panel" data-view-panel="atalhos" id="atalhos" hidden>
   <section class="panel"><h2><span class="panel-ico">⚡</span>Acesso rápido</h2><div class="quick-list"><a class="quick-link" href="#quadro" data-open-view="quadro"><span class="quick-ico">▣</span><span><strong>Quadro Virtual</strong><small>Entrar na sala de aula</small></span><span class="arrow">›</span></a><a class="quick-link" href="#plano" data-open-view="plano"><span class="quick-ico">🏅</span><span><strong>Meu plano</strong><small>Consultar acesso e utilização</small></span><span class="arrow">›</span></a></div></section>
  </section>
+ <section class="view-panel" data-view-panel="suporte" id="suporte" hidden>
+  <section class="panel"><h2><span class="panel-ico">☏</span>Chat de suporte</h2><p class="sub">Converse directamente com a Direcção. Esta conversa é privada e exclusiva da sua conta.</p>
+   <div class="support-chat"><div class="support-chat-head"><div class="support-chat-avatar">D</div><div><strong>Direcção · Suporte</strong><small id="supportChatPresence">Canal de atendimento</small></div></div><div class="support-chat-messages" id="supportChatMessages" aria-live="polite"><div class="support-chat-empty">As suas mensagens com a Direcção aparecerão aqui.</div></div><div class="support-chat-tools" aria-label="Emojis rápidos"><button type="button" data-support-emoji="👍">👍</button><button type="button" data-support-emoji="🙏">🙏</button><button type="button" data-support-emoji="❤️">❤️</button><button type="button" data-support-emoji="😊">😊</button><button type="button" data-support-emoji="😂">😂</button></div><form class="support-chat-compose" id="supportChatForm"><textarea id="supportChatInput" rows="1" maxlength="5000" placeholder="Escreva uma mensagem..." aria-label="Mensagem para a Direcção"></textarea><button class="support-chat-send" id="supportChatSend" type="submit" aria-label="Enviar mensagem">➤</button></form></div>
+   <p class="small" id="supportChatStatus" role="status" aria-live="polite">Ligação em tempo real.</p>
+  </section>
+ </section>
  <section class="view-panel" data-view-panel="actividade" id="actividade" hidden>
   <section class="panel"><h2><span class="panel-ico">◷</span>Actividade recente</h2><div class="activity-empty"><span class="info">ⓘ</span><strong>A sua actividade aparecerá aqui.</strong><span>As informações de utilização serão apresentadas quando estiverem disponíveis.</span></div></section>
  </section>
@@ -191,7 +216,7 @@ body{background:#f4f7fb}
 const cfg={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remot-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};
 if(!firebase.apps.length)firebase.initializeApp(cfg);const auth=firebase.auth(),db=firebase.database();
 const qs=new URLSearchParams(location.search),token=qs.get("acesso")||sessionStorage.getItem("azny_access_token")||"",status=document.getElementById("licenseStatus"),button=document.getElementById("openBoard"),message=document.getElementById("message");
-const viewTitles={inicio:"Painel do Professor",quadro:"Quadro Virtual",plano:"O meu plano",atalhos:"Acesso rápido",actividade:"Actividade recente"};
+const viewTitles={inicio:"Painel do Professor",quadro:"Quadro Virtual",plano:"O meu plano",atalhos:"Acesso rápido",actividade:"Actividade recente",suporte:"Chat de suporte"};
 function openView(name){
  const selected=viewTitles[name]?name:"inicio";
  document.querySelectorAll("[data-view-panel]").forEach(panel=>{panel.hidden=panel.dataset.viewPanel!==selected});
@@ -199,6 +224,7 @@ function openView(name){
  document.getElementById("currentPageTitle").textContent=viewTitles[selected];
  if(location.hash!=="#"+selected)history.replaceState(null,"","#"+selected);
  window.scrollTo({top:0,behavior:"smooth"});
+ if(selected==="suporte")markSupportChatRead();
 }
 document.querySelectorAll(".nav [data-view]").forEach(link=>link.addEventListener("click",event=>{event.preventDefault();openView(link.dataset.view)}));
 document.querySelectorAll("[data-open-view]").forEach(link=>link.addEventListener("click",event=>{event.preventDefault();openView(link.dataset.openView)}));
@@ -268,6 +294,20 @@ function updateLicenseDisplay(license,accessToken){
  upgrade.href="login-professor.html?upgrade=1&acesso="+encodeURIComponent(accessToken);
  upgrade.textContent=isTrial?"↗  Atualizar plano":"↗  Renovar / actualizar plano";
 }
+
+let supportChatUid="",supportChatUser=null,supportChatMessagesRef=null,supportChatMetaRef=null,supportChatMessageListener=null,supportChatMetaListener=null;
+const supportFormspreeEndpoint="https://formspree.io/f/xdeeykja";
+async function sendSupportFormspreeNotice(item){const payload={_subject:"Nova mensagem no Chat de Suporte - Remote Work Board",nome:item.name,email:item.email,uidProfessor:item.uid,mensagem:item.text,origem:"Chat de Suporte do Painel do Professor",destinatario:"Direcção",data:item.createdAt};const response=await fetch(supportFormspreeEndpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});if(!response.ok)throw new Error("Formspree HTTP "+response.status);const result=await response.json().catch(()=>({}));if(result.errors?.length)throw new Error(result.errors.map(e=>e.message||"Erro do formulário").join("; "));return true;}
+
+function supportEscape(value){return String(value??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;")}
+function supportTime(value){const n=Number(value||0);return n?new Date(n).toLocaleTimeString("pt-AO",{hour:"2-digit",minute:"2-digit"}):""}
+function renderSupportMessage(snapshot){const box=document.getElementById("supportChatMessages");if(!box)return;const m=snapshot.val()||{},mine=m.senderRole==="teacher";const empty=box.querySelector(".support-chat-empty");if(empty)empty.remove();let el=box.querySelector('[data-support-message="'+snapshot.key+'"]');if(!el){el=document.createElement("div");el.className="support-msg"+(mine?" mine":"");el.dataset.supportMessage=snapshot.key;box.appendChild(el)}const readAt=Number(window.supportChatLastReadByAdminAt||0);el.innerHTML='<div>'+supportEscape(m.text||"")+'</div><div class="support-msg-meta"><span>'+supportTime(m.createdAt)+'</span>'+(mine?'<span class="support-msg-status">'+(readAt>=Number(m.createdAt||0)?"✓✓":"✓")+'</span>':"")+'</div>';box.scrollTop=box.scrollHeight}
+function markSupportChatRead(){if(!supportChatMetaRef||!supportChatUid)return;supportChatMetaRef.update({unreadTeacher:0,lastReadByTeacherAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("Leitura do chat:",e))}
+function initSupportChat(user,license){if(!user?.uid)return;supportChatUser=user;supportChatUid=user.uid;supportChatMessagesRef=db.ref("adminTeacherChats/"+user.uid+"/messages");supportChatMetaRef=db.ref("adminTeacherChats/"+user.uid+"/metadata");const box=document.getElementById("supportChatMessages");if(supportChatMessageListener)supportChatMessagesRef.off("value",supportChatMessageListener);if(supportChatMetaListener)supportChatMetaRef.off("value",supportChatMetaListener);supportChatMessageListener=snap=>{if(!box)return;window.supportChatSnapshot=snap;box.innerHTML="";if(!snap.exists()){box.innerHTML='<div class="support-chat-empty">Ainda não enviou mensagens. Escreva à Direcção se precisar de ajuda.</div>';return}snap.forEach(child=>renderSupportMessage(child));if(!document.getElementById("suporte").hidden)markSupportChatRead()};supportChatMessagesRef.on("value",supportChatMessageListener,error=>{document.getElementById("supportChatStatus").textContent="Não foi possível carregar o chat: "+(error.message||"verifique as permissões")});supportChatMetaListener=snap=>{const meta=snap.val()||{};window.supportChatLastReadByAdminAt=Number(meta.lastReadByAdminAt||0);if(window.supportChatSnapshot){box.innerHTML="";window.supportChatSnapshot.forEach(child=>renderSupportMessage(child))}const unread=Number(meta.unreadTeacher||0),badge=document.getElementById("supportUnreadBadge");if(badge){badge.hidden=!unread;badge.textContent=unread>99?"99+":String(unread)}document.getElementById("supportChatPresence").textContent=meta.adminOnline?"Direcção online":"A Direcção receberá a sua mensagem";};supportChatMetaRef.on("value",supportChatMetaListener);supportChatMetaRef.update({teacherUid:user.uid,teacherName:license?.teacherName||user.displayName||"Professor",teacherEmail:user.email||"",teacherLastSeenAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("Metadados do chat:",e))}
+async function sendSupportMessage(event){event?.preventDefault();const input=document.getElementById("supportChatInput"),button=document.getElementById("supportChatSend"),status=document.getElementById("supportChatStatus"),text=String(input?.value||"").trim();if(!text||!supportChatUser?.uid||!supportChatMessagesRef)return;button.disabled=true;try{const messageRef=supportChatMessagesRef.push(),message={senderUid:supportChatUser.uid,senderEmail:supportChatUser.email||"",senderRole:"teacher",text,createdAt:firebase.database.ServerValue.TIMESTAMP};await messageRef.set(message);await supportChatMetaRef.transaction(meta=>({...meta,teacherUid:supportChatUser.uid,teacherName:document.getElementById("hello")?.textContent?.replace("Bem-vindo, ","")||"Professor",teacherEmail:supportChatUser.email||"",lastMessage:text.slice(0,180),lastMessageAt:firebase.database.ServerValue.TIMESTAMP,lastSenderRole:"teacher",unreadAdmin:Number(meta?.unreadAdmin||0)+1,unreadTeacher:0}));input.value="";let formspreeOk=true;try{await sendSupportFormspreeNotice({uid:supportChatUser.uid,name:document.getElementById("hello")?.textContent?.replace("Bem-vindo, ","")||"Professor",email:supportChatUser.email||"",text,createdAt:new Date().toISOString()})}catch(noticeError){formspreeOk=false;console.error("Mensagem guardada, mas o formulário de notificação falhou:",noticeError)}status.textContent=formspreeOk?"Mensagem enviada à Direcção e notificação submetida.":"Mensagem enviada e guardada no chat. A notificação pelo formulário não foi confirmada."}catch(error){console.error("Enviar mensagem de suporte:",error);status.textContent="Não foi possível enviar: "+(error.message||"erro de ligação")}finally{button.disabled=false;input.focus()}}
+document.getElementById("supportChatForm")?.addEventListener("submit",sendSupportMessage);
+document.querySelectorAll("[data-support-emoji]").forEach(button=>button.addEventListener("click",()=>{const input=document.getElementById("supportChatInput");input.value+=(input.value?" ":"")+button.dataset.supportEmoji;input.focus()}));
+
 async function init(user){try{
  user=user||auth.currentUser;
  if(!user||!user.email){status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta.";return}
@@ -278,6 +318,7 @@ async function init(user){try{
  const teacherName=String(license.teacherName||"Professor");
  document.getElementById("userInitials").textContent=teacherName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
  updateLicenseDisplay(license,accessToken);
+ initSupportChat(user,license);
  const liveLicenseRef=db.ref("licenses/"+accessToken);
  liveLicenseRef.on("value",liveSnap=>{
   const live=liveSnap.val();
