@@ -39,7 +39,7 @@ main{max-width:1500px;margin:0 auto;padding:16px 4.2% 42px}.section-head{display
 (()=>{"use strict";
 const cfg={apiKey:"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc",authDomain:"remot-board.firebaseapp.com",databaseURL:"https://remot-board-default-rtdb.firebaseio.com",projectId:"remot-board",storageBucket:"remot-board.firebasestorage.app",messagingSenderId:"931887981666",appId:"1:931887981666:web:08899cca83f1f514191d3b"};
 if(!firebase.apps.length)firebase.initializeApp(cfg);
-const db=firebase.database(),$=id=>document.getElementById(id);let courses=[],teachers=[],profilesByUid={},visibleTeacherRows=[];
+const db=firebase.database(),$=id=>document.getElementById(id);let courses=[],teachers=[],profilesByUid={},visibleTeacherRows=[],teachersReady=false,coursesReady=false;
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function norm(v){return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}
 function phone(v){let n=String(v||"").replace(/\D/g,"");if(n.length===9)n="244"+n;return n}
@@ -67,11 +67,11 @@ function activateCourseVideos(){
  if('IntersectionObserver' in window){courseVideoObserver=new IntersectionObserver(visibility,{threshold:[0,0.6,1],rootMargin:'0px'});videos.forEach(v=>courseVideoObserver.observe(v))}
  else{videos.forEach(v=>{v.muted=true;v.play().catch(()=>{})})}
 }
-function render(){renderTeachers();renderCourses();activateCourseVideos()}
+function render(){if(!teachersReady||!coursesReady)return;renderTeachers();renderCourses();activateCourseVideos()}
 $("search").addEventListener("input",render);
 $("gridView").onclick=()=>{$("teachers").classList.remove("list");$("gridView").classList.add("active");$("listView").classList.remove("active")};$("listView").onclick=()=>{$("teachers").classList.add("list");$("listView").classList.add("active");$("gridView").classList.remove("active")};
 document.addEventListener("click",e=>{const more=e.target.closest("[data-profile-index]");if(more)openProfile(Number(more.dataset.profileIndex));const vc=e.target.closest("[data-teacher-courses]");if(vc){const uid=vc.dataset.teacherCourses;const list=courses.filter(c=>c.teacherUid===uid);if(list.length){$("search").value=list[0].title;render()}$("courses-section").scrollIntoView({behavior:"smooth"})}});
-db.ref("publicTeacherProfiles").on("value",snap=>{teachers=[];profilesByUid={};snap.forEach(ch=>{const p=ch.val();if(p&&p.uid&&p.name){teachers.push({...p,_key:ch.key});profilesByUid[p.uid]=p}});teachers.sort((a,b)=>Number(b.updatedAt||b.createdAt||0)-Number(a.updatedAt||a.createdAt||0));render()},err=>{$("teacherCount").textContent="Erro ao carregar perfis: "+(err.message||"")});
-db.ref("publicTeacherCourses").on("value",snap=>{courses=[];snap.forEach(ch=>{const c=ch.val();if(c&&c.status==="approved"&&c.title)courses.push({...c,_key:ch.key})});courses.sort((a,b)=>Number(b.approvedAt||b.createdAt||0)-Number(a.approvedAt||a.createdAt||0));render()},err=>{$("courseCount").textContent="Erro ao carregar cursos: "+(err.message||"")});
+db.ref("publicTeacherProfiles").on("value",snap=>{teachers=[];profilesByUid={};snap.forEach(ch=>{const p=ch.val();if(p&&p.uid&&p.name){teachers.push({...p,_key:ch.key});profilesByUid[p.uid]=p}});teachers.sort((a,b)=>Number(b.updatedAt||b.createdAt||0)-Number(a.updatedAt||a.createdAt||0));teachersReady=true;render()},err=>{teachersReady=true;$("teacherCount").textContent="Erro ao carregar perfis: "+(err.message||"");render()});
+db.ref("publicTeacherCourses").on("value",snap=>{courses=[];snap.forEach(ch=>{const c=ch.val();if(c&&c.status==="approved"&&c.title)courses.push({...c,_key:ch.key})});courses.sort((a,b)=>Number(b.approvedAt||b.createdAt||0)-Number(a.approvedAt||a.createdAt||0));coursesReady=true;render()},err=>{coursesReady=true;$("courseCount").textContent="Erro ao carregar cursos: "+(err.message||"");render()});
 })();
 </script></body></html>
