@@ -282,6 +282,20 @@
       "$publicationId": {
         ".validate": "newData.hasChildren(['type','url','caption','createdAt','author','storagePath','createdBy']) && (newData.child('type').val() == 'image' || newData.child('type').val() == 'video') && newData.child('url').isString() && newData.child('caption').isString() && newData.child('createdAt').isNumber() && newData.child('author').isString() && newData.child('storagePath').isString() && newData.child('createdBy').isString()"
       }
+    },
+    "adminTeacherChats": {
+      "$teacherUid": {
+        ".read": "auth != null && (auth.uid == $teacherUid || auth.token.email == 'suporte@domingas.com')",
+        "metadata": {
+          ".write": "auth != null && (auth.uid == $teacherUid || auth.token.email == 'suporte@domingas.com')"
+        },
+        "messages": {
+          "$messageId": {
+            ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (auth.uid == $teacherUid && ((!data.exists() && newData.child('senderUid').val() == auth.uid && newData.child('senderRole').val() == 'teacher') || (data.exists() && data.child('senderUid').val() == auth.uid && newData.child('senderUid').val() == auth.uid))))",
+            ".validate": "!newData.exists() || (newData.hasChildren(['senderUid','senderRole','text','createdAt']) && newData.child('senderUid').isString() && (newData.child('senderRole').val() == 'teacher' || newData.child('senderRole').val() == 'admin') && newData.child('text').isString() && newData.child('createdAt').isNumber())"
+          }
+        }
+      }
     }
   }
 }
