@@ -66,7 +66,7 @@ if(!firebase.apps.length)firebase.initializeApp(cfg);
 const db=firebase.database(),$=id=>document.getElementById(id);let courses=[],teachers=[],profilesByUid={},visibleTeacherRows=[],teachersReady=false,coursesReady=false;
 const COURSE_CACHE_KEY="azny_public_courses_feed_v1";
 function readCachedCourses(){try{const raw=localStorage.getItem(COURSE_CACHE_KEY);if(!raw)return;const cached=JSON.parse(raw);if(!Array.isArray(cached)||!cached.length)return;courses=cached;coursesReady=true;render()}catch(e){console.warn("AZNY: cache local de cursos indisponível",e)}}
-function saveCachedCourses(rows){try{const safe=rows.map(c=>{const copy={...c};["coverUrl","videoUrl"].forEach(k=>{if(typeof copy[k]==="string"&&(copy[k].startsWith("data:")||copy[k].length>180000))delete copy[k]});return copy});const json=JSON.stringify(safe);if(json.length<1800000)localStorage.setItem(COURSE_CACHE_KEY,json)}catch(e){console.warn("AZNY: não foi possível atualizar cache local",e)}}
+function saveCachedCourses(rows){try{const safe=rows.map(c=>{const copy={...c};/* Preservar as capas e vídeos leves no cache para os cartões não aparecerem sem imagem nas visitas seguintes. */["coverUrl","videoUrl"].forEach(k=>{if(typeof copy[k]==="string"&&copy[k].length>650000)delete copy[k]});return copy});const json=JSON.stringify(safe);if(json.length<4200000)localStorage.setItem(COURSE_CACHE_KEY,json)}catch(e){console.warn("AZNY: não foi possível atualizar cache local",e)}}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function norm(v){return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}
 function phone(v){let n=String(v||"").replace(/\D/g,"");if(n.length===9)n="244"+n;return n}
