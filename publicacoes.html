@@ -104,7 +104,7 @@ body{margin:0;min-height:100vh;background:linear-gradient(145deg,#061a32 0%,#073
  <footer class="site-footer">Remote Work Board</footer>
 </main>
 <script>
-const config={apiKey:"AIzaSyB20GNxPQsMRmjF0RpRyQ8rNoNdpcgq13Y",authDomain:"quadro-azny.firebaseapp.com",databaseURL:"https://quadro-azny-default-rtdb.firebaseio.com",projectId:"quadro-azny",storageBucket:"quadro-azny.firebasestorage.app",messagingSenderId:"204452366229",appId:"1:204452366229:web:f5e62cd92d999b9c04d89c",measurementId:"G-RP2TV02LKY"};
+const config={apiKey:"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc",authDomain:"remot-board.firebaseapp.com",databaseURL:"https://remot-board-default-rtdb.firebaseio.com",projectId:"remot-board",storageBucket:"remot-board.firebasestorage.app",messagingSenderId:"931887981666",appId:"1:931887981666:web:08899cca83f1f514191d3b",measurementId:"G-HH3SERFF32"};
 if(!firebase.apps.length)firebase.initializeApp(config);
 const feed=document.getElementById('feed'),db=firebase.database();
 function esc(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -158,6 +158,6 @@ feed.addEventListener('submit',async event=>{const form=event.target;if(!form.ma
 let publicationRetryTimer=null,publicationRetryDelay=1000,publicationListenerActive=false;
 function showPublicationLoading(message){if(!feed.querySelector('.post')&&!feed.querySelector('.empty'))feed.innerHTML='<div class="loading" role="status" aria-live="polite">'+message+'</div>'}
 function subscribePublications(){if(publicationListenerActive)return;publicationListenerActive=true;const ref=db.ref('publications');ref.off('value',render);ref.on('value',snap=>{publicationRetryDelay=1000;if(publicationRetryTimer){clearTimeout(publicationRetryTimer);publicationRetryTimer=null}render(snap)},error=>{publicationListenerActive=false;console.warn('Ligação às publicações temporariamente indisponível:',error);showPublicationLoading('A ligar às publicações... a tentar novamente automaticamente.');if(publicationRetryTimer)clearTimeout(publicationRetryTimer);publicationRetryTimer=setTimeout(()=>{publicationRetryTimer=null;subscribePublications()},publicationRetryDelay);publicationRetryDelay=Math.min(publicationRetryDelay*2,15000)})}
-db.ref('.info/connected').on('value',snap=>{if(snap.val()===true){if(!publicationListenerActive)subscribePublications()}else{showPublicationLoading('A aguardar ligação para apresentar as publicações...')}});subscribePublications();
+subscribePublications();
 </script>
 </body></html>
