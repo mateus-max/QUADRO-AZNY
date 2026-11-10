@@ -1954,23 +1954,21 @@ function aznyMergeCollaborativeBoardState(server,local){
 }
 function publishLiveBoardState(){
  if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;
- clearTimeout(liveBoardTimer);
- /* Coalesce pointer events briefly; Firebase is the shared source of truth for
-    every approved participant, while WebRTC remains the fast media/peer path. */
+ /* No máximo 25 actualizações completas por segundo. O cursor continua a ser
+    transmitido pelo canal rápido; o quadro recebe estados estáveis e recentes. */
+ if(liveBoardTimer)return;
  liveBoardTimer=setTimeout(()=>{
+  liveBoardTimer=null;
   if(remoteBoardApplying)return;
   pageStates[currentPage-1]=snapshot();
-  /* O Realtime Database é a única fonte de verdade do quadro.
-     WebRTC fica reservado para vídeo, áudio e sinalização de media. */
-  if(AZNY_DB){
-   clearTimeout(firebaseBoardWriteTimer);
-   firebaseBoardWriteTimer=setTimeout(()=>{
-    const ref=aznyRoomRef().child("board");
-    const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],updatedAt:Date.now(),lastEditorUid:aznyUid||""};
-    ref.transaction(server=>aznyMergeCollaborativeBoardState(server,payload),undefined,false).catch(e=>{console.error("AZNY live board transaction rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
-   },8);
-  }
- },5)
+  clearTimeout(firebaseBoardWriteTimer);
+  firebaseBoardWriteTimer=setTimeout(()=>{
+   if(remoteBoardApplying)return;
+   const ref=aznyRoomRef().child("board");
+   const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],updatedAt:Date.now(),lastEditorUid:aznyUid||""};
+   ref.transaction(server=>aznyMergeCollaborativeBoardState(server,payload),undefined,false).catch(e=>{console.error("AZNY live board transaction rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
+  },20);
+ },40);
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
@@ -2018,8 +2016,7 @@ function restore(s){
  const existing=new Map([...board.querySelectorAll(".object")].map(el=>[String(el.dataset.id||""),el]));
  /* Keep the actual DOM nodes mounted while live updates arrive. Recreating every
     image/text/chart on each Firebase snapshot caused visible flicker and jitter. */
- existing.forEach((el,id)=>{if(!incomingIds.has(id)){el.remove();existing.delete(id)}});
- selected=null;
+ existing.forEach((el,id)=>{if(!incomingIds.has(id)){if(selected===el)selected=null;el.remove();existing.delete(id)}});
  strokes=s?.strokes||[];
  let maxId=0;
  incomingObjects.forEach((o,i)=>{
@@ -2068,7 +2065,7 @@ function restore(s){
  objectId=Math.max(objectId,maxId);
  const title=document.getElementById("boardTitle"),nextTitle=s?.title||"Nova aula";
  if(title&&title.value!==nextTitle)title.value=nextTitle;
- if(selectedId){const keep=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===selectedId);if(keep)selectObject(keep)}
+ if(selectedId){const keep=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===selectedId);if(keep&&selected!==keep)selectObject(keep);else if(!keep&&selected)selectObject(null)}
  redraw();updateHint();updateObjectActions();
 }
 function switchPage(n){n=Math.max(1,Math.min(5,n));if(n===currentPage)return;pageStates[currentPage-1]=snapshot();currentPage=n;undoStack=[];redoStack=[];restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:document.getElementById("boardTitle").value});updatePageLabel();scheduleSave();toast(document.documentElement.lang==="en"?"Page "+currentPage+" selected":"Página "+currentPage+" selecionada")}
