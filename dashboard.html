@@ -158,7 +158,7 @@ body{background:#f4f7fb}
   <a href="#plano" data-view="plano"><span class="ico">▤</span>Meu plano</a>
   <a href="#atalhos" data-view="atalhos"><span class="ico">⚡</span>Acesso rápido</a>
   <a href="#actividade" data-view="actividade"><span class="ico">◷</span>Actividade</a>
-  <a href="publicar-cursos.html"><span class="ico">📣</span>Publicar cursos</a>
+  <a href="publicar-cursos.html" id="publishCoursesLink"><span class="ico">📣</span>Publicar cursos</a>
  </nav>
  <div class="side-bottom"><button class="btn" id="logoutSide" type="button">↪ Terminar sessão</button></div>
 </aside>
@@ -274,7 +274,7 @@ async function init(){try{
  if(!token)throw new Error("Não foi encontrado o código de acesso da licença. Entre novamente pela página inicial.");
  const snap=await db.ref("licenses/"+token).once("value"),license=snap.val();
  if(!license||!["active","trial_exhausted"].includes(String(license.status||""))||String(license.teacherEmail||"").toLowerCase()!==String(user.email).toLowerCase()||(license.teacherUid&&license.teacherUid!==user.uid)){status.className="badge warn";status.textContent="Acesso não validado";message.textContent="A licença desta conta não está ativa ou não corresponde ao utilizador autenticado. Contacte a administração.";return}
- const accessToken=license.accessToken||token;sessionStorage.setItem("azny_access_token",accessToken);document.getElementById("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");
+ const accessToken=license.accessToken||token;sessionStorage.setItem("azny_access_token",accessToken);const publishLink=document.getElementById("publishCoursesLink");if(publishLink)publishLink.href="publicar-cursos.html?acesso="+encodeURIComponent(accessToken);document.getElementById("hello").textContent="Bem-vindo, "+(license.teacherName||"Professor");
  const teacherName=String(license.teacherName||"Professor");
  document.getElementById("userInitials").textContent=teacherName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
  updateLicenseDisplay(license,accessToken);
