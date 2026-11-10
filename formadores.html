@@ -64,6 +64,9 @@ main{max-width:1500px;margin:0 auto;padding:16px 4.2% 42px}.section-head{display
 const cfg={apiKey:"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc",authDomain:"remot-board.firebaseapp.com",databaseURL:"https://remot-board-default-rtdb.firebaseio.com",projectId:"remot-board",storageBucket:"remot-board.firebasestorage.app",messagingSenderId:"931887981666",appId:"1:931887981666:web:08899cca83f1f514191d3b"};
 if(!firebase.apps.length)firebase.initializeApp(cfg);
 const db=firebase.database(),$=id=>document.getElementById(id);let courses=[],teachers=[],profilesByUid={},visibleTeacherRows=[],teachersReady=false,coursesReady=false;
+const COURSE_CACHE_KEY="azny_public_courses_feed_v1";
+function readCachedCourses(){try{const raw=localStorage.getItem(COURSE_CACHE_KEY);if(!raw)return;const cached=JSON.parse(raw);if(!Array.isArray(cached)||!cached.length)return;courses=cached;coursesReady=true;render()}catch(e){console.warn("AZNY: cache local de cursos indisponível",e)}}
+function saveCachedCourses(rows){try{const safe=rows.map(c=>{const copy={...c};["coverUrl","videoUrl"].forEach(k=>{if(typeof copy[k]==="string"&&(copy[k].startsWith("data:")||copy[k].length>180000))delete copy[k]});return copy});const json=JSON.stringify(safe);if(json.length<1800000)localStorage.setItem(COURSE_CACHE_KEY,json)}catch(e){console.warn("AZNY: não foi possível atualizar cache local",e)}}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function norm(v){return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}
 function phone(v){let n=String(v||"").replace(/\D/g,"");if(n.length===9)n="244"+n;return n}
@@ -92,11 +95,12 @@ function activateCourseVideos(){
  if('IntersectionObserver' in window){courseVideoObserver=new IntersectionObserver(visibility,{threshold:[0,0.6,1],rootMargin:'0px'});videos.forEach(v=>courseVideoObserver.observe(v))}
  else{videos.forEach(v=>{v.muted=true;v.play().catch(()=>{})})}
 }
-function render(){if(!teachersReady||!coursesReady)return;renderTeachers();renderCourses();activateCourseVideos()}
+function render(){if(!coursesReady)return;renderCourses();activateCourseVideos();if(teachersReady)renderTeachers()}
 $("search").addEventListener("input",render);
 $("gridView").onclick=()=>{$("teachers").classList.remove("list");$("gridView").classList.add("active");$("listView").classList.remove("active")};$("listView").onclick=()=>{$("teachers").classList.add("list");$("listView").classList.add("active");$("gridView").classList.remove("active")};
 document.addEventListener("click",e=>{const author=e.target.closest("[data-course-author]");if(author){openProfileByUid(author.dataset.courseAuthor);return}const more=e.target.closest("[data-profile-index]");if(more)openProfile(Number(more.dataset.profileIndex));const vc=e.target.closest("[data-teacher-courses]");if(vc){const uid=vc.dataset.teacherCourses;const list=courses.filter(c=>c.teacherUid===uid);if(list.length){$("search").value=list[0].title;render()}$("courses-section").scrollIntoView({behavior:"smooth"})}});
-db.ref("publicTeacherProfiles").on("value",snap=>{teachers=[];profilesByUid={};snap.forEach(ch=>{const p=ch.val();if(p&&p.uid&&p.name){teachers.push({...p,_key:ch.key});profilesByUid[p.uid]=p}});teachers.sort((a,b)=>Number(b.updatedAt||b.createdAt||0)-Number(a.updatedAt||a.createdAt||0));teachersReady=true;render()},err=>{teachersReady=true;$("teacherCount").textContent="Erro ao carregar perfis: "+(err.message||"");render()});
-db.ref("publicTeacherCourses").on("value",snap=>{courses=[];snap.forEach(ch=>{const c=ch.val();if(c&&c.status==="approved"&&c.title)courses.push({...c,_key:ch.key})});courses.sort((a,b)=>Number(b.approvedAt||b.createdAt||0)-Number(a.approvedAt||a.createdAt||0));coursesReady=true;render()},err=>{coursesReady=true;$("courseCount").textContent="Erro ao carregar cursos: "+(err.message||"");render()});
+readCachedCourses();
+db.ref("publicTeacherProfiles").on("value",snap=>{teachers=[];profilesByUid={};snap.forEach(ch=>{const p=ch.val();if(p&&p.uid&&p.name){teachers.push({...p,_key:ch.key});profilesByUid[p.uid]=p}});teachers.sort((a,b)=>Number(b.updatedAt||b.createdAt||0)-Number(a.updatedAt||a.createdAt||0));teachersReady=true;if(coursesReady)render()},err=>{teachersReady=true;console.warn("AZNY: erro ao carregar perfis",err)});
+db.ref("publicTeacherCourses").on("value",snap=>{courses=[];snap.forEach(ch=>{const c=ch.val();if(c&&c.status==="approved"&&c.title)courses.push({...c,_key:ch.key})});courses.sort((a,b)=>Number(b.approvedAt||b.createdAt||0)-Number(a.approvedAt||a.createdAt||0));coursesReady=true;saveCachedCourses(courses);render()},err=>{console.error("AZNY: erro ao carregar cursos",err);if(!coursesReady){$("courseCount").textContent="Não foi possível carregar os cursos";$("courses").innerHTML='<div class="empty"><strong>Sem ligação ao servidor.</strong>Verifique a internet e tente novamente.</div>'}});
 })();
 </script></body></html>
