@@ -185,10 +185,12 @@ async function reviewPaymentDirect(id,action,note,item){
   const hadApprovedTrial=Object.entries(requestHistory.val()||{}).some(([requestId,x])=>requestId!==id&&x&&x.plan==="trial"&&(x.status==="approved"||x.accessGranted===true));
   if(hadActivatedTrial||hadApprovedTrial)throw new Error("Este professor já utilizou o plano de teste. Apenas os planos pagos estão disponíveis.");
  }
- const months=planKey==="trial"?0:(item.period==="annual"||Number(item.months)>=12?12:Math.max(1,Number(item.months)||1));
- const expiry=new Date(now);if(months)expiry.setMonth(expiry.getMonth()+months);
+ const months=planKey==="trial"?0:Math.min(60,Math.max(1,Math.floor(Number(item.months)||(item.period==="annual"?12:1))));
  const token=String(item.accessToken||item.existingAccessToken||"").trim()||newAccessToken();
- const license={status:"active",trialExhausted:false,boardAccess:true,plan:planKey,planName:String(item.planName||plan.name),...plan,...(planKey==="trial"?{trialSessionsLimit:Number(item.trialSessionsLimit)||2,trialSessionsUsed:0,trialCompletedSessions:{}}:{}),startedAt:now,expiresAt:months?expiry.toISOString():null,teacherName:String(item.name||email),teacherPhone:String(item.phone||""),requestId:id,accessToken:token,teacherEmail:email,teacherUid:uid};
+ const previousLicense=item.requestType==="plan_upgrade"||item.requestType==="renewal"?(await db.ref("licenses/"+token).once("value")).val():null;
+ if((item.requestType==="plan_upgrade"||item.requestType==="renewal")&&(!previousLicense||String(previousLicense.teacherUid||"")!==uid||String(previousLicense.teacherEmail||"").toLowerCase()!==email))throw new Error("Não foi possível validar a licença anterior deste pedido de renovação.");
+ const expiry=previousLicense?.expiresAt&&new Date(previousLicense.expiresAt)>new Date(now)?new Date(previousLicense.expiresAt):new Date(now);if(months)expiry.setMonth(expiry.getMonth()+months);
+ const license={...(previousLicense||{}),status:"active",trialExhausted:false,boardAccess:true,plan:planKey,planName:String(item.planName||plan.name),...plan,...(planKey==="trial"?{trialSessionsLimit:Number(item.trialSessionsLimit)||2,trialSessionsUsed:0,trialCompletedSessions:{}}:{}),startedAt:previousLicense?.startedAt||now,expiresAt:months?expiry.toISOString():null,teacherName:String(item.name||email),teacherPhone:String(item.phone||previousLicense?.teacherPhone||""),requestId:id,accessToken:token,teacherEmail:email,teacherUid:uid};
  const acc=(await db.ref("teacherAccounts/"+uid).once("value")).val()||{};
  const reg=(await db.ref("teacherRegistrationRequests/"+uid).once("value")).val()||{};
  await adminWrite("licenses/"+token,license);
