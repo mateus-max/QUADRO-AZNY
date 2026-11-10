@@ -291,7 +291,7 @@
         },
         "messages": {
           "$messageId": {
-            ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (auth.uid == $teacherUid && ((!data.exists() && newData.child('senderUid').val() == auth.uid && newData.child('senderRole').val() == 'teacher') || (data.exists() && data.child('senderUid').val() == auth.uid && newData.child('senderUid').val() == auth.uid))))",
+            ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (auth.uid == $teacherUid && (( !data.exists() && newData.child('senderUid').val() == auth.uid && newData.child('senderRole').val() == 'teacher') || (data.exists() && data.child('senderUid').val() == auth.uid && (!newData.exists() || newData.child('senderUid').val() == auth.uid)))))",
             ".validate": "!newData.exists() || (newData.hasChildren(['senderUid','senderRole','text','createdAt']) && newData.child('senderUid').isString() && (newData.child('senderRole').val() == 'teacher' || newData.child('senderRole').val() == 'admin') && newData.child('text').isString() && newData.child('createdAt').isNumber())"
           }
         }
