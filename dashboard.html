@@ -166,22 +166,20 @@ body{background:#f4f7fb}
 .support-unread{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:20px;background:#16a34a;color:#fff;font-size:10px;font-weight:800}
 @media(max-width:700px){.support-chat{min-height:calc(100dvh - 190px);border-radius:12px}.support-chat-messages{max-height:none;min-height:260px;padding:12px}.support-msg{max-width:88%}.support-chat-compose{padding:9px}.support-chat-head{padding:12px}}
 
-/* WhatsApp-style support chat: mobile-safe composer and independent message scrolling */
-.support-chat{height:min(76dvh,760px);min-height:440px;max-height:calc(100dvh - 190px);border-radius:16px;display:flex;flex-direction:column}
+/* WhatsApp-style support chat: composer stays visible on mobile */
+.support-chat{height:min(58dvh,640px);min-height:380px;max-height:640px;border-radius:16px;display:flex;flex-direction:column;overflow:hidden}
 .support-chat-head{flex:0 0 auto;position:relative;z-index:2}
 .support-chat-messages{flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain;padding:16px 12px;scrollbar-width:thin}
 .support-msg{max-width:min(82%,620px);padding:10px 13px;border-radius:14px 14px 14px 4px;font-size:15px;box-shadow:0 1px 2px #00000012}
 .support-msg.mine{border-radius:14px 14px 4px 14px;background:#d9fdd3}
-.support-chat-tools{flex:0 0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;background:#f8fafc;border-top:1px solid #e5eaf0}
+.support-chat-tools{flex:0 0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:7px 12px;background:#f8fafc;border-top:1px solid #e5eaf0}
 .support-chat-tools button{border:0;background:transparent;font-size:21px;padding:3px;cursor:pointer}
-.support-chat-compose{position:sticky;bottom:0;z-index:3;flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#f8fafc;border-top:1px solid #e2e8f0}
-.support-chat-compose textarea{flex:1;min-width:0;min-height:44px;max-height:120px;resize:none;border:1px solid #d5dce5;border-radius:24px;padding:12px 15px;background:#fff;font:15px/1.4 inherit;outline:none;overflow-y:auto}
+.support-chat-compose{position:relative;z-index:3;flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;padding:9px 12px calc(9px + env(safe-area-inset-bottom));background:#f8fafc;border-top:1px solid #e2e8f0}
+.support-chat-compose textarea{flex:1;min-width:0;min-height:44px;max-height:100px;resize:none;border:1px solid #d5dce5;border-radius:24px;padding:12px 15px;background:#fff;font:15px/1.4 inherit;outline:none;overflow-y:auto}
 .support-chat-compose textarea:focus{border-color:#1677ff}
 .support-chat-send{width:46px;height:46px;flex:0 0 46px;border:0;border-radius:50%;background:#0878ee;color:#fff;font-size:22px;display:grid;place-items:center;cursor:pointer}
 .support-chat-send:disabled{opacity:.55}
-@media(max-width:700px){.support-chat{height:calc(100dvh - 205px);min-height:400px;max-height:none;margin:0 -2px}.support-chat-messages{padding:12px 10px}.support-msg{max-width:88%}.support-chat-compose{padding-left:9px;padding-right:9px}}
-/* Header: menu on the left, brand on the right */
-@media(max-width:700px){.mobile-topbar{justify-content:space-between}.mobile-brand{order:2}.menu-toggle{order:1}}
+@media(max-width:700px){.support-chat{height:min(58dvh,640px);min-height:380px;max-height:640px;margin:0 -2px}.support-chat-messages{padding:12px 10px}.support-msg{max-width:88%}.support-chat-compose{padding-left:9px;padding-right:9px}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head><body><div class="mobile-topbar"><div class="mobile-brand"><span class="brand-mark"><img src="icons/remote-work-board.svg" alt=""></span><span>Remote Whiteboard</span></div><button type="button" class="menu-toggle" id="mobileMenuToggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="teacherSidebar">☰</button></div><button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button><div class="app">
