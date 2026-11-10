@@ -268,8 +268,8 @@ function updateLicenseDisplay(license,accessToken){
  upgrade.href="login-professor.html?upgrade=1&acesso="+encodeURIComponent(accessToken);
  upgrade.textContent=isTrial?"↗  Atualizar plano":"↗  Renovar / actualizar plano";
 }
-async function init(){try{
- const user=auth.currentUser;
+async function init(user){try{
+ user=user||auth.currentUser;
  if(!user||!user.email){status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta.";return}
  if(!token)throw new Error("Não foi encontrado o código de acesso da licença. Entre novamente pela página inicial.");
  const snap=await db.ref("licenses/"+token).once("value"),license=snap.val();
@@ -289,7 +289,7 @@ async function init(){try{
  window.aznyCurrentPlanExpiry=license.expiresAt||null;
 }catch(error){status.className="badge warn";status.textContent="Falha na validação";message.textContent=error.message||"Não foi possível confirmar o acesso.";console.error(error)}}
 button.onclick=async()=>{try{if(screen.orientation?.lock)await screen.orientation.lock("landscape")}catch(error){console.info("Orientação horizontal não disponível:",error)}location.href="aulas/?acesso="+encodeURIComponent(token)};
-const logout=async()=>{sessionStorage.removeItem("azny_access_token");await auth.signOut().catch(()=>{});location.href="index.html"};document.getElementById("logoutSide").onclick=logout;auth.onAuthStateChanged(user=>{if(user)init();else{status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta."}});
+const logout=async()=>{sessionStorage.removeItem("azny_access_token");await auth.signOut().catch(()=>{});location.href="index.html"};document.getElementById("logoutSide").onclick=logout;auth.onAuthStateChanged(user=>{if(user)init(user);else{status.className="badge warn";status.textContent="Sessão não autenticada";message.textContent="Volte à página inicial e entre com o e-mail da sua conta."}});
 })();
 </script>
 <script>if("serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js",{scope:"/QUADRO-AZNY/"}).catch(console.warn));}</script>
