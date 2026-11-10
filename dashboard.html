@@ -262,7 +262,7 @@ function updateLicenseDisplay(license,accessToken){
  if(isTrial&&!exhausted){status.className="badge";status.textContent="Plano de teste — "+used+"/"+limit+" aulas concluídas";message.textContent="Tem "+(limit-used)+" aula(s) disponível(is)."}
  else if(exhausted){status.className="badge warn";status.textContent="Teste concluído — "+limit+"/"+limit+" aulas";message.textContent="O teste terminou. Atualize o plano para voltar a dar aulas."}
  else if(expired){status.className="badge warn";status.textContent="Plano expirado";message.textContent="Atualize o plano para voltar a utilizar o quadro."}
- else{status.className="badge";status.textContent="Acesso ativo";message.textContent="A sua licença foi confirmada no Firebase Realtime Database."}
+ else{status.className="badge";status.textContent="Acesso ativo";message.textContent="A sua licença foi confirmada."}
  button.disabled=!!(exhausted||expired);
  upgrade.hidden=false;
  upgrade.href="login-professor.html?upgrade=1&acesso="+encodeURIComponent(accessToken);
