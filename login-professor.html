@@ -349,7 +349,7 @@ function selectedPlan(){return document.querySelector('input[name="plan"]:checke
 async function hasPreviouslyUsedTrial(user){
  if(!user?.uid)return false;
  const [licensesSnap,requestsSnap]=await Promise.all([
-  db.ref("licenses").orderByChild("teacherEmail").equalTo(String(user.email||"").toLowerCase()).once("value"),
+  db.ref("licenses").orderByChild("teacherEmail").equalTo(String(user.email||"")).once("value"),
   db.ref("paymentRequests").orderByChild("uid").equalTo(user.uid).once("value")
  ]);
  const licenses=Object.values(licensesSnap.val()||{}),requests=Object.values(requestsSnap.val()||{});
