@@ -178,7 +178,7 @@ async function reviewPaymentDirect(id,action,note,item){
  if(!plan)throw new Error("Plano não reconhecido no pedido: "+String(item.plan||"(vazio)")+".");
  if(planKey==="trial"){
   const [licenseHistory,requestHistory]=await Promise.all([
-   db.ref("licenses").orderByChild("teacherUid").equalTo(uid).once("value"),
+   db.ref("licenses").orderByChild("teacherEmail").equalTo(email).once("value"),
    db.ref("paymentRequests").orderByChild("uid").equalTo(uid).once("value")
   ]);
   const hadActivatedTrial=Object.values(licenseHistory.val()||{}).some(x=>x&&x.plan==="trial"&&(x.startedAt||x.trialSessionsUsed||x.trialExhausted));
