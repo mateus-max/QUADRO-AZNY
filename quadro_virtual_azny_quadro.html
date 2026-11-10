@@ -5528,21 +5528,23 @@ function aznyApplyTeacherWorkspaceState(state){
 }
 function aznyBindTeacherSessionStatus(sessionId){
  if(!AZNY_DB||!sessionId)return;
- const nextRef=AZNY_DB.ref("aznyRooms/"+aznyRoomKey()+"/sessions/"+sessionId);
+ const nextRef=aznyRoomRef().child("sessions").child(sessionId);
  if(aznyTeacherSessionStatusRef&&aznyTeacherSessionStatusRef.toString()===nextRef.toString())return;
  if(aznyTeacherSessionStatusRef)aznyTeacherSessionStatusRef.child("status").off("value");
  aznyTeacherSessionStatusRef=nextRef;
  nextRef.child("status").on("value",async snap=>{
+  if(classSessionId!==sessionId)return;
   const status=snap.val();
   if(status==="active"){
-   classSessionId=sessionId;
    const [runSnap,startSnap]=await Promise.all([nextRef.child("runId").once("value"),nextRef.child("startedAt").once("value")]);
+   if(classSessionId!==sessionId)return;
    classRunId=String(runSnap.val()||classRunId||"");
    classStarted=true;classStartTime=Number(startSnap.val())||classStartTime||Date.now();aznyTrialAutoEnding=false;
    const start=document.getElementById("startClassBtn"),end=document.getElementById("endClassBtn");
    if(start)start.disabled=true;if(end)end.disabled=false;
    clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();
-   sessionRealtimeBound=false;bindClassSessionRealtime();bindTeacherPresenceWatch();
+   if(!sessionRealtimeBound)bindClassSessionRealtime();
+   bindTeacherPresenceWatch();
   }else if(status==="ended"){
    classStarted=false;clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;
    const start=document.getElementById("startClassBtn"),end=document.getElementById("endClassBtn");
@@ -5560,7 +5562,13 @@ function aznySetupTeacherCrossDeviceSync(){
  aznyTeacherActiveSessionRef=aznyRoomRef().child("activeSessionId");
  aznyTeacherActiveSessionRef.on("value",snap=>{
   const id=String(snap.val()||"");if(!id)return;
-  if(classSessionId!==id)classSessionId=id;
+  if(classSessionId!==id){
+   unbindClassSessionRealtime();
+   if(aznyTeacherSessionStatusRef)aznyTeacherSessionStatusRef.child("status").off("value");
+   aznyTeacherSessionStatusRef=null;
+   classSessionId=id;classStarted=false;
+   clearInterval(classTimerHandle);classTimerHandle=null;
+  }
   aznyBindTeacherSessionStatus(id);
  });
  aznyPublishTeacherWorkspaceState();
