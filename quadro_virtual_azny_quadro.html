@@ -1334,7 +1334,7 @@ function aznyFilterDeletedPages(pages){return pages.map(page=>{if(!page)return p
 let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0,aznyTeacherScreenTrack=null,aznyStudentScreenTrack=null,classRunId="",aznyTeacherAccessValidated=false,aznyTeacherPlanKey="",aznyTrialAutoEnding=false;
 const AZNY_URL_PARAMS=new URLSearchParams(location.search);let AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";try{AZNY_ACCESS_TOKEN=AZNY_ACCESS_TOKEN||sessionStorage.getItem("azny_access_token")||"";if(AZNY_ACCESS_TOKEN)sessionStorage.setItem("azny_access_token",AZNY_ACCESS_TOKEN)}catch(_){};if(AZNY_ACCESS_TOKEN&&!AZNY_URL_PARAMS.has("acesso")){AZNY_URL_PARAMS.set("acesso",AZNY_ACCESS_TOKEN);try{history.replaceState(history.state,"",location.pathname+"?"+AZNY_URL_PARAMS.toString()+location.hash)}catch(_){}}const AZNY_ISOLATED_MODE=AZNY_URL_PARAMS.get("isolado")==="1";let isStudent=AZNY_URL_PARAMS.get("aluno")==="1"; document.body.classList.toggle("student-mode",isStudent); document.body.classList.toggle("teacher-mode",!isStudent);const aznyHashKey=value=>{let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};const aznyAccessScope=AZNY_ISOLATED_MODE?"isolado":aznyHashKey(AZNY_ACCESS_TOKEN||"");const aznyTeacherRoomStorageKey="azny_teacher_room_v1_"+aznyAccessScope;let aznySavedRoom="";try{aznySavedRoom=AZNY_ISOLATED_MODE?"":(localStorage.getItem(aznyTeacherRoomStorageKey)||"")}catch(_){};const aznyRequestedRoom=AZNY_URL_PARAMS.get("sala");let roomId;if(AZNY_ISOLATED_MODE){roomId="AZNY-ISOLADO"}else if(isStudent){roomId=aznyRequestedRoom||""}else{roomId=aznyRequestedRoom?(aznyRequestedRoom.startsWith("AZNY-"+aznyAccessScope+"-")?aznyRequestedRoom:("AZNY-"+aznyAccessScope+"-"+aznyRequestedRoom)):(aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope));if(!aznyRequestedRoom){try{localStorage.setItem(aznyTeacherRoomStorageKey,roomId)}catch(_){}}}STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[^a-zA-Z0-9_-]/g,"_");
-let classSessionId=isStudent?(AZNY_URL_PARAMS.get("sess")||""):(()=>{try{return localStorage.getItem("azny-active-session-"+String(roomId))||""}catch(_){return ""}})()||"ROOM-"+String(roomId).replace(/[.#$\[\]\/]/g,"_");
+let classSessionId=isStudent?(AZNY_URL_PARAMS.get("sess")||""):"";
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 let roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
@@ -1348,8 +1348,7 @@ if(!isStudent&&!AZNY_ACCESS_TOKEN&&!AZNY_ISOLATED_MODE){
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
 const aznyRoomKey=()=>String(roomId).replace(/[.#$\[\]\/]/g,"_");
 const aznyRoomRef=()=>AZNY_DB?AZNY_DB.ref("aznyRooms/"+aznyRoomKey()):null;
-/* Uma sessão permanente por sala: o link antigo continua válido entre aulas. */
-if(!isStudent&&!classSessionId)classSessionId="ROOM-"+aznyRoomKey();
+/* Cada aula usa uma sessão própria, guardada no Realtime Database. */
 async function initAZNYRealtime(){
  for(let attempt=0;attempt<12;attempt++){
   try{
@@ -2812,8 +2811,12 @@ async function startClass(){
 
 
 async function restoreActiveTeacherSession(){
- if(isStudent||!classSessionId||!AZNY_DB)return;
+ if(isStudent||!AZNY_DB)return;
  try{
+  const activeSessionSnap=await aznyRoomRef().child("activeSessionId").once("value");
+  const activeSessionId=String(activeSessionSnap.val()||"");
+  if(!activeSessionId)return;
+  classSessionId=activeSessionId;
   const ref=aznySessionRef();
   const [statusSnap,runSnap,startSnap,titleSnap]=await Promise.all([
    ref.child("status").once("value"),ref.child("runId").once("value"),
@@ -3350,7 +3353,7 @@ function setupPianoRealtime(){
  pianoEventListenerBound=true;pianoEventRef=aznyRoomRef().child("pianoEvent");
  pianoEventRef.on("value",snap=>{const event=snap.val();if(isStudent)applyRemotePianoEvent(event)});
 }
-function setupRealtimeRoom(){if(!AZNY_DB)return;setupBoardRealtime();setupPianoRealtime();if(classSessionId)bindClassSessionRealtime()}
+function setupRealtimeRoom(){if(!AZNY_DB)return;setupBoardRealtime();setupPianoRealtime();if(isStudent&&classSessionId)bindClassSessionRealtime()}
 async function connectStudentPeer(id,d){
  window.aznyTeacherPeers=window.aznyTeacherPeers||{};
  const existing=window.aznyTeacherPeers[id];
