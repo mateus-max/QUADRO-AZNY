@@ -156,10 +156,10 @@ document.addEventListener("click",async e=>{
  const b=e.target.closest("button");if(!b)return;
  const like=b.dataset.courseLike,commentToggle=b.dataset.courseComments,shareToggle=b.dataset.courseShare;
  if(like){const name=courseVisitorName();if(!name)return;const ref=db.ref("courseInteractions/"+like+"/likes/"+courseVisitorId),snap=await ref.once("value");if(snap.exists())await ref.remove();else await ref.set({name:name,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});return}
- if(commentToggle){const box=document.querySelector('[data-course-comments-box="'+CSS.escape(commentToggle)+'"]');if(box)box.classList.toggle("open");return}
- if(shareToggle){const box=document.querySelector('[data-course-share-box="'+CSS.escape(shareToggle)+'"]');if(box)box.classList.toggle("open");return}
+ if(commentToggle){const name=courseVisitorName();if(!name)return;const box=document.querySelector('[data-course-comments-box="'+CSS.escape(commentToggle)+'"]');if(box)box.classList.toggle("open");return}
+ if(shareToggle){const name=courseVisitorName();if(!name)return;const box=document.querySelector('[data-course-share-box="'+CSS.escape(shareToggle)+'"]');if(box)box.classList.toggle("open");return}
  if(b.dataset.courseShareMode){try{await shareCourse(b.dataset.courseId,b.dataset.courseShareMode)}catch(err){alert("Não foi possível partilhar o curso: "+(err.message||err))}return}
- if(b.dataset.courseReply){const form=document.querySelector('[data-course-reply-form="'+CSS.escape(b.dataset.courseReply)+'"]');if(form){form.classList.toggle("hidden");form.scrollIntoView({behavior:"smooth",block:"center"});const input=form.querySelector("input");if(input&&!form.classList.contains("hidden"))input.focus()}return}
+ if(b.dataset.courseReply){const name=courseVisitorName();if(!name)return;const form=document.querySelector('[data-course-reply-form="'+CSS.escape(b.dataset.courseReply)+'"]');if(form){form.classList.toggle("hidden");form.scrollIntoView({behavior:"smooth",block:"center"});const input=form.querySelector("input");if(input&&!form.classList.contains("hidden"))input.focus()}return}
 });
 document.addEventListener("submit",async e=>{
  const form=e.target;if(!form.matches("[data-course-comment-form],[data-course-reply-form]"))return;e.preventDefault();
