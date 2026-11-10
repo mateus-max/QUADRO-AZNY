@@ -55,7 +55,7 @@ main{max-width:1500px;margin:0 auto;padding:16px 4.2% 42px}.section-head{display
 .course-social-actions button{border:0;background:transparent;color:#40536a;border-radius:8px;padding:9px 4px;font:700 13px Arial,sans-serif;cursor:pointer}
 .course-social-actions button.active{color:#0878ce}.course-social-actions button:active{background:#eaf3fc}
 .course-comments{display:none;padding:12px 14px;background:#f5f8fc;border-top:1px solid #e3eaf2}.course-comments.open{display:block}
-.course-comment-form,.course-reply-form{display:grid;gap:7px;margin:8px 0}
+.course-comment-form,.course-reply-form{display:grid;gap:7px;margin:8px 0}.course-reply-form.hidden{display:none}
 .course-comment-form input,.course-reply-form input{min-width:0;width:100%;padding:10px 12px;border:1px solid #d0dbe8;border-radius:10px;font:inherit}
 .course-comment-form button,.course-reply-form button,.course-share-options button{border:1px solid #cbd8e6;background:#fff;color:#17466e;border-radius:18px;padding:8px 12px;font-weight:750;cursor:pointer}
 .course-comment-row{display:flex;gap:8px}.course-comment-row input{flex:1}.course-comment-row button{background:#0874e8;color:#fff;border-color:#0874e8}
@@ -94,7 +94,7 @@ const courseInteractionBindings=new Map();
 function clearCourseInteractionBindings(){courseInteractionBindings.forEach(v=>{v.ref.child("likes").off("value",v.likes);v.ref.child("comments").off("value",v.comments);v.ref.child("shares").off("value",v.shares)});courseInteractionBindings.clear()}
 function renderCourseComments(items,id){
  const roots=items.filter(x=>!x.parentId);if(!roots.length)return '<div class="meta">Ainda não existem comentários. Seja o primeiro a comentar.</div>';
- return roots.map(c=>'<div class="course-comment"><div class="course-comment-bubble"><div class="course-comment-author">'+esc(c.author||"Visitante")+'</div><div>'+esc(c.text||"")+'</div></div><div class="course-comment-tools"><span>'+new Date(c.createdAt||Date.now()).toLocaleString("pt-PT")+'</span><button type="button" data-course-reply="'+esc(c.id)+'" data-course-id="'+esc(id)+'">Responder</button></div><div class="course-replies">'+items.filter(x=>x.parentId===c.id).map(r=>'<div class="course-comment"><div class="course-comment-bubble"><div class="course-comment-author">'+esc(r.author||"Visitante")+'</div><div>'+esc(r.text||"")+'</div></div></div>').join("")+'<form class="course-reply-form" data-course-reply-form="'+esc(c.id)+'" data-course-id="'+esc(id)+'"><div class="course-comment-row"><input name="reply" maxlength="1500" placeholder="Escreva uma resposta..." required><button type="submit">Responder</button></div></form></div></div>').join("");
+ return roots.map(c=>'<div class="course-comment"><div class="course-comment-bubble"><div class="course-comment-author">'+esc(c.author||"Visitante")+'</div><div>'+esc(c.text||"")+'</div></div><div class="course-comment-tools"><span>'+new Date(c.createdAt||Date.now()).toLocaleString("pt-PT")+'</span><button type="button" data-course-reply="'+esc(c.id)+'" data-course-id="'+esc(id)+'">Responder</button></div><div class="course-replies">'+items.filter(x=>x.parentId===c.id).map(r=>'<div class="course-comment"><div class="course-comment-bubble"><div class="course-comment-author">'+esc(r.author||"Visitante")+'</div><div>'+esc(r.text||"")+'</div></div></div>').join("")+'<form class="course-reply-form hidden" data-course-reply-form="'+esc(c.id)+'" data-course-id="'+esc(id)+'"><div class="course-comment-row"><input name="reply" maxlength="1500" placeholder="Escreva uma resposta..." required><button type="submit">Responder</button></div></form></div></div>').join("");
 }
 function bindCourseInteractions(id){
  const card=document.querySelector('[data-course-card="'+CSS.escape(id)+'"]');if(!card)return;
@@ -156,7 +156,7 @@ document.addEventListener("click",async e=>{
  if(commentToggle){const box=document.querySelector('[data-course-comments-box="'+CSS.escape(commentToggle)+'"]');if(box)box.classList.toggle("open");return}
  if(shareToggle){const box=document.querySelector('[data-course-share-box="'+CSS.escape(shareToggle)+'"]');if(box)box.classList.toggle("open");return}
  if(b.dataset.courseShareMode){try{await shareCourse(b.dataset.courseId,b.dataset.courseShareMode)}catch(err){alert("Não foi possível partilhar o curso: "+(err.message||err))}return}
- if(b.dataset.courseReply){const form=document.querySelector('[data-course-reply-form="'+CSS.escape(b.dataset.courseReply)+'"]');if(form){form.scrollIntoView({behavior:"smooth",block:"center"});const input=form.querySelector("input");if(input)input.focus()}return}
+ if(b.dataset.courseReply){const form=document.querySelector('[data-course-reply-form="'+CSS.escape(b.dataset.courseReply)+'"]');if(form){form.classList.toggle("hidden");form.scrollIntoView({behavior:"smooth",block:"center"});const input=form.querySelector("input");if(input&&!form.classList.contains("hidden"))input.focus()}return}
 });
 document.addEventListener("submit",async e=>{
  const form=e.target;if(!form.matches("[data-course-comment-form],[data-course-reply-form]"))return;e.preventDefault();
