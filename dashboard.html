@@ -281,6 +281,28 @@ body:has(.view-panel[data-view-panel="suporte"]:not([hidden])) .main>.topbar{dis
  .view-panel[data-view-panel="suporte"] .support-chat-attach-menu{flex:0 0 auto!important}
  .view-panel[data-view-panel="suporte"] .support-chat-compose{display:flex!important;visibility:visible!important}
 }
+
+/* No chat de suporte, o cabeçalho da conversa substitui a barra da marca */
+body:has(.view-panel[data-view-panel="suporte"]:not([hidden]))>.mobile-topbar,
+body:has(.view-panel[data-view-panel="suporte"]:not([hidden])) .mobile-topbar,
+body:has(.view-panel[data-view-panel="suporte"]:not([hidden])) .main>.topbar{display:none!important}
+body:has(.view-panel[data-view-panel="suporte"]:not([hidden])) .main{padding-top:0!important;margin-top:0!important}
+body:has(.view-panel[data-view-panel="suporte"]:not([hidden])) .view-panel[data-view-panel="suporte"]{padding-top:0!important;margin-top:0!important}
+.view-panel[data-view-panel="suporte"] .support-chat-tools{display:none!important}
+@media(max-width:700px){
+ .view-panel[data-view-panel="suporte"] .support-chat{
+  position:fixed!important;top:0!important;left:0!important;right:0!important;
+  width:100%!important;height:100dvh!important;min-height:0!important;
+  max-height:none!important;margin:0!important;border-radius:0!important;
+  z-index:20!important;display:flex!important;flex-direction:column!important
+ }
+ .view-panel[data-view-panel="suporte"] .support-chat-head{
+  padding-top:calc(12px + env(safe-area-inset-top))!important;
+  min-height:88px!important;flex:0 0 auto!important
+ }
+ .view-panel[data-view-panel="suporte"] .support-chat-messages{flex:1 1 0!important;min-height:0!important}
+ .view-panel[data-view-panel="suporte"] .support-chat-compose{flex:0 0 auto!important}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 </head><body><div class="mobile-topbar"><div class="mobile-brand"><span class="brand-mark"><img src="icons/remote-work-board.svg" alt=""></span><span>Remote Whiteboard</span></div><button type="button" class="menu-toggle" id="mobileMenuToggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="teacherSidebar">☰</button></div><button class="menu-backdrop" id="menuBackdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button><div class="app">
