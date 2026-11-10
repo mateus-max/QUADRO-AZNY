@@ -2010,38 +2010,64 @@ function setupBoardRealtime(){
  /* Do not publish local state on startup: it could overwrite the last saved board before the remote state arrives. */
 }
 function restore(s){
- if(Array.isArray(s?.deletedObjectIds))s.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));if(Array.isArray(s?.deletedStrokeIds))s.deletedStrokeIds.forEach(id=>deletedStrokeIds.add(String(id)));
+ if(Array.isArray(s?.deletedObjectIds))s.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
+ if(Array.isArray(s?.deletedStrokeIds))s.deletedStrokeIds.forEach(id=>deletedStrokeIds.add(String(id)));
  const selectedId=selected?.dataset?.id||"";
- /* Keep already-open documents mounted. Remote board snapshots often arrive
-    while other people work; rebuilding a PDF viewer on every snapshot reloads it.
-    New documents still get created and explicit deletions are still applied. */
- const existingDocs=new Map([...board.querySelectorAll(".docobj")].map(el=>[String(el.dataset.id||""),el]));
  const incomingObjects=(s?.objects||[]).filter(o=>!deletedObjectIds.has(aznyObjectKey(o)));
- const incomingDocIds=new Set(incomingObjects.filter(o=>o.kind==="doc").map(o=>String(o.id||"")));
- board.querySelectorAll(".object:not(.docobj)").forEach(e=>e.remove());
- existingDocs.forEach((el,id)=>{if(!incomingDocIds.has(id))el.remove()});
- selected=null;strokes=s?.strokes||[];let maxId=0;
+ const incomingIds=new Set(incomingObjects.map(o=>String(o.id||"")));
+ const existing=new Map([...board.querySelectorAll(".object")].map(el=>[String(el.dataset.id||""),el]));
+ /* Keep the actual DOM nodes mounted while live updates arrive. Recreating every
+    image/text/chart on each Firebase snapshot caused visible flicker and jitter. */
+ existing.forEach((el,id)=>{if(!incomingIds.has(id)){el.remove();existing.delete(id)}});
+ selected=null;
+ strokes=s?.strokes||[];
+ let maxId=0;
  incomingObjects.forEach((o,i)=>{
-  let el=null;
-  if(o.kind==="doc"){
-   el=existingDocs.get(String(o.id||""))||null;
-   if(el){
-    /* Preserve the live PDF/text viewer and its scroll/page state; only sync
-       its board position and size from the incoming snapshot. */
-    Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});
-   }else{
-    createFromData(o);
-    el=[...board.querySelectorAll(".docobj")].find(node=>node.dataset.id===String(o.id||""))||null;
-   }
-  }else{
+  const id=String(o.id||"");
+  let el=existing.get(id)||null;
+  const kindClass={text:"textobj",image:"mediaobj",chart:"chartobj",music:"musicobj",resource:"resourceobj",doc:"docobj"}[o.kind]||"docobj";
+  if(el&&!el.classList.contains(kindClass)){el.remove();el=null}
+  if(!el){
    createFromData(o);
-   el=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===String(o.id||""))||null;
+   el=[...board.querySelectorAll(".object")].find(node=>String(node.dataset.id||"")===id)||null;
+  }else{
+   const setStyle=(key,value)=>{const next=String(value??"");if(el.style[key]!==next)el.style[key]=next};
+   setStyle("left",o.left+"px");setStyle("top",o.top+"px");
+   setStyle("width",o.width+"px");setStyle("height",o.height+"px");
+   if(o.kind==="text"){
+    const editing=document.activeElement===el||el.contains(document.activeElement);
+    if(!editing&&typeof o.html==="string"&&el.innerHTML!==o.html)el.innerHTML=o.html;
+    const st=o.style||{};
+    ["fontSize","fontFamily","fontWeight","fontStyle","textDecoration","color","textAlign"].forEach(k=>setStyle(k,st[k]||""));
+    el.dataset.aznyTextUpdatedAt=String(Number(o.textUpdatedAt)||0);
+    ["anchorId","anchorX","anchorY","anchorW","anchorH","anchorFontSize"].forEach(k=>{if(o[k]===null||o[k]===undefined)delete el.dataset[k];else el.dataset[k]=String(o[k])});
+   }else if(o.kind==="image"){
+    const img=el.querySelector("img");if(img&&o.src&&img.src!==o.src)img.src=o.src;
+   }else if(o.kind==="chart"){
+    const changed=el.dataset.chartType!==(o.chartType||"bar")||el.dataset.title!==(o.title||"Gráfico")||el.dataset.values!==(o.values||"12,19,8,15,10");
+    if(changed){el.remove();createFromData(o);el=[...board.querySelectorAll(".object")].find(node=>String(node.dataset.id||"")===id)||null}
+   }else if(o.kind==="music"){
+    const changed=el.dataset.musicType!==(o.musicType||"blank")||el.dataset.title!==(o.title||"Música");
+    if(changed){el.remove();createFromData(o);el=[...board.querySelectorAll(".object")].find(node=>String(node.dataset.id||"")===id)||null}
+   }else if(o.kind==="resource"){
+    const changed=el.dataset.resourceType!==(o.resourceType||"bible")||el.dataset.language!==(o.language||"pt");
+    if(changed){el.remove();createFromData(o);el=[...board.querySelectorAll(".object")].find(node=>String(node.dataset.id||"")===id)||null}
+   }else if(o.kind==="doc"){
+    if(el.dataset.name!==(o.name||"Documento")){el.dataset.name=o.name||"Documento";const label=el.querySelector(".dochead span");if(label)label.textContent=el.dataset.name}
+    /* Keep the open PDF/document viewer and its scroll position intact. */
+   }
   }
-  if(el){el.style.zIndex=String(5+i);if(o.aznyMinimized){el.dataset.aznyMinimized="1";el.dataset.aznyOldWidth=o.aznyOldWidth||"360px";el.dataset.aznyOldHeight=o.aznyOldHeight||"260px"}}
-  const m=String(o.id||"").match(/^o(\d+)$/);if(m)maxId=Math.max(maxId,+m[1]);
+  if(el){
+   el.style.zIndex=String(5+i);
+   if(o.createdBy)el.dataset.createdBy=String(o.createdBy);
+   if(o.aznyMinimized){el.dataset.aznyMinimized="1";el.dataset.aznyOldWidth=o.aznyOldWidth||"360px";el.dataset.aznyOldHeight=o.aznyOldHeight||"260px"}
+   else{delete el.dataset.aznyMinimized;delete el.dataset.aznyOldWidth;delete el.dataset.aznyOldHeight}
+  }
+  const m=id.match(/^o(\d+)$/);if(m)maxId=Math.max(maxId,+m[1]);
  });
  objectId=Math.max(objectId,maxId);
- document.getElementById("boardTitle").value=s?.title||"Nova aula";
+ const title=document.getElementById("boardTitle"),nextTitle=s?.title||"Nova aula";
+ if(title&&title.value!==nextTitle)title.value=nextTitle;
  if(selectedId){const keep=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===selectedId);if(keep)selectObject(keep)}
  redraw();updateHint();updateObjectActions();
 }
