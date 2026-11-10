@@ -1712,15 +1712,24 @@ function aznyBuildBoardSnapshot(){
 }
 function sendBoardSnapshotToChannel(ch,data){
  if(!ch||ch.readyState!=="open")return false;
- if(ch.bufferedAmount>1048576){if(!ch._aznySnapshotRetry)ch._aznySnapshotRetry=setTimeout(()=>{ch._aznySnapshotRetry=null;sendBoardSnapshotToChannel(ch)},180);return false}
- try{
-  const raw=JSON.stringify(data||aznyBuildBoardSnapshot()),size=48000,total=Math.ceil(raw.length/size),id="board-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9);
-  for(let index=0;index<total;index++){
-   if(ch.bufferedAmount>2097152){if(!ch._aznySnapshotRetry)ch._aznySnapshotRetry=setTimeout(()=>{ch._aznySnapshotRetry=null;sendBoardSnapshotToChannel(ch)},220);return false}
-   ch.send(JSON.stringify({type:"board-chunk",id,index,total,data:raw.slice(index*size,(index+1)*size)}));
-  }
-  return true;
- }catch(e){console.warn("AZNY board snapshot channel:",e);return false}
+ try{ch._aznySnapshotPending=data||aznyBuildBoardSnapshot()}catch(e){console.warn("AZNY board snapshot build:",e);return false}
+ if(ch._aznySnapshotSending)return true;
+ ch._aznySnapshotSending=true;
+ (async()=>{
+  try{
+   while(ch.readyState==="open"&&ch._aznySnapshotPending){
+    const payload=ch._aznySnapshotPending;ch._aznySnapshotPending=null;
+    const raw=JSON.stringify(payload),size=48000,total=Math.ceil(raw.length/size),id="board-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9);
+    for(let index=0;index<total&&ch.readyState==="open";index++){
+     while(ch.readyState==="open"&&ch.bufferedAmount>524288)await new Promise(resolve=>setTimeout(resolve,45));
+     if(ch.readyState!=="open")break;
+     ch.send(JSON.stringify({type:"board-chunk",id,index,total,data:raw.slice(index*size,(index+1)*size)}));
+    }
+   }
+  }catch(e){console.warn("AZNY board snapshot channel:",e)}
+  finally{ch._aznySnapshotSending=false;if(ch.readyState==="open"&&ch._aznySnapshotPending)sendBoardSnapshotToChannel(ch)}
+ })();
+ return true;
 }
 function sendBoardSnapshotToPeer(pc,data){return sendBoardSnapshotToChannel(pc?pc._aznyBoardChannel:null,data)}
 function sendBoardSnapshotToAllPeers(data){let sent=0;Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{if(sendBoardSnapshotToPeer(pc,data))sent++});return sent}
