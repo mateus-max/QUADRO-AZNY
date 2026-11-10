@@ -109,8 +109,8 @@ button,input,select{font:inherit}.app{height:100vh;display:flex;flex-direction:c
  .azny-excel-status{padding:4px 8px;color:#5b6470;font-size:11px;border-top:1px solid #e5e7eb}
  body.student-mode #aznyExcelWorkspace{z-index:100}
 
- #stage{position:absolute;left:0;top:0;width:100%;height:100%;overflow:auto;overflow-x:auto;overflow-y:auto;background:#d6dee7;overscroll-behavior:contain;touch-action:pan-x pan-y}#zoomExtent{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;visibility:hidden}
-#board{position:absolute;left:0;top:0;width:100%;height:100%;min-width:0;min-height:0;background:#4f7f4f;transform-origin:0 0;overflow:hidden;border:8px solid #8b5a2b;box-shadow:inset 0 0 0 1px #6f431f,0 0 0 1px #6f431f}
+ #stage{position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;background:#d6dee7;overscroll-behavior:contain;touch-action:none}
+#board{position:absolute;left:0;top:0;width:100%;height:100%;min-width:0;min-height:0;background:#4f7f4f;transform:none!important;transform-origin:0 0;overflow:hidden;border:8px solid #8b5a2b;box-shadow:inset 0 0 0 1px #6f431f,0 0 0 1px #6f431f}
 body.teacher-text-entry-active .app{height:var(--azny-frozen-app-height,100vh)!important;min-height:0!important}
 body.teacher-text-entry-active .canvas-wrap{flex:0 0 var(--azny-frozen-board-height,55vh)!important;height:var(--azny-frozen-board-height,55vh)!important;min-height:0!important}
 body.teacher-text-entry-active #board{width:var(--azny-frozen-board-width,100%)!important;height:var(--azny-frozen-board-height,100%)!important;max-width:none!important;max-height:none!important}
@@ -119,11 +119,10 @@ body.teacher-text-entry-active #board{width:var(--azny-frozen-board-width,100%)!
 .object{position:absolute;z-index:5}
 /* Android/PWA: dragging an object must own the touch gesture from the first contact.
    Prevent the browser from interpreting the same gesture as page scrolling or zooming. */
-body:not(.student-mode) #board .mediaobj,
-body:not(.student-mode) #board .chartobj,
-body:not(.student-mode) #board .musicobj,
-body:not(.student-mode) #board .docobj,
-body:not(.student-mode) #board .object .resize{
+#board .mediaobj,
+#board .chartobj,
+#board .musicobj,
+#board .object .resize{
  touch-action:none!important;
  -webkit-user-select:none!important;
  user-select:none!important;
@@ -1217,9 +1216,6 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
       <input class="color" type="color" id="textColor" value="#ffffff" title="Mudar a cor do texto selecionado">
       <button class="mini" id="alignLeft">≡</button><button class="mini" id="alignCenter">≡</button><button class="mini" id="alignRight">≡</button>
     </div>
-    <div class="group">
-      <button class="mini" id="zoomOut" title="Diminuir zoom">−</button><span class="zoomlabel" id="zoomLabel">100%</span><button class="mini" id="zoomIn" title="Aumentar zoom">＋</button><button class="mini" id="zoomReset" title="Repor zoom">100%</button>
-    </div>
     <div class="group azny-language-group"><button class="mini azny-language-btn" id="teacherLanguageBtn" type="button" title="Trocar idioma da interface" aria-label="Trocar idioma">🌐 PT / EN</button></div>
   </div>
   <div class="canvas-wrap" id="canvasWrap">
@@ -1237,7 +1233,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
       <div contenteditable="true" id="aznyWebEditor" spellcheck="true" style="flex:1;overflow:auto;padding:24px;outline:none;line-height:1.6;min-height:0" data-placeholder="Escrevam aqui em conjunto. As alterações serão sincronizadas com os participantes."></div>
       <div class="azny-excel-status" id="aznyWebStatus">Documento colaborativo: alterações sincronizadas em tempo real durante a aula.</div>
     </section>
-    <div id="stage"><div id="zoomExtent" aria-hidden="true"></div><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="aznyPointerCaptureLayer" aria-hidden="true"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
+    <div id="stage"><div id="board"><canvas id="drawLayer"></canvas><div class="hint" id="hint" style="display:none!important"></div><div id="aznyPointerCaptureLayer" aria-hidden="true"></div><div id="livePointer" aria-hidden="true"><span class="pointerIcon">
 <svg viewBox="0 0 48 56" aria-hidden="true">
   <path class="arrow" d="M44 2 L25 9 L34 18 L12 40 L18 46 L40 24 L47 33 Z"/>
   <path d="M15 37 L5 49" fill="none" stroke="#e11" stroke-width="5" stroke-linecap="round"/>
@@ -1692,17 +1688,17 @@ async function resetBoardForClassLifecycle(){
   const blank=()=>({strokes:[],objects:[],title:"Nova aula",deletedObjectIds:[]});
   pageStates=Array.from({length:5},blank);
   const title=document.getElementById("boardTitle");if(title)title.value="Nova aula";
-  zoom=1;if(board){board.style.transformOrigin="0 0";board.style.transform="scale(1)"}updateZoomExtent();resizeCanvas();redraw();updateHint();updateObjectActions();updatePageLabel();
+  zoom=1;if(board)board.style.transform="none";resizeCanvas();redraw();updateHint();updateObjectActions();updatePageLabel();
   try{localStorage.setItem(STORAGE,JSON.stringify({version:2,currentPage:1,pages:pageStates}))}catch(e){console.warn("AZNY clear local board:",e)}
  }finally{remoteBoardApplying=false}
  if(AZNY_DB){
-  try{await aznyRoomRef().child("board").set({currentPage:1,title:"Nova aula",zoom:1,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,deletedObjectIds:[],updatedAt:firebase.database.ServerValue.TIMESTAMP})}
+  try{await aznyRoomRef().child("board").set({currentPage:1,title:"Nova aula",boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,deletedObjectIds:[],updatedAt:firebase.database.ServerValue.TIMESTAMP})}
   catch(e){console.warn("AZNY clear shared board:",e)}
  }
  try{sendBoardSnapshotToAllPeers()}catch(_){}
  try{roomChannel?.postMessage({type:"board-cleared",room:roomId})}catch(_){}
 }
-function publishBoardState(){if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
+function publishBoardState(){if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
 function sendBoardSnapshotToChannel(ch){return false}
 function sendBoardSnapshotToPeer(pc){return false}
 function sendBoardSnapshotToAllPeers(){return false}
@@ -1777,7 +1773,7 @@ function applyRemoteBoardState(d){
  if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer,.textobj[contenteditable]")){queueRemoteBoardState(d);return;}
  try{
   if(Array.isArray(d.deletedObjectIds))d.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));if(Array.isArray(d.deletedStrokeIds))d.deletedStrokeIds.forEach(id=>deletedStrokeIds.add(String(id)));
-  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
+  if(d.pan)applyBoardPan(d.pan);
   if(Array.isArray(d.pages)){
    const incomingPages=aznyFilterDeletedPages(normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize));
    /* Protect locally uploaded objects from stale/partial snapshots. Images and documents are both preserved unless an explicit delete marker exists. */
@@ -1918,7 +1914,7 @@ function handleBoardChannelMessage(raw){
    if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<65536){try{out.send(packet)}catch(_){}}});}
    return;
   }
-  if(m.type==="board-zoom"){if(Number.isFinite(Number(m.zoom)))setZoom(Number(m.zoom),false);return}if(m.type==="board-pan"){applyBoardPan(m.pan);return}
+  if(m.type==="board-zoom")return;if(m.type==="board-pan"){applyBoardPan(m.pan);return}
   if(m.type==="board-state"){applyRemoteBoardState(m);return}
   if(m.type==="board-chunk"){
    let entry=studentBoardChunks.get(m.id);
@@ -1966,7 +1962,7 @@ function publishLiveBoardState(){
    clearTimeout(firebaseBoardWriteTimer);
    firebaseBoardWriteTimer=setTimeout(()=>{
     const ref=aznyRoomRef().child("board");
-    const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],updatedAt:Date.now(),lastEditorUid:aznyUid||""};
+    const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],updatedAt:Date.now(),lastEditorUid:aznyUid||""};
     ref.transaction(server=>aznyMergeCollaborativeBoardState(server,payload),undefined,false).catch(e=>{console.error("AZNY live board transaction rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
    },8);
   }
@@ -1980,7 +1976,7 @@ function setupBoardRealtime(){
   const d=snap.val();
   if(remoteBoardApplying)return;
   if(!d){if(!isStudent)setTimeout(publishBoardState,150);return;}
-  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);if(d.pan)applyBoardPan(d.pan);
+  if(d.pan)applyBoardPan(d.pan);
   const activeText=document.activeElement?.closest?.(".textobj");
   if(localBoardEditing||(activeText&&board.contains(activeText))){queueRemoteBoardState(d);return;}
   /* Ignore a Firebase echo when the visible page is already identical.
@@ -2270,8 +2266,9 @@ function makeInteractive(el){
  /* Protect document/PDF interactions from remote board refreshes. */
  if(el.classList.contains("docobj")&&!el.dataset.aznyDocGuard){el.dataset.aznyDocGuard="1";let guardTimer=0;const hold=()=>{localBoardEditing=true;clearTimeout(guardTimer)};const release=()=>{clearTimeout(guardTimer);guardTimer=setTimeout(()=>{localBoardEditing=false;scheduleSave();publishLiveBoardState()},900)};el.addEventListener("pointerdown",hold,{capture:true,passive:true});el.addEventListener("pointerup",release,{capture:true,passive:true});el.addEventListener("pointercancel",release,{capture:true,passive:true});el.addEventListener("scroll",()=>{hold();release()},{capture:true,passive:true});el.addEventListener("wheel",()=>{hold();release()},{capture:true,passive:true});}
  if(!el.querySelector(".resize")){const h=document.createElement("div");h.className="resize";el.appendChild(h);h.addEventListener("pointerdown",resizeStart)}
- /* Mobile pinch-to-zoom: two fingers on the same object resize it without changing the selected tool. */
- if(!el.dataset.aznyPinchBound){el.dataset.aznyPinchBound="1";const touches=new Map();let pinch=null;el.addEventListener("pointerdown",e=>{if(e.pointerType!=="touch"||tool!=="select"||e.target.closest?.("button,input,select,textarea,.docpdf-toolbar,.resize"))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){const pts=[...touches.values()];pinch={distance:Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),width:el.offsetWidth,height:el.offsetHeight,left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0};el.dataset.aznyPinching="1";try{pushHistory();el.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();e.stopImmediatePropagation()}},{passive:false});el.addEventListener("pointermove",e=>{if(!pinch||!touches.has(e.pointerId))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size<2)return;const pts=[...touches.values()],dist=Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),scale=Math.max(.2,Math.min(5,dist/pinch.distance));el.style.width=Math.max(40,pinch.width*scale)+"px";el.style.height=Math.max(28,pinch.height*scale)+"px";updateAnchoredTextsFor(el);publishLiveBoardState();e.preventDefault();e.stopPropagation()},{passive:false});const endPinch=e=>{touches.delete(e.pointerId);if(touches.size<2&&pinch){pinch=null;delete el.dataset.aznyPinching;scheduleSave();publishLiveBoardState()}};el.addEventListener("pointerup",endPinch);el.addEventListener("pointercancel",endPinch)}
+ /* No telemóvel, dois dedos sobre o mesmo objecto redimensionam apenas esse objecto.
+    O quadro e a moldura castanha nunca recebem escala nem transformações. */
+ if(!el.dataset.aznyPinchBound){el.dataset.aznyPinchBound="1";const touches=new Map();let pinch=null;el.addEventListener("pointerdown",e=>{if(e.pointerType!=="touch"||tool!=="select"||e.target.closest?.("button,input,select,textarea,.docpdf-toolbar,.resize"))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){const pts=[...touches.values()];pinch={distance:Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),width:el.offsetWidth,height:el.offsetHeight};el.dataset.aznyPinching="1";localBoardEditing=true;try{pushHistory();el.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();e.stopImmediatePropagation()}},{passive:false});el.addEventListener("pointermove",e=>{if(!pinch||!touches.has(e.pointerId))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size<2)return;const pts=[...touches.values()],dist=Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),scale=Math.max(.2,Math.min(5,dist/pinch.distance));el.style.width=Math.max(40,pinch.width*scale)+"px";el.style.height=Math.max(28,pinch.height*scale)+"px";updateAnchoredTextsFor(el);publishLiveBoardState();e.preventDefault();e.stopPropagation()},{passive:false});const endPinch=e=>{touches.delete(e.pointerId);if(touches.size<2&&pinch){pinch=null;touches.clear();delete el.dataset.aznyPinching;localBoardEditing=false;scheduleSave();publishLiveBoardState()}};el.addEventListener("pointerup",endPinch);el.addEventListener("pointercancel",endPinch);el.addEventListener("lostpointercapture",endPinch)}
  /* Pointer Events support mouse, pen and Android touch with one interaction path. */
  el.addEventListener("pointerdown",e=>{
   if(e.target.closest?.(".resize"))return;
@@ -2648,46 +2645,10 @@ document.addEventListener("keydown",e=>{
  else if(e.key==="Delete"&&selected&&!selected.matches(":focus")){e.preventDefault();deleteSelected()}
 });
 
-/* LUPA MÓVEL: ampliar/reduzir com dois dedos no quadro, centrado no ponto tocado. */
-(function(){
- const mobile=()=>matchMedia("(max-width:900px), (pointer:coarse)").matches;
- const points=new Map();let pinch=null;
- const distance=pts=>Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y));
- stage.addEventListener("pointerdown",e=>{
-  if(!mobile()||e.pointerType!=="touch"||tool!=="select"||pointerMode||!board.contains(e.target))return;
-  points.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(points.size===2){
-   const pts=[...points.values()],mid={x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2},r=stage.getBoundingClientRect();
-   pinch={distance:distance(pts),zoom,contentX:(stage.scrollLeft+mid.x-r.left)/zoom,contentY:(stage.scrollTop+mid.y-r.top)/zoom};
-   if(drawing)drawUp();textPointerTarget=null;if(aznyPointerDragId!==null)aznyPointerDragId=null;
-   e.preventDefault();e.stopImmediatePropagation();try{stage.setPointerCapture(e.pointerId)}catch(_){}
-  }
- },{capture:true,passive:false});
- stage.addEventListener("pointermove",e=>{
-  if(!pinch||!points.has(e.pointerId))return;
-  points.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  const pts=[...points.values()];if(pts.length<2)return;
-  const mid={x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2},r=stage.getBoundingClientRect(),anchorX=pinch.contentX,anchorY=pinch.contentY;
-  const next=Math.max(.5,Math.min(2,pinch.zoom*distance(pts)/pinch.distance));
-  setZoom(next,false);
-  requestAnimationFrame(()=>{stage.scrollLeft=Math.max(0,anchorX*zoom-(mid.x-r.left));stage.scrollTop=Math.max(0,anchorY*zoom-(mid.y-r.top))});
-  e.preventDefault();e.stopImmediatePropagation();
- },{capture:true,passive:false});
- const finish=e=>{
-  if(!points.has(e.pointerId))return;
-  points.delete(e.pointerId);
-  if(pinch){e.preventDefault();e.stopImmediatePropagation();if(points.size<2){pinch=null;points.clear();if(!isStudent)setZoom(zoom,true)}}
- };
- stage.addEventListener("pointerup",finish,{capture:true,passive:false});
- stage.addEventListener("pointercancel",finish,{capture:true,passive:false});
- stage.addEventListener("lostpointercapture",finish,{capture:true,passive:false});
-})();
-
-function updateZoomExtent(){const extent=document.getElementById("zoomExtent");if(!extent)return;extent.style.width=Math.max(stage.clientWidth,board.offsetWidth*zoom)+"px";extent.style.height=Math.max(stage.clientHeight,board.offsetHeight*zoom)+"px"}
- function setZoom(z,sync=true){const oldMaxX=Math.max(1,stage.scrollWidth-stage.clientWidth),oldMaxY=Math.max(1,stage.scrollHeight-stage.clientHeight),fx=stage.scrollLeft/oldMaxX,fy=stage.scrollTop/oldMaxY;zoom=Math.max(.5,Math.min(2,Number(z)||1));board.style.transformOrigin="0 0";board.style.transform=`scale(${zoom})`;updateZoomExtent();requestAnimationFrame(()=>{stage.scrollLeft=fx*Math.max(0,stage.scrollWidth-stage.clientWidth);stage.scrollTop=fy*Math.max(0,stage.scrollHeight-stage.clientHeight)});document.getElementById("zoomLabel").textContent=Math.round(zoom*100)+"%";resizeCanvas();if(sync&&!isStudent&&!remoteBoardApplying){const packet=JSON.stringify({type:"board-zoom",zoom});Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});if(AZNY_DB){aznyRoomRef().child("board/zoom").set(zoom).catch(e=>console.warn("AZNY zoom sync:",e))}}}
-document.getElementById("zoomIn").onclick=()=>setZoom(zoom+.1);document.getElementById("zoomOut").onclick=()=>setZoom(zoom-.1);document.getElementById("zoomReset").onclick=()=>setZoom(1);
-/* Ctrl + roda do rato faz zoom do quadro; a alteração é propagada aos alunos. */
-stage.addEventListener("wheel",e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();setZoom(zoom+(e.deltaY<0?.1:-.1))}},{passive:false});
+/* O quadro mantém sempre a escala 100%. Dois dedos só redimensionam o objecto
+   que recebeu ambos os toques em makeInteractive(). */
+function updateZoomExtent(){}
+function setZoom(){zoom=1;if(board)board.style.transform="none";resizeCanvas()}
  let aznyPanSyncing=false,aznyPanTimer=0;
  function applyBoardPan(p){if(!p||!Number.isFinite(+p.x)||!Number.isFinite(+p.y))return;aznyPanSyncing=true;requestAnimationFrame(()=>{stage.scrollLeft=Math.max(0,Math.min(1,+p.x))*Math.max(0,stage.scrollWidth-stage.clientWidth);stage.scrollTop=Math.max(0,Math.min(1,+p.y))*Math.max(0,stage.scrollHeight-stage.clientHeight);aznyPanSyncing=false})}
  stage.addEventListener("scroll",()=>{if(aznyPanSyncing||remoteBoardApplying)return;clearTimeout(aznyPanTimer);aznyPanTimer=setTimeout(()=>{const pan={x:stage.scrollLeft/Math.max(1,stage.scrollWidth-stage.clientWidth),y:stage.scrollTop/Math.max(1,stage.scrollHeight-stage.clientHeight)};if(!isStudent){const packet=JSON.stringify({type:"board-pan",pan});Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});if(AZNY_DB)aznyRoomRef().child("board/pan").set(pan).catch(()=>{})}},45)},{passive:true});
@@ -3786,7 +3747,7 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
   const labels=lang==="en"?en:pt;Object.keys(labels).forEach(id=>{const el=document.getElementById(id);if(!el)return;if(id==="shareWhatsApp"||id==="shareFacebook"){const name=id==="shareWhatsApp"?(lang==="en"?"Share on WhatsApp":"Partilhar no WhatsApp"):(lang==="en"?"Share on Facebook":"Partilhar no Facebook");el.title=name;el.setAttribute("aria-label",name);return}el.textContent=labels[id]});
   document.querySelectorAll(".leftbar .tool[data-tool]").forEach(el=>{const key=el.dataset.tool;el.textContent=(lang==="en"?toolEn:toolPt)[key]||el.textContent});
   [document.getElementById("teacherLanguageBtn"),document.getElementById("studentLanguageBtn")].forEach(b=>{if(b){b.textContent=lang==="en"?"🌐 EN / PT":"🌐 PT / EN";b.title=lang==="en"?"Switch interface language":"Trocar idioma da interface";b.setAttribute("aria-label",b.title);b.setAttribute("aria-pressed",lang==="en"?"true":"false")}});
-  [["textColor",lang==="en"?"Change selected text color":"Mudar a cor do texto selecionado"],["fontSize",lang==="en"?"Font size":"Tamanho da fonte"],["fontFamily",lang==="en"?"Font family":"Tipo de letra"],["zoomOut",lang==="en"?"Zoom out":"Diminuir zoom"],["zoomIn",lang==="en"?"Zoom in":"Aumentar zoom"],["zoomReset",lang==="en"?"Reset zoom":"Repor zoom"]].forEach(([id,title])=>{const el=document.getElementById(id);if(el)el.title=title});
+  [["textColor",lang==="en"?"Change selected text color":"Mudar a cor do texto selecionado"],["fontSize",lang==="en"?"Font size":"Tamanho da fonte"],["fontFamily",lang==="en"?"Font family":"Tipo de letra"]].forEach(([id,title])=>{const el=document.getElementById(id);if(el)el.title=title});
   applyAdditionalLanguage(lang);
   aznyTranslateVisibleInterface();
  }
@@ -3911,7 +3872,7 @@ function aznySaveCurrentViewState(){
    const el=document.getElementById(id);return !!el&&(el.classList.contains("show")||el.classList.contains("azny-excel-open")||el.classList.contains("azny-web-open")||el.getAttribute("aria-hidden")==="false");
   });
   sessionStorage.setItem(AZNY_VIEW_STATE_KEY,JSON.stringify({
-   href:location.href,activeTool,currentPage:Number(currentPage)||0,zoom:Number(zoom)||1,
+   href:location.href,activeTool,currentPage:Number(currentPage)||0,
    scrollX:window.scrollX||0,scrollY:window.scrollY||0,openPanels,
    boardTitle:document.getElementById("boardTitle")?.value||"",
    savedAt:Date.now()
@@ -3927,7 +3888,7 @@ function aznyRestoreCurrentViewState(){
   if(Number.isFinite(Number(state.currentPage))&&Array.isArray(pageStates)&&pageStates.length){
    currentPage=Math.max(0,Math.min(pageStates.length-1,Number(state.currentPage)));
   }
-  if(Number.isFinite(Number(state.zoom)))setZoom(Math.max(.25,Math.min(3,Number(state.zoom))));
+
   if(state.activeTool&&document.querySelector('.tools .tool[data-tool="'+state.activeTool+'"]')){
    document.querySelectorAll(".tools .tool").forEach(el=>el.classList.toggle("active",el.dataset.tool===state.activeTool));
    if(typeof setTool==="function")setTool(state.activeTool);
@@ -3940,7 +3901,7 @@ window.addEventListener("beforeunload",aznySaveCurrentViewState,{capture:true});
 window.addEventListener("pageshow",()=>{setTimeout(aznyRestoreCurrentViewState,250)});
 window.addEventListener("beforeunload",()=>{if(screenRecorder?.state==="recording")screenRecorder.stop();if(studentPeer)studentPeer.close();if(roomChannel)roomChannel.close();/* Atualizar/fechar o separador não encerra a sessão da aula. */});
 window.addEventListener("resize",resizeCanvas);
-if(!isStudent)load();setTimeout(()=>{setZoom(1);updateZoomExtent();resizeCanvas()},80);
+if(!isStudent)load();setTimeout(()=>{setZoom(1);resizeCanvas()},80);
 
 })();
 </script>
@@ -5620,4 +5581,4 @@ body:not(.student-mode) .student>.azny-student-device-controls [data-student-net
 body:not(.student-mode) .student>.azny-student-device-controls [data-student-camera]{order:3!important}
 </style>
 
-<style id="azny-fixed-board-frame-and-video">#stage{overflow:auto!important}#board{box-sizing:border-box!important;resize:none!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;border:8px solid #8b5a2b!important;flex:none!important}#board::before,#board::after{pointer-events:none!important}#teacherCamera{position:relative!important;overflow:hidden!important;background:#091626!important}#teacherCamera #teacherVideo{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;display:block!important;visibility:visible!important;opacity:1!important;object-fit:cover!important;z-index:4!important;background:#091626!important}#teacherCamera .cam-off{position:absolute!important;inset:0!important;z-index:1!important;pointer-events:none!important}#teacherCamera .camera-label,#teacherCamera .cam-status,#teacherCamera .azny-teacher-media-toggles,#teacherCamera .azny-camera-signal{z-index:6!important}</style>
+<style id="azny-fixed-board-frame-and-video">#stage{overflow:hidden!important;touch-action:none!important}#board{box-sizing:border-box!important;resize:none!important;transform:none!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;border:8px solid #8b5a2b!important;flex:none!important}#board::before,#board::after{pointer-events:none!important}#teacherCamera{position:relative!important;overflow:hidden!important;background:#091626!important}#teacherCamera #teacherVideo{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;display:block!important;visibility:visible!important;opacity:1!important;object-fit:cover!important;z-index:4!important;background:#091626!important}#teacherCamera .cam-off{position:absolute!important;inset:0!important;z-index:1!important;pointer-events:none!important}#teacherCamera .camera-label,#teacherCamera .cam-status,#teacherCamera .azny-teacher-media-toggles,#teacherCamera .azny-camera-signal{z-index:6!important}</style>
