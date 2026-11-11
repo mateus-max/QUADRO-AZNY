@@ -1719,9 +1719,18 @@ async function resetBoardForClassLifecycle(){
  try{roomChannel?.postMessage({type:"board-cleared",room:roomId})}catch(_){}
 }
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
-function sendBoardSnapshotToChannel(ch){return false}
-function sendBoardSnapshotToPeer(pc){return false}
-function sendBoardSnapshotToAllPeers(){return false}
+function sendBoardSnapshotToChannel(ch){
+ if(!ch||ch.readyState!=="open"||ch.bufferedAmount>2097152)return false;
+ try{
+  pageStates[currentPage-1]=snapshot();
+  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,deletedObjectIds:[...deletedObjectIds]};
+  const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=12000,total=Math.ceil(raw.length/size);
+  for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
+  return true;
+ }catch(e){console.warn("AZNY board channel:",e);return false}
+}
+function sendBoardSnapshotToPeer(pc){const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open")sendBoardSnapshotToChannel(ch)}
+function sendBoardSnapshotToAllPeers(){Object.values(window.aznyTeacherPeers||{}).forEach(sendBoardSnapshotToPeer)}
 function normalizeRemoteBoardPages(pages,sourceSize){
  const targetW=Math.max(1,board.clientWidth),targetH=Math.max(1,board.clientHeight);
  const sourceW=Number(sourceSize&&sourceSize.width)||targetW,sourceH=Number(sourceSize&&sourceSize.height)||targetH;
@@ -1970,21 +1979,28 @@ function aznyMergeCollaborativeBoardState(server,local){
  return{...base,...incoming,pages,deletedObjectIds:[...deletedObjects],deletedStrokeIds:[...deletedStrokes],updatedAt:firebase.database.ServerValue.TIMESTAMP};
 }
 function publishLiveBoardState(){
- if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;
+ if(remoteBoardApplying||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;
+ /* A caneta envia pontos incrementais; não retransmitir o quadro inteiro durante o traço. */
+ if(drawing&&tool==="pen")return;
  clearTimeout(liveBoardTimer);
- /* Restaurado o fluxo estável de 08/11: Realtime Database é a fonte única do quadro.
-    O WebRTC fica reservado para áudio, vídeo e sinalização. */
  liveBoardTimer=setTimeout(()=>{
   if(remoteBoardApplying)return;
   pageStates[currentPage-1]=snapshot();
-  clearTimeout(firebaseBoardWriteTimer);
-  firebaseBoardWriteTimer=setTimeout(()=>{
-   if(remoteBoardApplying)return;
-   const ref=aznyRoomRef().child("board");
-   const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP,lastEditorUid:aznyUid||""};
-   ref.update(payload).catch(e=>{console.error("AZNY live board write rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
-  },40);
- },25);
+  if(isStudent){
+   if(studentBoardChannel?.readyState==="open"&&studentBoardChannel.bufferedAmount<262144)sendBoardSnapshotToChannel(studentBoardChannel);
+   return;
+  }
+  sendBoardSnapshotToAllPeers();
+  if(AZNY_DB){
+   clearTimeout(firebaseBoardWriteTimer);
+   firebaseBoardWriteTimer=setTimeout(()=>{
+    if(remoteBoardApplying)return;
+    const ref=aznyRoomRef().child("board");
+    const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP,lastEditorUid:aznyUid||""};
+    ref.update(payload).catch(e=>{console.error("AZNY live board write rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
+   },120);
+  }
+ },35);
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
@@ -2500,7 +2516,14 @@ function redraw(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;ct
 function resizeCanvas(){const r=board.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));canvas.style.width=r.width+"px";canvas.style.height=r.height+"px";ctx.setTransform(d,0,0,d,0,0);redraw()}
 function objectAtPoint(p){const els=[...board.querySelectorAll('.object')].reverse();for(const el of els){const b=anchorBox(el);if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h)return el}return null}
 function eraseAt(p){const radius=18;strokes=strokes.filter((st,index)=>{const hit=strokePoints(st).some(q=>Math.hypot(q.x-p.x,q.y-p.y)<radius);if(hit)deletedStrokeIds.add(String(st.id||("legacy-"+(currentPage-1)+"-"+index)));return !hit})}
-function broadcastLiveStroke(done=false){/* Os pontos são enviados no snapshot RTDB pelo publishLiveBoardState; não duplicar pelo WebRTC. */}
+function broadcastLiveStroke(done=false){
+ if(!currentStroke||!aznyLiveStrokeId)return;
+ const points=currentStroke.anchorId?strokePoints(currentStroke):currentStroke.points;
+ const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,done});
+ const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(e){console.warn("AZNY live stroke:",e)}}};
+ if(isStudent){send(studentBoardChannel);return}
+ Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null));
+}
 function drawDown(e){if(tool!=="pen"&&tool!=="eraser")return;if(e.cancelable)e.preventDefault();clearTimeout(window.aznyDrawingReleaseTimer);drawing=true;localBoardEditing=true;pushHistory();const p=localPoint(e);if(tool==="pen"){const anchor=objectAtPoint(p);currentStroke={id:"stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9),color:document.getElementById("textColor").value||"#111111",width:3,points:[],anchorId:anchor?.dataset?.id||null};aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}else currentStroke.points.push(p);strokes.push(currentStroke);broadcastLiveStroke()}else eraseAt(p);redraw();publishLiveBoardState()}
 function drawMove(e){if(!drawing)return;const p=localPoint(e);if(tool==="pen"){if(currentStroke?.anchorId){const anchor=document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]');if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}}else if(currentStroke)currentStroke.points.push(p);redraw();broadcastLiveStroke()}else{eraseAt(p);redraw()}publishLiveBoardState()}
 function drawUp(){if(!drawing)return;if(currentStroke)broadcastLiveStroke(true);drawing=false;currentStroke=null;aznyLiveStrokeId="";/* Keep remote snapshots from replacing the finished stroke before its save is complete. */scheduleSave();publishLiveBoardState();clearTimeout(window.aznyDrawingReleaseTimer);window.aznyDrawingReleaseTimer=setTimeout(()=>{localBoardEditing=false},900)}
