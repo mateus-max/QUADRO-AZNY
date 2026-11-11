@@ -1466,7 +1466,14 @@ async function validateTeacherLicenseAccess(){
  }
 }
 async function ensureAZNYRealtime(){
- if(!AZNY_DB){const ok=await initAZNYRealtime();if(!ok)return false}
+ /* No pedido de entrada, uma instância do Database já criada não significa
+    que a autenticação anónima terminou. Se o UID faltar, repetir a inicialização
+    antes de permitir a escrita protegida pelas regras do Realtime Database. */
+ if(!AZNY_DB||(isStudent&&!aznyUid)){
+  if(isStudent&&!aznyUid){AZNY_DB=null;AZNY_AUTH=null}
+  const ok=await initAZNYRealtime();
+  if(!ok||(isStudent&&!aznyUid))return false;
+ }
  if(!isStudent&&!aznyTeacherAccessValidated){
   try{
    if(AZNY_ISOLATED_MODE)await provisionIsolatedGuestRoom();
