@@ -1973,6 +1973,14 @@ function handleBoardChannelMessage(raw){
    if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<65536){try{out.send(packet)}catch(_){}}});}
    return;
   }
+  if(m.type==="doc-scroll"){
+   const id=String(m.id||"").replace(/[^a-zA-Z0-9_-]/g,"");
+   const el=board.querySelector('.object[data-id="'+id+'"]');
+   const scroller=el?.querySelector(m.kind==="pdf"?".docpdf-pages":".docbody");
+   if(scroller){const maxY=Math.max(0,scroller.scrollHeight-scroller.clientHeight),maxX=Math.max(0,scroller.scrollWidth-scroller.clientWidth);scroller.scrollTop=Math.max(0,Math.min(1,Number(m.y)||0))*maxY;scroller.scrollLeft=Math.max(0,Math.min(1,Number(m.x)||0))*maxX}
+   if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<65536){try{out.send(packet)}catch(_){}}})}
+   return;
+  }
   if(m.type==="board-zoom"){if(Number.isFinite(Number(m.zoom)))setZoom(Number(m.zoom),false);return}if(m.type==="board-pan"){applyBoardPan(m.pan);return}
   if(m.type==="board-state"){applyRemoteBoardState(m);return}
   if(m.type==="board-chunk"){
@@ -4521,6 +4529,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
   ["q","w","e","r","t","y","u","i","o","p"],
   ["a","s","d","f","g","h","j","k","l"],
   ["⇧","z","x","c","v","b","n","m","↵","⌫"],
+  ["á","é","í","ó","ú","â","ê","ô","ã","õ","ç","♡","♥"],
   ["?123"," , ","ESPAÇO"," . ","OK"]
  ];
  function saveSelection(){
@@ -5799,7 +5808,7 @@ body:not(.student-mode) .student>.azny-student-device-controls [data-student-cam
  body:not(.student-mode) .rightbar #students.students{
   display:grid!important;
   grid-template-columns:minmax(0,1fr)!important;
-  grid-auto-rows:155px!important;
+  grid-auto-rows:135px!important;
   align-content:start!important;
   gap:7px!important;
   overflow-y:auto!important;
@@ -5807,11 +5816,36 @@ body:not(.student-mode) .student>.azny-student-device-controls [data-student-cam
  }
  body:not(.student-mode) .rightbar #students .student{
   width:100%!important;
-  height:155px!important;
-  min-height:155px!important;
-  max-height:155px!important;
+  height:135px!important;
+  min-height:135px!important;
+  max-height:135px!important;
   aspect-ratio:auto!important;
  }
  body:not(.student-mode) .rightbar #students #noStudents{grid-column:1!important}
+}
+</style>
+
+<script id="azny-document-scroll-sync">
+(function(){
+ const board=document.getElementById("board");if(!board)return;
+ let timer=0;
+ board.addEventListener("scroll",e=>{
+  const scroller=e.target?.closest?.(".docpdf-pages,.docbody");
+  if(!scroller)return;
+  const object=scroller.closest(".docobj");if(!object?.dataset.id)return;
+  clearTimeout(timer);
+  timer=setTimeout(()=>{
+   const maxY=Math.max(0,scroller.scrollHeight-scroller.clientHeight),maxX=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
+   const packet={type:"doc-scroll",id:object.dataset.id,kind:scroller.classList.contains("docpdf-pages")?"pdf":"word",y:maxY?scroller.scrollTop/maxY:0,x:maxX?scroller.scrollLeft/maxX:0};
+   const raw=JSON.stringify(packet);
+   Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(raw)}catch(_){}}});
+  },45);
+ },true);
+})();
+</script>
+<style id="azny-mobile-document-fit">
+@media(max-width:700px) and (pointer:coarse){
+ #board .docobj{max-width:calc(100vw - 130px)!important;max-height:calc(100vh - 170px)!important}
+ #board .docobj .docbody,#board .docobj .docpdf-pages{max-width:100%;overscroll-behavior:contain}
 }
 </style>
