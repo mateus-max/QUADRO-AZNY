@@ -2421,10 +2421,10 @@ function makeInteractive(el){
  el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});el.addEventListener("blur",()=>{if(!el.isConnected)return;pageStates[currentPage-1]=snapshot();scheduleSave();publishLiveBoardState()});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){el.dataset.aznyTextUpdatedAt=String(Date.now());pageStates[currentPage-1]=snapshot();clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>{pageStates[currentPage-1]=snapshot();publishLiveBoardState()},80);clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML,updatedAt:Number(el.dataset.aznyTextUpdatedAt)||Date.now()});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open")aznyQueueBoardPacket(ch,packet)}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}})},16)}});
 }
 function dragStart(e,el){
- if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();localBoardEditing=true;pushHistory();const p=localPoint(e),sx=parseFloat(el.style.left)||0,sy=parseFloat(el.style.top)||0,pointerId=e.pointerId;
+ if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();localBoardEditing=true;pushHistory();const p=localPoint(e),sx=parseFloat(el.style.left)||0,sy=parseFloat(el.style.top)||0,pointerId=e.pointerId;let lastSyncAt=0;
  try{el.setPointerCapture(pointerId)}catch(_){}
  const anchoredChildren=[...board.querySelectorAll('.textobj[data-anchor-id="'+el.dataset.id+'"]')].map(t=>({el:t,dx:(parseFloat(t.style.left)||0)-sx,dy:(parseFloat(t.style.top)||0)-sy}));
- function move(ev){if(el.dataset.aznyPinching==="1")return;if(pointerId!==undefined&&ev.pointerId!==pointerId)return;const q=localPoint(ev),nx=sx+q.x-p.x,ny=sy+q.y-p.y,stamp=String(Date.now());el.style.left=nx+"px";el.style.top=ny+"px";el.dataset.aznyUpdatedAt=stamp;anchoredChildren.forEach(c=>{c.el.style.left=(nx+c.dx)+"px";c.el.style.top=(ny+c.dy)+"px";c.el.dataset.aznyUpdatedAt=stamp});redraw();publishLiveBoardState()}
+ function move(ev){if(el.dataset.aznyPinching==="1")return;if(pointerId!==undefined&&ev.pointerId!==pointerId)return;const q=localPoint(ev),nx=sx+q.x-p.x,ny=sy+q.y-p.y,stamp=String(Date.now());el.style.left=nx+"px";el.style.top=ny+"px";el.dataset.aznyUpdatedAt=stamp;anchoredChildren.forEach(c=>{c.el.style.left=(nx+c.dx)+"px";c.el.style.top=(ny+c.dy)+"px";c.el.dataset.aznyUpdatedAt=stamp});const now=performance.now();if(now-lastSyncAt>=32){lastSyncAt=now;publishLiveBoardState()}}
  function up(ev){if(pointerId!==undefined&&ev.pointerId!==pointerId)return;removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);localBoardEditing=false;scheduleSave();publishLiveBoardState()}
  addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up)
 }
@@ -3370,20 +3370,33 @@ function notifyTeacherStudentPresence(ref){
 async function startStudentWebRTC(options={}){
  if(!studentApproved||!studentRequestId)return;
  try{
-  if(!navigator.mediaDevices?.getUserMedia){toast("A câmera e o microfone exigem HTTPS ou localhost.");return}
   if(studentPeer){try{studentPeer._aznyBoardChannel?.close()}catch(_){}try{studentPeer.close()}catch(_){}}if(options.reconnect&&studentLocalStream){try{studentLocalStream.getTracks().forEach(t=>t.stop())}catch(_){}studentLocalStream=null}
   studentRemoteDescriptionReady=false;studentPendingTeacherCandidates=[];studentBoardChunks.clear();
-  toast("A ligar câmera e microfone do aluno...");
-  studentLocalStream=await navigator.mediaDevices.getUserMedia({
-   video:{facingMode:"user",width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},
-   audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}
-  });
-  studentCameraOn=true;studentMicOn=true;
+  studentLocalStream=null;studentCameraOn=false;studentMicOn=false;
+  if(navigator.mediaDevices?.getUserMedia){
+   try{
+    toast("A solicitar acesso à câmera e ao microfone...");
+    studentLocalStream=await navigator.mediaDevices.getUserMedia({
+     video:{facingMode:"user",width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},
+     audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}
+    });
+    studentCameraOn=true;studentMicOn=true;
+   }catch(mediaError){
+    console.warn("AZNY: aluno sem permissão de câmera/microfone; manter colaboração do quadro.",mediaError);
+    const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");
+    if(cb)cb.textContent="📷 Ligar câmera";if(mb)mb.textContent="🎙 Ligar microfone";
+    toast("Entrada aprovada. Pode colaborar no quadro; câmera e microfone podem ser ligados depois.");
+   }
+  }else{
+   toast("Entrada aprovada. Pode colaborar no quadro; câmera e microfone exigem HTTPS.");
+  }
   const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo){selfVideo.srcObject=studentLocalStream;selfVideo.muted=true;selfVideo.playsInline=true;selfVideo.play?.().catch(()=>{})}
   const scb=document.getElementById("studentCameraBtn"),smb=document.getElementById("studentMicBtn");
   if(scb)scb.textContent="📷 Desligar câmera";if(smb)smb.textContent="🎙 Desligar microfone";
   studentPeer=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
-  studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));aznyApplyLowDataMode(studentPeer);
+  if(studentLocalStream?.getTracks?.().length)studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));
+  else{studentPeer.addTransceiver("audio",{direction:"recvonly"});studentPeer.addTransceiver("video",{direction:"recvonly"});}
+  aznyApplyLowDataMode(studentPeer);
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
   studentBoardChannel.bufferedAmountLowThreshold=65536;
   studentBoardChannel.onopen=()=>{try{aznyDrainBoardQueue(studentBoardChannel);studentBoardChannel.send(JSON.stringify({type:"board-request"}));studentBoardChannel.send(JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}))}catch(e){console.warn("AZNY initial student board sync:",e)}};
