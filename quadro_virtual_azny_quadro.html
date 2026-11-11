@@ -4653,7 +4653,7 @@ body.azny-custom-keyboard #aznyBoardKeyboard{display:block}
  function renderCase(){
   keyboard.querySelectorAll("button").forEach(b=>{
    const v=b.dataset.value||b.textContent;
-   if(/^[a-z]$/i.test(v))b.textContent=shift?v.toUpperCase():v.toLowerCase();
+   if(/^[a-záéíóúâêôãõç]$/i.test(v))b.textContent=shift?v.toUpperCase():v.toLowerCase();
   });
  }
  function build(){
