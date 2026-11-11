@@ -2418,7 +2418,7 @@ function makeInteractive(el){
    selectObject(el);dragStart(e,el);
   }
  },{passive:false});
- el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});el.addEventListener("blur",()=>{if(!el.isConnected)return;pageStates[currentPage-1]=snapshot();scheduleSave();publishLiveBoardState()});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){el.dataset.aznyTextUpdatedAt=String(Date.now());pageStates[currentPage-1]=snapshot();clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>{pageStates[currentPage-1]=snapshot();publishLiveBoardState()},80);clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML,updatedAt:Number(el.dataset.aznyTextUpdatedAt)||Date.now()});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}})},16)}});
+ el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});el.addEventListener("blur",()=>{if(!el.isConnected)return;pageStates[currentPage-1]=snapshot();scheduleSave();publishLiveBoardState()});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){el.dataset.aznyTextUpdatedAt=String(Date.now());pageStates[currentPage-1]=snapshot();clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>{pageStates[currentPage-1]=snapshot();publishLiveBoardState()},80);clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML,updatedAt:Number(el.dataset.aznyTextUpdatedAt)||Date.now()});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open")aznyQueueBoardPacket(ch,packet)}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}})},16)}});
 }
 function dragStart(e,el){
  if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();localBoardEditing=true;pushHistory();const p=localPoint(e),sx=parseFloat(el.style.left)||0,sy=parseFloat(el.style.top)||0,pointerId=e.pointerId;
@@ -2600,7 +2600,7 @@ function eraseAt(p){const radius=18,removed=[];aznyRemoteLiveStrokes.forEach((li
 function broadcastDeletedStrokes(ids){
  if(!ids?.length)return;
  const packet=JSON.stringify({type:"stroke-delete",ids:[...new Set(ids.map(String))]});
- const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(e){console.warn("AZNY stroke delete:",e)}}};
+ const send=ch=>{if(ch?.readyState==="open")aznyQueueBoardPacket(ch,packet)};
  if(isStudent){send(studentBoardChannel);return}
  Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null));
 }
@@ -2608,7 +2608,7 @@ function broadcastLiveStroke(done=false){
  if(!currentStroke||!aznyLiveStrokeId)return;
  const points=strokePoints(currentStroke);
  const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,boardWidth:board.clientWidth,boardHeight:board.clientHeight,done});
- const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(e){console.warn("AZNY live stroke:",e)}}};
+ const send=ch=>{if(ch?.readyState==="open")aznyQueueBoardPacket(ch,packet)};
  if(isStudent){send(studentBoardChannel);return}
  Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null));
 }
@@ -3386,7 +3386,7 @@ async function startStudentWebRTC(options={}){
   studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));aznyApplyLowDataMode(studentPeer);
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
   studentBoardChannel.bufferedAmountLowThreshold=65536;
-  studentBoardChannel.onopen=()=>{try{aznyDrainBoardQueue(studentBoardChannel);studentBoardChannel.send(JSON.stringify({type:"board-request"}));studentBoardChannel.send(JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}));sendBoardSnapshotToChannel(studentBoardChannel)}catch(e){console.warn("AZNY initial student board sync:",e)}};
+  studentBoardChannel.onopen=()=>{try{aznyDrainBoardQueue(studentBoardChannel);studentBoardChannel.send(JSON.stringify({type:"board-request"}));studentBoardChannel.send(JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}))}catch(e){console.warn("AZNY initial student board sync:",e)}};
   studentBoardChannel.onmessage=e=>handleBoardChannelMessage(e.data);
   studentBoardChannel.onclose=()=>{studentBoardChannel=null};
   /* Keep the teacher's microphone on an audio-only element. Video visibility/state must never control playback of the microphone. */
