@@ -1793,7 +1793,7 @@ function queueRemoteBoardState(d){
   const previous=pendingRemoteBoardState,merged={...previous,...d};
   merged.deletedObjectIds=[...new Set([...(previous.deletedObjectIds||[]),...(d.deletedObjectIds||[])])];
   merged.deletedStrokeIds=[...new Set([...(previous.deletedStrokeIds||[]),...(d.deletedStrokeIds||[])])];
-  merged.pages=Array.from({length:5},(_,i)=>{const a=previous.pages[i],b=d.pages[i];if(!a)return b||null;if(!b)return a;const objects=new Map((a.objects||[]).map(o=>[String(o.id||""),o]));(b.objects||[]).forEach(o=>{const id=String(o.id||""),old=objects.get(id);if(old?.kind==="text"&&o?.kind==="text"&&(Number(old.textUpdatedAt)||0)>(Number(o.textUpdatedAt)||0))return;objects.set(id,o)});return{...a,...b,objects:[...objects.values()]}});
+  merged.pages=Array.from({length:5},(_,i)=>{const a=previous.pages[i],b=d.pages[i];if(!a)return b||null;if(!b)return a;const objects=new Map((a.objects||[]).map(o=>[String(o.id||""),o]));(b.objects||[]).forEach(o=>{const id=String(o.id||""),old=objects.get(id);if(old&&(Number(old.updatedAt)||Number(old.textUpdatedAt)||0)>(Number(o.updatedAt)||Number(o.textUpdatedAt)||0))return;objects.set(id,o)});return{...a,...b,objects:[...objects.values()]}});
   pendingRemoteBoardState=merged;
  }else pendingRemoteBoardState=d;
  /* Preserve local text and strokes while a gesture is in progress.
@@ -1803,7 +1803,7 @@ function queueRemoteBoardState(d){
   if(Array.isArray(pendingRemoteBoardState.pages)){
    const page=pendingRemoteBoardState.pages[index]||{strokes:[],objects:[],title:local.title};
    const objects=new Map((page.objects||[]).map(o=>[String(o.id||""),o]));
-   (local.objects||[]).filter(o=>o.kind==="text").forEach(o=>{const old=objects.get(String(o.id||""));if(!old||(Number(o.textUpdatedAt)||0)>=(Number(old.textUpdatedAt)||0))objects.set(String(o.id),o)});
+   (local.objects||[]).forEach(o=>{const id=String(o.id||""),old=objects.get(id);if(!old||(Number(o.updatedAt)||Number(o.textUpdatedAt)||0)>=(Number(old.updatedAt)||Number(old.textUpdatedAt)||0))objects.set(id,o)});
    const removed=new Set([...(pendingRemoteBoardState.deletedStrokeIds||[]),...(page.deletedStrokeIds||[]),...deletedStrokeIds].map(String));
    const strokes=new Map();
    (page.strokes||[]).forEach((st,i)=>strokes.set(String(st.id||("legacy-"+index+"-"+i)),st));
@@ -2369,7 +2369,7 @@ function dragStart(e,el){
  if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();localBoardEditing=true;pushHistory();const p=localPoint(e),sx=parseFloat(el.style.left)||0,sy=parseFloat(el.style.top)||0,pointerId=e.pointerId;
  try{el.setPointerCapture(pointerId)}catch(_){}
  const anchoredChildren=[...board.querySelectorAll('.textobj[data-anchor-id="'+el.dataset.id+'"]')].map(t=>({el:t,dx:(parseFloat(t.style.left)||0)-sx,dy:(parseFloat(t.style.top)||0)-sy}));
- function move(ev){if(el.dataset.aznyPinching==="1")return;if(pointerId!==undefined&&ev.pointerId!==pointerId)return;const q=localPoint(ev),nx=sx+q.x-p.x,ny=sy+q.y-p.y;el.style.left=nx+"px";el.style.top=ny+"px";anchoredChildren.forEach(c=>{c.el.style.left=(nx+c.dx)+"px";c.el.style.top=(ny+c.dy)+"px"});redraw();publishLiveBoardState()}
+ function move(ev){if(el.dataset.aznyPinching==="1")return;if(pointerId!==undefined&&ev.pointerId!==pointerId)return;const q=localPoint(ev),nx=sx+q.x-p.x,ny=sy+q.y-p.y,stamp=String(Date.now());el.style.left=nx+"px";el.style.top=ny+"px";el.dataset.aznyUpdatedAt=stamp;anchoredChildren.forEach(c=>{c.el.style.left=(nx+c.dx)+"px";c.el.style.top=(ny+c.dy)+"px";c.el.dataset.aznyUpdatedAt=stamp});redraw();publishLiveBoardState()}
  function up(ev){if(pointerId!==undefined&&ev.pointerId!==pointerId)return;removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);localBoardEditing=false;scheduleSave();publishLiveBoardState()}
  addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up)
 }
@@ -2377,7 +2377,7 @@ function resizeStart(e){
  const el=e.currentTarget.parentElement;if(isStudent&&tool!=="select")return;
  e.preventDefault();e.stopPropagation();selectObject(el);localBoardEditing=true;pushHistory();const p=localPoint(e),sw=el.offsetWidth,sh=el.offsetHeight,pointerId=e.pointerId;
  try{e.currentTarget.setPointerCapture(pointerId)}catch(_){}
- function move(ev){if(ev.pointerId!==pointerId)return;const q=localPoint(ev);el.style.width=Math.max(40,sw+q.x-p.x)+"px";el.style.height=Math.max(28,sh+q.y-p.y)+"px";updateAnchoredTextsFor(el);redraw();publishLiveBoardState()}
+ function move(ev){if(ev.pointerId!==pointerId)return;const q=localPoint(ev);el.style.width=Math.max(40,sw+q.x-p.x)+"px";el.style.height=Math.max(28,sh+q.y-p.y)+"px";el.dataset.aznyUpdatedAt=String(Date.now());updateAnchoredTextsFor(el);redraw();publishLiveBoardState()}
  function up(ev){if(ev.pointerId!==pointerId)return;removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);localBoardEditing=false;scheduleSave();publishLiveBoardState()}
  addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up)
 }
