@@ -103,10 +103,10 @@ function bindCourseInteractions(id){
  const card=document.querySelector('[data-course-card="'+CSS.escape(id)+'"]');if(!card)return;
  const ref=db.ref("courseInteractions/"+id);
  const onLikes=snap=>{const data=snap.val()||{},count=Object.keys(data).length,liked=!!data[courseVisitorId],b=card.querySelector("[data-course-like]");if(b){b.classList.toggle("active",liked);b.textContent=liked?"👍 Gostado":"👍 Gostar"}card.querySelector("[data-course-like-count]").textContent=count+" gostos"};
- const onComments=snap=>{const items=[];snap.forEach(ch=>items.push({...ch.val(),id:ch.key}));items.sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));card.querySelector("[data-course-comment-count]").textContent=items.length+" comentários";card.querySelector("[data-course-comment-list]").innerHTML=renderCourseComments(items,id)};
- const onShares=snap=>{card.querySelector("[data-course-share-count]").textContent=Number(snap.val()||0)+" partilhas"};
+ const binding={ref,likes:onLikes,comments:null,shares:onShares,commentItems:[]};
+ const onComments=snap=>{const items=[];snap.forEach(ch=>items.push({...ch.val(),id:ch.key}));items.sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));binding.commentItems=items;card.querySelector("[data-course-comment-count]").textContent=items.length+" comentários";card.querySelector("[data-course-comment-list]").innerHTML=renderCourseComments(items,id)};
+ binding.comments=onComments;courseInteractionBindings.set(id,binding);
  ref.child("likes").on("value",onLikes);ref.child("comments").on("value",onComments);ref.child("shares").on("value",onShares);
- courseInteractionBindings.set(id,{ref,likes:onLikes,comments:onComments,shares:onShares});
 }
 async function shareCourse(id,mode){
  const card=document.querySelector('[data-course-card="'+CSS.escape(id)+'"]');
@@ -176,9 +176,11 @@ document.addEventListener("click",async e=>{
 document.addEventListener("submit",async e=>{
  const form=e.target;if(!form.matches("[data-course-comment-form],[data-course-reply-form]"))return;e.preventDefault();
  const id=form.dataset.courseCommentForm||form.dataset.courseId,parentId=form.dataset.courseReplyForm||null,nameField=form.querySelector('input[name="author"]'),textField=form.querySelector('input[name="comment"],input[name="reply"]'),name=String(nameField&&nameField.value||"").trim().slice(0,60),text=String(textField&&textField.value||"").trim();if(!name){if(nameField){nameField.setCustomValidity("Indique o seu nome para comentar.");nameField.reportValidity();nameField.focus()}return}if(!text)return;localStorage.setItem("rwb_visitor_name",name);
- const button=form.querySelector("button");if(button)button.disabled=true;
- try{await db.ref("courseInteractions/"+id+"/comments").push({author:name,text:text,parentId:parentId,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});textField.value=""}
- catch(err){alert("Não foi possível enviar o comentário: "+(err.message||err))}
+ const button=form.querySelector("button"),list=form.closest("[data-course-card]").querySelector("[data-course-comment-list]"),count=form.closest("[data-course-card]").querySelector("[data-course-comment-count]"),binding=courseInteractionBindings.get(id);if(button)button.disabled=true;
+ const commentRef=db.ref("courseInteractions/"+id+"/comments").push(),optimistic={id:commentRef.key,author:name,text:text,parentId:parentId,visitorId:courseVisitorId,createdAt:Date.now()};
+ if(binding){binding.commentItems.push(optimistic);binding.commentItems.sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));if(list)list.innerHTML=renderCourseComments(binding.commentItems,id);if(count)count.textContent=binding.commentItems.length+" comentários"}
+ try{await commentRef.set({author:name,text:text,parentId:parentId,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});textField.value=""}
+ catch(err){if(binding){binding.commentItems=binding.commentItems.filter(item=>item.id!==commentRef.key);if(list)list.innerHTML=renderCourseComments(binding.commentItems,id);if(count)count.textContent=binding.commentItems.length+" comentários"}alert("Não foi possível publicar o comentário. Verifique a ligação e as permissões: "+(err.message||err))}
  finally{if(button)button.disabled=false}
 });
 
