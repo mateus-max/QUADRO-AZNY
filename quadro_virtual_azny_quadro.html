@@ -1943,8 +1943,8 @@ function aznyRenderRemoteParticipantPointer(packet){
   const label=document.createElement("span");label.className="azny-remote-pointer-label";pointer.appendChild(label);board.appendChild(pointer);
  }
  const bw=Math.max(1,Number(packet.boardWidth)||board.clientWidth),bh=Math.max(1,Number(packet.boardHeight)||board.clientHeight);
- const x=Math.max(0,Math.min(board.clientWidth,Number(packet.x)||0))*board.clientWidth/bw;
- const y=Math.max(0,Math.min(board.clientHeight,Number(packet.y)||0))*board.clientHeight/bh;
+ const x=Math.max(0,Math.min(board.clientWidth,(Number(packet.x)||0)*board.clientWidth/bw));
+ const y=Math.max(0,Math.min(board.clientHeight,(Number(packet.y)||0)*board.clientHeight/bh));
  pointer.style.transform="translate3d("+(x-44)+"px,"+(y-2)+"px,0)";
  const label=pointer.querySelector(".azny-remote-pointer-label");if(label)label.textContent=String(packet.pointerOwnerName||"Participante").slice(0,45);
  return true;
@@ -1961,7 +1961,7 @@ function handleBoardChannelMessage(raw){
    if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<524288){try{out.send(packet)}catch(_){}}})}
    return;
   }
-  if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(deletedStrokeIds.has(id)){aznyRemoteLiveStrokes.delete(id)}else{const previous=aznyRemoteLiveStrokes.get(id)||{};const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);const points=Array.isArray(m.points)?m.points.map(q=>({x:Number(q.x||0)*sx,y:Number(q.y||0)*sy})):previous.points||[];aznyRemoteLiveStrokes.set(id,{color:m.color||previous.color||"#000",width:(Number(m.width)||previous.width||3)*Math.min(sx,sy),points,done:!!m.done});redraw()}}if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<524288){try{out.send(packet)}catch(_){}}})}return;}
+  if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(deletedStrokeIds.has(id)){aznyRemoteLiveStrokes.delete(id)}else{const previous=aznyRemoteLiveStrokes.get(id)||{};const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);const points=Array.isArray(m.points)?m.points.map(q=>({x:Number(q.x||0)*sx,y:Number(q.y||0)*sy})):previous.points||[];const color=m.color||previous.color||"#000",width=(Number(m.width)||previous.width||3)*Math.min(sx,sy);if(m.done&&points.length){aznyRemoteLiveStrokes.delete(id);const committed={id,color,width,points};const index=strokes.findIndex(st=>String(st.id||"")===id);if(index>=0)strokes[index]=committed;else strokes.push(committed);if(!isStudent)publishLiveBoardState()}else aznyRemoteLiveStrokes.set(id,{color,width,points,done:false});redraw()}}if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<524288){try{out.send(packet)}catch(_){}}})}return;}
   if(m.type==="live-pointer"){
    if(m.pointerOwnerId){aznyRenderRemoteParticipantPointer(m);return;}
    if(m.surface==="excel"||m.surface==="word"){
