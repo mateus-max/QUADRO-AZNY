@@ -1734,6 +1734,28 @@ async function resetBoardForClassLifecycle(){
  try{roomChannel?.postMessage({type:"board-cleared",room:roomId})}catch(_){}
 }
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
+function aznyQueueBoardPacket(ch,raw){
+ if(!ch||ch.readyState!=="open")return false;
+ if(!ch._aznyBoardQueue)ch._aznyBoardQueue=[];
+ ch._aznyBoardQueue.push(raw);
+ if(ch._aznyBoardQueue.length>1200){console.warn("AZNY board queue limit reached; retaining latest board snapshot");ch._aznyBoardQueue=ch._aznyBoardQueue.slice(-1200)}
+ if(!ch._aznyBoardQueueDrainBound){
+  ch._aznyBoardQueueDrainBound=true;ch.bufferedAmountLowThreshold=262144;
+  ch.addEventListener("bufferedamountlow",()=>aznyDrainBoardQueue(ch));
+  ch.addEventListener("close",()=>{if(ch._aznyBoardQueue)ch._aznyBoardQueue.length=0});
+ }
+ aznyDrainBoardQueue(ch);return true;
+}
+function aznyDrainBoardQueue(ch){
+ if(!ch||ch.readyState!=="open"||ch._aznyBoardQueueSending)return;
+ ch._aznyBoardQueueSending=true;
+ try{
+  while(ch.readyState==="open"&&ch._aznyBoardQueue?.length&&ch.bufferedAmount<524288){
+   ch.send(ch._aznyBoardQueue.shift());
+  }
+ }catch(e){console.warn("AZNY board queue send:",e)}
+ finally{ch._aznyBoardQueueSending=false}
+}
 function sendBoardSnapshotToChannel(ch){
  if(!ch||ch.readyState!=="open")return false;
  if(!ch._aznyBoardDrainBound){
@@ -1745,8 +1767,8 @@ function sendBoardSnapshotToChannel(ch){
   const current=snapshot();pageStates[currentPage-1]=current;
   const pages=Array.from({length:5},(_,i)=>i===currentPage-1?current:null);
   const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages,deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds]};
-  const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=48*1024,total=Math.ceil(raw.length/size);
-  for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
+  const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=32*1024,total=Math.ceil(raw.length/size);
+  for(let i=0;i<total;i++)if(!aznyQueueBoardPacket(ch,JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)})))return false;
   return true;
  }catch(e){console.warn("AZNY board channel:",e);return false}
 }
@@ -3364,7 +3386,7 @@ async function startStudentWebRTC(options={}){
   studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));aznyApplyLowDataMode(studentPeer);
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
   studentBoardChannel.bufferedAmountLowThreshold=65536;
-  studentBoardChannel.onopen=()=>{try{studentBoardChannel.send(JSON.stringify({type:"board-request"}));studentBoardChannel.send(JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}))}catch(_){}};
+  studentBoardChannel.onopen=()=>{try{aznyDrainBoardQueue(studentBoardChannel);studentBoardChannel.send(JSON.stringify({type:"board-request"}));studentBoardChannel.send(JSON.stringify({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}));sendBoardSnapshotToChannel(studentBoardChannel)}catch(e){console.warn("AZNY initial student board sync:",e)}};
   studentBoardChannel.onmessage=e=>handleBoardChannelMessage(e.data);
   studentBoardChannel.onclose=()=>{studentBoardChannel=null};
   /* Keep the teacher's microphone on an audio-only element. Video visibility/state must never control playback of the microphone. */
