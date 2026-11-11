@@ -2,20 +2,23 @@
 <html lang="pt">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#071b33">
-<meta name="description" content="Acesso à sala do Remote Work Board.">
+<meta name="description" content="Sala de aula online Remote Work Board.">
 <title>Remote Work Board — Sala de aula</title>
-<script>
-(function(){
-  var query=window.location.search||"";
-  var hash=window.location.hash||"";
-  window.location.replace("../quadro_virtual_azny_quadro.html"+query+hash);
-})();
-</script>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071b33}
+#aznyClassFrame{display:block;width:100%;height:100%;height:100dvh;border:0;background:#071b33}
+</style>
 </head>
 <body>
-<p>A abrir a sala de aula…</p>
+<iframe id="aznyClassFrame" title="Sala de aula Remote Work Board" allow="camera; microphone; display-capture; fullscreen; clipboard-read; clipboard-write" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+<script>
+(function(){
+ const frame=document.getElementById("aznyClassFrame");
+ frame.src="../quadro_virtual_azny_quadro.html"+(location.search||"")+(location.hash||"");
+})();
+</script>
 </body>
 </html>
