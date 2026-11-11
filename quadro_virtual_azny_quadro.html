@@ -1337,7 +1337,10 @@ const AZNY_URL_PARAMS=new URLSearchParams(location.search);let AZNY_ACCESS_TOKEN
 /* Manter a barra de endereço com uma rota pública profissional, nunca com o nome
    do ficheiro interno do quadro. A rota /aulas/ reabre este mesmo quadro. */
 if(isStudent&&location.pathname.endsWith("/quadro_virtual_azny_quadro.html")){
- try{history.replaceState(history.state,"",new URL("/aulas/"+location.search+location.hash,location.origin).href)}catch(e){console.warn("AZNY URL pública:",e)}
+ try{
+  if(!document.querySelector("base")){const aznyPublicBase=document.createElement("base");aznyPublicBase.href="/";document.head.prepend(aznyPublicBase)}
+  history.replaceState(history.state,"",new URL("/aulas/"+location.search+location.hash,location.origin).href);
+ }catch(e){console.warn("AZNY URL pública:",e)}
 }
 let classSessionId="ROOM-"+roomId;
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
