@@ -102,10 +102,10 @@ function renderCourseComments(items,id){
 function bindCourseInteractions(id){
  const card=document.querySelector('[data-course-card="'+CSS.escape(id)+'"]');if(!card)return;
  const ref=db.ref("courseInteractions/"+id);
- const onLikes=snap=>{const data=snap.val()||{},entries=Object.values(data),count=entries.length,liked=entries.some(item=>item&&item.visitorId===courseVisitorId),b=card.querySelector("[data-course-like]");if(b){b.classList.toggle("active",liked);b.textContent=liked?"👍 Gostado":"👍 Gostar"}card.querySelector("[data-course-like-count]").textContent=count+" gostos"};
- const onShares=snap=>{card.querySelector("[data-course-share-count]").textContent=Number(snap.val()||0)+" partilhas"};
+ const onLikes=snap=>{const data=snap.val()||{},entries=Object.values(data),count=typeof snap.numChildren==="function"?snap.numChildren():entries.length,liked=entries.some(item=>item&&item.visitorId===courseVisitorId),b=card.querySelector("[data-course-like]");if(b){b.classList.toggle("active",liked);b.textContent=liked?"👍 Gostado":"👍 Gostar"}card.querySelector("[data-course-like-count]").textContent=count+" gostos"};
+ const onShares=snap=>{const value=snap.val(),count=value&&typeof value==="object"?(typeof snap.numChildren==="function"?snap.numChildren():Object.keys(value).length):Number(value||0);card.querySelector("[data-course-share-count]").textContent=count+" partilhas"};
  const binding={ref,likes:onLikes,comments:null,shares:onShares,commentItems:[]};
- const onComments=snap=>{const items=[];snap.forEach(ch=>items.push({...ch.val(),id:ch.key}));items.sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));binding.commentItems=items;card.querySelector("[data-course-comment-count]").textContent=items.length+" comentários";card.querySelector("[data-course-comment-list]").innerHTML=renderCourseComments(items,id)};
+ const onComments=snap=>{const items=[];snap.forEach(ch=>{const value=ch.val();if(value&&typeof value==="object")items.push({...value,id:ch.key})});items.sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));binding.commentItems=items;card.querySelector("[data-course-comment-count]").textContent=(typeof snap.numChildren==="function"?snap.numChildren():items.length)+" comentários";card.querySelector("[data-course-comment-list]").innerHTML=renderCourseComments(items,id)};
  binding.comments=onComments;courseInteractionBindings.set(id,binding);
  ref.child("likes").on("value",onLikes);ref.child("comments").on("value",onComments);ref.child("shares").on("value",onShares);
 }
@@ -175,14 +175,22 @@ document.addEventListener("click",async e=>{
  if(b.dataset.courseReply){const form=document.querySelector('[data-course-reply-form="'+CSS.escape(b.dataset.courseReply)+'"]');if(form){form.classList.toggle("hidden");form.scrollIntoView({behavior:"smooth",block:"center"});const field=form.querySelector('input[name="author"]');if(field&&!field.value)field.value=String(localStorage.getItem("rwb_visitor_name")||"");if(field&&!form.classList.contains("hidden"))field.focus()}return}
 });
 document.addEventListener("submit",async e=>{
- const form=e.target;if(!form.matches("[data-course-comment-form],[data-course-reply-form]"))return;e.preventDefault();
- const id=form.dataset.courseCommentForm||form.dataset.courseId,parentId=form.dataset.courseReplyForm||null,nameField=form.querySelector('input[name="author"]'),textField=form.querySelector('input[name="comment"],input[name="reply"]'),name=String(nameField&&nameField.value||"").trim().slice(0,60),text=String(textField&&textField.value||"").trim();if(!name){if(nameField){nameField.setCustomValidity("Indique o seu nome para comentar.");nameField.reportValidity();nameField.focus()}return}if(!text)return;localStorage.setItem("rwb_visitor_name",name);
- const button=form.querySelector("button"),list=form.closest("[data-course-card]").querySelector("[data-course-comment-list]"),count=form.closest("[data-course-card]").querySelector("[data-course-comment-count]"),binding=courseInteractionBindings.get(id);if(button)button.disabled=true;
- const commentRef=db.ref("courseInteractions/"+id+"/comments").push(),optimistic={id:commentRef.key,author:name,text:text,parentId:parentId,visitorId:courseVisitorId,createdAt:Date.now()};
+ const form=e.target;if(!(form instanceof HTMLFormElement)||!form.matches("[data-course-comment-form],[data-course-reply-form]"))return;
+ e.preventDefault();e.stopPropagation();
+ const card=form.closest("[data-course-card]"),id=form.dataset.courseCommentForm||form.dataset.courseId,parentId=form.dataset.courseReplyForm||null,nameField=form.querySelector('input[name="author"]'),textField=form.querySelector('input[name="comment"],input[name="reply"]'),name=String(nameField?.value||"").trim().slice(0,60),text=String(textField?.value||"").trim();
+ if(!card||!id||!name||!text){if(nameField&&!name){nameField.setCustomValidity("Indique o seu nome para comentar.");nameField.reportValidity();nameField.focus()}else if(textField&&!text){textField.setCustomValidity("Escreva o seu comentário.");textField.reportValidity();textField.focus()}return}
+ nameField.setCustomValidity("");textField.setCustomValidity("");localStorage.setItem("rwb_visitor_name",name);
+ const button=form.querySelector('button[type="submit"]'),list=card.querySelector("[data-course-comment-list]"),count=card.querySelector("[data-course-comment-count]"),binding=courseInteractionBindings.get(id);
+ if(button){button.disabled=true;button.textContent="A publicar…"}
+ const commentRef=db.ref("courseInteractions/"+id+"/comments").push(),payload={author:name,text,parentId:parentId||null,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP},optimistic={...payload,id:commentRef.key,createdAt:Date.now()};
  if(binding){binding.commentItems.push(optimistic);binding.commentItems.sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));if(list)list.innerHTML=renderCourseComments(binding.commentItems,id);if(count)count.textContent=binding.commentItems.length+" comentários"}
- try{await commentRef.set({author:name,text:text,parentId:parentId,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});textField.value=""}
- catch(err){if(binding){binding.commentItems=binding.commentItems.filter(item=>item.id!==commentRef.key);if(list)list.innerHTML=renderCourseComments(binding.commentItems,id);if(count)count.textContent=binding.commentItems.length+" comentários"}alert("Não foi possível publicar o comentário. Verifique a ligação e as permissões: "+(err.message||err))}
- finally{if(button)button.disabled=false}
+ try{
+  await commentRef.set(payload);
+  textField.value="";
+ }catch(err){
+  if(binding){binding.commentItems=binding.commentItems.filter(item=>item.id!==commentRef.key);if(list)list.innerHTML=renderCourseComments(binding.commentItems,id);if(count)count.textContent=binding.commentItems.length+" comentários"}
+  console.error("AZNY: erro ao publicar comentário",err);alert("O comentário não foi publicado: "+(err&&err.code?err.code+" — ":"")+(err&&err.message?err.message:"verifique a ligação."));
+ }finally{if(button){button.disabled=false;button.textContent=parentId?"Responder":"Enviar"}}
 });
 
 document.addEventListener("click",e=>{const author=e.target.closest("[data-course-author]");if(author){openProfileByUid(author.dataset.courseAuthor);return}const more=e.target.closest("[data-profile-index]");if(more)openProfile(Number(more.dataset.profileIndex));const vc=e.target.closest("[data-teacher-courses]");if(vc){const uid=vc.dataset.teacherCourses;const list=courses.filter(c=>c.teacherUid===uid);if(list.length){$("search").value=list[0].title;render()}$("courses-section").scrollIntoView({behavior:"smooth"})}});
