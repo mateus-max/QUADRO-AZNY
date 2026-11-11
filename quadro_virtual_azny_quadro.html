@@ -1334,7 +1334,7 @@ function aznyFilterDeletedPages(pages){return pages.map(page=>{if(!page)return p
 let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0,aznyTeacherScreenTrack=null,aznyStudentScreenTrack=null,classRunId="",aznyTeacherAccessValidated=false,aznyTeacherPlanKey="",aznyTrialAutoEnding=false;
 const AZNY_URL_PARAMS=new URLSearchParams(location.search);let AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";try{AZNY_ACCESS_TOKEN=AZNY_ACCESS_TOKEN||sessionStorage.getItem("azny_access_token")||"";if(AZNY_ACCESS_TOKEN)sessionStorage.setItem("azny_access_token",AZNY_ACCESS_TOKEN)}catch(_){};if(AZNY_ACCESS_TOKEN&&!AZNY_URL_PARAMS.has("acesso")){AZNY_URL_PARAMS.set("acesso",AZNY_ACCESS_TOKEN);try{history.replaceState(history.state,"",location.pathname+"?"+AZNY_URL_PARAMS.toString()+location.hash)}catch(_){}}const AZNY_ISOLATED_MODE=AZNY_URL_PARAMS.get("isolado")==="1";let isStudent=AZNY_URL_PARAMS.get("aluno")==="1"; document.body.classList.toggle("student-mode",isStudent); document.body.classList.toggle("teacher-mode",!isStudent);const aznyHashKey=value=>{let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};const aznyAccessScope=AZNY_ISOLATED_MODE?"isolado":aznyHashKey(AZNY_ACCESS_TOKEN||"");const aznyTeacherRoomStorageKey="azny_teacher_room_v1_"+aznyAccessScope;let aznySavedRoom="";try{aznySavedRoom=AZNY_ISOLATED_MODE?"":(localStorage.getItem(aznyTeacherRoomStorageKey)||"")}catch(_){};const aznyRequestedRoom=AZNY_URL_PARAMS.get("sala");let roomId;if(AZNY_ISOLATED_MODE){roomId="AZNY-ISOLADO"}else if(isStudent){roomId=aznyRequestedRoom||""}else{roomId=aznyRequestedRoom?(aznyRequestedRoom.startsWith("AZNY-"+aznyAccessScope+"-")?aznyRequestedRoom:("AZNY-"+aznyAccessScope+"-"+aznyRequestedRoom)):(aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope));if(!aznyRequestedRoom){try{localStorage.setItem(aznyTeacherRoomStorageKey,roomId)}catch(_){}}}STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[^a-zA-Z0-9_-]/g,"_");
-let classSessionId="SESSION-TEACHER-"+aznyHashKey(roomId);
+let classSessionId="ROOM-"+roomId;
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 let roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
@@ -2856,7 +2856,7 @@ async function startClass(){
  if(!AZNY_DB){toast("A ligação ao Firebase ainda não está pronta. Tente novamente.");return}
  const newRunId="RUN-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
  unbindClassSessionRealtime();
- classSessionId="SESSION-TEACHER-"+aznyHashKey(roomId);
+ classSessionId="ROOM-"+roomId;
  const sessionRef=aznySessionRef();
  if(!sessionRef){toast("A sessão individual da aula não ficou disponível. Tente novamente.");return}
  try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){};
@@ -3836,11 +3836,29 @@ function showClassEnded(){if(!isStudent)return;
 function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;const endedNotice=document.getElementById("aznyClassEndedNotice");if(endedNotice)endedNotice.style.display="none";document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";ensureAZNYRealtime().then(ready=>{if(ready){toast("Entrada aprovada pelo professor");startStudentWebRTC()}else toast("Entrada aprovada, mas a sincronização ainda não está disponível.")})}else{document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended"&&m.session===classSessionId)showClassEnded()}}
 async function getClassLink(){
  if(!await ensureAZNYRealtime()){toast("A licença ou a autorização desta sala ainda não foi confirmada. Não é possível preparar o link.");return ""}
- /* Um único convite permanente por professor: a aula activa é resolvida pela sala. */
- const target=new URL("quadro_virtual_azny_quadro.html",location.href);
- target.searchParams.set("aluno","1");target.searchParams.set("sala",roomId);target.searchParams.delete("sess");
- try{if(!AZNY_DB)throw new Error("Firebase indisponível");return target.href;}
- catch(err){console.error("Link permanente da aula:",err);toast("Não foi possível preparar o link permanente da aula.");return "";}
+ try{
+  if(!AZNY_DB||!AZNY_AUTH?.currentUser||!aznyUid)throw new Error("A sessão autenticada do professor ainda não está pronta.");
+  /* Código determinístico: cada sala/professor conserva sempre o mesmo convite curto. */
+  const rawCode=aznyHashKey("AZNY-CLASS-LINK|"+roomId).toUpperCase();
+  const code=rawCode.padStart(7,"0").slice(-7);
+  const target=new URL("quadro_virtual_azny_quadro.html",location.href);
+  target.searchParams.set("aluno","1");target.searchParams.set("sala",roomId);target.searchParams.delete("sess");
+  const idToken=await AZNY_AUTH.currentUser.getIdToken();
+  const response=await fetch("https://us-central1-remot-board.cloudfunctions.net/createClassShortLink",{
+   method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+idToken},
+   body:JSON.stringify({data:{roomId,code,target:target.href}})
+  });
+  const payload=await response.json().catch(()=>({}));
+  if(!response.ok||payload.error)throw new Error(payload.error?.message||"Não foi possível registar o convite curto.");
+  const returned=payload.result||payload.data||{};
+  if(returned.code!==code)throw new Error("O serviço não confirmou o código permanente do convite.");
+  /* Só este endereço público é copiado ou enviado às redes sociais. */
+  return new URL("/c/"+code,location.origin).href;
+ }catch(err){
+  console.error("Convite profissional AZNY:",err);
+  toast("Não foi possível preparar o link profissional. Confirme se a aula está activa e tente novamente.");
+  return "";
+ }
 }
 async function copyClassLink(){const link=await getClassLink();if(!link)return;try{await navigator.clipboard.writeText(link);toast(document.documentElement.lang==="en"?"Class link copied":"Link da aula copiado")}catch(e){prompt("Copie o link da aula:",link)}}
 async function shareWhatsApp(){const link=await getClassLink();if(!link)return;const title=document.getElementById("boardTitle").value.trim()||"Aula";const text="Convite para a aula \""+title+"\" no Remote Work Board: "+link;window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");}
