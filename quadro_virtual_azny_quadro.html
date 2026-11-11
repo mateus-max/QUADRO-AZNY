@@ -5897,7 +5897,8 @@ body:not(.student-mode) .student>.azny-student-device-controls [data-student-cam
    const maxY=Math.max(0,scroller.scrollHeight-scroller.clientHeight),maxX=Math.max(0,scroller.scrollWidth-scroller.clientWidth);
    const packet={type:"doc-scroll",id:object.dataset.id,kind:scroller.classList.contains("docpdf-pages")?"pdf":"word",y:maxY?scroller.scrollTop/maxY:0,x:maxX?scroller.scrollLeft/maxX:0};
    const raw=JSON.stringify(packet);
-   Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(raw)}catch(_){}}});
+   if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open")aznyQueueBoardPacket(ch,raw)}
+   else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(raw)}catch(_){}}});
   },45);
  },true);
 })();
