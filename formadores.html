@@ -103,6 +103,7 @@ function bindCourseInteractions(id){
  const card=document.querySelector('[data-course-card="'+CSS.escape(id)+'"]');if(!card)return;
  const ref=db.ref("courseInteractions/"+id);
  const onLikes=snap=>{const data=snap.val()||{},count=Object.keys(data).length,liked=!!data[courseVisitorId],b=card.querySelector("[data-course-like]");if(b){b.classList.toggle("active",liked);b.textContent=liked?"👍 Gostado":"👍 Gostar"}card.querySelector("[data-course-like-count]").textContent=count+" gostos"};
+ const onShares=snap=>{card.querySelector("[data-course-share-count]").textContent=Number(snap.val()||0)+" partilhas"};
  const binding={ref,likes:onLikes,comments:null,shares:onShares,commentItems:[]};
  const onComments=snap=>{const items=[];snap.forEach(ch=>items.push({...ch.val(),id:ch.key}));items.sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));binding.commentItems=items;card.querySelector("[data-course-comment-count]").textContent=items.length+" comentários";card.querySelector("[data-course-comment-list]").innerHTML=renderCourseComments(items,id)};
  binding.comments=onComments;courseInteractionBindings.set(id,binding);
