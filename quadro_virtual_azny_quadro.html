@@ -1519,21 +1519,37 @@ function bindClassSessionRealtime(){
    if(d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}
    if(d.status==="approved"){
     approved.add(id);
+    /* Mostrar o participante imediatamente após a aprovação, sem esperar
+       pela negociação de câmera/WebRTC para o colocar na lista da aula. */
+    addStudentVideoCard(id,d.name||"Aluno",null,null);
     if(!aznySessionPeerListeners.has(id)){
      const ref=signalRef(id);
      const handler=peerSnap=>{
       if(aznyObservedClassStatus!=="active")return;
       const peer=peerSnap.val()||{};
-      if(peer.offer&&peer.name)connectStudentPeer(id,peer);
+      if(peer.name&&!document.getElementById("student-"+id))addStudentVideoCard(id,peer.name,null,null);
+      if(peer.offer&&peer.name)connectStudentPeer(id,peer).catch(error=>console.error("AZNY ligação do participante:",id,error));
      };
-     aznySessionPeerListeners.set(id,{ref,handler});ref.on("value",handler);
+     const entry={ref,handler,retryTimer:null};
+     aznySessionPeerListeners.set(id,entry);
+     ref.on("value",handler,error=>{
+      console.warn("AZNY sinalização do aluno indisponível; a tentar novamente:",id,error?.message||error);
+      clearTimeout(entry.retryTimer);
+      entry.retryTimer=setTimeout(()=>{
+       if(aznyObservedClassStatus!=="active"||!approved.has(id)||aznySessionPeerListeners.get(id)!==entry)return;
+       ref.off("value",handler);
+       ref.on("value",handler,retryError=>{
+        if(retryError)console.warn("AZNY nova tentativa de sinalização:",id,retryError.message);
+       });
+      },1200);
+     });
     }
    }
   });
   document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>{if(!pending.has(el.dataset.requestId))el.remove()});
   for(const [id,entry] of aznySessionPeerListeners){
    if(!approved.has(id)){
-    entry.ref.off("value",entry.handler);aznySessionPeerListeners.delete(id);
+    entry.ref.off("value",entry.handler);clearTimeout(entry.retryTimer);aznySessionPeerListeners.delete(id);
     try{window.aznyTeacherPeers?.[id]?.close()}catch(_){}
     removeStudentVideoCard(id);
    }
