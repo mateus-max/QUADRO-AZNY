@@ -1673,8 +1673,8 @@ function bindTeacherPresenceWatchForStudent(){
 function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove("show"),1000)}
 function boardPointFromClient(e){const r=board.getBoundingClientRect(),cs=getComputedStyle(board),scale=Math.max(.01,Number(zoom)||1),bl=(parseFloat(cs.borderLeftWidth)||0)*scale,br=(parseFloat(cs.borderRightWidth)||0)*scale,bt=(parseFloat(cs.borderTopWidth)||0)*scale,bb=(parseFloat(cs.borderBottomWidth)||0)*scale,w=Math.max(1,r.width-bl-br),h=Math.max(1,r.height-bt-bb);return{x:(e.clientX-r.left-bl)*board.clientWidth/w,y:(e.clientY-r.top-bt)*board.clientHeight/h}}
 function localPoint(e){return boardPointFromClient(e)}
-let aznyTextDefaults={fontSize:18,fontFamily:"Arial",fontWeight:"400",fontStyle:"normal",color:"#ffffff"};
-function updateTextDefaultControls(){const size=document.getElementById("fontSize"),family=document.getElementById("fontFamily");if(size)size.value=String(aznyTextDefaults.fontSize);if(family)family.value=aznyTextDefaults.fontFamily}
+let aznyTextDefaults={fontSize:18,fontFamily:"Arial",fontWeight:"400",fontStyle:"normal",textDecoration:"none",color:"#ffffff"};
+function updateTextDefaultControls(){const size=document.getElementById("fontSize"),family=document.getElementById("fontFamily"),color=document.getElementById("textColor");if(size)size.value=String(aznyTextDefaults.fontSize);if(family)family.value=aznyTextDefaults.fontFamily;if(color)color.value=aznyTextDefaults.color||"#ffffff"}
 function setTextDefaults(patch){aznyTextDefaults={...aznyTextDefaults,...patch};updateTextDefaultControls();scheduleSave();publishLiveBoardState()}
 function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),deletedStrokeIds:[...deletedStrokeIds],objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds],textDefaults:{...aznyTextDefaults}}}
 function serializeObject(el){
@@ -2278,7 +2278,7 @@ function createText(x,y,anchor){
  pushHistory();
  const el=document.createElement("div");el.className="object textobj";el.dataset.id="o"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);if(isStudent)el.dataset.createdBy=studentRequestId;el.contentEditable="true";el.spellcheck=true;
  if(!document.body.classList.contains("student-mode")&&matchMedia("(pointer:coarse)").matches)el.setAttribute("inputmode","none");
- el.style.left=x+"px";el.style.top=y+"px";el.style.fontSize=(Number(aznyTextDefaults.fontSize)||18)+"px";el.style.fontFamily=aznyTextDefaults.fontFamily||"Arial";el.style.fontWeight=aznyTextDefaults.fontWeight||"400";el.style.fontStyle=aznyTextDefaults.fontStyle||"normal";el.style.color=aznyTextDefaults.color||"#ffffff";
+ el.style.left=x+"px";el.style.top=y+"px";el.style.fontSize=(Number(aznyTextDefaults.fontSize)||18)+"px";el.style.fontFamily=aznyTextDefaults.fontFamily||"Arial";el.style.fontWeight=aznyTextDefaults.fontWeight||"400";el.style.fontStyle=aznyTextDefaults.fontStyle||"normal";el.style.textDecoration=aznyTextDefaults.textDecoration||"none";el.style.color=aznyTextDefaults.color||"#ffffff";
  constrainTextToBoard(el);
  if(anchor)anchorTextToObject(el,anchor,x,y);
  board.appendChild(el);makeInteractive(el);selectObject(el);
@@ -2714,8 +2714,8 @@ function toggleInlineStyle(property,onValue,offValue){
 document.querySelectorAll("#bold,#italic,#underline,#alignLeft,#alignCenter,#alignRight,#textColor,#fontSize,#fontSizeUp,#fontSizeDown,#fontFamily").forEach(b=>b.addEventListener("pointerdown",()=>{if(selected?.classList.contains("textobj"))rememberSelection()},{passive:true}));
 document.getElementById("bold").onclick=()=>{setTextDefaults({fontWeight:aznyTextDefaults.fontWeight==="700"?"400":"700"});if(selected?.classList.contains("textobj"))toggleInlineStyle("fontWeight","700","400")};
 document.getElementById("italic").onclick=()=>{setTextDefaults({fontStyle:aznyTextDefaults.fontStyle==="italic"?"normal":"italic"});if(selected?.classList.contains("textobj"))toggleInlineStyle("fontStyle","italic","normal")};
-document.getElementById("underline").onclick=()=>toggleInlineStyle("textDecoration","underline","none");
-document.getElementById("textColor").oninput=e=>applyInlineStyle("color",e.target.value);
+document.getElementById("underline").onclick=()=>{setTextDefaults({textDecoration:aznyTextDefaults.textDecoration==="underline"?"none":"underline"});if(selected?.classList.contains("textobj"))toggleInlineStyle("textDecoration","underline","none")};
+document.getElementById("textColor").oninput=e=>{setTextDefaults({color:e.target.value});if(selected?.classList.contains("textobj"))applyInlineStyle("color",e.target.value)};
 document.getElementById("fontSize").onchange=e=>{setTextDefaults({fontSize:Number(e.target.value)||18});if(selected?.classList.contains("textobj"))applyInlineStyle("fontSize",e.target.value+"px")};
  function changeSelectedFontSize(direction){if(!selected?.classList.contains("textobj")){toast("Seleccione primeiro um texto no quadro.");return}const current=parseFloat(getComputedStyle(selected).fontSize)||18,next=Math.max(8,Math.min(120,current+direction*2));const control=document.getElementById("fontSize");if(control){const values=[...control.options].map(o=>Number(o.value));control.value=String(values.reduce((best,n)=>Math.abs(n-next)<Math.abs(best-next)?n:best,values[0]||18))}applyInlineStyle("fontSize",next+"px")}
  document.getElementById("fontSizeUp").onclick=()=>changeSelectedFontSize(1);
@@ -5697,6 +5697,7 @@ body:not(.student-mode) .rightbar #students .student>.azny-student-device-contro
 #board .object{transition:none!important;transform-origin:center center}
 #board .object.selected{animation:none!important}
 .leftbar .tools .tool,.toolbar .mini,.toolbar .select{animation:none!important;transform:none!important}
+</style>
 <style id="azny-image-scroll-and-controls">
 .mediaobj{overflow:hidden!important;display:flex!important;flex-direction:column!important;background:#fff!important;min-width:70px;min-height:55px}
 .mediaobj .azny-image-tools{height:27px;min-height:27px;display:flex;align-items:center;justify-content:flex-end;gap:4px;padding:2px 5px;background:#10243a;color:#fff;position:relative;z-index:8;touch-action:manipulation}
@@ -5704,7 +5705,6 @@ body:not(.student-mode) .rightbar #students .student>.azny-student-device-contro
 .mediaobj .azny-image-tools button:disabled{opacity:.35}
 .mediaobj .azny-image-viewport{position:relative;flex:1;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y;background:#fff;-webkit-overflow-scrolling:touch}
 .mediaobj .azny-image-viewport img{display:block;width:100%;height:100%;min-width:100%;min-height:100%;max-width:none;object-fit:contain;pointer-events:none}
-</style>
 </style>
 </body>
 </html>
