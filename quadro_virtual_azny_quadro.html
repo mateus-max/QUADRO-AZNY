@@ -1957,7 +1957,7 @@ function handleBoardChannelMessage(raw){
   if(m.type==="stroke-delete"){
    const ids=Array.isArray(m.ids)?m.ids.map(String):[];
    ids.forEach(id=>{deletedStrokeIds.add(id);aznyRemoteLiveStrokes.delete(id)});
-   if(ids.length){strokes=strokes.filter((st,index)=>!deletedStrokeIds.has(String(st.id||("legacy-"+(currentPage-1)+"-"+index))));redraw();publishLiveBoardState()}
+   if(ids.length){strokes=strokes.filter((st,index)=>!deletedStrokeIds.has(String(st.id||("legacy-"+(currentPage-1)+"-"+index))));redraw();if(!isStudent)publishLiveBoardState()}
    if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<524288){try{out.send(packet)}catch(_){}}})}
    return;
   }
