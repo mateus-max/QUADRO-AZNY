@@ -5787,3 +5787,26 @@ body:not(.student-mode) .student>.azny-student-device-controls [data-student-cam
  flex:0 0 155px!important;
 }
 </style>
+
+<style id="azny-teacher-phone-student-camera-stack">
+/* No telefone do professor: câmeras dos alunos em coluna única, com a mesma altura da câmera do professor. */
+@media (max-width:950px) and (pointer:coarse){
+ body:not(.student-mode) .rightbar #students.students{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-auto-rows:155px!important;
+  align-content:start!important;
+  gap:7px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+ }
+ body:not(.student-mode) .rightbar #students .student{
+  width:100%!important;
+  height:155px!important;
+  min-height:155px!important;
+  max-height:155px!important;
+  aspect-ratio:auto!important;
+ }
+ body:not(.student-mode) .rightbar #students #noStudents{grid-column:1!important}
+}
+</style>
