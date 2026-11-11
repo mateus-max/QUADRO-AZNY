@@ -1334,7 +1334,7 @@ function aznyFilterDeletedPages(pages){return pages.map(page=>{if(!page)return p
 let pointerMode=false;
 let classStarted=false,classStartTime=0,classTimerHandle=null,screenRecorder=null,recordedChunks=[],recordingStartedAt=0,aznyTeacherScreenTrack=null,aznyStudentScreenTrack=null,classRunId="",aznyTeacherAccessValidated=false,aznyTeacherPlanKey="",aznyTrialAutoEnding=false;
 const AZNY_URL_PARAMS=new URLSearchParams(location.search);let AZNY_ACCESS_TOKEN=AZNY_URL_PARAMS.get("acesso")||"";try{AZNY_ACCESS_TOKEN=AZNY_ACCESS_TOKEN||sessionStorage.getItem("azny_access_token")||"";if(AZNY_ACCESS_TOKEN)sessionStorage.setItem("azny_access_token",AZNY_ACCESS_TOKEN)}catch(_){};if(AZNY_ACCESS_TOKEN&&!AZNY_URL_PARAMS.has("acesso")){AZNY_URL_PARAMS.set("acesso",AZNY_ACCESS_TOKEN);try{history.replaceState(history.state,"",location.pathname+"?"+AZNY_URL_PARAMS.toString()+location.hash)}catch(_){}}const AZNY_ISOLATED_MODE=AZNY_URL_PARAMS.get("isolado")==="1";let isStudent=AZNY_URL_PARAMS.get("aluno")==="1"; document.body.classList.toggle("student-mode",isStudent); document.body.classList.toggle("teacher-mode",!isStudent);const aznyHashKey=value=>{let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};const aznyAccessScope=AZNY_ISOLATED_MODE?"isolado":aznyHashKey(AZNY_ACCESS_TOKEN||"");const aznyTeacherRoomStorageKey="azny_teacher_room_v1_"+aznyAccessScope;let aznySavedRoom="";try{aznySavedRoom=AZNY_ISOLATED_MODE?"":(localStorage.getItem(aznyTeacherRoomStorageKey)||"")}catch(_){};const aznyRequestedRoom=AZNY_URL_PARAMS.get("sala");let roomId;if(AZNY_ISOLATED_MODE){roomId="AZNY-ISOLADO"}else if(isStudent){roomId=aznyRequestedRoom||""}else{roomId=aznyRequestedRoom?(aznyRequestedRoom.startsWith("AZNY-"+aznyAccessScope+"-")?aznyRequestedRoom:("AZNY-"+aznyAccessScope+"-"+aznyRequestedRoom)):(aznySavedRoom||("AZNY-TEACHER-"+aznyAccessScope));if(!aznyRequestedRoom){try{localStorage.setItem(aznyTeacherRoomStorageKey,roomId)}catch(_){}}}STORAGE="azny_virtual_board_v2_"+String(roomId).replace(/[^a-zA-Z0-9_-]/g,"_");
-let classSessionId="";
+let classSessionId="SESSION-TEACHER-"+aznyHashKey(roomId);
 let studentName="",studentApproved=false,studentRequestId="",studentPeer=null,studentLocalStream=null,studentRemoteDescriptionReady=false,studentPendingTeacherCandidates=[];
 let studentCameraOn=false,studentMicOn=false,sessionRealtimeBound=false,studentBoardChannel=null,studentBoardChunks=new Map();
 let roomChannel="BroadcastChannel" in window ? new BroadcastChannel("azny-room-"+roomId) : null;
@@ -1478,38 +1478,21 @@ function aznySessionRef(){return AZNY_DB&&classSessionId?aznyRoomRef().child("se
 function studentRequestRef(id){return aznySessionRef()?.child("joinRequests").child(id)||null}
 function signalRef(id){return aznySessionRef()?.child("peers").child(id)||null}
 function sessionLinkReady(){return !!classSessionId}
-/* O convite identifica apenas a sala do professor. A sessão activa é descoberta
-   pelo ponteiro da sala, que muda automaticamente a cada início de aula. */
+/* O convite usa sempre a mesma sessão lógica por professor. O estado active/ended
+   dessa sessão controla a entrada sem precisar de ler o ponteiro privado da sala. */
 async function aznyResolveStudentActiveSession(){
  if(!isStudent||!AZNY_DB||!roomId)return "";
- const snap=await aznyRoomRef().child("activeSessionId").once("value");
- const next=String(snap.val()||"");
- if(next!==classSessionId){
+ const stable="SESSION-TEACHER-"+aznyHashKey(roomId);
+ if(classSessionId!==stable){
   unbindClassSessionRealtime();
-  classSessionId=next;
-  studentApproved=false;studentRequestId="";
-  if(next)bindClassSessionRealtime();
+  classSessionId=stable;studentApproved=false;studentRequestId="";
  }
+ if(!sessionRealtimeBound)bindClassSessionRealtime();
  return classSessionId;
 }
-let aznyStudentRoomWatchBound=false;
 function bindStudentActiveSessionWatch(){
- if(!isStudent||!AZNY_DB||!roomId||aznyStudentRoomWatchBound)return;
- aznyStudentRoomWatchBound=true;
- aznyRoomRef().child("activeSessionId").on("value",async snap=>{
-  const next=String(snap.val()||"");
-  if(next!==classSessionId){
-   unbindClassSessionRealtime();
-   classSessionId=next;studentApproved=false;studentRequestId="";
-   if(next){
-    bindClassSessionRealtime();
-    try{
-     const status=(await aznySessionRef().child("status").once("value")).val();
-     if(status==="active")showStudentJoinReady();else showStudentWaitingForClass();
-    }catch(e){console.warn("AZNY verificar aula activa:",e);showStudentWaitingForClass()}
-   }else showStudentWaitingForClass();
-  }
- },error=>console.warn("AZNY acompanhar link permanente:",error?.message||error));
+ if(!isStudent||!AZNY_DB||!roomId)return;
+ aznyResolveStudentActiveSession().catch(error=>console.warn("AZNY acompanhar link permanente:",error?.message||error));
 }
 let aznyObservedClassStatus="waiting",aznyBoundSessionRef=null;
 const aznySessionPeerListeners=new Map();
@@ -2873,7 +2856,7 @@ async function startClass(){
  if(!AZNY_DB){toast("A ligação ao Firebase ainda não está pronta. Tente novamente.");return}
  const newRunId="RUN-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
  unbindClassSessionRealtime();
- classSessionId="SESSION-"+newRunId;
+ classSessionId="SESSION-TEACHER-"+aznyHashKey(roomId);
  const sessionRef=aznySessionRef();
  if(!sessionRef){toast("A sessão individual da aula não ficou disponível. Tente novamente.");return}
  try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){};
