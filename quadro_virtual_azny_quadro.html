@@ -2414,7 +2414,7 @@ function makeInteractive(el){
  el.addEventListener("pointerdown",e=>{
   if(e.target.closest?.(".resize"))return;
   if(el.classList.contains("textobj")&&tool==="text")return;
-  if(tool==="select"&&(!isStudent||studentApproved)&&!e.target.closest?.("button,input,select,textarea,.docpdf,.azny-image-viewport,.azny-image-tools")){
+  if(tool==="select"&&(!isStudent||studentApproved)&&!e.target.closest?.("button,input,select,textarea,.docpdf-toolbar,.azny-image-tools")){
    selectObject(el);dragStart(e,el);
   }
  },{passive:false});
