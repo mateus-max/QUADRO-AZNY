@@ -3373,29 +3373,23 @@ async function startStudentWebRTC(options={}){
   if(studentPeer){try{studentPeer._aznyBoardChannel?.close()}catch(_){}try{studentPeer.close()}catch(_){}}if(options.reconnect&&studentLocalStream){try{studentLocalStream.getTracks().forEach(t=>t.stop())}catch(_){}studentLocalStream=null}
   studentRemoteDescriptionReady=false;studentPendingTeacherCandidates=[];studentBoardChunks.clear();
   studentLocalStream=null;studentCameraOn=false;studentMicOn=false;
+  let studentMediaPromise=null;
   if(navigator.mediaDevices?.getUserMedia){
-   try{
-    toast("A solicitar acesso à câmera e ao microfone...");
-    studentLocalStream=await navigator.mediaDevices.getUserMedia({
-     video:{facingMode:"user",width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},
-     audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}
-    });
-    studentCameraOn=true;studentMicOn=true;
-   }catch(mediaError){
+   toast("Entrada aprovada. A abrir o quadro...");
+   studentMediaPromise=navigator.mediaDevices.getUserMedia({
+    video:{facingMode:"user",width:{ideal:320,max:320},height:{ideal:240,max:240},frameRate:{ideal:10,max:12}},
+    audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:{ideal:1},sampleRate:{ideal:48000},latency:{ideal:0.02}}
+   }).then(stream=>{studentLocalStream=stream;studentCameraOn=true;studentMicOn=true;return stream}).catch(mediaError=>{
     console.warn("AZNY: aluno sem permissão de câmera/microfone; manter colaboração do quadro.",mediaError);
-    const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");
-    if(cb)cb.textContent="📷 Ligar câmera";if(mb)mb.textContent="🎙 Ligar microfone";
-    toast("Entrada aprovada. Pode colaborar no quadro; câmera e microfone podem ser ligados depois.");
-   }
-  }else{
-   toast("Entrada aprovada. Pode colaborar no quadro; câmera e microfone exigem HTTPS.");
-  }
+    toast("Pode colaborar no quadro. Câmera e microfone podem ser ligados depois.");return null;
+   });
+  }else toast("Pode colaborar no quadro. Câmera e microfone exigem HTTPS.");
   const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo){selfVideo.srcObject=studentLocalStream;selfVideo.muted=true;selfVideo.playsInline=true;selfVideo.play?.().catch(()=>{})}
   const scb=document.getElementById("studentCameraBtn"),smb=document.getElementById("studentMicBtn");
   if(scb)scb.textContent=studentCameraOn?"📷 Desligar câmera":"📷 Ligar câmera";if(smb)smb.textContent=studentMicOn?"🎙 Desligar microfone":"🎙 Ligar microfone";
   studentPeer=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
-  if(studentLocalStream?.getTracks?.().length)studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));
-  else{studentPeer.addTransceiver("audio",{direction:"sendrecv"});studentPeer.addTransceiver("video",{direction:"sendrecv"});}
+  studentPeer.addTransceiver("audio",{direction:"sendrecv"});
+  studentPeer.addTransceiver("video",{direction:"sendrecv"});
   aznyApplyLowDataMode(studentPeer);
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
   studentBoardChannel.bufferedAmountLowThreshold=65536;
@@ -3456,7 +3450,13 @@ async function startStudentWebRTC(options={}){
   const offer=await studentPeer.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
   await studentPeer.setLocalDescription(offer);
   await ref.update({name:studentName,offer:{type:offer.type,sdp:offer.sdp},studentOnline:true,updatedAt:firebase.database.ServerValue.TIMESTAMP});
-  setTimeout(()=>aznyStartStudentMesh(),500);
+  if(studentMediaPromise)studentMediaPromise.then(stream=>{
+   if(!stream||!studentPeer||studentPeer.connectionState==="closed")return;
+   const self=document.getElementById("studentSelfVideo");if(self){self.srcObject=stream;self.muted=true;self.playsInline=true;self.play?.().catch(()=>{})}
+   stream.getTracks().forEach(track=>{const tr=studentPeer?.getTransceivers?.().find(item=>item.receiver?.track?.kind===track.kind||item.sender?.track?.kind===track.kind);if(tr?.sender)tr.sender.replaceTrack(track).catch(error=>console.warn("AZNY attach student media:",error))});
+   const cb=document.getElementById("studentCameraBtn"),mb=document.getElementById("studentMicBtn");if(cb)cb.textContent="📷 Desligar câmera";if(mb)mb.textContent="🎙 Desligar microfone";
+   setTimeout(()=>aznyStartStudentMesh(),300);
+  });
   ref.child("answer").on("value",async snap=>{
    const a=snap.val();if(!a||!studentPeer||studentPeer.signalingState==="closed")return;
    try{
