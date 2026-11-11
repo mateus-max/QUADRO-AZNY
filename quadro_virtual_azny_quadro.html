@@ -1718,42 +1718,10 @@ async function resetBoardForClassLifecycle(){
  try{sendBoardSnapshotToAllPeers()}catch(_){}
  try{roomChannel?.postMessage({type:"board-cleared",room:roomId})}catch(_){}
 }
-function publishBoardState(){if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
-function sendBoardSnapshotToChannel(ch){
- if(!ch||ch.readyState!=="open")return false;
- try{
-  /* Send media/document snapshots in ordered chunks and respect WebRTC backpressure. */
-  pageStates[currentPage-1]=snapshot();
-  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],lastEditorUid:aznyUid||""};
-  const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=12000,total=Math.ceil(raw.length/size);
-  const parts=Array.from({length:total},(_,i)=>JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
-  ch.bufferedAmountLowThreshold=262144;ch._aznySnapshotQueue=ch._aznySnapshotQueue||[];
-  const queue=ch._aznySnapshotQueue,item={parts,index:0};
-  if(queue.length>1)queue[queue.length-1]=item;else queue.push(item);
-  if(!ch._aznySnapshotPump){
-   ch._aznySnapshotPump=()=>{
-    if(ch.readyState!=="open"){ch._aznySnapshotQueue=[];ch._aznySnapshotPump=null;return}
-    try{
-     while(ch._aznySnapshotQueue.length&&ch.bufferedAmount<524288){
-      const current=ch._aznySnapshotQueue[0];
-      while(current.index<current.parts.length&&ch.bufferedAmount<524288)ch.send(current.parts[current.index++]);
-      if(current.index>=current.parts.length)ch._aznySnapshotQueue.shift();else break;
-     }
-    }catch(e){console.warn("AZNY board snapshot queue:",e);ch._aznySnapshotQueue=[];ch._aznySnapshotPump=null;return}
-    if(ch._aznySnapshotQueue.length)ch.addEventListener("bufferedamountlow",ch._aznySnapshotPump,{once:true});
-    else ch._aznySnapshotPump=null;
-   };
-  }
-  ch._aznySnapshotPump();return true;
- }catch(e){console.warn("AZNY board channel:",e);return false}
-}
-function sendBoardSnapshotToPeer(pc){
- const ch=pc?pc._aznyBoardChannel:null;
- if(ch?.readyState==="open")sendBoardSnapshotToChannel(ch);
-}
-function sendBoardSnapshotToAllPeers(){
- Object.values(window.aznyTeacherPeers||{}).forEach(sendBoardSnapshotToPeer);
-}
+function publishBoardState(){if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
+function sendBoardSnapshotToChannel(ch){return false}
+function sendBoardSnapshotToPeer(pc){return false}
+function sendBoardSnapshotToAllPeers(){return false}
 function normalizeRemoteBoardPages(pages,sourceSize){
  const targetW=Math.max(1,board.clientWidth),targetH=Math.max(1,board.clientHeight);
  const sourceW=Number(sourceSize&&sourceSize.width)||targetW,sourceH=Number(sourceSize&&sourceSize.height)||targetH;
@@ -1824,7 +1792,8 @@ function applyRemoteBoardState(d){
  /* Queue updates while a participant is typing or manipulating a document instead of silently dropping them. */
  if(localBoardEditing||document.activeElement?.closest?.(".docobj,.docpdf-viewer,.textobj[contenteditable]")){queueRemoteBoardState(d);return;}
  try{
-  if(Array.isArray(d.deletedObjectIds))d.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));if(Array.isArray(d.deletedStrokeIds))d.deletedStrokeIds.forEach(id=>deletedStrokeIds.add(String(id)));
+  if(Array.isArray(d.deletedObjectIds))d.deletedObjectIds.forEach(id=>deletedObjectIds.add(String(id)));
+  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);
   if(d.pan)applyBoardPan(d.pan);
   if(Array.isArray(d.pages)){
    const incomingPages=aznyFilterDeletedPages(normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize));
@@ -1966,7 +1935,7 @@ function handleBoardChannelMessage(raw){
    if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<65536){try{out.send(packet)}catch(_){}}});}
    return;
   }
-  if(m.type==="board-zoom")return;if(m.type==="board-pan"){applyBoardPan(m.pan);return}
+  if(m.type==="board-zoom"){if(Number.isFinite(Number(m.zoom)))setZoom(Number(m.zoom),false);return}if(m.type==="board-pan"){applyBoardPan(m.pan);return}
   if(m.type==="board-state"){applyRemoteBoardState(m);return}
   if(m.type==="board-chunk"){
    let entry=studentBoardChunks.get(m.id);
@@ -2002,24 +1971,20 @@ function aznyMergeCollaborativeBoardState(server,local){
 }
 function publishLiveBoardState(){
  if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;
- /* No máximo 25 actualizações completas por segundo. O cursor continua a ser
-    transmitido pelo canal rápido; o quadro recebe estados estáveis e recentes. */
- if(liveBoardTimer)return;
+ clearTimeout(liveBoardTimer);
+ /* Restaurado o fluxo estável de 08/11: Realtime Database é a fonte única do quadro.
+    O WebRTC fica reservado para áudio, vídeo e sinalização. */
  liveBoardTimer=setTimeout(()=>{
-  liveBoardTimer=null;
   if(remoteBoardApplying)return;
   pageStates[currentPage-1]=snapshot();
-  /* Fast path for participants already in the room; Realtime Database remains persistent source of truth. */
-  if(isStudent){if(studentBoardChannel?.readyState==="open")sendBoardSnapshotToChannel(studentBoardChannel)}
-  else sendBoardSnapshotToAllPeers();
   clearTimeout(firebaseBoardWriteTimer);
   firebaseBoardWriteTimer=setTimeout(()=>{
    if(remoteBoardApplying)return;
    const ref=aznyRoomRef().child("board");
-   const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],updatedAt:Date.now(),lastEditorUid:aznyUid||""};
-   ref.transaction(server=>aznyMergeCollaborativeBoardState(server,payload),undefined,false).catch(e=>{console.error("AZNY live board transaction rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
-  },20);
- },40);
+   const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],updatedAt:firebase.database.ServerValue.TIMESTAMP,lastEditorUid:aznyUid||""};
+   ref.update(payload).catch(e=>{console.error("AZNY live board write rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
+  },40);
+ },25);
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
@@ -2029,6 +1994,7 @@ function setupBoardRealtime(){
   const d=snap.val();
   if(remoteBoardApplying)return;
   if(!d){if(!isStudent)setTimeout(publishBoardState,150);return;}
+  if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);
   if(d.pan)applyBoardPan(d.pan);
   const activeText=document.activeElement?.closest?.(".textobj");
   if(localBoardEditing||(activeText&&board.contains(activeText))){queueRemoteBoardState(d);return;}
