@@ -1796,14 +1796,19 @@ function queueRemoteBoardState(d){
   merged.pages=Array.from({length:5},(_,i)=>{const a=previous.pages[i],b=d.pages[i];if(!a)return b||null;if(!b)return a;const objects=new Map((a.objects||[]).map(o=>[String(o.id||""),o]));(b.objects||[]).forEach(o=>{const id=String(o.id||""),old=objects.get(id);if(old?.kind==="text"&&o?.kind==="text"&&(Number(old.textUpdatedAt)||0)>(Number(o.textUpdatedAt)||0))return;objects.set(id,o)});return{...a,...b,objects:[...objects.values()]}});
   pendingRemoteBoardState=merged;
  }else pendingRemoteBoardState=d;
- /* Preserve the freshest locally edited text in any queued remote snapshot. */
+ /* Preserve local text and strokes while a gesture is in progress.
+    A stale Firebase echo must never replace a stroke just completed locally. */
  if(localBoardEditing||document.activeElement?.matches?.(".textobj[contenteditable]")){
   const local=snapshot(),index=currentPage-1;
   if(Array.isArray(pendingRemoteBoardState.pages)){
    const page=pendingRemoteBoardState.pages[index]||{strokes:[],objects:[],title:local.title};
    const objects=new Map((page.objects||[]).map(o=>[String(o.id||""),o]));
    (local.objects||[]).filter(o=>o.kind==="text").forEach(o=>{const old=objects.get(String(o.id||""));if(!old||(Number(o.textUpdatedAt)||0)>=(Number(old.textUpdatedAt)||0))objects.set(String(o.id),o)});
-   pendingRemoteBoardState.pages[index]={...page,objects:[...objects.values()]};
+   const removed=new Set([...(pendingRemoteBoardState.deletedStrokeIds||[]),...(page.deletedStrokeIds||[]),...deletedStrokeIds].map(String));
+   const strokes=new Map();
+   (page.strokes||[]).forEach((st,i)=>strokes.set(String(st.id||("legacy-"+index+"-"+i)),st));
+   (local.strokes||[]).forEach((st,i)=>strokes.set(String(st.id||("legacy-"+index+"-"+i)),st));
+   pendingRemoteBoardState.pages[index]={...page,objects:[...objects.values()],strokes:[...strokes.entries()].filter(([id])=>!removed.has(id)).map(([,st])=>st),deletedStrokeIds:[...removed]};
   }
  }
  if(!pendingRemoteBoardTimer)pendingRemoteBoardTimer=setTimeout(flushPendingRemoteBoardState,160);
@@ -2296,7 +2301,7 @@ function createFromData(o){
   Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px",fontSize:o.style?.fontSize,fontFamily:o.style?.fontFamily,fontWeight:o.style?.fontWeight,fontStyle:o.style?.fontStyle,textDecoration:o.style?.textDecoration,color:o.style?.color,textAlign:o.style?.textAlign});
   if(o.anchorId){el.dataset.anchorId=o.anchorId;el.dataset.anchorX=o.anchorX??0;el.dataset.anchorY=o.anchorY??0;el.dataset.anchorW=o.anchorW??1;el.dataset.anchorH=o.anchorH??1;el.dataset.anchorFontSize=(o.anchorFontSize??parseFloat(el.style.fontSize)??16);}
  }else if(o.kind==="image"){
-  el=document.createElement("div");el.className="object mediaobj";const img=document.createElement("img");img.src=o.src;el.appendChild(img);Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});
+  el=document.createElement("div");el.className="object mediaobj";const img=document.createElement("img");img.decoding="async";img.loading="eager";img.src=o.src;el.appendChild(img);Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});
  }else if(o.kind==="chart"){ el=createChartObject(o.chartType||"bar",o.values||"12,19,8,15,10",o.title||"Gráfico"); Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"}); el.dataset.id=o.id||"o"+(++objectId); }
  else if(o.kind==="music"){ el=createMusicObject(o.musicType||"blank",o.title||"Música"); Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"}); el.dataset.id=o.id||"o"+(++objectId); }
  else if(o.kind==="resource"){ el=createResourceObject(o.resourceType||"bible",o.language||"pt"); Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"}); el.dataset.id=o.id||"o"+(++objectId); }
@@ -2380,7 +2385,7 @@ function resizeStart(e){
  addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up)
 }
 function addImage(file){
- const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object mediaobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;if(isStudent)el.dataset.createdBy=studentRequestId;const img=document.createElement("img");img.src=reader.result;el.appendChild(img);Object.assign(el.style,{left:"100px",top:"80px",width:"360px",height:"260px"});board.appendChild(el);makeInteractive(el);selectObject(isStudent?null:el);updateHint();scheduleSave();publishLiveBoardState();toast("Imagem adicionada")};reader.readAsDataURL(file)
+ const reader=new FileReader();reader.onload=()=>{pushHistory();const el=document.createElement("div");el.className="object mediaobj";el.dataset.id="o"+Date.now().toString(36)+Math.random().toString(36).slice(2,8);objectId++;if(isStudent)el.dataset.createdBy=studentRequestId;const img=document.createElement("img");img.decoding="async";img.loading="eager";img.src=reader.result;el.appendChild(img);Object.assign(el.style,{left:"100px",top:"80px",width:"360px",height:"260px"});board.appendChild(el);makeInteractive(el);selectObject(isStudent?null:el);updateHint();scheduleSave();publishLiveBoardState();toast("Imagem adicionada")};reader.readAsDataURL(file)
 }
 
 async function renderAZNYPdfViewer(viewer,dataUrl){
@@ -2676,7 +2681,7 @@ function toggleInlineStyle(property,onValue,offValue){
  if(!applied){const range=sel.getRangeAt(0),span=document.createElement("span");span.style[property]=onValue;try{span.appendChild(range.extractContents());range.insertNode(span);const after=document.createRange();after.selectNodeContents(span);sel.removeAllRanges();sel.addRange(after);savedRange=after.cloneRange()}catch(_){}}
  aznyCommitTextFormatting();
 }
-document.querySelectorAll("#bold,#italic,#underline,#alignLeft,#alignCenter,#alignRight").forEach(b=>b.addEventListener("pointerdown",()=>{if(selected?.classList.contains("textobj"))rememberSelection()},{passive:true}));
+document.querySelectorAll("#bold,#italic,#underline,#alignLeft,#alignCenter,#alignRight,#textColor,#fontSize,#fontFamily").forEach(b=>b.addEventListener("pointerdown",()=>{if(selected?.classList.contains("textobj"))rememberSelection()},{passive:true}));
 document.getElementById("bold").onclick=()=>toggleInlineStyle("fontWeight","700","400");
 document.getElementById("italic").onclick=()=>toggleInlineStyle("fontStyle","italic","normal");
 document.getElementById("underline").onclick=()=>toggleInlineStyle("textDecoration","underline","none");
@@ -3838,7 +3843,7 @@ async function getClassLink(){
  if(!classSessionId||!/^SESSION-RUN-/.test(classSessionId)){toast("A sessão desta aula não está identificada. Inicie novamente a aula.");return ""}
  const activeStatus=await aznySessionRef().child("status").once("value");
  if(activeStatus.val()!=="active"){toast("Esta aula já não está activa. Inicie uma nova aula para gerar outro link.");return ""}
- const target=new URL("/quadro_virtual_azny_quadro.html",location.origin);
+ const target=new URL("/sala/",location.origin);
  target.searchParams.set("aluno","1");target.searchParams.set("sala",roomId);target.searchParams.set("sess",classSessionId);
  return target.href;
 }
