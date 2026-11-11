@@ -1349,7 +1349,8 @@ let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
 const aznyRoomKey=()=>String(roomId).replace(/[.#$\[\]\/]/g,"_");
 const aznyRoomRef=()=>AZNY_DB?AZNY_DB.ref("aznyRooms/"+aznyRoomKey()):null;
 /* Cada aula usa uma sessão própria, guardada no Realtime Database. */
-async function initAZNYRealtime(){
+let aznyInitPromise=null;
+async function initAZNYRealtimeInternal(){
  for(let attempt=0;attempt<12;attempt++){
   try{
    if(!window.firebase){await new Promise(r=>setTimeout(r,250));continue}
@@ -1384,6 +1385,10 @@ async function initAZNYRealtime(){
   await new Promise(r=>setTimeout(r,Math.min(400+attempt*350,2200)));
  }
  return false;
+}
+function initAZNYRealtime(){
+ if(!aznyInitPromise)aznyInitPromise=initAZNYRealtimeInternal().finally(()=>{aznyInitPromise=null});
+ return aznyInitPromise;
 }
 let aznyRealtimeBound=false;
 async function provisionIsolatedGuestRoom(){
@@ -1462,7 +1467,7 @@ async function ensureAZNYRealtime(){
     que a autenticação anónima terminou. Se o UID faltar, repetir a inicialização
     antes de permitir a escrita protegida pelas regras do Realtime Database. */
  if(!AZNY_DB||(isStudent&&!aznyUid)){
-  if(isStudent&&!aznyUid){AZNY_DB=null;AZNY_AUTH=null}
+  /* Não destruir a instância Firebase durante a autenticação inicial. Todas as chamadas partilham a mesma inicialização. */
   const ok=await initAZNYRealtime();
   if(!ok||(isStudent&&!aznyUid))return false;
  }
