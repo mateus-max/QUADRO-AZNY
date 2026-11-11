@@ -1209,7 +1209,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
     </div>
     <div class="group">
       <button class="mini" id="bold"><b>B</b></button><button class="mini" id="italic"><i>I</i></button><button class="mini" id="underline"><u>U</u></button>
-      <select class="select" id="fontSize"><option value="14">14</option><option value="18" selected>18</option><option value="24">24</option><option value="32">32</option><option value="42">42</option><option value="56">56</option></select>
+      <button class="mini" id="fontSizeDown" type="button" title="Diminuir tamanho da letra" aria-label="Diminuir tamanho da letra">A−</button><select class="select" id="fontSize"><option value="14">14</option><option value="18" selected>18</option><option value="24">24</option><option value="32">32</option><option value="42">42</option><option value="56">56</option></select><button class="mini" id="fontSizeUp" type="button" title="Aumentar tamanho da letra" aria-label="Aumentar tamanho da letra">A+</button>
       <select class="select" id="fontFamily"><option>Arial</option><option>Verdana</option><option>Georgia</option><option>Times New Roman</option><option>Courier New</option><option>Trebuchet MS</option></select>
     </div>
     <div class="group">
@@ -1811,7 +1811,7 @@ function queueRemoteBoardState(d){
    pendingRemoteBoardState.pages[index]={...page,objects:[...objects.values()],strokes:[...strokes.entries()].filter(([id])=>!removed.has(id)).map(([,st])=>st),deletedStrokeIds:[...removed]};
   }
  }
- if(!pendingRemoteBoardTimer)pendingRemoteBoardTimer=setTimeout(flushPendingRemoteBoardState,160);
+ if(!pendingRemoteBoardTimer)pendingRemoteBoardTimer=setTimeout(flushPendingRemoteBoardState,32);
 }
 function flushPendingRemoteBoardState(){
  pendingRemoteBoardTimer=null;if(!pendingRemoteBoardState)return;
@@ -1954,7 +1954,7 @@ function handleBoardChannelMessage(raw){
   const m=JSON.parse(raw);
   if(m.type==="shared-browser-close"){if(isStudent)aznyCloseSharedBrowser(true);return;}
   if(m.type==="shared-browser"){if(isStudent){aznyBrowserApplyingRemote=true;aznyApplyBrowserState(m);aznyBrowserApplyingRemote=false}return;}
-  if(m.type==="stroke-live"){const id=String(m.id||"");if(id){const previous=aznyRemoteLiveStrokes.get(id)||{};aznyRemoteLiveStrokes.set(id,{color:m.color||previous.color||"#000",width:Number(m.width)||previous.width||3,points:Array.isArray(m.points)?m.points:(previous.points||[]),done:!!m.done});redraw()}if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<524288){try{out.send(packet)}catch(_){}}})}return;}
+  if(m.type==="stroke-live"){const id=String(m.id||"");if(id){const previous=aznyRemoteLiveStrokes.get(id)||{};const sx=board.clientWidth/(Number(m.boardWidth)||board.clientWidth),sy=board.clientHeight/(Number(m.boardHeight)||board.clientHeight);const points=Array.isArray(m.points)?m.points.map(q=>({x:Number(q.x||0)*sx,y:Number(q.y||0)*sy})):previous.points||[];aznyRemoteLiveStrokes.set(id,{color:m.color||previous.color||"#000",width:(Number(m.width)||previous.width||3)*Math.min(sx,sy),points,done:!!m.done});redraw()}if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<524288){try{out.send(packet)}catch(_){}}})}return;}
   if(m.type==="live-pointer"){
    if(m.pointerOwnerId){aznyRenderRemoteParticipantPointer(m);return;}
    if(m.surface==="excel"||m.surface==="word"){
@@ -2142,7 +2142,7 @@ function setPointerMode(on){
  document.getElementById("aznyWordLivePointer")?.classList.remove("active");
  stage.style.cursor=pointerMode?"none":(tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default"));
  const sendPacket=packet=>{const raw=JSON.stringify(packet);if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"){try{ch.send(raw)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"){try{ch.send(raw)}catch(_){}}})};
- sendPacket({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:pointerMode,...(isStudent?{pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}:{})});
+ sendPacket({type:"live-pointer",x:0,y:0,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:pointerMode,pointerOwnerId:isStudent?(studentRequestId||"student"):(aznyUid||"teacher"),pointerOwnerName:isStudent?(studentName||"Participante"):"Professor"});
  ["excel","word"].forEach(surface=>sendPacket({type:"live-pointer",surface,x:0,y:0,boardWidth:0,boardHeight:0,visible:false}));
 }
 let lastPointerPacketAt=0;
@@ -2156,7 +2156,7 @@ function updateLivePointer(e){
   const now=performance.now();
   if(now-lastPointerPacketAt>=16){
    lastPointerPacketAt=now;
-   const packet=JSON.stringify({type:"live-pointer",x,y,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,...(isStudent?{pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"}:{})});
+   const packet=JSON.stringify({type:"live-pointer",x,y,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:!!pointerMode,pointerOwnerId:isStudent?(studentRequestId||"student"):(aznyUid||"teacher"),pointerOwnerName:isStudent?(studentName||"Participante"):"Professor"});
    if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}}
    else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}});
   }
@@ -2191,17 +2191,14 @@ function moveStudentPointer(e){
  if(!isStudent||!pointerMode||aznyPointerDragId===null||e.pointerId!==aznyPointerDragId)return;
  const {x,y}=boardPointFromClient(e);
  const p=document.getElementById("livePointer");p.style.transform="translate3d("+(x-44)+"px,"+(y-2)+"px,0)";p.classList.add("touch-pointer","active");
- const now=performance.now();if(now-lastStudentPointerSend<16)return;lastStudentPointerSend=now;
- /* Transmit the actual board coordinate. The receiver applies the same icon-tip offset once. */
- const packet=JSON.stringify({type:"live-pointer",x,y,boardWidth:board.clientWidth,boardHeight:board.clientHeight,visible:true,pointerOwnerId:studentRequestId,pointerOwnerName:studentName||"Participante"});
- const ch=studentBoardChannel;if(ch&&ch.readyState==="open"&&ch.bufferedAmount<65536){try{ch.send(packet)}catch(_){}}
+ /* A transmissão fica centralizada em updateLivePointer para evitar pacotes duplicados. */
 }
 stage.addEventListener("pointerdown",function(e){if(!isStudent||!pointerMode||!board.contains(e.target))return;aznyPointerDragId=e.pointerId;try{stage.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();moveStudentPointer(e)},{passive:false});
 stage.addEventListener("pointermove",moveStudentPointer,{passive:false});
 function endStudentPointerDrag(e){if(aznyPointerDragId===null||(e.pointerId!==undefined&&e.pointerId!==aznyPointerDragId))return;aznyPointerDragId=null;try{if(e.pointerId!==undefined&&stage.hasPointerCapture(e.pointerId))stage.releasePointerCapture(e.pointerId)}catch(_){}if(pointerMode){const p=document.getElementById("livePointer");if(p)p.classList.add("active")}}
 stage.addEventListener("pointerup",endStudentPointerDrag);
 stage.addEventListener("pointercancel",endStudentPointerDrag);
-stage.addEventListener("pointermove",updateLivePointer,{passive:true});
+/* updateLivePointer é enviado uma única vez pelo listener de captura do documento. */
 document.addEventListener("pointermove",e=>{if(pointerMode&&board.contains(e.target))updateLivePointer(e)},{capture:true,passive:true});
 function sendAZNYSurfacePointer(e){
  if(!pointerMode)return;
@@ -2547,8 +2544,8 @@ function objectAtPoint(p){const els=[...board.querySelectorAll('.object')].rever
 function eraseAt(p){const radius=18;strokes=strokes.filter((st,index)=>{const hit=strokePoints(st).some(q=>Math.hypot(q.x-p.x,q.y-p.y)<radius);if(hit)deletedStrokeIds.add(String(st.id||("legacy-"+(currentPage-1)+"-"+index)));return !hit})}
 function broadcastLiveStroke(done=false){
  if(!currentStroke||!aznyLiveStrokeId)return;
- const points=currentStroke.anchorId?strokePoints(currentStroke):currentStroke.points;
- const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,done});
+ const points=strokePoints(currentStroke);
+ const packet=JSON.stringify({type:"stroke-live",id:aznyLiveStrokeId,color:currentStroke.color,width:currentStroke.width,points,boardWidth:board.clientWidth,boardHeight:board.clientHeight,done});
  const send=ch=>{if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(e){console.warn("AZNY live stroke:",e)}}};
  if(isStudent){send(studentBoardChannel);return}
  Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null));
@@ -2618,7 +2615,8 @@ stage.addEventListener("pointerup",e=>{if(drawing){if(e.cancelable)e.preventDefa
 stage.addEventListener("pointerup",()=>{if(selected?.isConnected){selected.dataset.aznyUpdatedAt=String(Date.now());scheduleSave()}},{passive:true});
 stage.addEventListener("pointercancel",()=>{if(drawing)drawUp()});
 stage.addEventListener("lostpointercapture",()=>{if(drawing)drawUp()});
-addEventListener("mousemove",drawMove);addEventListener("mouseup",drawUp);
+/* Pointer Events já cobre rato, caneta digital e toque. Listeners mouse duplicados
+    estavam a inserir pontos repetidos no mesmo gesto de desenho. */
 
 function rememberSelection(){
  const sel=getSelection();
@@ -2681,12 +2679,15 @@ function toggleInlineStyle(property,onValue,offValue){
  if(!applied){const range=sel.getRangeAt(0),span=document.createElement("span");span.style[property]=onValue;try{span.appendChild(range.extractContents());range.insertNode(span);const after=document.createRange();after.selectNodeContents(span);sel.removeAllRanges();sel.addRange(after);savedRange=after.cloneRange()}catch(_){}}
  aznyCommitTextFormatting();
 }
-document.querySelectorAll("#bold,#italic,#underline,#alignLeft,#alignCenter,#alignRight,#textColor,#fontSize,#fontFamily").forEach(b=>b.addEventListener("pointerdown",()=>{if(selected?.classList.contains("textobj"))rememberSelection()},{passive:true}));
+document.querySelectorAll("#bold,#italic,#underline,#alignLeft,#alignCenter,#alignRight,#textColor,#fontSize,#fontSizeUp,#fontSizeDown,#fontFamily").forEach(b=>b.addEventListener("pointerdown",()=>{if(selected?.classList.contains("textobj"))rememberSelection()},{passive:true}));
 document.getElementById("bold").onclick=()=>toggleInlineStyle("fontWeight","700","400");
 document.getElementById("italic").onclick=()=>toggleInlineStyle("fontStyle","italic","normal");
 document.getElementById("underline").onclick=()=>toggleInlineStyle("textDecoration","underline","none");
 document.getElementById("textColor").oninput=e=>applyInlineStyle("color",e.target.value);
 document.getElementById("fontSize").onchange=e=>applyInlineStyle("fontSize",e.target.value+"px");
+ function changeSelectedFontSize(direction){if(!selected?.classList.contains("textobj")){toast("Seleccione primeiro um texto no quadro.");return}const current=parseFloat(getComputedStyle(selected).fontSize)||18,next=Math.max(8,Math.min(120,current+direction*2));const control=document.getElementById("fontSize");if(control){const values=[...control.options].map(o=>Number(o.value));control.value=String(values.reduce((best,n)=>Math.abs(n-next)<Math.abs(best-next)?n:best,values[0]||18))}applyInlineStyle("fontSize",next+"px")}
+ document.getElementById("fontSizeUp").onclick=()=>changeSelectedFontSize(1);
+ document.getElementById("fontSizeDown").onclick=()=>changeSelectedFontSize(-1);
 document.getElementById("fontFamily").onchange=e=>applyInlineStyle("fontFamily",e.target.value);
 document.getElementById("alignLeft").onclick=()=>{if(selected?.classList.contains("textobj")){pushHistory();selected.style.textAlign="left";aznyCommitTextFormatting()}};
 document.getElementById("alignCenter").onclick=()=>{if(selected?.classList.contains("textobj")){pushHistory();selected.style.textAlign="center";aznyCommitTextFormatting()}};
