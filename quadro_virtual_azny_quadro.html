@@ -1977,7 +1977,7 @@ function handleBoardChannelMessage(raw){
    const id=String(m.id||"").replace(/[^a-zA-Z0-9_-]/g,"");
    const el=board.querySelector('.object[data-id="'+id+'"]');
    const scroller=el?.querySelector(m.kind==="pdf"?".docpdf-pages":".docbody");
-   if(scroller){const maxY=Math.max(0,scroller.scrollHeight-scroller.clientHeight),maxX=Math.max(0,scroller.scrollWidth-scroller.clientWidth);scroller.scrollTop=Math.max(0,Math.min(1,Number(m.y)||0))*maxY;scroller.scrollLeft=Math.max(0,Math.min(1,Number(m.x)||0))*maxX}
+   if(scroller){scroller.dataset.aznyApplyingRemoteScroll="1";const maxY=Math.max(0,scroller.scrollHeight-scroller.clientHeight),maxX=Math.max(0,scroller.scrollWidth-scroller.clientWidth);scroller.scrollTop=Math.max(0,Math.min(1,Number(m.y)||0))*maxY;scroller.scrollLeft=Math.max(0,Math.min(1,Number(m.x)||0))*maxX;requestAnimationFrame(()=>{delete scroller.dataset.aznyApplyingRemoteScroll})}
    if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<65536){try{out.send(packet)}catch(_){}}})}
    return;
   }
@@ -5831,7 +5831,7 @@ body:not(.student-mode) .student>.azny-student-device-controls [data-student-cam
  let timer=0;
  board.addEventListener("scroll",e=>{
   const scroller=e.target?.closest?.(".docpdf-pages,.docbody");
-  if(!scroller)return;
+  if(!scroller||scroller.dataset.aznyApplyingRemoteScroll==="1")return;
   const object=scroller.closest(".docobj");if(!object?.dataset.id)return;
   clearTimeout(timer);
   timer=setTimeout(()=>{
