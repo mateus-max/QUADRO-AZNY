@@ -3358,50 +3358,7 @@ async function toggleStudentCamera(){
  const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo)selfVideo.style.opacity=studentCameraOn?"1":".22";
  toast(document.documentElement.lang==="en"?(studentCameraOn?"Camera on.":"Camera off."):(studentCameraOn?"Câmera ligada.":"Câmera desligada."));
 }
-function watchStudentRequest(){
- const ref=studentRequestRef(studentRequestId);if(!ref)return;
- let approvalInFlight=false;
- ref.on("value",async snap=>{
-  const d=snap.val()||{};
-  if(d.status==="approved"&&!studentApproved&&!approvalInFlight){
-   approvalInFlight=true;
-   /* A aprovação deve retirar imediatamente o formulário do ecrã do aluno.
-      A autorização Firebase é concluída logo a seguir, antes de abrir a sincronização. */
-   document.body.classList.add("student-approved","azny-landscape-view");
-   document.getElementById("studentNameModal")?.classList.remove("show");
-   const controls=document.getElementById("studentControls");if(controls)controls.style.display="flex";
-   const rotateBtn=document.getElementById("studentRotateBtn");
-   if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}
-   const waiting=document.getElementById("studentWaiting");
-   if(waiting){waiting.textContent="Entrada aceite. A preparar o quadro…";waiting.style.display="block"}
-   setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);
-   try{
-    if(!AZNY_DB||!aznyUid||!studentRequestId||!classSessionId)throw new Error("Sessão do aluno incompleta.");
-    await AZNY_DB.ref("roomAccess/"+aznyRoomKey()+"/"+aznyUid).set({
-     role:"student",status:"approved",requestId:studentRequestId,sessionId:classSessionId,
-     studentUid:aznyUid,name:studentName,approvedAt:firebase.database.ServerValue.TIMESTAMP
-    });
-    studentApproved=true;
-    if(!await ensureAZNYRealtime())throw new Error("A sincronização do quadro não ficou disponível.");
-    if(waiting)waiting.style.display="none";
-    toast(document.documentElement.lang==="en"?"The teacher approved your entry.":"Entrada aprovada pelo professor");
-    await startStudentWebRTC();
-   }catch(error){
-    console.error("AZNY autorização do aluno após aprovação:",error);
-    if(waiting){
-     waiting.textContent="A entrada foi aceite, mas a autorização do quadro ainda não foi concluída. Verifique a ligação e tente novamente.";
-     waiting.style.display="block";
-    }
-    toast("A entrada foi aceite, mas a ligação ao quadro falhou. A tentar novamente.");
-   }finally{approvalInFlight=false}
-  }
-  if(d.status==="rejected"){
-   document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";
-   document.getElementById("studentWaiting").style.display="block";
-   document.getElementById("studentJoinBtn").disabled=false;
-  }
- });
-}
+function watchStudentRequest(){const ref=studentRequestRef(studentRequestId);if(!ref)return;ref.on("value",async snap=>{const d=snap.val()||{};if(d.status==="approved"&&!studentApproved){studentApproved=true;document.body.classList.add("student-approved","azny-landscape-view");document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";const rotateBtn=document.getElementById("studentRotateBtn");if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}setTimeout(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))},80);toast(document.documentElement.lang==="en"?"The teacher approved your entry.":"Entrada aprovada pelo professor");await startStudentWebRTC()}if(d.status==="rejected"){document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}})}
 async function syncTeacherMediaToPeer(pc){
  if(!pc||pc.connectionState==="closed")return;
  const cam=aznyTeacherScreenTrack||teacherStream?.getVideoTracks?.()[0]||null,mic=teacherAudioStream?.getAudioTracks?.()[0]||null;
