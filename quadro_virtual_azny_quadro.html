@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#071b33">
-<meta name="description" content="Remote Work Board para aulas online interactivas.">
+<meta name="description" content="Remote Wekboard para aulas online interactivas.">
 <link rel="manifest" href="manifest-quadro.webmanifest">
 <link rel="icon" href="icons/azny-board.svg?v=2" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/azny-board.svg?v=2">
-<title>Remote Work Board</title>
+<title>Remote Wekboard</title>
 <style>
 *{box-sizing:border-box}
 /* AZNY touch drawing: stop browser gestures from stealing pen/lupa strokes. */
@@ -1293,7 +1293,7 @@ body:not(.student-mode) .rightbar #teacherCamera .cam-controls-overlay button:di
 <label id="studentLanguageLabel" for="studentLanguageSelect" style="display:block;margin:10px 0 4px;font-weight:750;text-align:left">Idioma do quadro / Board language</label><select id="studentLanguageSelect" class="azny-entry-language" aria-label="Idioma do quadro" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:10px"><option value="pt">🇦🇴 Português</option><option value="en">🇬🇧 English</option></select><input id="studentNameInput" placeholder="Digite o seu nome" autocomplete="name"><div class="waiting" id="studentWaiting" style="display:none">Pedido enviado. Aguarde a aprovação do professor.</div>
 <div class="card-actions" style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary" id="studentJoinBtn" type="button">Pedir entrada</button><button id="studentResumeBtn" type="button" style="background:#e8f1ff;color:#0e2c4c;border:1px solid #9bbce8;border-radius:8px;padding:10px 14px;font-weight:750">Voltar à aula</button></div></div></div>
 <div class="modal" id="helpModal"><div class="card">
-<h3>Remote Work Board</h3>
+<h3>Remote Wekboard</h3>
 <p><b>Texto:</b> selecione Texto e clique diretamente no local desejado. O cursor entra naquele ponto.</p>
 <p><b>Formatação:</b> todo o texto novo começa em branco. Para mudar a cor, selecione a escrita existente e escolha a cor no controlo de cor; a alteração aplica-se à seleção. Tamanho, fonte, negrito, itálico e sublinhado também podem ser aplicados à seleção.</p>
 <p><b>Objetos:</b> imagens e documentos podem ser selecionados, movidos, redimensionados e eliminados.</p>
@@ -1342,7 +1342,7 @@ const AZNY_FIREBASE_CONFIG={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","
 /* Não redirecionar automaticamente: preservar a página e mostrar a causa.
    A sincronização continuará bloqueada até existir uma licença validada. */
 if(!isStudent&&!AZNY_ACCESS_TOKEN&&!AZNY_ISOLATED_MODE){
- console.warn("Remote Work Board: código de acesso do professor ausente; o quadro ficará em modo local até recuperar a sessão.");
+ console.warn("Remote Wekboard: código de acesso do professor ausente; o quadro ficará em modo local até recuperar a sessão.");
 }
 
 let AZNY_DB=null,AZNY_AUTH=null,aznyUid="";
@@ -1472,6 +1472,7 @@ async function ensureAZNYRealtime(){
   return true;
  }
  if(!aznyRealtimeBound){aznyRealtimeBound=true;setupRealtimeRoom()}
+ if(!isStudent)aznySetupTeacherCrossDeviceSync();
  return true
 }
 function aznySessionRef(){return AZNY_DB&&classSessionId?aznyRoomRef().child("sessions").child(classSessionId):null}
@@ -2162,8 +2163,8 @@ function setTool(t){
  board.classList.toggle("drawing-active",tool==="pen"||tool==="eraser");
  if(pointerMode)setPointerMode(false);
  stage.style.cursor=pointerMode?"none":(tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default"));
+ if(!isStudent)aznyPublishTeacherWorkspaceState();
 }
-
 document.querySelectorAll("[data-tool]").forEach(b=>b.onclick=()=>{
  if((b.dataset.tool==="eraser"||b.id==="deleteTool")&&window.aznyClearActiveWorkspace&&window.aznyClearActiveWorkspace("selected"))return;
  if(!b.dataset.tool)return;
@@ -2346,7 +2347,7 @@ function makeInteractive(el){
  if(!el.querySelector(".resize")){const h=document.createElement("div");h.className="resize";el.appendChild(h);h.addEventListener("pointerdown",resizeStart)}
  /* No telemóvel, dois dedos sobre o mesmo objecto redimensionam apenas esse objecto.
     O quadro e a moldura castanha nunca recebem escala nem transformações. */
- if(!el.dataset.aznyPinchBound){el.dataset.aznyPinchBound="1";const touches=new Map();let pinch=null;el.addEventListener("pointerdown",e=>{if(e.pointerType!=="touch"||tool!=="select"||e.target.closest?.("button,input,select,textarea,.docpdf-toolbar,.resize"))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){const pts=[...touches.values()];pinch={distance:Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),width:el.offsetWidth,height:el.offsetHeight};el.dataset.aznyPinching="1";localBoardEditing=true;try{pushHistory();el.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();e.stopImmediatePropagation()}},{passive:false});el.addEventListener("pointermove",e=>{if(!pinch||!touches.has(e.pointerId))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size<2)return;const pts=[...touches.values()],dist=Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),scale=Math.max(.2,Math.min(5,dist/pinch.distance));el.style.width=Math.max(40,pinch.width*scale)+"px";el.style.height=Math.max(28,pinch.height*scale)+"px";updateAnchoredTextsFor(el);publishLiveBoardState();e.preventDefault();e.stopPropagation()},{passive:false});const endPinch=e=>{touches.delete(e.pointerId);if(touches.size<2&&pinch){pinch=null;touches.clear();delete el.dataset.aznyPinching;localBoardEditing=false;scheduleSave();publishLiveBoardState()}};el.addEventListener("pointerup",endPinch);el.addEventListener("pointercancel",endPinch);el.addEventListener("lostpointercapture",endPinch)}
+ if(!el.dataset.aznyPinchBound){el.dataset.aznyPinchBound="1";const touches=new Map();let pinch=null;el.addEventListener("pointerdown",e=>{if(e.pointerType!=="touch"||tool!=="select"||e.target.closest?.("button,input,select,textarea,.docpdf-toolbar,.resize"))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){const pts=[...touches.values()];pinch={distance:Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),width:el.offsetWidth,height:el.offsetHeight};el.dataset.aznyPinching="1";localBoardEditing=true;try{pushHistory();el.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();e.stopImmediatePropagation()}},{passive:false});el.addEventListener("pointermove",e=>{if(!pinch||!touches.has(e.pointerId))return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size<2)return;const pts=[...touches.values()],dist=Math.max(1,Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)),scale=Math.max(.2,Math.min(5,dist/pinch.distance));el.style.width=Math.max(40,pinch.width*scale)+"px";el.style.height=Math.max(28,pinch.height*scale)+"px";el.dataset.aznyUpdatedAt=String(Date.now());updateAnchoredTextsFor(el);publishLiveBoardState();e.preventDefault();e.stopPropagation()},{passive:false});const endPinch=e=>{touches.delete(e.pointerId);if(touches.size<2&&pinch){pinch=null;touches.clear();delete el.dataset.aznyPinching;localBoardEditing=false;scheduleSave();publishLiveBoardState()}};el.addEventListener("pointerup",endPinch);el.addEventListener("pointercancel",endPinch);el.addEventListener("lostpointercapture",endPinch)}
  /* Pointer Events support mouse, pen and Android touch with one interaction path. */
  el.addEventListener("pointerdown",e=>{
   if(e.target.closest?.(".resize"))return;
@@ -2361,7 +2362,7 @@ function dragStart(e,el){
  if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();localBoardEditing=true;pushHistory();const p=localPoint(e),sx=parseFloat(el.style.left)||0,sy=parseFloat(el.style.top)||0,pointerId=e.pointerId;
  try{el.setPointerCapture(pointerId)}catch(_){}
  const anchoredChildren=[...board.querySelectorAll('.textobj[data-anchor-id="'+el.dataset.id+'"]')].map(t=>({el:t,dx:(parseFloat(t.style.left)||0)-sx,dy:(parseFloat(t.style.top)||0)-sy}));
- function move(ev){if(el.dataset.aznyPinching==="1")return;if(pointerId!==undefined&&ev.pointerId!==pointerId)return;const q=localPoint(ev),nx=sx+q.x-p.x,ny=sy+q.y-p.y;el.style.left=nx+"px";el.style.top=ny+"px";anchoredChildren.forEach(c=>{c.el.style.left=(nx+c.dx)+"px";c.el.style.top=(ny+c.dy)+"px"});redraw();publishLiveBoardState()}
+ function move(ev){if(el.dataset.aznyPinching==="1")return;if(pointerId!==undefined&&ev.pointerId!==pointerId)return;const q=localPoint(ev),nx=sx+q.x-p.x,ny=sy+q.y-p.y;el.style.left=nx+"px";el.style.top=ny+"px";el.dataset.aznyUpdatedAt=String(Date.now());anchoredChildren.forEach(c=>{c.el.style.left=(nx+c.dx)+"px";c.el.style.top=(ny+c.dy)+"px"});redraw();publishLiveBoardState()}
  function up(ev){if(pointerId!==undefined&&ev.pointerId!==pointerId)return;removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);localBoardEditing=false;scheduleSave();publishLiveBoardState()}
  addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up)
 }
@@ -2369,7 +2370,7 @@ function resizeStart(e){
  const el=e.currentTarget.parentElement;if(isStudent&&tool!=="select")return;
  e.preventDefault();e.stopPropagation();selectObject(el);localBoardEditing=true;pushHistory();const p=localPoint(e),sw=el.offsetWidth,sh=el.offsetHeight,pointerId=e.pointerId;
  try{e.currentTarget.setPointerCapture(pointerId)}catch(_){}
- function move(ev){if(ev.pointerId!==pointerId)return;const q=localPoint(ev);el.style.width=Math.max(40,sw+q.x-p.x)+"px";el.style.height=Math.max(28,sh+q.y-p.y)+"px";updateAnchoredTextsFor(el);redraw();publishLiveBoardState()}
+ function move(ev){if(ev.pointerId!==pointerId)return;const q=localPoint(ev);el.style.width=Math.max(40,sw+q.x-p.x)+"px";el.style.height=Math.max(28,sh+q.y-p.y)+"px";el.dataset.aznyUpdatedAt=String(Date.now());updateAnchoredTextsFor(el);redraw();publishLiveBoardState()}
  function up(ev){if(ev.pointerId!==pointerId)return;removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);localBoardEditing=false;scheduleSave();publishLiveBoardState()}
  addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up)
 }
@@ -3754,7 +3755,7 @@ async function getClassLink(){
  catch(err){console.error("Link da aula:",err);toast("Não foi possível preparar o link da aula.");return "";}
 }
 async function copyClassLink(){const link=await getClassLink();if(!link)return;try{await navigator.clipboard.writeText(link);toast(document.documentElement.lang==="en"?"Class link copied":"Link da aula copiado")}catch(e){prompt("Copie o link da aula:",link)}}
-async function shareWhatsApp(){const link=await getClassLink();if(!link)return;const title=document.getElementById("boardTitle").value.trim()||"Aula";const text="Convite para a aula \""+title+"\" no Remote Work Board: "+link;window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");}
+async function shareWhatsApp(){const link=await getClassLink();if(!link)return;const title=document.getElementById("boardTitle").value.trim()||"Aula";const text="Convite para a aula \""+title+"\" no Remote Wekboard: "+link;window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");}
 async function shareFacebook(){const link=await getClassLink();if(!link)return;window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(link),"_blank","noopener,noreferrer,width=700,height=600");}
 const dashboardBtn=document.getElementById("teacherDashboardBtn");if(dashboardBtn)dashboardBtn.onclick=()=>{if(!isStudent)location.href="dashboard.html?acesso="+encodeURIComponent(AZNY_ACCESS_TOKEN)};
 const aznyFullscreenBtn=document.getElementById("aznyFullscreenBtn");if(aznyFullscreenBtn){aznyFullscreenBtn.onclick=async()=>{try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen();aznyFullscreenBtn.textContent="⤢";aznyFullscreenBtn.title="Sair do ecrã inteiro"}else{await document.exitFullscreen();aznyFullscreenBtn.textContent="⛶";aznyFullscreenBtn.title="Ecrã inteiro"}}catch(e){toast(document.documentElement.lang==="en"?"The browser could not enter full-screen mode. To hide the address bar, install AZNY on your home screen and open it from its icon.":"O navegador não permitiu o modo de ecrã inteiro. Para ocultar também a barra de endereço, instale o AZNY no ecrã inicial e abra-o pelo ícone.");}};document.addEventListener("fullscreenchange",()=>{if(aznyFullscreenBtn){const on=!!document.fullscreenElement;aznyFullscreenBtn.textContent=on?"⤢":"⛶";aznyFullscreenBtn.title=on?"Sair do ecrã inteiro":"Ecrã inteiro"}})}
@@ -3786,7 +3787,7 @@ document.getElementById("startClassBtn").onclick=startClass;document.getElementB
   set("#teacherCamera .cam-off div:nth-child(2)",en?"Teacher camera is off":"Câmera do professor desligada");
   set("#teacherCamera .cam-off div:nth-child(3)",en?"Allow camera access to appear here.":"Autorize o acesso à câmera para aparecer aqui.");
   set("#teacherCamera .camera-label",en?"Teacher":"Professor");set("#noStudents",en?"No students have joined the class.":"Nenhum aluno entrou na aula.");
-  const help=document.querySelector("#helpModal h3");if(help)help.textContent="Remote Work Board";
+  const help=document.querySelector("#helpModal h3");if(help)help.textContent="Remote Wekboard";
   const helpPs=document.querySelectorAll("#helpModal .card p");
   const helpTexts=en?["<b>Text:</b> choose Text and click directly where you want to write.","<b>Formatting:</b> new text starts in white. Select existing text to change its colour, size, font, bold, italic or underline.","<b>Objects:</b> images and documents can be selected, moved, resized and deleted.","<b>Camera:</b> the teacher camera appears when access is allowed and it is switched on. The student area stays empty until someone joins.","<b>Note:</b> cameras require HTTPS or localhost in Chrome; opening a file directly may block camera access."]:["<b>Texto:</b> selecione Texto e clique diretamente no local desejado. O cursor entra naquele ponto.","<b>Formatação:</b> todo o texto novo começa em branco. Para mudar a cor, selecione a escrita existente e escolha a cor no controlo de cor; a alteração aplica-se à seleção. Tamanho, fonte, negrito, itálico e sublinhado também podem ser aplicados à seleção.","<b>Objetos:</b> imagens e documentos podem ser selecionados, movidos, redimensionados e eliminados.","<b>Câmera:</b> a câmera do professor só aparece quando for autorizada e ligada. A área dos alunos permanece vazia até existir um participante.","<b>Nota:</b> câmeras reais exigem uma página HTTPS ou localhost no Chrome; abrir diretamente como <code>file://</code> pode impedir o acesso à câmera."];
   helpPs.forEach((p,i)=>{if(helpTexts[i])p.innerHTML=helpTexts[i]});
@@ -3995,7 +3996,7 @@ if(!isStudent)load();setTimeout(()=>{setZoom(1);resizeCanvas()},80);
 </script>
 
 <script>
-/* Instalação PWA do Remote Work Board */
+/* Instalação PWA do Remote Wekboard */
 if ("serviceWorker" in navigator && location.protocol === "https:") {
  window.addEventListener("load", () => {
   navigator.serviceWorker.register("service-worker.js", {scope:"./",updateViaCache:"none"})
@@ -5558,6 +5559,71 @@ body:not(.student-mode) .rightbar #students .student>.azny-student-device-contro
  const students=$("students");if(students)observer.observe(students,{childList:true,subtree:true});
  paintAll();setInterval(paintAll,450);
  window.addEventListener("online",paintAll);window.addEventListener("offline",paintAll);
+
+/* Same-account teacher devices: synchronize active session and tool state. */
+let aznyTeacherDeviceSyncBound=false,aznyTeacherActiveSessionRef=null,aznyTeacherSessionStatusRef=null,aznyTeacherWorkspaceListener=null;
+let aznyTeacherDeviceId="";
+try{aznyTeacherDeviceId=sessionStorage.getItem("azny-device-id")||"";if(!aznyTeacherDeviceId){aznyTeacherDeviceId="dev-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,10);sessionStorage.setItem("azny-device-id",aznyTeacherDeviceId)}}catch(_){aznyTeacherDeviceId="dev-"+Math.random().toString(36).slice(2,12)}
+function aznyPublishTeacherWorkspaceState(){
+ if(isStudent||!AZNY_DB||!aznyRealtimeBound||!aznyTeacherAccessValidated||!aznyUid)return;
+ const pan={x:stage.scrollLeft/Math.max(1,stage.scrollWidth-stage.clientWidth),y:stage.scrollTop/Math.max(1,stage.scrollHeight-stage.clientHeight)};
+ aznyRoomRef().child("board/workspace").update({activeTool:tool||"",pan,editorUid:aznyUid,deviceId:aznyTeacherDeviceId,updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>console.warn("AZNY workspace sync:",e));
+}
+function aznyApplyTeacherWorkspaceState(state){
+ if(isStudent||!state||state.editorUid!==aznyUid||state.deviceId===aznyTeacherDeviceId)return;
+ tool=typeof state.activeTool==="string"&&["select","text","pen","eraser"].includes(state.activeTool)?state.activeTool:null;
+ document.querySelectorAll("[data-tool]").forEach(b=>b.classList.toggle("active",!!tool&&b.dataset.tool===tool));
+ board.classList.toggle("drawing-active",tool==="pen"||tool==="eraser");
+ stage.style.cursor=tool==="text"?"text":(tool==="pen"||tool==="eraser"?"crosshair":"default");
+ if(state.pan)applyBoardPan(state.pan);
+}
+function aznyBindTeacherSessionStatus(sessionId){
+ if(!AZNY_DB||!sessionId)return;
+ const nextRef=aznyRoomRef().child("sessions").child(sessionId);
+ if(aznyTeacherSessionStatusRef&&aznyTeacherSessionStatusRef.toString()===nextRef.toString())return;
+ if(aznyTeacherSessionStatusRef)aznyTeacherSessionStatusRef.child("status").off("value");
+ aznyTeacherSessionStatusRef=nextRef;
+ nextRef.child("status").on("value",async snap=>{
+  if(classSessionId!==sessionId)return;
+  const status=snap.val();
+  if(status==="active"){
+   const [runSnap,startSnap]=await Promise.all([nextRef.child("runId").once("value"),nextRef.child("startedAt").once("value")]);
+   if(classSessionId!==sessionId)return;
+   classRunId=String(runSnap.val()||classRunId||"");
+   classStarted=true;classStartTime=Number(startSnap.val())||classStartTime||Date.now();aznyTrialAutoEnding=false;
+   const start=document.getElementById("startClassBtn"),end=document.getElementById("endClassBtn");
+   if(start)start.disabled=true;if(end)end.disabled=false;
+   clearInterval(classTimerHandle);classTimerHandle=setInterval(updateClassTimer,1000);updateClassTimer();
+   if(!sessionRealtimeBound)bindClassSessionRealtime();
+   bindTeacherPresenceWatch();
+  }else if(status==="ended"){
+   classStarted=false;clearInterval(classTimerHandle);classTimerHandle=null;classStartTime=0;
+   const start=document.getElementById("startClassBtn"),end=document.getElementById("endClassBtn");
+   if(start)start.disabled=!aznyTeacherAccessValidated;if(end)end.disabled=true;
+   try{stopCamera()}catch(_){}try{stopMic()}catch(_){}
+   clearTeacherStudentCameras();
+  }
+ });
+}
+function aznySetupTeacherCrossDeviceSync(){
+ if(isStudent||!AZNY_DB||!aznyTeacherAccessValidated||!aznyUid||aznyTeacherDeviceSyncBound)return;
+ aznyTeacherDeviceSyncBound=true;
+ aznyTeacherWorkspaceListener=aznyRoomRef().child("board/workspace");
+ aznyTeacherWorkspaceListener.on("value",snap=>aznyApplyTeacherWorkspaceState(snap.val()));
+ aznyTeacherActiveSessionRef=aznyRoomRef().child("activeSessionId");
+ aznyTeacherActiveSessionRef.on("value",snap=>{
+  const id=String(snap.val()||"");if(!id)return;
+  if(classSessionId!==id){
+   unbindClassSessionRealtime();
+   if(aznyTeacherSessionStatusRef)aznyTeacherSessionStatusRef.child("status").off("value");
+   aznyTeacherSessionStatusRef=null;
+   classSessionId=id;classStarted=false;
+   clearInterval(classTimerHandle);classTimerHandle=null;
+  }
+  aznyBindTeacherSessionStatus(id);
+ });
+ aznyPublishTeacherWorkspaceState();
+}
 })();
 </script>
 
@@ -5649,7 +5715,7 @@ body:not(.student-mode) .rightbar #students .student>.azny-student-device-contro
 </script>
 
 <script>
-/* AZNY: restore the classic whiteboard interface. Excel/Word workspaces are intentionally retired. */
+/* AZNY: restore the classic wekboard interface. Excel/Word workspaces are intentionally retired. */
 (function(){
   try { for (const k of Object.keys(sessionStorage)) if (k.startsWith("azny-workspace-view:")) sessionStorage.removeItem(k); } catch (_) {}
   const excel=document.getElementById("aznyExcelWorkspace");
