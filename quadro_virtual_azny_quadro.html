@@ -2717,7 +2717,7 @@ document.getElementById("italic").onclick=()=>{setTextDefaults({fontStyle:aznyTe
 document.getElementById("underline").onclick=()=>{setTextDefaults({textDecoration:aznyTextDefaults.textDecoration==="underline"?"none":"underline"});if(selected?.classList.contains("textobj"))toggleInlineStyle("textDecoration","underline","none")};
 document.getElementById("textColor").oninput=e=>{setTextDefaults({color:e.target.value});if(selected?.classList.contains("textobj"))applyInlineStyle("color",e.target.value)};
 document.getElementById("fontSize").onchange=e=>{setTextDefaults({fontSize:Number(e.target.value)||18});if(selected?.classList.contains("textobj"))applyInlineStyle("fontSize",e.target.value+"px")};
- function changeSelectedFontSize(direction){if(!selected?.classList.contains("textobj")){toast("Seleccione primeiro um texto no quadro.");return}const current=parseFloat(getComputedStyle(selected).fontSize)||18,next=Math.max(8,Math.min(120,current+direction*2));const control=document.getElementById("fontSize");if(control){const values=[...control.options].map(o=>Number(o.value));control.value=String(values.reduce((best,n)=>Math.abs(n-next)<Math.abs(best-next)?n:best,values[0]||18))}applyInlineStyle("fontSize",next+"px")}
+ function changeSelectedFontSize(direction){if(!selected?.classList.contains("textobj")){toast("Seleccione primeiro um texto no quadro.");return}const current=parseFloat(getComputedStyle(selected).fontSize)||18,next=Math.max(8,Math.min(120,current+direction*2));const control=document.getElementById("fontSize");if(control){const values=[...control.options].map(o=>Number(o.value));control.value=String(values.reduce((best,n)=>Math.abs(n-next)<Math.abs(best-next)?n:best,values[0]||18))}setTextDefaults({fontSize:next});applyInlineStyle("fontSize",next+"px")}
  document.getElementById("fontSizeUp").onclick=()=>changeSelectedFontSize(1);
  document.getElementById("fontSizeDown").onclick=()=>changeSelectedFontSize(-1);
 document.getElementById("fontFamily").onchange=e=>{setTextDefaults({fontFamily:e.target.value});if(selected?.classList.contains("textobj"))applyInlineStyle("fontFamily",e.target.value)};
@@ -5703,6 +5703,7 @@ body:not(.student-mode) .rightbar #students .student>.azny-student-device-contro
 .mediaobj .azny-image-tools{height:27px;min-height:27px;display:flex;align-items:center;justify-content:flex-end;gap:4px;padding:2px 5px;background:#10243a;color:#fff;position:relative;z-index:8;touch-action:manipulation}
 .mediaobj .azny-image-tools button{height:21px;min-width:25px;padding:0 6px;border:1px solid #ffffff55;border-radius:4px;background:#ffffff18;color:#fff;font:700 13px Arial;cursor:pointer;touch-action:manipulation}
 .mediaobj .azny-image-tools button:disabled{opacity:.35}
+#board .mediaobj:has(.azny-image-viewport){touch-action:pan-x pan-y!important}
 .mediaobj .azny-image-viewport{position:relative;flex:1;min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y;background:#fff;-webkit-overflow-scrolling:touch}
 .mediaobj .azny-image-viewport img{display:block;width:100%;height:100%;min-width:100%;min-height:100%;max-width:none;object-fit:contain;pointer-events:none}
 </style>
