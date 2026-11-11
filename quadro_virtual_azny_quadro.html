@@ -1482,7 +1482,7 @@ function sessionLinkReady(){return !!classSessionId}
    dessa sessão controla a entrada sem precisar de ler o ponteiro privado da sala. */
 async function aznyResolveStudentActiveSession(){
  if(!isStudent||!AZNY_DB||!roomId)return "";
- const stable="SESSION-TEACHER-"+aznyHashKey(roomId);
+ const stable="ROOM-"+roomId;
  if(classSessionId!==stable){
   unbindClassSessionRealtime();
   classSessionId=stable;studentApproved=false;studentRequestId="";
