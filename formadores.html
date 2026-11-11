@@ -168,7 +168,7 @@ $("gridView").onclick=()=>{$("teachers").classList.remove("list");$("gridView").
 document.addEventListener("click",async e=>{
  const b=e.target.closest("button");if(!b)return;
  const like=b.dataset.courseLike,commentToggle=b.dataset.courseComments,shareToggle=b.dataset.courseShare;
- if(like){const name=courseVisitorName();if(!name)return;const ref=db.ref("courseInteractions/"+like+"/likes/"+courseVisitorId),snap=await ref.once("value");if(snap.exists())await ref.remove();else await ref.set({name:name,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});return}
+ if(like){const name=courseVisitorName();if(!name)return;const ref=db.ref("courseInteractions/"+like+"/likes/"+courseVisitorId);await ref.transaction(current=>current||{name:name,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});return}
  if(commentToggle){const box=document.querySelector('[data-course-comments-box="'+CSS.escape(commentToggle)+'"]');if(box){box.classList.toggle("open");const field=box.querySelector('input[name="author"]');if(field&&!field.value)field.value=String(localStorage.getItem("rwb_visitor_name")||"");}return}
  if(shareToggle){const name=courseVisitorName();if(!name)return;const box=document.querySelector('[data-course-share-box="'+CSS.escape(shareToggle)+'"]');if(box)box.classList.toggle("open");return}
  if(b.dataset.courseShareMode){try{await shareCourse(b.dataset.courseId,b.dataset.courseShareMode)}catch(err){alert("Não foi possível partilhar o curso: "+(err.message||err))}return}
