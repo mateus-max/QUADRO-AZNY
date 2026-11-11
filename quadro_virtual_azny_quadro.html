@@ -2199,7 +2199,7 @@ function endStudentPointerDrag(e){if(aznyPointerDragId===null||(e.pointerId!==un
 stage.addEventListener("pointerup",endStudentPointerDrag);
 stage.addEventListener("pointercancel",endStudentPointerDrag);
 /* updateLivePointer é enviado uma única vez pelo listener de captura do documento. */
-document.addEventListener("pointermove",e=>{if(pointerMode&&board.contains(e.target))updateLivePointer(e)},{capture:true,passive:true});
+document.addEventListener("pointermove",e=>{if(pointerMode&&(board.contains(e.target)||aznyPointerDragId!==null))updateLivePointer(e)},{capture:true,passive:true});
 function sendAZNYSurfacePointer(e){
  if(!pointerMode)return;
  const excel=e.target?.closest?.("#aznyExcelWorkspace"),word=e.target?.closest?.("#aznyWebWorkspace");
@@ -2551,7 +2551,7 @@ function broadcastLiveStroke(done=false){
  Object.values(window.aznyTeacherPeers||{}).forEach(pc=>send(pc?pc._aznyBoardChannel:null));
 }
 function drawDown(e){if(tool!=="pen"&&tool!=="eraser")return;if(e.cancelable)e.preventDefault();clearTimeout(window.aznyDrawingReleaseTimer);drawing=true;localBoardEditing=true;pushHistory();const p=localPoint(e);if(tool==="pen"){const anchor=objectAtPoint(p);currentStroke={id:"stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9),color:document.getElementById("textColor").value||"#111111",width:3,points:[],anchorId:anchor?.dataset?.id||null};aznyLiveStrokeId="stroke-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/Math.max(1,b.w),y:(p.y-b.y)/Math.max(1,b.h)})}else currentStroke.points.push(p);strokes.push(currentStroke);broadcastLiveStroke()}else eraseAt(p);redraw();publishLiveBoardState()}
-function drawMove(e){if(!drawing)return;const p=localPoint(e);if(tool==="pen"){if(currentStroke?.anchorId){const anchor=document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]');if(anchor){const b=anchorBox(anchor);currentStroke.points.push({x:(p.x-b.x)/b.w,y:(p.y-b.y)/b.h})}}else if(currentStroke)currentStroke.points.push(p);redraw();broadcastLiveStroke()}else{eraseAt(p);redraw()}publishLiveBoardState()}
+function drawMove(e){if(!drawing)return;const events=typeof e.getCoalescedEvents==="function"?e.getCoalescedEvents():[e];if(tool==="pen"){const anchor=currentStroke?.anchorId?document.querySelector('.object[data-id="'+currentStroke.anchorId+'"]'):null;const box=anchor?anchorBox(anchor):null;for(const event of events){const p=localPoint(event),last=currentStroke?.points?.[currentStroke.points.length-1];const point=box?{x:(p.x-box.x)/box.w,y:(p.y-box.y)/box.h}:p;if(!currentStroke||last&&Math.hypot((point.x-last.x)*(box?.w||1),(point.y-last.y)*(box?.h||1))<0.45)continue;currentStroke.points.push(point)}redraw();broadcastLiveStroke()}else{for(const event of events)eraseAt(localPoint(event));redraw()}publishLiveBoardState()}
 function drawUp(){if(!drawing)return;if(currentStroke)broadcastLiveStroke(true);drawing=false;currentStroke=null;aznyLiveStrokeId="";/* Keep remote snapshots from replacing the finished stroke before its save is complete. */scheduleSave();publishLiveBoardState();clearTimeout(window.aznyDrawingReleaseTimer);window.aznyDrawingReleaseTimer=setTimeout(()=>{localBoardEditing=false},900)}
 
 
