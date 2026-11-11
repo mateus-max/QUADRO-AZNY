@@ -1780,6 +1780,7 @@ function queueRemoteBoardState(d){
  if(pendingRemoteBoardState&&Array.isArray(pendingRemoteBoardState.pages)&&Array.isArray(d.pages)){
   const previous=pendingRemoteBoardState,merged={...previous,...d};
   merged.deletedObjectIds=[...new Set([...(previous.deletedObjectIds||[]),...(d.deletedObjectIds||[])])];
+  merged.deletedStrokeIds=[...new Set([...(previous.deletedStrokeIds||[]),...(d.deletedStrokeIds||[])])];
   merged.pages=Array.from({length:5},(_,i)=>{const a=previous.pages[i],b=d.pages[i];if(!a)return b||null;if(!b)return a;const objects=new Map((a.objects||[]).map(o=>[String(o.id||""),o]));(b.objects||[]).forEach(o=>{const id=String(o.id||""),old=objects.get(id);if(old?.kind==="text"&&o?.kind==="text"&&(Number(old.textUpdatedAt)||0)>(Number(o.textUpdatedAt)||0))return;objects.set(id,o)});return{...a,...b,objects:[...objects.values()]}});
   pendingRemoteBoardState=merged;
  }else pendingRemoteBoardState=d;
