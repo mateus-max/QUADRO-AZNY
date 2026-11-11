@@ -3395,7 +3395,7 @@ async function startStudentWebRTC(options={}){
   if(scb)scb.textContent=studentCameraOn?"📷 Desligar câmera":"📷 Ligar câmera";if(smb)smb.textContent=studentMicOn?"🎙 Desligar microfone":"🎙 Ligar microfone";
   studentPeer=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
   if(studentLocalStream?.getTracks?.().length)studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));
-  else{studentPeer.addTransceiver("audio",{direction:"recvonly"});studentPeer.addTransceiver("video",{direction:"recvonly"});}
+  else{studentPeer.addTransceiver("audio",{direction:"sendrecv"});studentPeer.addTransceiver("video",{direction:"sendrecv"});}
   aznyApplyLowDataMode(studentPeer);
   studentBoardChannel=studentPeer.createDataChannel("azny-board",{ordered:true});
   studentBoardChannel.bufferedAmountLowThreshold=65536;
