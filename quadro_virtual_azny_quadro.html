@@ -1646,6 +1646,7 @@ function bindTeacherPresenceWatchForStudent(){
 function toast(t){toastEl.textContent=t;toastEl.classList.add("show");clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove("show"),1000)}
 function boardPointFromClient(e){const r=board.getBoundingClientRect(),cs=getComputedStyle(board),scale=Math.max(.01,Number(zoom)||1),bl=(parseFloat(cs.borderLeftWidth)||0)*scale,br=(parseFloat(cs.borderRightWidth)||0)*scale,bt=(parseFloat(cs.borderTopWidth)||0)*scale,bb=(parseFloat(cs.borderBottomWidth)||0)*scale,w=Math.max(1,r.width-bl-br),h=Math.max(1,r.height-bt-bb);return{x:(e.clientX-r.left-bl)*board.clientWidth/w,y:(e.clientY-r.top-bt)*board.clientHeight/h}}
 function localPoint(e){return boardPointFromClient(e)}
+function aznyNewObjectId(){return "o"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,11)}
 function snapshot(){return{strokes:JSON.parse(JSON.stringify(strokes)),deletedStrokeIds:[...deletedStrokeIds],objects:[...board.querySelectorAll(".object")].map(serializeObject).filter(o=>!deletedObjectIds.has(aznyObjectKey(o))),title:document.getElementById("boardTitle").value,deletedObjectIds:[...deletedObjectIds]}}
 function serializeObject(el){
  const b={left:parseFloat(el.style.left)||0,top:parseFloat(el.style.top)||0,width:parseFloat(el.style.width)||el.offsetWidth,height:parseFloat(el.style.height)||el.offsetHeight,id:el.dataset.id,updatedAt:Number(el.dataset.aznyUpdatedAt)||0,createdBy:el.dataset.createdBy||null,aznyMinimized:el.dataset.aznyMinimized==="1",aznyOldWidth:el.dataset.aznyOldWidth||null,aznyOldHeight:el.dataset.aznyOldHeight||null};
@@ -1704,9 +1705,34 @@ async function resetBoardForClassLifecycle(){
  try{roomChannel?.postMessage({type:"board-cleared",room:roomId})}catch(_){}
 }
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
-function sendBoardSnapshotToChannel(ch){return false}
-function sendBoardSnapshotToPeer(pc){return false}
-function sendBoardSnapshotToAllPeers(){return false}
+/* RTC snapshot transport: small ordered chunks avoid DataChannel payload limits. */
+function aznyBuildBoardSnapshot(){
+ pageStates[currentPage-1]=snapshot();
+ return{type:"board-state",currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],updatedAt:Date.now(),lastEditorUid:aznyUid||"",sourceStudentId:isStudent?studentRequestId||"":""};
+}
+function sendBoardSnapshotToChannel(ch,data){
+ if(!ch||ch.readyState!=="open")return false;
+ try{ch._aznySnapshotPending=data||aznyBuildBoardSnapshot()}catch(e){console.warn("AZNY board snapshot build:",e);return false}
+ if(ch._aznySnapshotSending)return true;
+ ch._aznySnapshotSending=true;
+ (async()=>{
+  try{
+   while(ch.readyState==="open"&&ch._aznySnapshotPending){
+    const payload=ch._aznySnapshotPending;ch._aznySnapshotPending=null;
+    const raw=JSON.stringify(payload),size=48000,total=Math.ceil(raw.length/size),id="board-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9);
+    for(let index=0;index<total&&ch.readyState==="open";index++){
+     while(ch.readyState==="open"&&ch.bufferedAmount>524288)await new Promise(resolve=>setTimeout(resolve,45));
+     if(ch.readyState!=="open")break;
+     ch.send(JSON.stringify({type:"board-chunk",id,index,total,data:raw.slice(index*size,(index+1)*size)}));
+    }
+   }
+  }catch(e){console.warn("AZNY board snapshot channel:",e)}
+  finally{ch._aznySnapshotSending=false;if(ch.readyState==="open"&&ch._aznySnapshotPending)sendBoardSnapshotToChannel(ch)}
+ })();
+ return true;
+}
+function sendBoardSnapshotToPeer(pc,data){return sendBoardSnapshotToChannel(pc?pc._aznyBoardChannel:null,data)}
+function sendBoardSnapshotToAllPeers(data){let sent=0;Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{if(sendBoardSnapshotToPeer(pc,data))sent++});return sent}
 function normalizeRemoteBoardPages(pages,sourceSize){
  const targetW=Math.max(1,board.clientWidth),targetH=Math.max(1,board.clientHeight);
  const sourceW=Number(sourceSize&&sourceSize.width)||targetW,sourceH=Number(sourceSize&&sourceSize.height)||targetH;
@@ -1955,19 +1981,24 @@ function aznyMergeCollaborativeBoardState(server,local){
 }
 function publishLiveBoardState(){
  if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;
- /* No máximo 25 actualizações completas por segundo. O cursor continua a ser
-    transmitido pelo canal rápido; o quadro recebe estados estáveis e recentes. */
  if(liveBoardTimer)return;
  liveBoardTimer=setTimeout(()=>{
-  liveBoardTimer=null;
-  if(remoteBoardApplying)return;
-  pageStates[currentPage-1]=snapshot();
+  liveBoardTimer=null;if(remoteBoardApplying)return;
+  const payload=aznyBuildBoardSnapshot();
+  /* Approved students send changes to the authenticated teacher peer. The teacher
+     remains the only writer of the shared RTDB board node. */
+  if(isStudent){
+   if(studentBoardChannel?.readyState==="open"&&studentPeer?.connectionState==="connected")sendBoardSnapshotToChannel(studentBoardChannel,payload);
+   else if(!window.aznyStudentBoardRetry)window.aznyStudentBoardRetry=setTimeout(()=>{window.aznyStudentBoardRetry=null;if(studentApproved)publishLiveBoardState()},250);
+   return;
+  }
   clearTimeout(firebaseBoardWriteTimer);
   firebaseBoardWriteTimer=setTimeout(()=>{
    if(remoteBoardApplying)return;
    const ref=aznyRoomRef().child("board");
-   const payload={currentPage:currentPage,title:document.getElementById("boardTitle").value,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds],updatedAt:Date.now(),lastEditorUid:aznyUid||""};
-   ref.transaction(server=>aznyMergeCollaborativeBoardState(server,payload),undefined,false).catch(e=>{console.error("AZNY live board transaction rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
+   ref.transaction(server=>aznyMergeCollaborativeBoardState(server,payload),undefined,false)
+    .then(result=>{if(result?.committed&&result.snapshot)sendBoardSnapshotToAllPeers(result.snapshot.val())})
+    .catch(e=>{console.error("AZNY live board transaction rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
   },20);
  },40);
 }
@@ -2227,9 +2258,9 @@ function setupObjectActions(){
  bar.appendChild(panel);document.getElementById("minimizeObjectBtn").onclick=minimizeSelectedObject;document.getElementById("duplicateObjectBtn").onclick=duplicateSelectedObject;document.getElementById("sendBackObjectBtn").onclick=()=>changeSelectedLayer(-1);document.getElementById("bringFrontObjectBtn").onclick=()=>changeSelectedLayer(1);updateObjectActions();
 }
 function updateObjectActions(){const p=document.getElementById("objectActions");if(!p)return;const ok=!!selected&&selected.isConnected;p.querySelectorAll("button").forEach(b=>b.disabled=!ok);const b=document.getElementById("minimizeObjectBtn");if(b&&ok)b.textContent=selected.dataset.aznyMinimized==="1"?"↔ Restaurar":"↔ Minimizar"}
-function commitObjectAction(msg){redraw();updateHint();scheduleSave();publishLiveBoardState();updateObjectActions();if(msg)toast(msg)}
+function commitObjectAction(msg){if(selected?.isConnected)selected.dataset.aznyUpdatedAt=String(Date.now());redraw();updateHint();scheduleSave();publishLiveBoardState();updateObjectActions();if(msg)toast(msg)}
 function minimizeSelectedObject(){if(!selected)return;pushHistory();if(selected.dataset.aznyMinimized==="1"){selected.style.width=selected.dataset.aznyOldWidth||"360px";selected.style.height=selected.dataset.aznyOldHeight||"260px";delete selected.dataset.aznyMinimized;delete selected.dataset.aznyOldWidth;delete selected.dataset.aznyOldHeight}else{selected.dataset.aznyOldWidth=selected.style.width||selected.offsetWidth+"px";selected.dataset.aznyOldHeight=selected.style.height||selected.offsetHeight+"px";selected.style.width="140px";selected.style.height="90px";selected.dataset.aznyMinimized="1"}updateAnchoredTextsFor(selected);commitObjectAction(selected.dataset.aznyMinimized==="1"?"Objeto minimizado":"Tamanho original restaurado")}
-function duplicateSelectedObject(){if(!selected)return;const d=serializeObject(selected);pushHistory();d.id="o"+(++objectId);d.left=(Number(d.left)||0)+24;d.top=(Number(d.top)||0)+24;if(d.anchorId){d.anchorId=null;d.anchorX=null;d.anchorY=null;d.anchorW=null;d.anchorH=null}const el=createFromData(d);if(!el)return;if(!el.isConnected)board.appendChild(el);if(!el.classList.contains("object"))el.classList.add("object");makeInteractive(el);selectObject(el);commitObjectAction("Objeto duplicado")}
+function duplicateSelectedObject(){if(!selected)return;const d=serializeObject(selected);pushHistory();d.id=aznyNewObjectId();if(isStudent)d.createdBy=studentRequestId;d.left=(Number(d.left)||0)+24;d.top=(Number(d.top)||0)+24;if(d.anchorId){d.anchorId=null;d.anchorX=null;d.anchorY=null;d.anchorW=null;d.anchorH=null}const el=createFromData(d);if(!el)return;if(!el.isConnected)board.appendChild(el);if(!el.classList.contains("object"))el.classList.add("object");makeInteractive(el);selectObject(el);commitObjectAction("Objeto duplicado")}
 function changeSelectedLayer(dir){if(!selected||!selected.isConnected)return;pushHistory();const objects=[...board.children].filter(el=>el.classList.contains("object"));const i=objects.indexOf(selected);if(i<0)return;const target=Math.max(0,Math.min(objects.length-1,i+(dir<0?-1:1)));if(target===i){toast(dir<0?"O objeto já está atrás dos outros.":"O objeto já está à frente dos outros.");return}objects.splice(i,1);objects.splice(target,0,selected);objects.forEach((el,index)=>{el.style.zIndex=String(5+index);board.appendChild(el)});commitObjectAction(dir<0?"Objeto enviado para trás":"Objeto trazido para a frente")}
 
 function deleteSelected(){if(!selected||!selected.isConnected)return;/* A edição do quadro é colaborativa: qualquer participante aprovado pode apagar objetos partilhados, independentemente de quem os criou. O tombstone é difundido para impedir que o objeto reapareça em snapshots antigos. */pushHistory();const id=selected.dataset.id;deletedObjectIds.add(aznyObjectKey(selected));board.querySelectorAll('.textobj[data-anchor-id="'+id+'"]').forEach(t=>t.remove());selected.remove();strokes=strokes.filter((st,index)=>{if(st.anchorId!==id)return true;deletedStrokeIds.add(String(st.id||("legacy-"+(currentPage-1)+"-"+index)));return false});selected=null;redraw();updateHint();scheduleSave();publishLiveBoardState();toast(document.documentElement.lang==="en"?"Object permanently deleted":"Objeto eliminado definitivamente") }
@@ -2253,7 +2284,7 @@ function createFromData(o){
  el.dataset.id=o.id||"o"+(++objectId);if(o.createdBy)el.dataset.createdBy=String(o.createdBy);if(o.aznyMinimized){el.dataset.aznyMinimized="1";el.dataset.aznyOldWidth=o.aznyOldWidth||"360px";el.dataset.aznyOldHeight=o.aznyOldHeight||"260px"}board.appendChild(el);makeInteractive(el);
 }
 function createResourceObject(type,lang){
- const el=document.createElement("div");el.className="object resourceobj";el.dataset.id="o"+(++objectId);el.dataset.resourceType=type;el.dataset.language=lang;el.dataset.title=type==="bible"?"Bíblia Sagrada":"Gramática";
+ const el=document.createElement("div");el.className="object resourceobj";el.dataset.id=aznyNewObjectId();if(isStudent)el.dataset.createdBy=studentRequestId;el.dataset.resourceType=type;el.dataset.language=lang;el.dataset.title=type==="bible"?"Bíblia Sagrada":"Gramática";
  Object.assign(el.style,{left:"90px",top:"70px",width:type==="bible"?"700px":"620px",height:type==="bible"?"500px":"460px"});
  if(type==="bible"){
   el.innerHTML='<div class="resource-head">📖 <span class="resource-title">Bíblia Sagrada — '+(lang==="pt"?'Português':'English')+'</span></div><div class="resource-body"><div class="resource-controls bible-controls"><select class="bible-book"></select><select class="bible-chapter"></select><input class="bible-ref" placeholder="Pesquisar referência: João 3:16 / John 3:16"><button class="bible-search">Pesquisar</button></div><div class="resource-controls bible-nav"><button class="bible-prev">◀ Capítulo anterior</button><button class="bible-next">Próximo capítulo ▶</button><button class="bible-full-book">📖 Livro completo</button></div><div class="resource-result">Escolha um livro e capítulo para começar.</div></div>';
@@ -2441,7 +2472,7 @@ function chartSvg(type,values,title){
  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">'+body+'</svg>';
 }
 function createChartObject(type,values='12,19,8,15,10',title='Gráfico'){
- const el=document.createElement('div');el.className='object chartobj';el.dataset.id='o'+(++objectId);el.dataset.chartType=type;el.dataset.values=values;el.dataset.title=title;el.innerHTML=chartSvg(type,values,title);Object.assign(el.style,{left:'100px',top:'80px',width:'520px',height:'310px'});return el;
+ const el=document.createElement('div');el.className='object chartobj';el.dataset.id=aznyNewObjectId();if(isStudent)el.dataset.createdBy=studentRequestId;el.dataset.chartType=type;el.dataset.values=values;el.dataset.title=title;el.innerHTML=chartSvg(type,values,title);Object.assign(el.style,{left:'100px',top:'80px',width:'520px',height:'310px'});return el;
 }
 function addChart(type){pushHistory();const el=createChartObject(type);board.appendChild(el);makeInteractive(el);selectObject(el);updateHint();scheduleSave();document.getElementById('chartsModal').classList.remove('show');toast(document.documentElement.lang==="en"?"Chart added to the board":"Gráfico adicionado ao quadro")}
 function staffSvg(type){const W=760,H=300;let s='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'"><rect width="100%" height="100%" fill="white"/><text x="380" y="24" text-anchor="middle" font-size="17" font-weight="700">'+(type==='grand'?'Pauta de duas claves':type==='blank'?'Pauta musical':type==='treble'?'Clave de sol':'Clave de fá')+'</text>';
@@ -2452,7 +2483,7 @@ function staffSvg(type){const W=760,H=300;let s='<svg xmlns="http://www.w3.org/2
  return s+'</svg>';
 }
 function createMusicObject(type,title='Música'){
- const el=document.createElement('div');el.className='object musicobj';el.dataset.id='o'+(++objectId);el.dataset.musicType=type;el.dataset.title=title;
+ const el=document.createElement('div');el.className='object musicobj';el.dataset.id=aznyNewObjectId();if(isStudent)el.dataset.createdBy=studentRequestId;el.dataset.musicType=type;el.dataset.title=title;
  const musicalInfo={
   'note-breve':['𝅜','Breve','8 tempos'],'note-whole':['𝅝','Semibreve','4 tempos'],'note-half':['𝅗𝅥','Mínima','2 tempos'],'note-quarter':['𝅘𝅥','Semínima','1 tempo'],
   'note-eighth':['𝅘𝅥𝅮','Colcheia','1/2 tempo'],'note-sixteenth':['𝅘𝅥𝅯','Semicolcheia','1/4 tempo'],'note-thirtysecond':['𝅘𝅥𝅰','Fusa','1/8 tempo'],'note-sixtyfourth':['𝅘𝅥𝅱','Semifusa','1/16 tempo'],
