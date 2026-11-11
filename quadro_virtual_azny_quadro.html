@@ -1684,7 +1684,7 @@ function serializeObject(el){
  if(el.classList.contains("chartobj"))return{kind:"chart",...b,chartType:el.dataset.chartType||"bar",title:el.dataset.title||"Gráfico",values:el.dataset.values||"12,19,8,15,10"};
  if(el.classList.contains("musicobj"))return{kind:"music",...b,musicType:el.dataset.musicType||"blank",title:el.dataset.title||"Música"};
  if(el.classList.contains("resourceobj"))return{kind:"resource",...b,resourceType:el.dataset.resourceType||"bible",language:el.dataset.language||"pt",title:el.dataset.title||"Recurso"};
- return{kind:"doc",...b,name:el.dataset.name||"Documento",pdf:el.dataset.pdf||"",pdfPage:+el.dataset.pdfPage||1,pdfScale:+el.dataset.pdfScale||1,content:el.querySelector(".docbody")?.textContent||"",wordHtml:el.dataset.wordHtml||el.querySelector(".docbody")?.innerHTML||""};
+ return{kind:"doc",...b,name:el.dataset.name||"Documento",pdf:el.dataset.pdf||"",pdfPage:+el.dataset.pdfPage||1,pdfScale:+el.dataset.pdfScale||1,contentScale:Number(el.dataset.contentScale)||1,content:el.querySelector(".docbody")?.textContent||"",wordHtml:el.dataset.wordHtml||el.querySelector(".docbody")?.innerHTML||""};
 }
 function pushHistory(){undoStack.push(snapshot());if(undoStack.length>60)undoStack.shift();redoStack=[]}
 function undo(){if(!undoStack.length)return;redoStack.push(snapshot());restore(undoStack.pop());scheduleSave()}
@@ -1768,8 +1768,14 @@ function normalizeRemoteBoardPages(pages,sourceSize){
   (out.objects||[]).forEach(o=>{
    if(o.left!=null)o.left*=sx;
    if(o.top!=null)o.top*=sy;
-   if(o.width!=null)o.width*=sx;
-   if(o.height!=null)o.height*=sy;
+   if(o.kind==="image"||o.kind==="doc"){
+    if(o.width!=null)o.width*=ss;
+    if(o.height!=null)o.height*=ss;
+    if(o.kind==="doc")o.contentScale=(Number(o.contentScale)||1)*ss;
+   }else{
+    if(o.width!=null)o.width*=sx;
+    if(o.height!=null)o.height*=sy;
+   }
    if(o.anchorX!=null)o.anchorX*=sx;
    if(o.anchorY!=null)o.anchorY*=sy;
    if(o.anchorW!=null)o.anchorW*=sx;
@@ -2138,6 +2144,7 @@ function restore(s){
     if(changed){el.remove();createFromData(o);el=[...board.querySelectorAll(".object")].find(node=>String(node.dataset.id||"")===id)||null}
    }else if(o.kind==="doc"){
     if(el.dataset.name!==(o.name||"Documento")){el.dataset.name=o.name||"Documento";const label=el.querySelector(".dochead span");if(label)label.textContent=el.dataset.name}
+    applyDocumentContentScale(el,Number(o.contentScale)||1);
     /* Keep the open PDF/document viewer and its scroll position intact. */
    }
   }
@@ -2316,6 +2323,7 @@ function duplicateSelectedObject(){if(!selected)return;const d=serializeObject(s
 function changeSelectedLayer(dir){if(!selected||!selected.isConnected)return;pushHistory();const objects=[...board.children].filter(el=>el.classList.contains("object"));const i=objects.indexOf(selected);if(i<0)return;const target=Math.max(0,Math.min(objects.length-1,i+(dir<0?-1:1)));if(target===i){toast(dir<0?"O objeto já está atrás dos outros.":"O objeto já está à frente dos outros.");return}objects.splice(i,1);objects.splice(target,0,selected);objects.forEach((el,index)=>{el.style.zIndex=String(5+index);board.appendChild(el)});commitObjectAction(dir<0?"Objeto enviado para trás":"Objeto trazido para a frente")}
 
 function deleteSelected(){if(!selected||!selected.isConnected)return;/* A edição do quadro é colaborativa: qualquer participante aprovado pode apagar objetos partilhados, independentemente de quem os criou. O tombstone é difundido para impedir que o objeto reapareça em snapshots antigos. */pushHistory();const id=selected.dataset.id;deletedObjectIds.add(aznyObjectKey(selected));board.querySelectorAll('.textobj[data-anchor-id="'+id+'"]').forEach(t=>t.remove());selected.remove();strokes=strokes.filter((st,index)=>{if(st.anchorId!==id)return true;deletedStrokeIds.add(String(st.id||("legacy-"+(currentPage-1)+"-"+index)));return false});selected=null;redraw();updateHint();scheduleSave();publishLiveBoardState();toast(document.documentElement.lang==="en"?"Object permanently deleted":"Objeto eliminado definitivamente") }
+function applyDocumentContentScale(el,scale=1){if(!el)return;const z=Math.max(.25,Math.min(4,Number(scale)||1));el.dataset.contentScale=String(z);const body=el.querySelector(".docbody");if(body){body.style.zoom=String(z);body.style.width=(100/z)+"%";body.style.boxSizing="border-box"}}
 function createFromData(o){
  let el;
  if(o.kind==="text"){
@@ -2328,10 +2336,10 @@ function createFromData(o){
  else if(o.kind==="music"){ el=createMusicObject(o.musicType||"blank",o.title||"Música"); Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"}); el.dataset.id=o.id||"o"+(++objectId); }
  else if(o.kind==="resource"){ el=createResourceObject(o.resourceType||"bible",o.language||"pt"); Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"}); el.dataset.id=o.id||"o"+(++objectId); }
  else{
-  el=document.createElement("div");el.className="object docobj";el.dataset.name=o.name||"Documento";el.dataset.pdf=o.pdf||"";el.dataset.pdfPage=String(o.pdfPage||1);el.dataset.pdfScale=String(o.pdfScale||1);
+  el=document.createElement("div");el.className="object docobj";el.dataset.name=o.name||"Documento";el.dataset.pdf=o.pdf||"";el.dataset.pdfPage=String(o.pdfPage||1);el.dataset.pdfScale=String(o.pdfScale||1);el.dataset.contentScale=String(Number(o.contentScale)||1);
   el.innerHTML='<div class="dochead">📄 <span>'+escapeHtml(o.name||"Documento")+'</span></div>';
   if(o.pdf){el.appendChild(createAZNYPdfViewer(o.pdf,+o.pdfPage||1,+o.pdfScale||1))}else{const body=document.createElement("div");body.className="docbody";if(o.wordHtml){body.innerHTML=sanitizeAZNYWordHtml(o.wordHtml);el.dataset.wordHtml=body.innerHTML}else body.textContent=o.content||"";el.appendChild(body)}
-  Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});
+  Object.assign(el.style,{left:o.left+"px",top:o.top+"px",width:o.width+"px",height:o.height+"px"});applyDocumentContentScale(el,Number(o.contentScale)||1);
  }
  el.dataset.id=o.id||"o"+(++objectId);if(o.createdBy)el.dataset.createdBy=String(o.createdBy);if(o.aznyMinimized){el.dataset.aznyMinimized="1";el.dataset.aznyOldWidth=o.aznyOldWidth||"360px";el.dataset.aznyOldHeight=o.aznyOldHeight||"260px"}board.appendChild(el);makeInteractive(el);
 }
