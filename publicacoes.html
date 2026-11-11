@@ -115,7 +115,7 @@ const commentIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const visitorId=(()=>{let id=localStorage.getItem('rwb_visitor_id');if(!id){id='v_'+(crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random().toString(36).slice(2));localStorage.setItem('rwb_visitor_id',id)}return id})();
 function getPublicationVisitorName(){let name=String(localStorage.getItem("rwb_visitor_name")||"").trim();if(!name){name=String(prompt("Para gostar ou comentar, indique o seu nome:")||"").trim();if(name)localStorage.setItem("rwb_visitor_name",name)}return name.slice(0,60)}
 const postState={};
-const shareUrl=id=>location.origin+location.pathname+'#post-'+encodeURIComponent(id);
+const shareUrl=id=>location.origin+'/publicacoes/#post-'+encodeURIComponent(id);
 function render(snap){
  const posts=[];snap.forEach(ch=>{const p=ch.val();if(p&&p.url&&['image','video','audio'].includes(p.type))posts.push({...p,_key:ch.key})});
  posts.sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));
