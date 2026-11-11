@@ -1720,11 +1720,17 @@ async function resetBoardForClassLifecycle(){
 }
 function publishBoardState(){if(remoteBoardApplying||!AZNY_DB||!aznyRealtimeBound||(isStudent&&!studentApproved)||(!isStudent&&!aznyTeacherAccessValidated))return;try{const ref=aznyRoomRef().child("board");ref.update({currentPage:currentPage,title:document.getElementById("boardTitle").value,zoom,pages:aznyFilterDeletedPages(pageStates),deletedObjectIds:[...deletedObjectIds],lastEditorUid:aznyUid||"",updatedAt:firebase.database.ServerValue.TIMESTAMP}).catch(e=>{console.error("AZNY board save rejected:",e);showNetworkNotice("Firebase recusou a gravação ("+(e?.code||e?.message||"erro") +").","bad")})}catch(e){console.error("AZNY board save:",e)}}
 function sendBoardSnapshotToChannel(ch){
- if(!ch||ch.readyState!=="open"||ch.bufferedAmount>2097152)return false;
+ if(!ch||ch.readyState!=="open")return false;
+ if(!ch._aznyBoardDrainBound){
+  ch._aznyBoardDrainBound=true;ch.bufferedAmountLowThreshold=65536;
+  ch.addEventListener("bufferedamountlow",()=>{if(ch._aznyPendingBoardState&&ch.readyState==="open"){ch._aznyPendingBoardState=false;sendBoardSnapshotToChannel(ch)}});
+ }
+ if(ch.bufferedAmount>8*1024*1024){ch._aznyPendingBoardState=true;return false}
  try{
-  pageStates[currentPage-1]=snapshot();
-  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages:pageStates,deletedObjectIds:[...deletedObjectIds]};
-  const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=12000,total=Math.ceil(raw.length/size);
+  const current=snapshot();pageStates[currentPage-1]=current;
+  const pages=Array.from({length:5},(_,i)=>i===currentPage-1?current:null);
+  const payload={type:"board-state",currentPage,title:document.getElementById("boardTitle").value,zoom,boardSize:{width:board.clientWidth,height:board.clientHeight},pages,deletedObjectIds:[...deletedObjectIds],deletedStrokeIds:[...deletedStrokeIds]};
+  const raw=JSON.stringify(payload),id="b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),size=48*1024,total=Math.ceil(raw.length/size);
   for(let i=0;i<total;i++)ch.send(JSON.stringify({type:"board-chunk",id,index:i,total,data:raw.slice(i*size,(i+1)*size)}));
   return true;
  }catch(e){console.warn("AZNY board channel:",e);return false}
@@ -1805,7 +1811,9 @@ function applyRemoteBoardState(d){
   if(Number.isFinite(Number(d.zoom))&&Number(d.zoom)>=0.5&&Number(d.zoom)<=2&&Math.abs(Number(d.zoom)-zoom)>0.001)setZoom(Number(d.zoom),false);
   if(d.pan)applyBoardPan(d.pan);
   if(Array.isArray(d.pages)){
-   const incomingPages=aznyFilterDeletedPages(normalizeRemoteBoardPages(d.pages.concat(Array(5).fill(null)).slice(0,5),d.boardSize));
+   const compactPages=d.pages.concat(Array(5).fill(null)).slice(0,5);
+   const mergedPages=compactPages.map((page,index)=>page||pageStates[index]||{strokes:[],objects:[],title:"Nova aula",deletedObjectIds:[],deletedStrokeIds:[]});
+   const incomingPages=aznyFilterDeletedPages(normalizeRemoteBoardPages(mergedPages,d.boardSize));
    /* Protect locally uploaded objects from stale/partial snapshots. Images and documents are both preserved unless an explicit delete marker exists. */
    const localPages=pageStates;
    incomingPages.forEach((page,index)=>{
@@ -1828,6 +1836,8 @@ function applyRemoteBoardState(d){
    remoteBoardApplying=true;
    currentPage=incomingPage;
    restore(pageStates[currentPage-1]||{strokes:[],objects:[],title:d.title||"Nova aula"});
+   aznyRemoteLiveStrokes.forEach((live,id)=>{if(live.done&&(pageStates[currentPage-1]?.strokes||[]).some(st=>String(st.id||"")===id))aznyRemoteLiveStrokes.delete(id)});
+   redraw();
    if(selectedId){
     const same=[...board.querySelectorAll(".object")].find(node=>node.dataset.id===selectedId);
     if(same)selectObject(same);
@@ -1925,7 +1935,7 @@ function handleBoardChannelMessage(raw){
   const m=JSON.parse(raw);
   if(m.type==="shared-browser-close"){if(isStudent)aznyCloseSharedBrowser(true);return;}
   if(m.type==="shared-browser"){if(isStudent){aznyBrowserApplyingRemote=true;aznyApplyBrowserState(m);aznyBrowserApplyingRemote=false}return;}
-  if(m.type==="stroke-live"){const id=String(m.id||"");if(id){if(m.done)aznyRemoteLiveStrokes.delete(id);else aznyRemoteLiveStrokes.set(id,{color:m.color||"#000",width:Number(m.width)||3,points:Array.isArray(m.points)?m.points:[]});redraw()}if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<524288){try{out.send(packet)}catch(_){}}})}return;}
+  if(m.type==="stroke-live"){const id=String(m.id||"");if(id){const previous=aznyRemoteLiveStrokes.get(id)||{};aznyRemoteLiveStrokes.set(id,{color:m.color||previous.color||"#000",width:Number(m.width)||previous.width||3,points:Array.isArray(m.points)?m.points:(previous.points||[]),done:!!m.done});redraw()}if(!isStudent){const packet=JSON.stringify(m);Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const out=pc?pc._aznyBoardChannel:null;if(out?.readyState==="open"&&out.bufferedAmount<524288){try{out.send(packet)}catch(_){}}})}return;}
   if(m.type==="live-pointer"){
    if(m.pointerOwnerId){aznyRenderRemoteParticipantPointer(m);return;}
    if(m.surface==="excel"||m.surface==="word"){
@@ -1987,7 +1997,7 @@ function publishLiveBoardState(){
   if(remoteBoardApplying)return;
   pageStates[currentPage-1]=snapshot();
   if(isStudent){
-   if(studentBoardChannel?.readyState==="open"&&studentBoardChannel.bufferedAmount<262144)sendBoardSnapshotToChannel(studentBoardChannel);
+   if(studentBoardChannel?.readyState==="open")sendBoardSnapshotToChannel(studentBoardChannel);
    return;
   }
   sendBoardSnapshotToAllPeers();
@@ -2000,7 +2010,7 @@ function publishLiveBoardState(){
     ref.update(payload).catch(e=>{console.error("AZNY live board write rejected:",{code:e?.code,message:e?.message,room:roomId,uid:aznyUid},e);const reason=e?.code||e?.message||"erro desconhecido";showNetworkNotice("Firebase recusou a sincronização ("+reason+"). Verifique a autorização da sala e as regras.","bad")});
    },120);
   }
- },35);
+ },18);
 }
 let firebaseBoardWriteTimer=null;
 function setupBoardRealtime(){
@@ -2337,7 +2347,7 @@ function makeInteractive(el){
    selectObject(el);dragStart(e,el);
   }
  },{passive:false});
- el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});el.addEventListener("blur",()=>{if(!el.isConnected)return;pageStates[currentPage-1]=snapshot();scheduleSave();publishLiveBoardState()});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){el.dataset.aznyTextUpdatedAt=String(Date.now());pageStates[currentPage-1]=snapshot();clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>{pageStates[currentPage-1]=snapshot();publishLiveBoardState()},180);clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML,updatedAt:Number(el.dataset.aznyTextUpdatedAt)||Date.now()});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}})},35)}});
+ el.addEventListener("focus",()=>{if(!isStudent||tool==="select")selectObject(el)});el.addEventListener("blur",()=>{if(!el.isConnected)return;pageStates[currentPage-1]=snapshot();scheduleSave();publishLiveBoardState()});let liveTextTimer=0;el.addEventListener("input",()=>{if(el.dataset.anchorId){const anchor=document.querySelector('.object[data-id="'+el.dataset.anchorId+'"]');if(anchor){const b=anchorBox(anchor);el.dataset.anchorX=((parseFloat(el.style.left)||0)-b.x)/b.w;el.dataset.anchorY=((parseFloat(el.style.top)||0)-b.y)/b.h;el.dataset.anchorW=b.w;el.dataset.anchorH=b.h}}scheduleSave();if(el.classList.contains("textobj")){el.dataset.aznyTextUpdatedAt=String(Date.now());pageStates[currentPage-1]=snapshot();clearTimeout(studentTextFullSyncTimer);studentTextFullSyncTimer=setTimeout(()=>{pageStates[currentPage-1]=snapshot();publishLiveBoardState()},80);clearTimeout(liveTextTimer);liveTextTimer=setTimeout(()=>{const packet=JSON.stringify({type:"text-live",id:el.dataset.id,html:el.innerHTML,updatedAt:Number(el.dataset.aznyTextUpdatedAt)||Date.now()});if(isStudent){const ch=studentBoardChannel;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}}else Object.values(window.aznyTeacherPeers||{}).forEach(pc=>{const ch=pc?pc._aznyBoardChannel:null;if(ch?.readyState==="open"&&ch.bufferedAmount<524288){try{ch.send(packet)}catch(_){}}})},35)}});
 }
 function dragStart(e,el){
  if(e.button!==undefined&&e.button!==0)return;e.preventDefault();e.stopPropagation();localBoardEditing=true;pushHistory();const p=localPoint(e),sx=parseFloat(el.style.left)||0,sy=parseFloat(el.style.top)||0,pointerId=e.pointerId;
@@ -2624,28 +2634,33 @@ function placeCaretAtPoint(el,x,y){
   const sel=getSelection();sel.removeAllRanges();sel.addRange(r);savedRange=r.cloneRange();
  }
 }
+function aznyCommitTextFormatting(){
+ if(selected?.classList.contains("textobj")){
+  const stamp=String(Date.now());selected.dataset.aznyTextUpdatedAt=stamp;selected.dataset.aznyUpdatedAt=stamp;
+  pageStates[currentPage-1]=snapshot();
+ }
+ scheduleSave();publishLiveBoardState();
+}
 function applyInlineStyle(property,value){
  if(!selected||!selected.classList.contains("textobj"))return;
- selected.focus();restoreSavedSelection();
+ pushHistory();selected.focus();restoreSavedSelection();
  const sel=getSelection();
  if(!sel||!sel.rangeCount||sel.isCollapsed||!selected.contains(sel.anchorNode)||!selected.contains(sel.focusNode)){
-  selected.style[property]=value;scheduleSave();return;
+  selected.style[property]=value;aznyCommitTextFormatting();return;
  }
- pushHistory();
- const range=sel.getRangeAt(0),span=document.createElement("span");
- span.style[property]=value;
- try{span.appendChild(range.extractContents());range.insertNode(span);
-  const after=document.createRange();after.selectNodeContents(span);sel.removeAllRanges();sel.addRange(after);savedRange=after.cloneRange();
- }catch(_){selected.style[property]=value}
- scheduleSave();
+ const range=sel.getRangeAt(0),span=document.createElement("span");span.style[property]=value;
+ try{span.appendChild(range.extractContents());range.insertNode(span);const after=document.createRange();after.selectNodeContents(span);sel.removeAllRanges();sel.addRange(after);savedRange=after.cloneRange()}catch(_){selected.style[property]=value}
+ aznyCommitTextFormatting();
 }
 function toggleInlineStyle(property,onValue,offValue){
  if(!selected||!selected.classList.contains("textobj"))return;
  pushHistory();selected.focus();restoreSavedSelection();
- const sel=getSelection();
- if(!sel||!sel.rangeCount||sel.isCollapsed){selected.style[property]=selected.style[property]===onValue?offValue:onValue;scheduleSave();return}
- const range=sel.getRangeAt(0),span=document.createElement("span");span.style[property]=onValue;
- try{span.appendChild(range.extractContents());range.insertNode(span);const after=document.createRange();after.selectNodeContents(span);sel.removeAllRanges();sel.addRange(after);savedRange=after.cloneRange();scheduleSave()}catch(_){}
+ const sel=getSelection(),hasRange=sel&&sel.rangeCount&&!sel.isCollapsed&&selected.contains(sel.anchorNode)&&selected.contains(sel.focusNode);
+ if(!hasRange){const current=getComputedStyle(selected)[property]||selected.style[property];selected.style[property]=current===onValue?offValue:onValue;aznyCommitTextFormatting();return}
+ const command={fontWeight:"bold",fontStyle:"italic",textDecoration:"underline"}[property];let applied=false;
+ try{document.execCommand("styleWithCSS",false,true);if(command)applied=document.execCommand(command,false,null)}catch(_){}
+ if(!applied){const range=sel.getRangeAt(0),span=document.createElement("span");span.style[property]=onValue;try{span.appendChild(range.extractContents());range.insertNode(span);const after=document.createRange();after.selectNodeContents(span);sel.removeAllRanges();sel.addRange(after);savedRange=after.cloneRange()}catch(_){}}
+ aznyCommitTextFormatting();
 }
 document.querySelectorAll("#bold,#italic,#underline,#alignLeft,#alignCenter,#alignRight").forEach(b=>b.addEventListener("pointerdown",()=>{if(selected?.classList.contains("textobj"))rememberSelection()},{passive:true}));
 document.getElementById("bold").onclick=()=>toggleInlineStyle("fontWeight","700","400");
@@ -2654,9 +2669,9 @@ document.getElementById("underline").onclick=()=>toggleInlineStyle("textDecorati
 document.getElementById("textColor").oninput=e=>applyInlineStyle("color",e.target.value);
 document.getElementById("fontSize").onchange=e=>applyInlineStyle("fontSize",e.target.value+"px");
 document.getElementById("fontFamily").onchange=e=>applyInlineStyle("fontFamily",e.target.value);
-document.getElementById("alignLeft").onclick=()=>{if(selected)selected.style.textAlign="left";scheduleSave()};
-document.getElementById("alignCenter").onclick=()=>{if(selected)selected.style.textAlign="center";scheduleSave()};
-document.getElementById("alignRight").onclick=()=>{if(selected)selected.style.textAlign="right";scheduleSave()};
+document.getElementById("alignLeft").onclick=()=>{if(selected?.classList.contains("textobj")){pushHistory();selected.style.textAlign="left";aznyCommitTextFormatting()}};
+document.getElementById("alignCenter").onclick=()=>{if(selected?.classList.contains("textobj")){pushHistory();selected.style.textAlign="center";aznyCommitTextFormatting()}};
+document.getElementById("alignRight").onclick=()=>{if(selected?.classList.contains("textobj")){pushHistory();selected.style.textAlign="right";aznyCommitTextFormatting()}};
 
 document.getElementById("undo").onclick=document.getElementById("undoSide").onclick=undo;
 document.getElementById("redo").onclick=document.getElementById("redoSide").onclick=redo;
@@ -2957,6 +2972,11 @@ async function endClass(){
     ref.child("endedAt").set(firebase.database.ServerValue.TIMESTAMP),
     ref.child("teacherPresence").update({online:false,network:"offline",updatedAt:firebase.database.ServerValue.TIMESTAMP})
    ]);
+   const requestsSnap=await ref.child("joinRequests").once("value"),participantIds=[];
+   requestsSnap.forEach(item=>participantIds.push(item.key));
+   const removals=participantIds.flatMap(id=>[ref.child("joinRequests").child(id).remove(),ref.child("peers").child(id).remove()]);
+   removals.push(aznyRoomRef().child("sharedBrowser").remove(),aznyRoomRef().child("pianoEvent").remove(),aznyRoomRef().child("spreadsheet").remove(),aznyRoomRef().child("webDocument").remove());
+   await Promise.all(removals);
   }
  }catch(e){console.warn("AZNY class end status:",e);showNetworkNotice("O Firebase não confirmou o encerramento da aula: "+(e.message||e.code||"erro"),"bad")}
  try{localStorage.removeItem("azny-active-session-"+String(roomId))}catch(_){}
@@ -3787,7 +3807,14 @@ async function leaveStudentClass(){
  studentRequestId="";try{sessionStorage.removeItem(aznyStudentSessionStorageKey())}catch(_){}
  toast(document.documentElement.lang==="en"?"You left the class. The connection was closed.":"Saiu da aula. A ligação foi fechada.");
 }
-function showClassEnded(){if(!isStudent)return;let endedNotice=document.getElementById("aznyClassEndedNotice");if(!endedNotice){endedNotice=document.createElement("div");endedNotice.id="aznyClassEndedNotice";endedNotice.setAttribute("role","alert");endedNotice.setAttribute("aria-live","assertive");endedNotice.style.cssText="position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(5,16,31,.94);color:#fff;text-align:center;font-size:clamp(30px,6vw,64px);font-weight:900;line-height:1.2";endedNotice.textContent="A AULA FOI ENCERRADA PELO PROFESSOR";document.body.appendChild(endedNotice)}endedNotice.style.display="flex";aznyStopStudentMesh();studentApproved=false;try{studentPeer?.close()}catch(_){}studentPeer=null;try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}studentLocalStream=null;document.getElementById("studentControls").style.display="none";document.getElementById("studentNameModal").classList.add("show");document.getElementById("studentJoinBtn").disabled=false;document.getElementById("studentWaiting").textContent="A aula foi encerrada. Pode voltar a entrar por este mesmo link quando o professor iniciar outra aula.";document.getElementById("studentWaiting").style.display="block";const remoteVideo=document.getElementById("studentTeacherVideo");if(remoteVideo){remoteVideo.pause?.();remoteVideo.srcObject=null;remoteVideo.removeAttribute("src");remoteVideo.load?.();remoteVideo.style.display="none"}const remoteCard=remoteVideo?.closest(".student-video-card");if(remoteCard)remoteCard.classList.add("teacher-camera-ended");toast(document.documentElement.lang==="en"?"The teacher has ended the class.":"A aula foi encerrada pelo professor.")}
+function showClassEnded(){if(!isStudent)return;
+ try{
+  clearTimeout(saveTimer);clearTimeout(remoteSaveTimer);clearTimeout(liveBoardTimer);clearTimeout(firebaseBoardWriteTimer);clearTimeout(studentTextFullSyncTimer);
+  board.querySelectorAll(".object").forEach(el=>el.remove());strokes=[];selected=null;undoStack=[];redoStack=[];deletedObjectIds.clear();deletedStrokeIds.clear();aznyRemoteLiveStrokes.clear();studentBoardChunks.clear();currentPage=1;
+  pageStates=Array.from({length:5},()=>({strokes:[],objects:[],title:"Nova aula",deletedObjectIds:[],deletedStrokeIds:[]}));
+  localStorage.removeItem(STORAGE);resizeCanvas();redraw();updateHint();updatePageLabel();
+ }catch(e){console.warn("AZNY student local board cleanup:",e)}
+ let endedNotice=document.getElementById("aznyClassEndedNotice");if(!endedNotice){endedNotice=document.createElement("div");endedNotice.id="aznyClassEndedNotice";endedNotice.setAttribute("role","alert");endedNotice.setAttribute("aria-live","assertive");endedNotice.style.cssText="position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(5,16,31,.94);color:#fff;text-align:center;font-size:clamp(30px,6vw,64px);font-weight:900;line-height:1.2";endedNotice.textContent="A AULA FOI ENCERRADA PELO PROFESSOR";document.body.appendChild(endedNotice)}endedNotice.style.display="flex";aznyStopStudentMesh();studentApproved=false;try{studentPeer?.close()}catch(_){}studentPeer=null;try{studentLocalStream?.getTracks?.().forEach(t=>t.stop())}catch(_){}studentLocalStream=null;document.getElementById("studentControls").style.display="none";document.getElementById("studentNameModal").classList.add("show");document.getElementById("studentJoinBtn").disabled=false;document.getElementById("studentWaiting").textContent="A aula foi encerrada. Pode voltar a entrar por este mesmo link quando o professor iniciar outra aula.";document.getElementById("studentWaiting").style.display="block";const remoteVideo=document.getElementById("studentTeacherVideo");if(remoteVideo){remoteVideo.pause?.();remoteVideo.srcObject=null;remoteVideo.removeAttribute("src");remoteVideo.load?.();remoteVideo.style.display="none"}const remoteCard=remoteVideo?.closest(".student-video-card");if(remoteCard)remoteCard.classList.add("teacher-camera-ended");toast(document.documentElement.lang==="en"?"The teacher has ended the class.":"A aula foi encerrada pelo professor.")}
 function setupRoomChannel(){if(!roomChannel)return;roomChannel.onmessage=e=>{const m=e.data||{};if(isStudent&&m.type==="join-response"&&m.name===studentName){if(m.approved){studentApproved=true;const endedNotice=document.getElementById("aznyClassEndedNotice");if(endedNotice)endedNotice.style.display="none";document.getElementById("studentNameModal").classList.remove("show");document.getElementById("studentControls").style.display="flex";ensureAZNYRealtime().then(ready=>{if(ready){toast("Entrada aprovada pelo professor");startStudentWebRTC()}else toast("Entrada aprovada, mas a sincronização ainda não está disponível.")})}else{document.getElementById("studentWaiting").textContent="O professor rejeitou o pedido de entrada.";document.getElementById("studentWaiting").style.display="block";document.getElementById("studentJoinBtn").disabled=false}}if(isStudent&&m.type==="class-ended"&&m.session===classSessionId)showClassEnded()}}
 async function getClassLink(){
  if(!classStarted){toast("Primeiro, clique em «Iniciar aula». O link só fica disponível depois de a aula estar activa.");return ""}
