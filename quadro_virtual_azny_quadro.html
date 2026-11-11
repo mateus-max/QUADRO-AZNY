@@ -3392,7 +3392,7 @@ async function startStudentWebRTC(options={}){
   }
   const selfVideo=document.getElementById("studentSelfVideo");if(selfVideo){selfVideo.srcObject=studentLocalStream;selfVideo.muted=true;selfVideo.playsInline=true;selfVideo.play?.().catch(()=>{})}
   const scb=document.getElementById("studentCameraBtn"),smb=document.getElementById("studentMicBtn");
-  if(scb)scb.textContent="📷 Desligar câmera";if(smb)smb.textContent="🎙 Desligar microfone";
+  if(scb)scb.textContent=studentCameraOn?"📷 Desligar câmera":"📷 Ligar câmera";if(smb)smb.textContent=studentMicOn?"🎙 Desligar microfone":"🎙 Ligar microfone";
   studentPeer=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"stun:stun2.l.google.com:19302"}]});
   if(studentLocalStream?.getTracks?.().length)studentLocalStream.getTracks().forEach(t=>studentPeer.addTrack(t,studentLocalStream));
   else{studentPeer.addTransceiver("audio",{direction:"recvonly"});studentPeer.addTransceiver("video",{direction:"recvonly"});}
