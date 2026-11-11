@@ -102,7 +102,7 @@ function renderCourseComments(items,id){
 function bindCourseInteractions(id){
  const card=document.querySelector('[data-course-card="'+CSS.escape(id)+'"]');if(!card)return;
  const ref=db.ref("courseInteractions/"+id);
- const onLikes=snap=>{const data=snap.val()||{},count=Object.keys(data).length,liked=!!data[courseVisitorId],b=card.querySelector("[data-course-like]");if(b){b.classList.toggle("active",liked);b.textContent=liked?"👍 Gostado":"👍 Gostar"}card.querySelector("[data-course-like-count]").textContent=count+" gostos"};
+ const onLikes=snap=>{const data=snap.val()||{},entries=Object.values(data),count=entries.length,liked=entries.some(item=>item&&item.visitorId===courseVisitorId),b=card.querySelector("[data-course-like]");if(b){b.classList.toggle("active",liked);b.textContent=liked?"👍 Gostado":"👍 Gostar"}card.querySelector("[data-course-like-count]").textContent=count+" gostos"};
  const onShares=snap=>{card.querySelector("[data-course-share-count]").textContent=Number(snap.val()||0)+" partilhas"};
  const binding={ref,likes:onLikes,comments:null,shares:onShares,commentItems:[]};
  const onComments=snap=>{const items=[];snap.forEach(ch=>items.push({...ch.val(),id:ch.key}));items.sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));binding.commentItems=items;card.querySelector("[data-course-comment-count]").textContent=items.length+" comentários";card.querySelector("[data-course-comment-list]").innerHTML=renderCourseComments(items,id)};
@@ -168,7 +168,7 @@ $("gridView").onclick=()=>{$("teachers").classList.remove("list");$("gridView").
 document.addEventListener("click",async e=>{
  const b=e.target.closest("button");if(!b)return;
  const like=b.dataset.courseLike,commentToggle=b.dataset.courseComments,shareToggle=b.dataset.courseShare;
- if(like){const name=courseVisitorName();if(!name)return;const ref=db.ref("courseInteractions/"+like+"/likes/"+courseVisitorId);await ref.transaction(current=>current||{name:name,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});return}
+ if(like){const name=courseVisitorName();if(!name)return;const ref=db.ref("courseInteractions/"+like+"/likes").push();await ref.set({name:name,visitorId:courseVisitorId,createdAt:firebase.database.ServerValue.TIMESTAMP});return}
  if(commentToggle){const box=document.querySelector('[data-course-comments-box="'+CSS.escape(commentToggle)+'"]');if(box){box.classList.toggle("open");const field=box.querySelector('input[name="author"]');if(field&&!field.value)field.value=String(localStorage.getItem("rwb_visitor_name")||"");}return}
  if(shareToggle){const name=courseVisitorName();if(!name)return;const box=document.querySelector('[data-course-share-box="'+CSS.escape(shareToggle)+'"]');if(box)box.classList.toggle("open");return}
  if(b.dataset.courseShareMode){try{await shareCourse(b.dataset.courseId,b.dataset.courseShareMode)}catch(err){alert("Não foi possível partilhar o curso: "+(err.message||err))}return}
