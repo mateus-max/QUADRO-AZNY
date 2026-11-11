@@ -2092,7 +2092,7 @@ function restore(s){
   }else{
    const localUpdatedAt=Number(el.dataset.aznyUpdatedAt)||0,incomingUpdatedAt=Number(o.updatedAt)||Number(o.textUpdatedAt)||0;
    /* A delayed Firebase/WebRTC snapshot must not move or reset an object after a newer local edit. */
-   if(localUpdatedAt>incomingUpdatedAt){maxId=Math.max(maxId,Number((id.match(/^o(\\d+)$/)||[])[1])||0);return;}
+   if(localUpdatedAt>incomingUpdatedAt){maxId=Math.max(maxId,Number((id.match(/^o(\d+)$/)||[])[1])||0);return;}
    el.dataset.aznyUpdatedAt=String(incomingUpdatedAt);
    const setStyle=(key,value)=>{const next=String(value??"");if(el.style[key]!==next)el.style[key]=next};
    setStyle("left",o.left+"px");setStyle("top",o.top+"px");
