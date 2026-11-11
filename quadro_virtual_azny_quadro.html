@@ -3467,13 +3467,15 @@ function aznyRevealApprovedStudent(){
  studentApproved=true;
  document.body.classList.add("student-approved","azny-landscape-view");
  const modal=document.getElementById("studentNameModal");
- if(modal){modal.classList.remove("show");modal.setAttribute("aria-hidden","true");}
+ if(modal){modal.classList.remove("show");modal.style.display="none";modal.setAttribute("aria-hidden","true");}
+ const input=document.getElementById("studentNameInput");if(input)input.disabled=true;
+ const join=document.getElementById("studentJoinBtn");if(join){join.disabled=true;join.style.display="none"}
  const controls=document.getElementById("studentControls");
  if(controls){controls.style.display="flex";controls.setAttribute("aria-hidden","false");}
  const rotateBtn=document.getElementById("studentRotateBtn");
  if(rotateBtn){rotateBtn.hidden=true;rotateBtn.style.display="none"}
  const waiting=document.getElementById("studentWaiting");
- if(waiting){waiting.textContent="Entrada aprovada. A abrir o quadro…";waiting.style.display="block"}
+ if(waiting){waiting.textContent="";waiting.style.display="none"}
  requestAnimationFrame(()=>{resizeCanvas();window.dispatchEvent(new Event("resize"))});
 }
 async function aznyFinishStudentApproval(requestId){
@@ -3677,6 +3679,7 @@ function aznyStudentSessionStorageKey(){return "azny-student-session-"+String(ro
 function showStudentWaitingForClass(){
  if(!isStudent||studentApproved)return;
  const en=document.documentElement.lang==="en",modal=document.getElementById("studentNameModal"),input=document.getElementById("studentNameInput"),join=document.getElementById("studentJoinBtn"),waiting=document.getElementById("studentWaiting");
+ if(modal)modal.style.display="";
  modal?.classList.add("show");
  if(input){input.style.display="block";input.disabled=false;input.placeholder=en?"Enter your name":"Digite o seu nome"}
  if(join){join.style.display="inline-block";join.disabled=false;join.textContent=en?"Request to join":"Pedir entrada"}
@@ -3689,7 +3692,8 @@ function showStudentWaitingForClass(){
 function showStudentJoinReady(){
  if(!isStudent||studentApproved)return;const endedNotice=document.getElementById("aznyClassEndedNotice");if(endedNotice)endedNotice.style.display="none";
  const en=document.documentElement.lang==="en",modal=document.getElementById("studentNameModal"),input=document.getElementById("studentNameInput"),join=document.getElementById("studentJoinBtn"),waiting=document.getElementById("studentWaiting");
- modal?.classList.add("show");if(input){input.style.display="block";input.placeholder=en?"Enter your name":"Digite o seu nome"}if(join){join.style.display="inline-block";join.disabled=false;join.textContent=en?"Request to join":"Pedir entrada"}
+ if(modal)modal.style.display="";
+ modal?.classList.add("show");if(input){input.disabled=false;input.style.display="block";input.placeholder=en?"Enter your name":"Digite o seu nome"}if(join){join.style.display="inline-block";join.disabled=false;join.textContent=en?"Request to join":"Pedir entrada"}
  const h=modal?.querySelector("h3"),p=modal?.querySelector(".card p");if(h)h.textContent=en?"Join the class":"Entrar na aula";if(p)p.textContent=en?"Enter your name. The teacher must approve your entry.":"Identifique-se com o seu nome. O professor terá de aprovar a sua entrada.";
  const languageLabel=document.getElementById("studentLanguageLabel");if(languageLabel)languageLabel.textContent=en?"Choose board language":"Idioma do quadro";
  if(waiting)waiting.style.display="none";
