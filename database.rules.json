@@ -314,6 +314,34 @@
           ".validate": "newData.hasChildren(['courseId','courseTitle','teacherUid','fullName','whatsapp','email','message','status','createdAt']) && newData.child('courseId').val() == $courseId && newData.child('courseTitle').isString() && newData.child('teacherUid').isString() && newData.child('fullName').isString() && newData.child('fullName').val().length > 0 && newData.child('fullName').val().length <= 120 && newData.child('whatsapp').isString() && newData.child('whatsapp').val().length > 0 && newData.child('whatsapp').val().length <= 25 && newData.child('email').isString() && newData.child('email').val().length <= 150 && newData.child('message').isString() && newData.child('message').val().length <= 50 && newData.child('status').val() == 'new' && newData.child('createdAt').isNumber()"
         }
       }
+    },
+    "publicationInteractions": {
+      ".read": true,
+      "$publicationId": {
+        ".read": true,
+        "likes": {
+          "$visitorId": {
+            ".write": true,
+            ".validate": "!newData.exists() || (newData.hasChildren(['name','visitorId','createdAt']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 60 && newData.child('visitorId').val() == $visitorId && newData.child('createdAt').isNumber())"
+          }
+        },
+        "comments": {
+          "$commentId": {
+            ".write": true,
+            ".validate": "!newData.exists() || (newData.hasChildren(['author','text','visitorId','createdAt']) && newData.child('author').isString() && newData.child('author').val().length > 0 && newData.child('author').val().length <= 60 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 2000 && newData.child('visitorId').isString() && newData.child('createdAt').isNumber() && (!newData.child('parentId').exists() || newData.child('parentId').isString()))"
+          }
+        },
+        "shares": {
+          ".write": true,
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "shareNames": {
+          "$visitorId": {
+            ".write": true,
+            ".validate": "!newData.exists() || (newData.hasChildren(['name','visitorId','createdAt']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 60 && newData.child('visitorId').val() == $visitorId && newData.child('createdAt').isNumber())"
+          }
+        }
+      }
     }
   }
 }
