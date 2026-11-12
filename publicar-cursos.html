@@ -13,39 +13,26 @@
 <body>
 <header class="top"><div class="brand">Remote Work Board</div><a href="dashboard.html">← Voltar ao painel</a></header>
 <main class="wrap">
- <section class="intro"><h1>Publicar cursos e formações</h1><p>Apresente o seu trabalho a alunos de todo o país. O seu perfil profissional será reutilizado em todas as publicações. Guarde o perfil uma única vez e publique os seus cursos directamente. As publicações aparecem de imediato no directório; a Administração poderá removê-las se necessário.</p></section>
+ <section class="intro"><h1>Publicar cursos e formações</h1><p>Preencha os dados do curso e do professor numa única publicação. O nome, a fotografia e a localização aparecerão no cartão do curso.</p></section>
  <div id="accessMessage" class="notice">A verificar a sua conta e licença…</div>
  <div id="editor" class="hidden">
-  <div class="tabs"><button class="tab active" data-tab="profile">Meu perfil profissional</button><button class="tab" data-tab="course">Publicar um curso</button><button class="tab" data-tab="mine">As minhas publicações</button></div>
-  <section class="panel" id="profilePanel">
-   <h2>Perfil profissional</h2><p class="muted">Preencha uma vez. O mesmo perfil acompanha todos os cursos que publicar. Pode actualizar os dados quando necessário.</p>
-   <form id="profileForm">
-    <div class="grid">
-     <div class="field"><label for="pName">Nome completo *</label><input id="pName" required maxlength="120"></div>
-     <div class="field"><label for="pTitle">Título profissional / especialidade *</label><input id="pTitle" required maxlength="120" placeholder="Ex.: Professor de Inglês"></div>
-     <div class="field"><label for="pProvince">Província *</label><select id="pProvince" required><option value="">Escolha a província</option><option>Bengo</option><option>Benguela</option><option>Bié</option><option>Cabinda</option><option>Cuando</option><option>Cubango</option><option>Cuanza Norte</option><option>Cuanza Sul</option><option>Cunene</option><option>Huambo</option><option>Huíla</option><option>Icolo e Bengo</option><option>Luanda</option><option>Lunda Norte</option><option>Lunda Sul</option><option>Malanje</option><option>Moxico</option><option>Moxico Leste</option><option>Namibe</option><option>Uíge</option><option>Zaire</option></select></div>
-     <div class="field"><label for="pMunicipality">Município *</label><input id="pMunicipality" required maxlength="100"></div>
-     <div class="field"><label for="pExperience">Anos de experiência</label><input id="pExperience" type="number" min="0" max="60" value="0"></div>
-     <div class="field full"><label for="pBio">Biografia profissional *</label><textarea id="pBio" required maxlength="1600" placeholder="Apresente-se, fale da sua experiência, metodologia e do que os alunos podem esperar…"></textarea></div>
-     <div class="field"><label for="pEducation">Formação académica e certificações</label><textarea id="pEducation" maxlength="800" placeholder="Cursos, diplomas e certificações…"></textarea></div>
-     <div class="field"><label for="pSpecialties">Áreas de especialidade *</label><input id="pSpecialties" required maxlength="250" placeholder="Ex.: Inglês, informática, música"></div>
-     <div class="field"><label for="pPhoto">Fotografia de perfil</label><input id="pPhoto" type="file" accept="image/png,image/jpeg,image/webp"><small>JPG, PNG ou WEBP, até 5 MB.</small><img id="profilePreview" class="avatar-preview hidden" alt="Pré-visualização da fotografia"></div>
-    </div>
-    <div class="actions"><button class="btn" id="saveProfile" type="submit">Publicar perfil</button><button class="btn secondary" id="deleteProfile" type="button">Eliminar perfil</button><span id="profileMessage" class="muted" role="status"></span></div>
-   </form>
-  </section>
+  <div class="tabs"><button class="tab active" data-tab="course">Publicar um curso</button><button class="tab" data-tab="mine">As minhas publicações</button></div>
   <section class="panel hidden" id="coursePanel">
-   <h2>Novo curso ou formação</h2><p class="muted">Depois de submeter, o curso fica publicado imediatamente no directório público. A Administração poderá removê-lo se necessário.</p>
+   <h2>Novo curso ou formação</h2><p class="muted">Os dados do professor são preenchidos directamente neste formulário. Não é necessário criar um perfil separado.</p>
    <form id="courseForm">
     <div class="grid">
      <div class="field"><label for="cTitle">Nome do curso *</label><input id="cTitle" required maxlength="140" placeholder="Ex.: Inglês para iniciantes"></div>
      <div class="field"><label for="cCategory">Categoria *</label><select id="cCategory" required><option value="">Seleccione</option><option>Idiomas</option><option>Informática e Tecnologia</option><option>Música e Artes</option><option>Matemática e Ciências</option><option>Gestão e Negócios</option><option>Educação</option><option>Saúde</option><option>Ofícios e Profissões</option><option>Desenvolvimento Pessoal</option><option>Outras formações</option></select></div>
      <div class="field full"><label for="cDescription">Descrição do curso *</label><textarea id="cDescription" required maxlength="2500" placeholder="Conteúdos, objectivos e competências que o aluno vai adquirir…"></textarea></div>
+     <div class="field"><label for="tName">Nome do professor / formador *</label><input id="tName" required maxlength="120" placeholder="Nome que será apresentado no curso"></div>
+     <div class="field"><label for="tTitle">Título profissional</label><input id="tTitle" maxlength="120" placeholder="Ex.: Professora de Química"></div>
+     <div class="field"><label for="tProvince">Província do professor *</label><select id="tProvince" required><option value="">Escolha a província</option><option>Bengo</option><option>Benguela</option><option>Bié</option><option>Cabinda</option><option>Cuando</option><option>Cubango</option><option>Cuanza Norte</option><option>Cuanza Sul</option><option>Cunene</option><option>Huambo</option><option>Huíla</option><option>Icolo e Bengo</option><option>Luanda</option><option>Lunda Norte</option><option>Lunda Sul</option><option>Malanje</option><option>Moxico</option><option>Moxico Leste</option><option>Namibe</option><option>Uíge</option><option>Zaire</option></select></div>
+     <div class="field"><label for="tMunicipality">Município do professor *</label><select id="tMunicipality" required disabled><option value="">Escolha primeiro a província</option></select><input id="tOtherMunicipality" class="hidden" maxlength="100" placeholder="Escreva o município"></div>
+     <div class="field full"><label for="tPhoto">Fotografia de perfil do professor</label><input id="tPhoto" type="file" accept="image/png,image/jpeg,image/webp"><small>Imagem JPG, PNG ou WEBP, até 5 MB. Será apresentada como avatar no cabeçalho do curso.</small><img id="teacherPhotoPreview" class="avatar-preview hidden" alt="Pré-visualização da fotografia do professor"></div>
      <div class="field"><label for="cDuration">Duração</label><input id="cDuration" maxlength="80" placeholder="Ex.: 3 meses"></div>
      <div class="field"><label for="cMode">Modalidade *</label><select id="cMode" required><option value="">Seleccione</option><option>Online</option><option>Presencial</option><option>Híbrido</option></select></div>
-     <div class="field"><label for="cProvince">Província *</label><select id="cProvince" required><option value="">Escolha a província</option><option>Bengo</option><option>Benguela</option><option>Bié</option><option>Cabinda</option><option>Cuando</option><option>Cubango</option><option>Cuanza Norte</option><option>Cuanza Sul</option><option>Cunene</option><option>Huambo</option><option>Huíla</option><option>Icolo e Bengo</option><option>Luanda</option><option>Lunda Norte</option><option>Lunda Sul</option><option>Malanje</option><option>Moxico</option><option>Moxico Leste</option><option>Namibe</option><option>Uíge</option><option>Zaire</option></select></div>
-     <div class="field"><label for="cMunicipality">Município *</label><input id="cMunicipality" required maxlength="100"></div>
-     <div class="field"><label for="cSchedule">Horários / disponibilidade</label><input id="cSchedule" maxlength="180" placeholder="Ex.: Segundas e quartas, 15h–17h"></div>
+     <div class="field full"><label>Dias disponíveis</label><div class="cover-choice" id="courseDays"><label><input type="checkbox" name="courseDay" value="Segunda-feira"> Segunda-feira</label><label><input type="checkbox" name="courseDay" value="Terça-feira"> Terça-feira</label><label><input type="checkbox" name="courseDay" value="Quarta-feira"> Quarta-feira</label><label><input type="checkbox" name="courseDay" value="Quinta-feira"> Quinta-feira</label><label><input type="checkbox" name="courseDay" value="Sexta-feira"> Sexta-feira</label><label><input type="checkbox" name="courseDay" value="Sábado"> Sábado</label><label><input type="checkbox" name="courseDay" value="Domingo"> Domingo</label></div></div>
+     <div class="field full"><label>Períodos disponíveis</label><div class="cover-choice" id="coursePeriods"><label><input type="checkbox" name="coursePeriod" value="Manhã"> Manhã (06h–12h)</label><label><input type="checkbox" name="coursePeriod" value="Tarde"> Tarde (12h–18h)</label><label><input type="checkbox" name="coursePeriod" value="Noite"> Noite (18h–22h)</label></div></div>
      <div class="field"><label for="cPrice">Preço (Kz)</label><input id="cPrice" type="number" min="0" max="100000000" value="0"></div>
      <div class="field"><label for="cCertificate">Emite certificado?</label><select id="cCertificate"><option value="Não">Não</option><option value="Sim">Sim</option></select></div>
      <div class="field"><label for="cRequirements">Requisitos</label><input id="cRequirements" maxlength="350" placeholder="Ex.: Conhecimentos básicos"></div>
