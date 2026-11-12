@@ -27,7 +27,7 @@ textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e
 <body>
 <header class="top"><span class="brand">Remote Work Board</span><a href="formadores.html">Voltar aos cursos</a></header>
 <main>
-<section class="video-stage"><video id="demoVideo" controls playsinline muted autoplay preload="auto" aria-label="Vídeo de demonstração"></video></section>
+<section class="video-stage"><video id="demoVideo" controls playsinline muted autoplay preload="auto" webkit-playsinline="true" disablepictureinpicture aria-label="Vídeo de demonstração"></video></section>
 <section class="content">
 <h1 id="courseTitle">Demonstração do curso</h1><p class="sub" id="teacherName"></p>
 <p class="muted">Gostou da demonstração? Preencha os seus dados para manifestar interesse e receber informações sobre a inscrição.</p>
@@ -50,8 +50,38 @@ const db=firebase.database(),id=new URLSearchParams(location.search).get("id"),$
 if(!id){$("status").textContent="Não foi indicado o curso desta demonstração.";throw new Error("Missing course id")}
 let course=null;const formspreeEndpoint="https://formspree.io/f/xdeeykja";
 async function startDemoPlayback(){const video=$("demoVideo");if(!video.src||!navigator.onLine)return;video.muted=true;video.defaultMuted=true;video.playsInline=true;video.setAttribute("playsinline","");video.setAttribute("autoplay","");try{await video.play();$("status").textContent=""}catch(err){if(video.readyState<2)$("status").textContent="A carregar a demonstração…";else $("status").textContent="A demonstração está pronta. Toque no vídeo para iniciar a reprodução."}}
-const demoVideo=$("demoVideo");demoVideo.addEventListener("loadedmetadata",()=>{if(demoVideo.videoWidth&&demoVideo.videoHeight)demoVideo.style.aspectRatio=demoVideo.videoWidth+"/"+demoVideo.videoHeight});demoVideo.addEventListener("canplay",()=>{if(navigator.onLine)startDemoPlayback()});demoVideo.addEventListener("playing",()=>$("status").textContent="");demoVideo.addEventListener("waiting",()=>$("status").textContent="A carregar o vídeo…");demoVideo.addEventListener("error",()=>$("status").textContent="Não foi possível reproduzir o vídeo. Verifique a ligação à internet e tente novamente.");window.addEventListener("online",()=>{if(demoVideo.src){$("status").textContent="Ligação restabelecida. A retomar a demonstração…";startDemoPlayback()}});document.addEventListener("visibilitychange",()=>{if(!document.hidden&&navigator.onLine&&demoVideo.src&&demoVideo.paused)startDemoPlayback()});
-db.ref("publicTeacherCourses/"+id).once("value").then(s=>{course=s.val();if(!course)throw new Error("Curso não encontrado.");$("courseTitle").textContent=course.title||"Demonstração do curso";const teacher=course.teacherSnapshot||course.profileSnapshot||{};$("teacherName").textContent=teacher.name||"";return db.ref("publicTeacherDemos/"+id).once("value")}).then(s=>{const demo=s.val();if(!demo||!demo.videoUrl)throw new Error("Esta demonstração já não está disponível.");$("demoVideo").src=demo.videoUrl;$("demoVideo").load();document.title="Demonstração — "+(course.title||"Curso");startDemoPlayback()}).catch(err=>{$("courseTitle").textContent="Demonstração indisponível";$("status").textContent=err.message||"Não foi possível carregar este vídeo.";$("showForm").disabled=true});
+const demoVideo=$("demoVideo");demoVideo.addEventListener("loadedmetadata",()=>{if(demoVideo.videoWidth&&demoVideo.videoHeight)demoVideo.style.aspectRatio=demoVideo.videoWidth+"/"+demoVideo.videoHeight});demoVideo.addEventListener("canplay",()=>{if(navigator.onLine)startDemoPlayback()});demoVideo.addEventListener("playing",()=>$("status").textContent="");demoVideo.addEventListener("waiting",()=>$("status").textContent="A carregar o vídeo…");demoVideo.addEventListener("error",()=>$("status").textContent="Não foi possível reproduzir o vídeo. Verifique a ligação à internet e tente novamente.");window.addEventListener("online",()=>{if(demoVideo.src){$("status").textContent="Ligação restabelecida. A retomar a demonstração…";startDemoPlayback()}});document.addEventListener("visibilitychange",()=>{if(!document.hidden&&navigator.onLine&&demoV// Carrega curso e demonstração em paralelo. Assim que o registo do vídeo chega,
+ // o vídeo é apresentado e a reprodução começa sem esperar pelos dados do curso.
+ const courseRequest=db.ref("publicTeacherCourses/"+id).once("value").then(s=>{
+  course=s.val();
+  if(!course)throw new Error("Curso não encontrado.");
+  $("courseTitle").textContent=course.title||"Demonstração do curso";
+  const teacher=course.teacherSnapshot||course.profileSnapshot||{};
+  $("teacherName").textContent=teacher.name||"";
+  document.title="Demonstração — "+(course.title||"Curso");
+ }).catch(err=>{console.warn("Dados do curso:",err)});
+ const demoRequest=db.ref("publicTeacherDemos/"+id).once("value").then(s=>{
+  const demo=s.val();
+  if(!demo||!demo.videoUrl)throw new Error("Esta demonstração já não está disponível.");
+  const video=$("demoVideo");
+  video.pause();
+  video.src=demo.videoUrl;
+  video.load();
+  video.muted=true;
+  video.defaultMuted=true;
+  video.autoplay=true;
+  video.playsInline=true;
+  video.setAttribute("autoplay","");
+  video.setAttribute("muted","");
+  video.setAttribute("playsinline","");
+  $("status").textContent="A iniciar a demonstração…";
+  return startDemoPlayback();
+ }).catch(err=>{
+  $("courseTitle").textContent="Demonstração indisponível";
+  $("status").textContent=err.message||"Não foi possível carregar este vídeo.";
+  $("showForm").disabled=true;
+ });
+ Promise.allSettled([courseRequest,demoRequest]);
 $("showForm").addEventListener("click",()=>{$("enrollmentForm").classList.add("open");$("showForm").textContent="Formulário de inscrição";$("fullName").focus();$("enrollmentForm").scrollIntoView({behavior:"smooth",block:"start"})});
 $("message").addEventListener("input",()=>{$("messageCount").textContent=$("message").value.length+"/50 caracteres"});
 $("enrollmentForm").addEventListener("submit",async e=>{e.preventDefault();const button=$("sendEnrollment");if(button.disabled)return;button.disabled=true;
