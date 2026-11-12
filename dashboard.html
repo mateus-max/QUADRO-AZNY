@@ -461,46 +461,8 @@ function updateLicenseDisplay(license,accessToken){
 
 
 const enrollmentEsc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function renderTeacherEnrollmentDetails(item){const box=document.getElementById("teacherEnrollmentDetails");if(!box)return;if(!item){box.innerHTML='<div class="enrollment-empty">Seleccione um aluno na lista para ver os dados completos da inscrição.</div>';return}let wa=String(item.whatsapp||"").replace(/[^0-9]/g,"");if(wa.startsWith("00"))wa=wa.slice(2);if(wa.length===9)wa="244"+wa;const fields=[["Nome completo",item.fullName],["WhatsApp",item.whatsapp],["E-mail",item.email||"Não indicado"],["Curso",item.courseTitle],["Mensagem",item.message||"Sem mensagem"],["Data da inscrição",item.createdAt?new Date(Number(item.createdAt)).toLocaleString("pt-AO"):"Não indicada"]];box.innerHTML='<h3>'+enrollmentEsc(item.fullName||"Aluno inscrito")+'</h3><p class="enrollment-detail-course">'+enrollmentEsc(item.courseTitle||"Curso")+'</p><div class="enrollment-detail-grid">'+fields.map(f=>'<div class="enrollment-detail-field"><small>'+f[0]+'</small><strong>'+enrollmentEsc(f[1])+'</strong></div>').join("")+'</div>'+(wa?'<a class="enrollment-whatsapp" href="https://wa.me/'+wa+'" target="_blank" rel="noopener">☏ Conversar com o aluno no WhatsApp</a>':'<p class="status">Número de WhatsApp indisponível.</p>')}
-let teacherEnrollmentCourseRef=null,teacherEnrollmentCourseListener=null,teacherEnrollmentRefs={};
-function renderTeacherEnrollmentGroups(groups){
- const list=document.getElementById("teacherEnrollmentList"),status=document.getElementById("teacherEnrollmentStatus");
- if(!list)return;
- const validGroups=groups.filter(g=>g&&g.course);
- teacherEnrollmentItems=validGroups.flatMap(g=>g.items||[]).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));
- document.getElementById("enrollmentTotal").textContent=teacherEnrollmentItems.length+" "+(teacherEnrollmentItems.length===1?"aluno":"alunos");
- const badge=document.getElementById("enrollmentCountBadge");badge.hidden=!teacherEnrollmentItems.length;badge.textContent=teacherEnrollmentItems.length>99?"99+":String(teacherEnrollmentItems.length);
- if(!validGroups.length){list.innerHTML='<div class="enrollment-empty">Ainda não tem cursos publicados.</div>';renderTeacherEnrollmentDetails(null);return}
- if(!teacherEnrollmentItems.length){list.innerHTML='<div class="enrollment-empty">Ainda não recebeu inscrições. Assim que um aluno submeter o formulário, a inscrição aparecerá aqui automaticamente.</div>';renderTeacherEnrollmentDetails(null);return}
- list.innerHTML=validGroups.filter(g=>g.items?.length).map(g=>'<div class="enrollment-course-label">'+enrollmentEsc(g.course.title)+' · '+g.items.length+'</div>'+g.items.sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).map(item=>'<button type="button" class="enrollment-student'+(selectedEnrollmentKey===item._key?' active':'')+'" data-enrollment-key="'+enrollmentEsc(item._key)+'"><span class="enrollment-student-avatar">'+enrollmentEsc((item.fullName||"A").trim().charAt(0).toUpperCase())+'</span><span class="enrollment-student-copy"><strong>'+enrollmentEsc(item.fullName||"Aluno")+'</strong><small>'+enrollmentEsc(item.createdAt?new Date(Number(item.createdAt)).toLocaleString("pt-AO"):"Inscrição recebida")+'</small></span><span aria-hidden="true">›</span></button>').join("")).join("");
- const selected=teacherEnrollmentItems.find(x=>x._key===selectedEnrollmentKey)||teacherEnrollmentItems[0];selectedEnrollmentKey=selected._key;
- list.querySelectorAll(".enrollment-student").forEach(b=>b.classList.toggle("active",b.dataset.enrollmentKey===selectedEnrollmentKey));
- renderTeacherEnrollmentDetails(selected);if(status)status.textContent="Inscrições sincronizadas em tempo real.";
-}
-function initTeacherEnrollmentRealtime(user){
- if(!user?.uid)return;
- if(teacherEnrollmentCourseRef&&teacherEnrollmentCourseListener)teacherEnrollmentCourseRef.off("value",teacherEnrollmentCourseListener);
- Object.values(teacherEnrollmentRefs).forEach(x=>x.ref.off("value",x.listener));teacherEnrollmentRefs={};
- const list=document.getElementById("teacherEnrollmentList");if(list)list.innerHTML='<div class="enrollment-empty">A sincronizar inscrições…</div>';
- teacherEnrollmentCourseRef=db.ref("publicTeacherCourses").orderByChild("teacherUid").equalTo(user.uid);
- teacherEnrollmentCourseListener=snap=>{
-  const courses=[];snap.forEach(child=>{const c=child.val();if(c&&c.teacherUid===user.uid)courses.push({id:child.key,title:c.title||"Curso"})});
-  const ids=new Set(courses.map(x=>x.id));
-  Object.keys(teacherEnrollmentRefs).forEach(id=>{if(!ids.has(id)){const old=teacherEnrollmentRefs[id];old.ref.off("value",old.listener);delete teacherEnrollmentRefs[id]}});
-  courses.forEach(course=>{
-   if(teacherEnrollmentRefs[course.id]){teacherEnrollmentRefs[course.id].course=course;return}
-   const ref=db.ref("courseEnrollments/"+course.id);
-   const listener=enrollmentSnap=>{
-    const current=teacherEnrollmentRefs[course.id];if(!current)return;
-    current.items=[];enrollmentSnap.forEach(ch=>{const v=ch.val();if(v)current.items.push({...v,_key:course.id+"__"+ch.key,_rawKey:ch.key,_courseId:course.id,courseTitle:v.courseTitle||current.course.title})});
-    renderTeacherEnrollmentGroups(Object.values(teacherEnrollmentRefs));
-   };
-   teacherEnrollmentRefs[course.id]={ref,listener,course,items:[]};ref.on("value",listener,error=>{console.error("Sincronização de inscrições:",error);const st=document.getElementById("teacherEnrollmentStatus");if(st)st.textContent="Erro ao sincronizar: "+(error.message||"verifique as regras do Firebase")});
-  });
-  renderTeacherEnrollmentGroups(Object.values(teacherEnrollmentRefs));
- };
- teacherEnrollmentCourseRef.on("value",teacherEnrollmentCourseListener,error=>{console.error("Cursos do professor:",error);const st=document.getElementById("teacherEnrollmentStatus");if(st)st.textContent="Não foi possível identificar os seus cursos: "+(error.message||"erro de acesso")});
-}
+function renderTeacherEnrollmentDetails(item){const box=document.getElementById("teacherEnrollmentDetails");if(!box)return;if(!item){box.innerHTML='<div class="enrollment-empty">Seleccione um aluno na lista para ver os dados completos da inscrição.</div>';return}const wa=String(item.whatsapp||"").replace(/[^0-9]/g,""),fields=[["Nome completo",item.fullName],["WhatsApp",item.whatsapp],["E-mail",item.email||"Não indicado"],["Curso",item.courseTitle],["Mensagem",item.message||"Sem mensagem"],["Data da inscrição",item.createdAt?new Date(Number(item.createdAt)).toLocaleString("pt-AO"):"Não indicada"]];box.innerHTML='<h3>'+enrollmentEsc(item.fullName||"Aluno inscrito")+'</h3><p class="enrollment-detail-course">'+enrollmentEsc(item.courseTitle||"Curso")+'</p><div class="enrollment-detail-grid">'+fields.map(f=>'<div class="enrollment-detail-field"><small>'+f[0]+'</small><strong>'+enrollmentEsc(f[1])+'</strong></div>').join("")+'</div>'+(wa?'<a class="enrollment-whatsapp" href="https://wa.me/'+wa+'" target="_blank" rel="noopener">☏ Conversar com o aluno no WhatsApp</a>':'<p class="status">Número de WhatsApp indisponível.</p>')}
+async function loadTeacherEnrollments(user){const list=document.getElementById("teacherEnrollmentList"),status=document.getElementById("teacherEnrollmentStatus");if(!list||!user?.uid)return;list.innerHTML='<div class="enrollment-empty">A carregar inscrições…</div>';status.textContent="";try{const coursesSnap=await db.ref("publicTeacherCourses").once("value"),ownCourses=[];coursesSnap.forEach(child=>{const c=child.val();if(c&&c.teacherUid===user.uid)ownCourses.push({id:child.key,title:c.title||"Curso"})});if(!ownCourses.length){list.innerHTML='<div class="enrollment-empty">Ainda não tem cursos publicados com inscrições.</div>';document.getElementById("enrollmentTotal").textContent="0 alunos";document.getElementById("enrollmentCountBadge").hidden=true;renderTeacherEnrollmentDetails(null);return}const groups=await Promise.all(ownCourses.map(async course=>{const snap=await db.ref("courseEnrollments/"+course.id).once("value"),items=[];snap.forEach(ch=>{const v=ch.val();if(v)items.push({...v,_key:ch.key,_courseId:course.id,courseTitle:v.courseTitle||course.title})});return {course,items}}));teacherEnrollmentItems=groups.flatMap(g=>g.items).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));document.getElementById("enrollmentTotal").textContent=teacherEnrollmentItems.length+" "+(teacherEnrollmentItems.length===1?"aluno":"alunos");const badge=document.getElementById("enrollmentCountBadge");badge.hidden=!teacherEnrollmentItems.length;badge.textContent=teacherEnrollmentItems.length>99?"99+":String(teacherEnrollmentItems.length);if(!teacherEnrollmentItems.length){list.innerHTML='<div class="enrollment-empty">Ainda não recebeu inscrições nos seus cursos. Quando um aluno enviar o formulário, aparecerá aqui.</div>';renderTeacherEnrollmentDetails(null);return}list.innerHTML=groups.filter(g=>g.items.length).map(g=>'<div class="enrollment-course-label">'+enrollmentEsc(g.course.title)+' · '+g.items.length+'</div>'+g.items.sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).map(item=>'<button type="button" class="enrollment-student'+(selectedEnrollmentKey===item._key?' active':'')+'" data-enrollment-key="'+enrollmentEsc(item._key)+'"><span class="enrollment-student-avatar">'+enrollmentEsc((item.fullName||"A").trim().charAt(0).toUpperCase())+'</span><span class="enrollment-student-copy"><strong>'+enrollmentEsc(item.fullName||"Aluno")+'</strong><small>'+enrollmentEsc(item.createdAt?new Date(Number(item.createdAt)).toLocaleDateString("pt-AO"):"Inscrição recebida")+'</small></span><span aria-hidden="true">›</span></button>').join("")).join("");const selected=teacherEnrollmentItems.find(x=>x._key===selectedEnrollmentKey)||teacherEnrollmentItems[0];selectedEnrollmentKey=selected._key;list.querySelectorAll(".enrollment-student").forEach(b=>b.classList.toggle("active",b.dataset.enrollmentKey===selectedEnrollmentKey));renderTeacherEnrollmentDetails(selected)}catch(error){console.error("Carregar inscrições:",error);list.innerHTML='<div class="enrollment-empty">Não foi possível carregar as inscrições. Verifique as regras do Firebase e tente novamente.</div>';status.textContent=error.message||"Erro ao carregar inscrições."}}
 document.getElementById("teacherEnrollmentList")?.addEventListener("click",event=>{const button=event.target.closest("[data-enrollment-key]");if(!button)return;selectedEnrollmentKey=button.dataset.enrollmentKey;document.querySelectorAll(".enrollment-student").forEach(b=>b.classList.toggle("active",b===button));renderTeacherEnrollmentDetails(teacherEnrollmentItems.find(x=>x._key===selectedEnrollmentKey))});
 
 let supportChatUid="",supportChatUser=null,supportChatMessagesRef=null,supportChatMetaRef=null,supportChatMessageListener=null,supportChatMetaListener=null;
@@ -534,7 +496,7 @@ async function init(user){try{
  const teacherName=String(license.teacherName||"Professor");
  document.getElementById("userInitials").textContent=teacherName.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
  updateLicenseDisplay(license,accessToken);
- initSupportChat(user,license);\n initTeacherEnrollmentRealtime(user);
+ initSupportChat(user,license);
  const liveLicenseRef=db.ref("licenses/"+accessToken);
  liveLicenseRef.on("value",liveSnap=>{
   const live=liveSnap.val();
