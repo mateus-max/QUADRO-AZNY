@@ -9,7 +9,7 @@
 .top a{color:#dceaff;text-decoration:none;font-size:14px}
 .brand{font-weight:850;letter-spacing:.2px}
 .video-stage{min-height:calc(100svh - 54px);display:flex;align-items:center;justify-content:center;background:#02070e;padding:10px}
-#demoVideo{display:block;width:min(100%,calc((100svh - 74px)*16/9));height:auto;aspect-ratio:16/9;max-height:calc(100svh - 74px);object-fit:contain;background:#02070e}
+#demoVideo{display:block;width:min(100%,calc((100svh - 74px)*16/9));height:auto;aspect-ratio:16/9;max-height:calc(100svh - 74px);object-fit:contain;object-position:center;background:#02070e;flex:0 1 auto}
 .content{max-width:760px;margin:0 auto;padding:22px 16px 48px}
 h1{font-size:24px;margin:0 0 7px}.sub{color:#bdcce0;font-size:14px;margin:0 0 18px}
 .primary{border:0;border-radius:12px;padding:14px 20px;background:#1476e8;color:#fff;font-weight:850;font-size:16px;cursor:pointer;width:100%}
@@ -49,8 +49,8 @@ if(!firebase.apps.length)firebase.initializeApp(cfg);
 const db=firebase.database(),id=new URLSearchParams(location.search).get("id"),$=x=>document.getElementById(x);
 if(!id){$("status").textContent="Não foi indicado o curso desta demonstração.";throw new Error("Missing course id")}
 let course=null;const formspreeEndpoint="https://formspree.io/f/xdeeykja";
-async function startDemoPlayback(){const video=$("demoVideo");if(!video.src||!navigator.onLine)return;video.muted=true;video.playsInline=true;try{await video.play()}catch(err){$("status").textContent="O vídeo está carregado. Toque em reproduzir para iniciar."}}
-window.addEventListener("online",()=>{if($("demoVideo").src)startDemoPlayback()});
+async function startDemoPlayback(){const video=$("demoVideo");if(!video.src||!navigator.onLine)return;video.muted=true;video.defaultMuted=true;video.playsInline=true;video.setAttribute("playsinline","");video.setAttribute("autoplay","");try{await video.play();$("status").textContent=""}catch(err){if(video.readyState<2)$("status").textContent="A carregar a demonstração…";else $("status").textContent="A demonstração está pronta. Toque no vídeo para iniciar a reprodução."}}
+const demoVideo=$("demoVideo");demoVideo.addEventListener("loadedmetadata",()=>{if(demoVideo.videoWidth&&demoVideo.videoHeight)demoVideo.style.aspectRatio=demoVideo.videoWidth+"/"+demoVideo.videoHeight});demoVideo.addEventListener("canplay",()=>{if(navigator.onLine)startDemoPlayback()});demoVideo.addEventListener("playing",()=>$("status").textContent="");demoVideo.addEventListener("waiting",()=>$("status").textContent="A carregar o vídeo…");demoVideo.addEventListener("error",()=>$("status").textContent="Não foi possível reproduzir o vídeo. Verifique a ligação à internet e tente novamente.");window.addEventListener("online",()=>{if(demoVideo.src){$("status").textContent="Ligação restabelecida. A retomar a demonstração…";startDemoPlayback()}});document.addEventListener("visibilitychange",()=>{if(!document.hidden&&navigator.onLine&&demoVideo.src&&demoVideo.paused)startDemoPlayback()});
 db.ref("publicTeacherCourses/"+id).once("value").then(s=>{course=s.val();if(!course)throw new Error("Curso não encontrado.");$("courseTitle").textContent=course.title||"Demonstração do curso";const teacher=course.teacherSnapshot||course.profileSnapshot||{};$("teacherName").textContent=teacher.name||"";return db.ref("publicTeacherDemos/"+id).once("value")}).then(s=>{const demo=s.val();if(!demo||!demo.videoUrl)throw new Error("Esta demonstração já não está disponível.");$("demoVideo").src=demo.videoUrl;$("demoVideo").load();document.title="Demonstração — "+(course.title||"Curso");startDemoPlayback()}).catch(err=>{$("courseTitle").textContent="Demonstração indisponível";$("status").textContent=err.message||"Não foi possível carregar este vídeo.";$("showForm").disabled=true});
 $("showForm").addEventListener("click",()=>{$("enrollmentForm").classList.add("open");$("showForm").textContent="Formulário de inscrição";$("fullName").focus();$("enrollmentForm").scrollIntoView({behavior:"smooth",block:"start"})});
 $("message").addEventListener("input",()=>{$("messageCount").textContent=$("message").value.length+"/50 caracteres"});
@@ -60,11 +60,22 @@ try{
  const fullName=$("fullName").value.trim(),whatsapp=$("whatsapp").value.trim(),email=$("email").value.trim(),message=$("message").value.trim();
  if(!fullName||!whatsapp)throw new Error("Preencha o nome completo e o WhatsApp.");
  if(message.length>50)throw new Error("A mensagem deve ter no máximo 50 caracteres.");
- const payload={_subject:"Novo pedido de inscrição — Remote Work Board",tipoPedido:"Inscrição em curso através de demonstração",curso:course.title||"",courseId:id,professor:course.teacherSnapshot?.name||course.profileSnapshot?.name||"",teacherUid:course.teacherUid||"",nomeCompleto:fullName,whatsapp,email:email||"Não indicado",mensagem:message||"Sem mensagem",origem:"Vídeo de demonstração",data:new Date().toLocaleString("pt-PT")};
- const response=await fetch(formspreeEndpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+ // Usa o mesmo endpoint e o mesmo formato multipart do formulário oficial da empresa.
+ const payload=new FormData($("enrollmentForm"));
+ payload.append("_subject","Novo pedido de inscrição — Remote Work Board");
+ payload.append("tipoPedido","Inscrição em curso através de demonstração");
+ payload.append("curso",course.title||"");
+ payload.append("courseId",id);
+ payload.append("professor",course.teacherSnapshot?.name||course.profileSnapshot?.name||"");
+ payload.append("teacherUid",course.teacherUid||"");
+ payload.append("origem","Vídeo de demonstração");
+ payload.append("data",new Date().toLocaleString("pt-PT"));
+ if(!email)payload.set("email","Não indicado");
+ if(!message)payload.set("message","Sem mensagem");
+ const response=await fetch(formspreeEndpoint,{method:"POST",body:payload,headers:{Accept:"application/json"}});
  if(!response.ok)throw new Error("Não foi possível enviar o pedido à empresa (Formspree HTTP "+response.status+"). Verifique a ligação e tente novamente.");
  const result=await response.json().catch(()=>({}));
- if(result.errors?.length)throw new Error(result.errors.map(item=>item.message||"Erro no formulário").join("; "));
+ if(result.errors?.length)throw new Error(result.errors.map(item=>item.message||"Erro no formulário").join(";"));
  $("status").textContent="Pedido enviado com sucesso! A empresa recebeu os seus dados e dará seguimento à inscrição.";
  $("enrollmentForm").reset();$("messageCount").textContent="0/50 caracteres";
 }catch(err){$("status").textContent=err.message||"Não foi possível enviar o pedido. Tente novamente."}
