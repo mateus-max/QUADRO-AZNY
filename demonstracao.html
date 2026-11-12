@@ -63,6 +63,7 @@ function showDemo(demo){
  $("demoContent").hidden=false;
  // O formulário fica disponível assim que o registo da demonstração é encontrado no Realtime Database.
  $("showForm").disabled=false;
+ if(openEnrollmentFromLink){openEnrollmentForm();setTimeout(()=>$("enrollmentForm").scrollIntoView({behavior:"smooth",block:"start"}),150)}
  video.pause();
  video.removeAttribute("src");
  video.src=demo.videoUrl;
@@ -110,8 +111,13 @@ db.ref("publicTeacherCourses/"+id).once("value").then(snapshot=>{
  document.title="Demonstração — "+(course.title||"Curso");
 }).catch(error=>console.warn("Dados do curso:",error));
 
-$("showForm").addEventListener("click",()=>{
+const openEnrollmentFromLink=new URLSearchParams(location.search).get("inscricao")==="1";
+function openEnrollmentForm(){
  $("enrollmentForm").classList.add("open");
+ $("showForm").textContent="Formulário de inscrição";
+}
+$("showForm").addEventListener("click",()=>{
+ openEnrollmentForm();
  $("showForm").textContent="Formulário de inscrição";
  $("fullName").focus();
  $("enrollmentForm").scrollIntoView({behavior:"smooth",block:"start"});
