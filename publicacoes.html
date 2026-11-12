@@ -173,7 +173,7 @@ feed.addEventListener('click',async event=>{
 feed.addEventListener('submit',async event=>{const form=event.target;if(!form.matches('[data-comment-form],[data-reply-form]'))return;event.preventDefault();const postId=form.dataset.commentForm||form.dataset.post,parent=form.dataset.replyForm||null,textInput=form.querySelector('[name=comment],[name=reply]'),nameInput=form.querySelector('[name=author]'),name=String(nameInput?.value||'').trim().slice(0,60),text=textInput.value.trim();if(!name||!text){if(!name)nameInput?.focus();return;}localStorage.setItem('rwb_visitor_name',name);const button=form.querySelector('button[type=submit]');button.disabled=true;try{await sendComment(postId,name,text,parent);textInput.value=''}catch(e){alert('Não foi possível enviar o comentário: '+e.message)}finally{button.disabled=false}});
 
 let publicationRetryTimer=null,publicationRetryDelay=1500,publicationListenerActive=false,publicationFirstLoadTimer=null;
-const directionPublicationsRef=db.ref('publications');
+const directionPublicationsRef=db.ref('publications').orderByChild('createdAt').limitToLast(12);
 function showPublicationState(message,isError=false){feed.innerHTML='<div class="'+(isError?'empty error':'loading')+'" role="status" aria-live="polite">'+esc(message)+'</div>'}
 function renderDirectionPublications(snapshot){try{render(snapshot);publicationRetryDelay=1500;if(publicationFirstLoadTimer){clearTimeout(publicationFirstLoadTimer);publicationFirstLoadTimer=null}}catch(error){console.error('Erro ao apresentar publicações da Direcção:',error);showPublicationState('As publicações chegaram do Firebase, mas ocorreu um erro ao apresentá-las: '+(error.message||'erro de apresentação'),true)}}
 function subscribeDirectionPublications(){
