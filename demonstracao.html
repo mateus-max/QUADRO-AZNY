@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07182f"><title>Demonstração do curso — Remote Work Board</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;background:#07182f;color:#fff}
+.top{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#0b2850}
+.top a{color:#dceaff;text-decoration:none;font-size:14px}
+.brand{font-weight:850;letter-spacing:.2px}
+.video-stage{min-height:calc(100svh - 54px);display:flex;align-items:center;justify-content:center;background:#02070e;padding:10px}
+#demoVideo{display:block;width:100%;height:calc(100svh - 74px);max-height:calc(100svh - 74px);object-fit:contain;background:#02070e}
+.content{max-width:760px;margin:0 auto;padding:22px 16px 48px}
+h1{font-size:24px;margin:0 0 7px}.sub{color:#bdcce0;font-size:14px;margin:0 0 18px}
+.primary{border:0;border-radius:12px;padding:14px 20px;background:#1476e8;color:#fff;font-weight:850;font-size:16px;cursor:pointer;width:100%}
+.form-panel{display:none;margin-top:16px;padding:18px;border:1px solid #27486e;border-radius:16px;background:#102b4c}
+.form-panel.open{display:block}.field{display:grid;gap:6px;margin:0 0 13px}
+label{font-size:13px;font-weight:750;color:#e4efff}
+input,textarea{width:100%;padding:12px;border:1px solid #b9cce3;border-radius:9px;background:#fff;color:#13243b;font:inherit}
+textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e4;font-size:13px;line-height:1.5}
+#status{margin-top:12px;color:#d5e7ff;font-size:14px}
+@media(min-width:800px){.video-stage{padding:18px}.content{padding-top:28px}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+</head>
+<body>
+<header class="top"><span class="brand">Remote Work Board</span><a href="formadores.html">Voltar aos cursos</a></header>
+<main>
+<section class="video-stage"><video id="demoVideo" controls playsinline preload="metadata" aria-label="Vídeo de demonstração"></video></section>
+<section class="content">
+<h1 id="courseTitle">Demonstração do curso</h1><p class="sub" id="teacherName"></p>
+<p class="muted">Gostou da demonstração? Preencha os seus dados para manifestar interesse e receber informações sobre a inscrição.</p>
+<button type="button" class="primary" id="showForm">Fazer inscrição</button>
+<form id="enrollmentForm" class="form-panel">
+<div class="field"><label for="fullName">Nome completo *</label><input id="fullName" name="fullName" required maxlength="120" autocomplete="name" placeholder="O seu nome completo"></div>
+<div class="field"><label for="whatsapp">Número do WhatsApp *</label><input id="whatsapp" name="whatsapp" required type="tel" maxlength="25" autocomplete="tel" placeholder="+244 9xx xxx xxx"></div>
+<div class="field"><label for="email">E-mail (opcional)</label><input id="email" name="email" type="email" maxlength="150" autocomplete="email" placeholder="nome@exemplo.com"></div>
+<div class="field"><label for="message">Mensagem curta (máximo 50 caracteres)</label><textarea id="message" name="message" maxlength="50" placeholder="Tenho interesse neste curso…"></textarea><small id="messageCount">0/50 caracteres</small></div>
+<button class="primary" id="sendEnrollment" type="submit">Enviar pedido de inscrição</button>
+<div id="status" role="status" aria-live="polite"></div>
+</form>
+</section>
+</main>
+<script>
+(()=>{"use strict";
+const cfg={apiKey:"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc",authDomain:"remot-board.firebaseapp.com",databaseURL:"https://remot-board-default-rtdb.firebaseio.com",projectId:"remot-board",storageBucket:"remot-board.firebasestorage.app",messagingSenderId:"931887981666",appId:"1:931887981666:web:08899cca83f1f514191d3b"};
+if(!firebase.apps.length)firebase.initializeApp(cfg);
+const db=firebase.database(),id=new URLSearchParams(location.search).get("id"),$=x=>document.getElementById(x);
+if(!id){$("status").textContent="Não foi indicado o curso desta demonstração.";throw new Error("Missing course id")}
+let course=null;
+db.ref("publicTeacherCourses/"+id).once("value").then(s=>{course=s.val();if(!course)throw new Error("Curso não encontrado.");$("courseTitle").textContent=course.title||"Demonstração do curso";const teacher=course.teacherSnapshot||course.profileSnapshot||{};$("teacherName").textContent=teacher.name||"";return db.ref("publicTeacherDemos/"+id).once("value")}).then(s=>{const demo=s.val();if(!demo||!demo.videoUrl)throw new Error("Esta demonstração já não está disponível.");$("demoVideo").src=demo.videoUrl;document.title="Demonstração — "+(course.title||"Curso")}).catch(err=>{$("courseTitle").textContent="Demonstração indisponível";$("status").textContent=err.message||"Não foi possível carregar este vídeo.";$("showForm").disabled=true});
+$("showForm").addEventListener("click",()=>{$("enrollmentForm").classList.add("open");$("showForm").textContent="Formulário de inscrição";$("fullName").focus();$("enrollmentForm").scrollIntoView({behavior:"smooth",block:"start"})});
+$("message").addEventListener("input",()=>{$("messageCount").textContent=$("message").value.length+"/50 caracteres"});
+$("enrollmentForm").addEventListener("submit",async e=>{e.preventDefault();const button=$("sendEnrollment");if(button.disabled)return;button.disabled=true;
+try{
+ if(!course)throw new Error("O curso ainda não foi carregado.");
+ const fullName=$("fullName").value.trim(),whatsapp=$("whatsapp").value.trim(),email=$("email").value.trim(),message=$("message").value.trim();
+ if(!fullName||!whatsapp)throw new Error("Preencha o nome completo e o WhatsApp.");
+ if(message.length>50)throw new Error("A mensagem deve ter no máximo 50 caracteres.");
+ const ref=db.ref("courseDemoEnrollments/"+id).push();
+ await ref.set({courseId:id,courseTitle:course.title||"",teacherUid:course.teacherUid||"",fullName,whatsapp,email,message,createdAt:Date.now(),source:"video-demo"});
+ $("status").textContent="Pedido enviado com sucesso! O professor poderá entrar em contacto consigo.";
+ $("enrollmentForm").reset();$("messageCount").textContent="0/50 caracteres";
+}catch(err){$("status").textContent=err.message||"Não foi possível enviar o pedido. Tente novamente."}
+finally{button.disabled=false}
+});
+})();
+</script>
+</body></html>
