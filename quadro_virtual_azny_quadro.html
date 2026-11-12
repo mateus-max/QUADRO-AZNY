@@ -1529,6 +1529,10 @@ function bindClassSessionRealtime(){
   Object.entries(data).forEach(([id,d])=>{
    if(!d)return;
    if(d.status==="pending"){pending.add(id);renderJoinRequest(d.name||"Aluno",id)}
+   if(d.status==="rejected"||d.status==="left"){
+    /* Um pedido rejeitado ou uma saída nunca pode conservar um cartão/câmara na aula. */
+    removeStudentVideoCard(id);
+   }
    if(d.status==="approved"){
     approved.add(id);
     /* Mostrar o participante imediatamente após a aprovação, sem esperar
@@ -3362,7 +3366,11 @@ function aznySpeakTeacherNotice(message){try{if(!window.speechSynthesis||!window
 function announceJoinRequest(studentName,requestId){try{if(isStudent||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;let said=[];try{said=JSON.parse(sessionStorage.getItem("azny-join-voice-"+String(classSessionId))||"[]")}catch(_){}if(said.includes(requestId))return;said.push(requestId);try{sessionStorage.setItem("azny-join-voice-"+String(classSessionId),JSON.stringify(said.slice(-100)))}catch(_){}const en=document.documentElement.lang==="en",person=aznyPersonType(studentName);const message=en?"Attention, Teacher "+aznyTeacherDisplayName+". Student "+studentName+" is requesting permission to join the class.":"Atenção, senhor "+aznyTeacherDisplayName+". O "+person+" "+studentName+" está à espera da sua autorização para entrar na aula.";aznySpeakTeacherNotice(message)}catch(e){console.warn("AZNY join announcement:",e)}}
 prepareJoinVoice();
 aznyInitAudioOutputPicker();
-function renderJoinRequest(name,requestId){const wrap=document.getElementById("cameraJoinRequests");if(!wrap)return;const id="jr-"+requestId;if(document.getElementById(id))return;const en=document.documentElement.lang==="en",el=document.createElement("div");el.dataset.requestId=requestId;el.className="join-request";announceJoinRequest(name,requestId);el.id=id;el.innerHTML='<div>'+(en?"Join request":"Pedido para entrar")+'</div><div class="jr-name">'+escapeHtml(name)+'</div><div class="jr-actions"><button data-accept>'+(en?"✓ Approve":"✓ Aceitar")+'</button><button data-reject>'+(en?"✕ Reject":"✕ Rejeitar")+'</button></div>';el.querySelector("[data-accept]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"approved",teacherUid:aznyUid||"",approvedAt:firebase.database.ServerValue.TIMESTAMP});roomChannel?.postMessage({type:"join-response",name,approved:true});el.remove();toast(en?name+" was admitted to the class":name+" foi aceite")}catch(e){console.error("AZNY approve student:",e);toast(en?"Could not approve this student.":"Não foi possível aceitar o aluno.")}};el.querySelector("[data-reject]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"rejected",rejectedAt:firebase.database.ServerValue.TIMESTAMP,teacherUid:aznyUid||""});roomChannel?.postMessage({type:"join-response",name,approved:false});el.remove();toast(en?name+" was denied access":name+" foi rejeitado")}catch(e){toast(en?"Could not reject this student.":"Não foi possível rejeitar o aluno.")}};wrap.appendChild(el)}
+function renderJoinRequest(name,requestId){const wrap=document.getElementById("cameraJoinRequests");if(!wrap)return;const id="jr-"+requestId;if(document.getElementById(id))return;const en=document.documentElement.lang==="en",el=document.createElement("div");el.dataset.requestId=requestId;el.className="join-request";announceJoinRequest(name,requestId);el.id=id;el.innerHTML='<div>'+(en?"Join request":"Pedido para entrar")+'</div><div class="jr-name">'+escapeHtml(name)+'</div><div class="jr-actions"><button data-accept>'+(en?"✓ Approve":"✓ Aceitar")+'</button><button data-reject>'+(en?"✕ Reject":"✕ Rejeitar")+'</button></div>';el.querySelector("[data-accept]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"approved",teacherUid:aznyUid||"",approvedAt:firebase.database.ServerValue.TIMESTAMP});roomChannel?.postMessage({type:"join-response",name,approved:true});el.remove();toast(en?name+" was admitted to the class":name+" foi aceite")}catch(e){console.error("AZNY approve student:",e);toast(en?"Could not approve this student.":"Não foi possível aceitar o aluno.")}};el.querySelector("[data-reject]").onclick=async()=>{try{await studentRequestRef(requestId).update({status:"rejected",rejectedAt:firebase.database.ServerValue.TIMESTAMP,teacherUid:aznyUid||""});
+  /* Remover também qualquer sinalização/câmara antiga associada ao pedido. */
+  try{await signalRef(requestId)?.remove()}catch(cleanError){console.warn("AZNY cleanup rejected peer:",cleanError)}
+  removeStudentVideoCard(requestId);
+  roomChannel?.postMessage({type:"join-response",name,approved:false});el.remove();toast(en?name+" was denied access":name+" foi rejeitado")}catch(e){toast(en?"Could not reject this student.":"Não foi possível rejeitar o aluno.")}};wrap.appendChild(el)}
 function notifyTeacherStudentPresence(ref){
  if(!ref||!isStudent||!studentRequestId)return;
  try{ref.child("studentOnline").onDisconnect().set(false)}catch(_){}
@@ -3892,8 +3900,10 @@ async function leaveStudentClass(){
  const waiting=document.getElementById("studentWaiting");if(waiting){waiting.textContent=document.documentElement.lang==="en"?"You left the class. You can return while the class is active.":"Saiu da aula. Pode voltar a entrar enquanto a aula estiver ativa.";waiting.style.display="block"}
  try{
   if(oldRequestId&&AZNY_DB){
-   const ref=studentRequestRef(oldRequestId);if(ref)await ref.update({studentOnline:false,network:"offline",leftAt:firebase.database.ServerValue.TIMESTAMP});
+   const ref=studentRequestRef(oldRequestId);if(ref)await ref.update({status:"left",studentOnline:false,network:"offline",leftAt:firebase.database.ServerValue.TIMESTAMP});
    const peerRef=signalRef(oldRequestId);if(peerRef)await peerRef.remove();
+   /* A saída invalida a autorização anterior: só uma nova aprovação permite regressar. */
+   if(aznyUid)await AZNY_DB.ref("roomAccess/"+aznyRoomKey()+"/"+aznyUid).remove();
   }
 }catch(e){console.warn("AZNY leave class presence:",e)}
  try{studentPeer?.close()}catch(_){} studentPeer=null;studentRemoteDescriptionReady=false;studentPendingTeacherCandidates=[];
