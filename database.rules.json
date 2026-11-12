@@ -280,7 +280,7 @@
       ".read": true,
       ".write": "auth != null && auth.token.email == 'suporte@domingas.com'",
       "$publicationId": {
-        ".validate": "newData.hasChildren(['type','caption','createdAt','author','createdBy']) && newData.child('caption').isString() && newData.child('caption').val().length <= 5000 && newData.child('createdAt').isNumber() && newData.child('author').isString() && newData.child('createdBy').isString() && ((newData.child('type').val() == 'text' && !newData.child('url').exists()) || ((newData.child('type').val() == 'image' || newData.child('type').val() == 'video') && newData.child('url').isString() && newData.child('url').val().beginsWith('data:') && !newData.child('storagePath').exists()))"
+        ".validate": "newData.hasChildren(['type','caption','createdAt','author','createdBy']) && newData.child('caption').isString() && newData.child('caption').val().length <= 5000 && newData.child('createdAt').isNumber() && newData.child('author').isString() && newData.child('createdBy').isString() && ((newData.child('type').val() == 'text' && !newData.child('url').exists() && !newData.child('storagePath').exists()) || ((newData.child('type').val() == 'image' || newData.child('type').val() == 'video') && newData.child('url').isString() && newData.child('url').val().matches(/^data:.*;base64,.+$/) && !newData.child('storagePath').exists()))"
       }
     },
     "adminTeacherChats": {
