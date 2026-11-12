@@ -197,8 +197,11 @@ $("publishDemo").addEventListener("click",async()=>{
   const meta=await new Promise((resolve,reject)=>{const u=URL.createObjectURL(selectedDemoBlob),v=document.createElement("video");v.preload="metadata";v.src=u;v.onloadedmetadata=()=>{URL.revokeObjectURL(u);resolve({duration:v.duration,width:v.videoWidth,height:v.videoHeight})};v.onerror=()=>{URL.revokeObjectURL(u);reject(new Error("Não foi possível validar a duração do vídeo."))}});
   if(!Number.isFinite(meta.duration)||meta.duration>60.2||meta.width<=meta.height)throw new Error("O vídeo deve estar na horizontal e ter no máximo 60 segundos.");
   const demo={courseId,teacherUid:user.uid,teacherName:course.teacherSnapshot?.name||course.profileSnapshot?.name||"",videoUrl,videoMime:selectedDemoBlob.type||"video/webm",durationSeconds:Math.min(60,Math.ceil(meta.duration)),updatedAt:Date.now()};
-  const updates={};updates["publicTeacherDemos/"+courseId]=demo;updates["publicTeacherCourses/"+courseId+"/demoAvailable"]=true;updates["teacherCourseSubmissions/"+user.uid+"/"+courseId+"/demoAvailable"]=true;
-  await db.ref().update(updates);$("demoVideoPreview").src=videoUrl;$("demoVideoPreview").classList.remove("hidden");selectedDemoBlob=null;$("demoVideoFile").value="";publishedDemoLoaded=true;$("demoMessage").textContent="Demonstração publicada com sucesso. O botão “Ver demonstração” já aparece no cartão do curso.";
+  const saveDemoWithTimeout=(ref,value,label)=>Promise.race([ref.set(value),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo esgotado ao guardar "+label+". Verifique a ligação e tente novamente.")),90000))]);
+  await saveDemoWithTimeout(db.ref("publicTeacherDemos/"+courseId),demo,"a demonstração");
+  await saveDemoWithTimeout(db.ref("publicTeacherCourses/"+courseId+"/demoAvailable"),true,"a disponibilidade da demonstração");
+  try{await db.ref("teacherCourseSubmissions/"+user.uid+"/"+courseId+"/demoAvailable").set(true)}catch(indexError){console.warn("Indicador pessoal não actualizado; demonstração pública já guardada.",indexError)}
+  $("demoVideoPreview").src=videoUrl;$("demoVideoPreview").classList.remove("hidden");selectedDemoBlob=null;$("demoVideoFile").value="";publishedDemoLoaded=true;$("demoMessage").textContent="Demonstração publicada com sucesso. O botão “Ver demonstração” já aparece no cartão do curso.";
  }catch(err){$("demoMessage").textContent=err.message||"Não foi possível publicar a demonstração."}
  finally{button.disabled=false}
 });
