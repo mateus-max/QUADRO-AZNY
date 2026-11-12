@@ -192,7 +192,7 @@ $("publishDemo").addEventListener("click",async()=>{
   if(!user)throw new Error("Sessão não autenticada.");
   const courseId=$("demoCourseSelect").value;if(!courseId)throw new Error("Seleccione o curso ao qual a demonstração pertence.");
   if(!selectedDemoBlob)throw new Error("Grave ou escolha um vídeo horizontal para publicar.");
-  const snap=await db.ref("teacherCourseSubmissions/"+user.uid+"/"+courseId).once("value"),course=snap.val();if(!course)throw new Error("Não foi encontrado o curso seleccionado.");
+  const snap=await db.ref("teacherCourseSubmissions/"+user.uid+"/"+courseId).once("value"),course=snap.val();if(!course)throw new Error("Não foi encontrado o curso seleccionado.");const previousDemo=(await db.ref("publicTeacherDemos/"+courseId).once("value")).val();
   $("demoMessage").textContent="A preparar vídeo e publicar a demonstração…";
   const uploaded=await uploadDemoVideo(selectedDemoBlob,courseId);const videoUrl=uploaded.videoUrl;
   const meta=await new Promise((resolve,reject)=>{const u=URL.createObjectURL(selectedDemoBlob),v=document.createElement("video");v.preload="metadata";v.src=u;v.onloadedmetadata=()=>{URL.revokeObjectURL(u);resolve({duration:v.duration,width:v.videoWidth,height:v.videoHeight})};v.onerror=()=>{URL.revokeObjectURL(u);reject(new Error("Não foi possível validar a duração do vídeo."))}});
@@ -200,7 +200,7 @@ $("publishDemo").addEventListener("click",async()=>{
   const demo={courseId,teacherUid:user.uid,teacherName:course.teacherSnapshot?.name||course.profileSnapshot?.name||"",videoUrl,storagePath:uploaded.storagePath,videoMime:selectedDemoBlob.type||"video/webm",durationSeconds:Math.min(60,Math.ceil(meta.duration)),updatedAt:Date.now()};
   const saveDemoWithTimeout=(ref,value,label)=>Promise.race([ref.set(value),new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tempo esgotado ao guardar "+label+". Verifique a ligação e tente novamente.")),90000))]);
   await saveDemoWithTimeout(db.ref("publicTeacherDemos/"+courseId),demo,"a demonstração");
-  await saveDemoWithTimeout(db.ref("publicTeacherCourses/"+courseId+"/demoAvailable"),true,"a disponibilidade da demonstração");
+  await saveDemoWithTimeout(db.ref("publicTeacherCourses/"+courseId+"/demoAvailable"),true,"a disponibilidade da demonstração");if(previousDemo?.storagePath&&previousDemo.storagePath!==uploaded.storagePath){try{await storage.ref(previousDemo.storagePath).delete()}catch(cleanupError){console.warn("A nova demonstração foi publicada, mas o ficheiro anterior não pôde ser removido automaticamente.",cleanupError)}}
   try{await db.ref("teacherCourseSubmissions/"+user.uid+"/"+courseId+"/demoAvailable").set(true)}catch(indexError){console.warn("Indicador pessoal não actualizado; demonstração pública já guardada.",indexError)}
   $("demoVideoPreview").src=videoUrl;$("demoVideoPreview").classList.remove("hidden");selectedDemoBlob=null;$("demoVideoFile").value="";publishedDemoLoaded=true;$("demoMessage").textContent="Demonstração publicada com sucesso. O botão “Ver demonstração” já aparece no cartão do curso.";
  }catch(err){$("demoMessage").textContent=err.message||"Não foi possível publicar a demonstração."}
