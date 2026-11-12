@@ -337,7 +337,6 @@ body:has(.view-panel[data-view-panel="suporte"]:not([hidden])) .view-panel[data-
   <a href="#actividade" data-view="actividade"><span class="ico">◷</span>Actividade</a>
   <a href="#suporte" data-view="suporte"><span class="ico">☏</span>Chat de suporte <span id="supportUnreadBadge" class="support-unread" hidden>0</span></a>
   <a href="publicar-cursos.html" id="publishCoursesLink"><span class="ico">📣</span>Publicar cursos</a>
-  <a href="#inscricoes" data-view="inscricoes"><span class="ico">👥</span>Ver inscritos <span id="enrollmentCountBadge" class="support-unread" hidden>0</span></a>
  </nav>
  <div class="side-bottom"><button class="btn" id="logoutSide" type="button">↪ Terminar sessão</button></div>
 </aside>
@@ -370,15 +369,14 @@ body:has(.view-panel[data-view-panel="suporte"]:not([hidden])) .view-panel[data-
  <section class="view-panel" data-view-panel="actividade" id="actividade" hidden>
   <section class="panel"><h2><span class="panel-ico">◷</span>Actividade recente</h2><div class="activity-empty"><span class="info">ⓘ</span><strong>A sua actividade aparecerá aqui.</strong><span>As informações de utilização serão apresentadas quando estiverem disponíveis.</span></div></section>
  </section>
- <section class="view-panel" data-view-panel="inscricoes" id="inscricoes" hidden><section class="panel"><h2><span class="panel-ico">👥</span>Alunos inscritos nos meus cursos</h2><p class="muted">Seleccione um aluno para consultar os dados da inscrição e entrar em contacto pelo WhatsApp.</p><div class="enrollment-workspace"><div class="enrollment-list-panel"><div class="enrollment-list-head"><strong>Inscrições recebidas</strong><span id="enrollmentTotal">0 alunos</span></div><div id="teacherEnrollmentList" class="teacher-enrollment-list"><div class="activity-empty">A carregar inscrições…</div></div></div><aside id="teacherEnrollmentDetails" class="enrollment-detail-panel"><div class="activity-empty"><span class="info">ⓘ</span><strong>Seleccione um aluno</strong><span>Os detalhes da inscrição aparecerão aqui.</span></div></aside></div><p id="teacherEnrollmentStatus" class="status" role="status" aria-live="polite"></p></section></section>
 </main></div>
 <script>
 (()=>{"use strict";
 const cfg={"apiKey":"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc","authDomain":"remot-board.firebaseapp.com","databaseURL":"https://remot-board-default-rtdb.firebaseio.com","projectId":"remot-board","storageBucket":"remot-board.firebasestorage.app","messagingSenderId":"931887981666","appId":"1:931887981666:web:08899cca83f1f514191d3b","measurementId":"G-HH3SERFF32"};
 if(!firebase.apps.length)firebase.initializeApp(cfg);const auth=firebase.auth(),db=firebase.database();
 const qs=new URLSearchParams(location.search),token=qs.get("acesso")||sessionStorage.getItem("azny_access_token")||"",status=document.getElementById("licenseStatus"),button=document.getElementById("openBoard"),message=document.getElementById("message");
-let currentTeacherUser=null,teacherEnrollmentItems=[],selectedEnrollmentKey="";
-const viewTitles={inicio:"Painel do Professor",quadro:"Quadro Virtual",plano:"O meu plano",atalhos:"Acesso rápido",actividade:"Actividade recente",suporte:"Chat de suporte",inscricoes:"Alunos inscritos"};
+let currentTeacherUser=null;
+const viewTitles={inicio:"Painel do Professor",quadro:"Quadro Virtual",plano:"O meu plano",atalhos:"Acesso rápido",actividade:"Actividade recente",suporte:"Chat de suporte"};
 function openView(name,fromPop=false){
  const selected=viewTitles[name]?name:"inicio";
  document.querySelectorAll("[data-view-panel]").forEach(panel=>{panel.hidden=panel.dataset.viewPanel!==selected});
