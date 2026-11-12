@@ -37,7 +37,7 @@ textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e
 <div class="field"><label for="message">Mensagem curta (máximo 50 caracteres)</label><textarea id="message" name="message" maxlength="50" placeholder="Tenho interesse neste curso…"></textarea><small id="messageCount">0/50 caracteres</small></div>
 <button class="primary" id="sendEnrollment" type="submit">Enviar pedido de inscrição</button>
 <div id="status" role="status" aria-live="polite"></div>
-</form></main><section id="successScreen" class="success-screen" role="status" aria-live="polite"><div class="success-card"><div class="success-icon" aria-hidden="true">✓</div><h1>Inscrição submetida com sucesso!</h1><p>A sua inscrição foi recebida. A professora entrará em contacto consigo através do número de WhatsApp que forneceu no formulário para dar seguimento à sua inscrição.</p><a href="formadores.html">Voltar aos cursos</a></div></section><script>
+</form></main><section id="successScreen" class="success-screen" role="status" aria-live="polite"><div class="success-card"><div class="success-icon" aria-hidden="true">✓</div><h1>Inscrição submetida com sucesso!</h1><p id="successMessage">A sua inscrição foi recebida. O professor entrará em contacto consigo através do número de WhatsApp que forneceu no formulário para dar seguimento à sua inscrição.</p><a href="formadores.html">Voltar aos cursos</a></div></section><script>
 (()=>{"use strict";
 const cfg={apiKey:"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc",authDomain:"remot-board.firebaseapp.com",databaseURL:"https://remot-board-default-rtdb.firebaseio.com",projectId:"remot-board",storageBucket:"remot-board.firebasestorage.app",messagingSenderId:"931887981666",appId:"1:931887981666:web:08899cca83f1f514191d3b"};
 if(!firebase.apps.length)firebase.initializeApp(cfg);
@@ -60,24 +60,33 @@ $("enrollmentForm").addEventListener("submit",async e=>{
   const fullName=$("fullName").value.trim(),whatsapp=$("whatsapp").value.trim(),email=$("email").value.trim(),message=$("message").value.trim();
   if(!fullName||!whatsapp)throw new Error("Preencha o nome completo e o WhatsApp.");
   if(message.length>50)throw new Error("A mensagem deve ter no máximo 50 caracteres.");
-  const payload=new FormData($("enrollmentForm"));
-  payload.append("_subject","Novo pedido de inscrição — Remote Work Board");
-  payload.append("tipoPedido","Inscrição directa em curso");
-  payload.append("curso",course.title||"");
-  payload.append("courseId",id);
-  payload.append("professor",course.teacherSnapshot?.name||course.profileSnapshot?.name||"");
-  payload.append("teacherUid",course.teacherUid||"");
-  payload.append("nomeCompleto",fullName);
-  payload.append("mensagem",message||"Sem mensagem");
-  payload.append("origem","Botão Fazer inscrição no cartão do curso");
-  payload.append("data",new Date().toLocaleString("pt-PT"));
-  if(!email)payload.set("email","Não indicado");
-  if(!message)payload.set("message","Sem mensagem");
-  const response=await fetch(formspreeEndpoint,{method:"POST",body:payload,headers:{Accept:"application/json"}});
-  if(!response.ok)throw new Error("Não foi possível enviar o pedido. Verifique a ligação e tente novamente.");
-  const result=await response.json().catch(()=>({}));
-  if(result.errors?.length)throw new Error(result.errors.map(x=>x.message||"Erro no formulário").join(";"));
-  document.querySelector("header.top").style.display="none";document.querySelector("main.content").style.display="none";$("successScreen").style.display="flex";window.scrollTo({top:0,behavior:"instant"});
+  const createdAt=Date.now(),teacher=course.teacherSnapshot||course.profileSnapshot||{};
+  const enrollmentRef=db.ref("courseEnrollments/"+id).push();
+  const enrollmentRecord={courseId:id,courseTitle:course.title||"",teacherUid:course.teacherUid||"",fullName,whatsapp,email,message,status:"new",createdAt:firebase.database.ServerValue.TIMESTAMP};
+  if(!enrollmentRecord.teacherUid)throw new Error("Não foi possível identificar o professor responsável por este curso. Contacte o suporte.");
+  await enrollmentRef.set(enrollmentRecord);
+  let formspreeDelivered=false,formspreeError="";
+  try{
+   const payload=new FormData($("enrollmentForm"));
+   payload.append("_subject","Novo pedido de inscrição — Remote Work Board");
+   payload.append("tipoPedido","Inscrição directa em curso");
+   payload.append("curso",course.title||"");
+   payload.append("courseId",id);
+   payload.append("professor",teacher.name||"");
+   payload.append("teacherUid",course.teacherUid||"");
+   payload.append("nomeCompleto",fullName);
+   payload.append("mensagem",message||"Sem mensagem");
+   payload.append("origem","Botão Fazer inscrição no cartão do curso");
+   payload.append("data",new Date(createdAt).toLocaleString("pt-PT"));
+   if(!email)payload.set("email","Não indicado");
+   if(!message)payload.set("message","Sem mensagem");
+   const response=await fetch(formspreeEndpoint,{method:"POST",body:payload,headers:{Accept:"application/json"}});
+   if(!response.ok)throw new Error("Formspree HTTP "+response.status);
+   const result=await response.json().catch(()=>({}));
+   if(result.errors?.length)throw new Error(result.errors.map(x=>x.message||"Erro no formulário").join(";"));
+   formspreeDelivered=true;
+  }catch(noticeError){formspreeError=noticeError.message||"Falha na notificação Formspree";console.error("Inscrição guardada no painel do professor, mas a notificação Formspree falhou:",noticeError)}
+  if(!formspreeDelivered)$("successMessage").textContent="A sua inscrição foi guardada no painel do professor. O aviso por e-mail não foi confirmado; o professor já poderá consultar os seus dados. ("+formspreeError+")";document.querySelector("header.top").style.display="none";document.querySelector("main.content").style.display="none";$("successScreen").style.display="flex";window.scrollTo({top:0,behavior:"instant"});
  }catch(err){$("status").textContent=err.message||"Não foi possível enviar o pedido."}
  finally{button.disabled=false}
 });
