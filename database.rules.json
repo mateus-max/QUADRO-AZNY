@@ -296,6 +296,12 @@
           }
         }
       }
+    },
+    "publicTeacherDemos": {
+      ".read": true,
+      "$courseId": {
+        ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (newData.exists() && newData.child('teacherUid').val() == auth.uid) || (!newData.exists() && data.child('teacherUid').val() == auth.uid))"
+      }
     }
   }
 }
