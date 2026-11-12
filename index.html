@@ -262,31 +262,17 @@ body{background:#f4f7fb;color:#10213e}
 </style>
 </head>
 <body>
-<main class="page">
-<header class="topbar">
- <a class="brand" href="index.html" aria-label="Quadro Virtual — Início">
-  <img src="icons/remote-work-board.svg" alt="Logótipo Quadro Virtual">
-  <div class="brand-text">Quadro <span>Virtual</span><small>A Sala de Aula Digital</small></div>
- </a>
- <nav class="main-nav" aria-label="Navegação principal">
-  <a class="nav-active" href="index.html"><span>⌂</span> Início</a>
-  <a href="formadores.html"><span>♧</span> Professores</a>
-  <a href="publicacoes.html"><span>▤</span> Publicações</a>
-  <button type="button" id="navSupportBtn"><span>♧</span> Suporte</button>
-  <a class="nav-login" href="login-professor.html"><span>♙</span> Entrar</a>
- </nav>
+<main class="welcome-page">
  <button class="install-app-btn" id="installAppBtn" type="button" aria-label="Instalar aplicação" title="Instalar aplicação" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v3h16v-3"/></svg></button>
-</header>
-
-<section class="hero">
- <div class="hero-copy">
-  <h1 class="hero-tagline">Ensine e aprenda<br>em <span>tempo real.</span></h1>
-  <p class="lead">Um quadro virtual colaborativo para professores e alunos, com ferramentas interativas, partilha de materiais e avaliações online.</p>
-  <nav class="actions" aria-label="Acesso à plataforma">
-   <a class="btn primary" href="login-professor.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20M8.5 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 8h6m-3-3v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Sou Professor<br>Entrar / Criar conta <span aria-hidden="true">→</span></a>
-  </nav>
- </div>
- <div class="hero-art" aria-label="Ilustração de uma aula colaborativa no quadro virtual">
+ <section class="welcome-hero" aria-label="Bem-vindo ao Quadro Virtual">
+  <div class="welcome-brand">
+   <div class="welcome-cap" aria-hidden="true">◆</div>
+   <div class="welcome-name">Quadro <span>Virtual</span></div>
+   <div class="welcome-tagline"><i></i>A Sala de Aula Digital<i></i></div>
+  </div>
+  <h1>Seja Bem-vindo<br>ao <span>Quadro Virtual</span></h1>
+  <p class="welcome-copy">Ensine, aprenda e colabore em tempo real,<br class="desktop-break"> com ferramentas simples e interativas.</p>
+   <div class="hero-art" aria-label="Ilustração de uma aula colaborativa no quadro virtual">
   <div class="laptop-scene">
    <svg viewBox="0 0 650 450" role="img" aria-hidden="true">
     <defs>
@@ -348,24 +334,17 @@ body{background:#f4f7fb;color:#10213e}
     </g>
    </svg>
   </div>
- </div>
-</section>
-
-<section class="features" aria-label="Funcionalidades da plataforma">
- <div class="feature"><span class="feature-icon">▣</span><strong>Aulas Interativas</strong></div>
- <div class="feature"><span class="feature-icon">♧</span><strong>Colaboração<br>em Tempo Real</strong></div>
- <div class="feature"><span class="feature-icon">▱</span><strong>Partilha de<br>Materiais</strong></div>
- <div class="feature"><span class="feature-icon">▥</span><strong>Avaliações<br>Online</strong></div>
-</section>
-<nav class="quick-links" aria-label="Outros acessos">
- <a class="quick-card teachers" href="formadores.html"><span class="quick-icon">♧</span><strong>Ver Professores e<br>Formadores de Angola</strong><span class="quick-arrow">→</span></a>
- <a class="quick-card publications" href="publicacoes.html"><span class="quick-icon">♢</span><strong>Ver Publicações<br>da Direcção</strong><span class="quick-arrow">→</span></a>
- <button class="quick-card suggestions" id="openFeedbackBtn" type="button"><span class="quick-icon">▢</span><strong>Sugestões e Dúvidas</strong><span class="quick-arrow">→</span></button>
-</nav>
-<footer class="landing-footer">
- <div class="footer-brand"><img src="icons/remote-work-board.svg" alt=""> <strong>Quadro <span>Virtual</span><small>A Sala de Aula Digital</small></strong></div>
- <p>Educação Online, Simples e Eficiente.</p>
-</footer>
+ </div
+  <nav class="welcome-actions" aria-label="Acessos principais">
+   <a class="welcome-primary" href="login-professor.html"><span class="welcome-action-icon" aria-hidden="true">♙</span><strong>Sou Professor<br>Entrar / Criar conta</strong><span class="welcome-arrow" aria-hidden="true">→</span></a>
+   <div class="welcome-secondary-row">
+    <a class="welcome-secondary" href="formadores.html"><span aria-hidden="true">♧</span>Ver Professores</a>
+    <a class="welcome-secondary" href="publicacoes.html"><span aria-hidden="true">♢</span>Publicações da Direcção</a>
+   </div>
+  </nav>
+  <button class="welcome-feedback" id="openFeedbackBtn" type="button">Sugestões e apoio</button>
+ </section>
+</main>
 <div class="feedback-modal" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle"><form class="feedback-card" id="feedbackForm"><h2 id="feedbackTitle">Sugestões e Reclamações</h2><p>Partilhe a sua sugestão ou reclamação directamente com a Direcção do Quadro Virtual AZNY.</p><label for="feedbackName">Nome</label><input id="feedbackName" name="nome" autocomplete="name" maxlength="120" required><label for="feedbackEmail">E-mail</label><input id="feedbackEmail" name="email" type="email" autocomplete="email" maxlength="180" required><label for="feedbackType">Tipo de mensagem</label><select id="feedbackType" name="tipo" required><option value="Sugestão">Sugestão</option><option value="Reclamação">Reclamação</option></select><label for="feedbackMessage">Mensagem</label><textarea id="feedbackMessage" name="mensagem" maxlength="5000" required></textarea><div class="feedback-actions"><button class="feedback-cancel" id="closeFeedbackBtn" type="button">Cancelar</button><button class="feedback-send" id="sendFeedbackBtn" type="submit">Enviar à Direcção</button></div><div id="feedbackStatus" role="status" aria-live="polite"></div></form></div>
 
 </main>
@@ -464,6 +443,65 @@ body:before,body:after{display:none}
  .landing-footer{margin:0 -14px;flex-direction:column;text-align:center;padding:25px 16px;gap:13px}
  .footer-brand{font-size:22px}.footer-brand img{width:56px;height:48px}
  .landing-footer p{font-size:19px}
+}
+
+/* Landing page minimalista — boas-vindas ao Quadro Virtual */
+:root{--welcome-blue:#0648a8;--welcome-navy:#062b65;--welcome-gold:#ffbd19}
+html,body{min-height:100%;background:#f4f8ff}
+body{margin:0;overflow-x:hidden;background:radial-gradient(ellipse at 50% 38%,#1677e9 0,#0751b9 38%,#052d70 78%,#031d4c 100%);color:#fff}
+body:before,body:after{display:block;border:0;border-radius:0;width:75vw;height:75vw;max-width:none;max-height:none;box-shadow:none;background:linear-gradient(145deg,#ffffff08,#ffffff00);transform:rotate(35deg);clip-path:ellipse(50% 24% at 50% 50%)}
+body:before{top:32%;left:-24%;opacity:.8}
+body:after{right:-30%;bottom:-12%;opacity:.5}
+.welcome-page{position:relative;z-index:1;width:100%;min-height:100vh;min-height:100dvh;padding:24px 22px 34px;display:flex;justify-content:center}
+.welcome-hero{width:min(100%,1000px);display:flex;flex-direction:column;align-items:center;text-align:center}
+.install-app-btn{position:absolute;right:22px;top:18px;z-index:5;background:#ffffff18;border:1px solid #ffffff60;color:#fff;border-radius:14px;width:46px;height:46px}
+.welcome-brand{display:flex;flex-direction:column;align-items:center;margin:2px 0 22px}
+.welcome-cap{font-size:34px;line-height:1;color:#fff;position:relative;margin-bottom:4px}
+.welcome-cap:after{content:"";position:absolute;width:4px;height:15px;background:#ffbd19;right:1px;top:13px;border-radius:3px}
+.welcome-name{font-size:clamp(34px,5vw,55px);font-weight:950;letter-spacing:-.055em;line-height:1.05;color:#fff}
+.welcome-name span{color:#ffbd19}
+.welcome-tagline{display:flex;align-items:center;gap:13px;margin-top:8px;font-size:clamp(14px,2vw,21px);font-weight:650;color:#e9f3ff}
+.welcome-tagline i{display:block;width:75px;height:2px;background:#dcecff}
+.welcome-hero h1{font-size:clamp(39px,6.4vw,76px);line-height:1.02;letter-spacing:-.045em;margin:20px 0 16px;max-width:950px}
+.welcome-hero h1 span{color:#ffbd19}
+.welcome-copy{font-size:clamp(16px,2.2vw,25px);line-height:1.4;color:#f0f6ff;margin:0 0 10px;font-weight:550}
+.welcome-hero .hero-art{width:min(100%,790px);padding:0;margin:0 auto -2px}
+.welcome-hero .hero-art:before{display:none}
+.welcome-hero .laptop-scene{max-width:790px;filter:drop-shadow(0 18px 22px #00183c45)}
+.welcome-actions{width:min(100%,800px);display:flex;flex-direction:column;gap:18px;margin:0 auto}
+.welcome-primary{width:min(100%,650px);min-height:98px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:22px;padding:15px 28px;border-radius:60px;text-decoration:none;color:#fff;background:linear-gradient(110deg,#087bff,#063a9c);border:2px solid #77c6ff;box-shadow:0 12px 24px #001f5b45;font-size:clamp(18px,2.2vw,27px);line-height:1.22}
+.welcome-action-icon{font-size:45px;line-height:1}
+.welcome-arrow{font-size:38px;margin-left:10px}
+.welcome-secondary-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.welcome-secondary{min-height:78px;display:flex;align-items:center;justify-content:center;gap:15px;padding:14px 20px;border:1.5px solid #9dcaff;border-radius:50px;background:linear-gradient(120deg,#ffffff,#e8f3ff);color:#073b8e;text-decoration:none;font-size:clamp(16px,1.8vw,22px);font-weight:850;box-shadow:0 8px 16px #001f5b22}
+.welcome-secondary span{font-size:30px;color:#0755bc}
+.welcome-primary:hover,.welcome-secondary:hover{transform:translateY(-2px);filter:brightness(1.04)}
+.welcome-feedback{margin:14px 0 0;background:transparent;border:0;color:#dbeaff;text-decoration:underline;font:600 13px inherit;cursor:pointer}
+.feedback-modal{z-index:10001}
+@media(max-width:600px){
+ .welcome-page{padding:25px 15px 22px}
+ .welcome-brand{margin:5px 0 15px}
+ .welcome-cap{font-size:27px}
+ .welcome-name{font-size:36px}
+ .welcome-tagline{font-size:13px;gap:9px}
+ .welcome-tagline i{width:42px}
+ .welcome-hero h1{font-size:clamp(36px,9vw,49px);margin:17px 0 12px}
+ .welcome-copy{font-size:16px;line-height:1.4;margin-bottom:6px}
+ .desktop-break{display:none}
+ .welcome-hero .hero-art{width:calc(100% + 10px);margin:0 -5px -2px}
+ .welcome-primary{min-height:78px;padding:12px 16px;gap:13px;font-size:18px;border-radius:48px}
+ .welcome-action-icon{font-size:35px}
+ .welcome-arrow{font-size:30px;margin-left:2px}
+ .welcome-actions{gap:12px}
+ .welcome-secondary-row{gap:9px}
+ .welcome-secondary{min-height:68px;padding:10px 8px;gap:7px;border-radius:35px;font-size:14px;line-height:1.2}
+ .welcome-secondary span{font-size:24px}
+ .welcome-feedback{margin-top:10px}
+ .install-app-btn{top:10px;right:10px;width:38px;height:38px}
+}
+@media(max-width:370px){
+ .welcome-secondary-row{grid-template-columns:1fr}
+ .welcome-secondary{min-height:55px}
 }
 </style><div id="portalMaintenanceScreen" role="dialog" aria-modal="true" aria-labelledby="portalMaintenanceTitle"><div class="maintenance-card"><div class="maintenance-symbol" aria-hidden="true">🛠️</div><h1 id="portalMaintenanceTitle">Estamos em manutenção</h1><p>Estamos a realizar melhorias no Remote Work Board.<br>Este trabalho procura reforçar a estabilidade, a segurança e o desempenho da plataforma.<br>Durante este período, o acesso às contas e a criação de novas contas estarão temporariamente indisponíveis.<br>Pedimos desculpas pelos transtornos e agradecemos a sua compreensão.<br>Voltaremos a disponibilizar o serviço assim que a manutenção estiver concluída.</p><nav class="maintenance-links" aria-label="Acessos disponíveis durante a manutenção"><a href="formadores.html">👩‍🏫 Ver Professores e Formadores de Angola</a><a href="publicacoes.html">📢 Ver publicações da Direcção</a></nav><div class="maintenance-brand">REMOTE WORK BOARD</div></div></div><script>(function(){const cfg={apiKey:"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc",authDomain:"remot-board.firebaseapp.com",databaseURL:"https://remot-board-default-rtdb.firebaseio.com",projectId:"remot-board",storageBucket:"remot-board.firebasestorage.app",messagingSenderId:"931887981666",appId:"1:931887981666:web:08899cca83f1f514191d3b"};try{if(!firebase.apps.length)firebase.initializeApp(cfg);const auth=firebase.auth(),db=firebase.database(),screen=document.getElementById("portalMaintenanceScreen"),preview=new URLSearchParams(location.search).get("admin_preview")==="1";let enabled=false,user=null,settingsReady=false,authReady=false;const render=()=>{const bypass=preview&&user&&String(user.email||"").trim().toLowerCase()==="suporte@domingas.com";const show=settingsReady&&authReady&&enabled&&!bypass;screen.classList.toggle("visible",show);document.body.style.overflow=show?"hidden":"";Array.from(document.body.children).forEach(el=>{if(el!==screen)el.inert=show})};auth.onAuthStateChanged(value=>{user=value;authReady=true;render()});db.ref("maintenanceMode").on("value",snap=>{enabled=snap.val()?.enabled===true;settingsReady=true;render()},error=>{console.warn("Estado de manutenção:",error);settingsReady=true;render()})}catch(error){console.warn("Não foi possível verificar o estado de manutenção:",error)}})();</script>
 <script>
