@@ -28,8 +28,8 @@ textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e
 <body>
 <header class="top"><span class="brand">Remote Work Board</span><a href="formadores.html">Voltar aos cursos</a></header>
 <main>
-<section class="video-stage"><video id="demoVideo" controls playsinline muted autoplay preload="auto" webkit-playsinline="true" disablepictureinpicture aria-label="Vídeo de demonstração"></video></section>
-<section class="content">
+<section class="video-stage" id="videoStage" hidden><video id="demoVideo" controls playsinline muted autoplay preload="auto" webkit-playsinline="true" disablepictureinpicture aria-label="Vídeo de demonstração"></video></section><section id="emptyDemo" style="display:none;min-height:calc(100svh - 54px);padding:28px 20px;align-items:center;justify-content:center;text-align:center;background:#02070e"><div style="max-width:520px;color:#dceaff;font-size:17px;line-height:1.6">Ainda não foi publicada nenhuma demonstração.<br>Quando for publicada, aparecerá aqui.</div></section>
+<section class="content" id="demoContent" hidden>
 <h1 id="courseTitle">Demonstração do curso</h1><p class="sub" id="teacherName"></p>
 <p class="muted">Gostou da demonstração? Preencha os seus dados para manifestar interesse e receber informações sobre a inscrição.</p>
 <button type="button" class="primary" id="showForm">Fazer inscrição</button>
@@ -65,6 +65,7 @@ const demoVideo=$("demoVideo");demoVideo.addEventListener("loadedmetadata",()=>{
   const demo=s.val();
   if(!demo||!demo.videoUrl)throw new Error("Esta demonstração já não está disponível.");
   const video=$("demoVideo");
+  $("videoStage").hidden=false;$("demoContent").hidden=false;
   video.pause();
   video.src=demo.videoUrl;
   video.load();
@@ -78,8 +79,8 @@ const demoVideo=$("demoVideo");demoVideo.addEventListener("loadedmetadata",()=>{
   $("status").textContent="A iniciar a demonstração…";
   return startDemoPlayback();
  }).catch(err=>{
-  $("courseTitle").textContent="Demonstração indisponível";
-  $("status").textContent=err.message||"Não foi possível carregar este vídeo.";
+  $("videoStage").hidden=true;$("demoContent").hidden=true;
+  $("emptyDemo").style.display="flex";
   $("showForm").disabled=true;
  });
  Promise.allSettled([courseRequest,demoRequest]);
