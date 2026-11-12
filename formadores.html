@@ -173,6 +173,19 @@ main{max-width:1500px;margin:0 auto;padding:16px 4.2% 42px}.section-head{display
  .azny-author-place{font-size:10px}
  .azny-course-card>.course-cover,.azny-course-card>.course-video{max-height:245px;object-fit:contain}
 }
+
+/* Dias e períodos lado a lado também em ecrãs pequenos */
+.azny-schedule{grid-template-columns:repeat(2,minmax(0,1fr))}
+.azny-schedule>div{gap:8px;padding:11px 10px;align-items:flex-start}
+.azny-schedule>div>span,.azny-schedule .azny-schedule-icon{flex:0 0 28px;width:28px;height:28px}
+.azny-schedule .azny-schedule-icon svg{width:26px;height:26px}
+.azny-schedule b{font-size:13px}
+.azny-schedule small{font-size:12px;overflow-wrap:anywhere}
+@media(max-width:380px){
+ .azny-schedule>div{gap:6px;padding:9px 7px}
+ .azny-schedule b{font-size:12px}
+ .azny-schedule small{font-size:11px}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
