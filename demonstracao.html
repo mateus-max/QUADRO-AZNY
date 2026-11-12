@@ -68,6 +68,8 @@ try{
  payload.append("courseId",id);
  payload.append("professor",course.teacherSnapshot?.name||course.profileSnapshot?.name||"");
  payload.append("teacherUid",course.teacherUid||"");
+ payload.append("nomeCompleto",fullName);
+ payload.append("mensagem",message||"Sem mensagem");
  payload.append("origem","Vídeo de demonstração");
  payload.append("data",new Date().toLocaleString("pt-PT"));
  if(!email)payload.set("email","Não indicado");
