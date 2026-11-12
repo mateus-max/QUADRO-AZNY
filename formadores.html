@@ -140,6 +140,23 @@ main{max-width:1500px;margin:0 auto;padding:16px 4.2% 42px}.section-head{display
  .azny-price-contact{flex-direction:row;align-items:center}
  .azny-whatsapp{width:56px;height:56px;min-height:56px;flex-basis:56px}
 }
+
+/* Compactar o topo do cartão para manter o cabeçalho do professor visível */
+.azny-course-author{min-height:88px;padding:10px 15px;gap:12px}
+.azny-author-avatar{width:68px;height:68px;flex-basis:68px}
+.azny-author-details h3{font-size:19px}
+.azny-author-details{gap:3px}
+.azny-author-title{padding:4px 9px;font-size:12px}
+.azny-author-place{font-size:13px}
+.azny-course-card>.course-cover,.azny-course-card>.course-video{max-height:390px}
+@media(max-width:700px){
+ .azny-course-author{min-height:74px;padding:8px 11px;gap:9px}
+ .azny-author-avatar{width:56px;height:56px;flex-basis:56px;border-width:2px}
+ .azny-author-details h3{font-size:16px;line-height:1.15}
+ .azny-author-title{font-size:10px;padding:3px 7px}
+ .azny-author-place{font-size:11px}
+ .azny-course-card>.course-cover,.azny-course-card>.course-video{max-height:300px}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script></head>
 <body>
