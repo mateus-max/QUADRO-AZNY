@@ -1500,6 +1500,20 @@ function bindClassSessionRealtime(){
  sref.child("status").on("value",snap=>{
   const status=snap.val()||"waiting";
   aznyObservedClassStatus=status;
+  /* Corrige a corrida entre os snapshots iniciais do Firebase:
+     joinRequests pode chegar antes de status. Ao confirmar a aula activa,
+     voltar a ler os pedidos já gravados para não perder o primeiro pedido. */
+  if(!isStudent&&status==="active"){
+   sref.child("joinRequests").once("value").then(requestSnap=>{
+    if(aznyObservedClassStatus!=="active")return;
+    Object.entries(requestSnap.val()||{}).forEach(([id,request])=>{
+     if(request&&request.status==="pending")renderJoinRequest(request.name||"Aluno",id);
+    });
+   }).catch(error=>{
+    console.error("AZNY leitura inicial dos pedidos de entrada:",error);
+    showNetworkNotice("Não foi possível carregar os pedidos de entrada: "+(error.message||error.code||"erro Firebase"),"bad");
+   });
+  }
   if(!isStudent){if(status!=="active")clearTeacherStudentCameras();return}
   if(status==="active"){if(!studentApproved)showStudentJoinReady()}
   else if(studentApproved&&status==="ended"){showClassEnded()}
@@ -1539,6 +1553,9 @@ function bindClassSessionRealtime(){
     removeStudentVideoCard(id);
    }
   }
+ },error=>{
+  console.error("AZNY escuta dos pedidos de entrada:",error);
+  showNetworkNotice("O professor não conseguiu receber os pedidos de entrada do Firebase: "+(error.message||error.code||"verifique a autorização da sala."),"bad");
  });
 }
 
