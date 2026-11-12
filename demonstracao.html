@@ -28,7 +28,7 @@ textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e
 <body>
 <header class="top"><span class="brand">Remote Work Board</span><a href="formadores.html">Voltar aos cursos</a></header>
 <main>
-<section class="video-stage" id="videoStage" hidden><video id="demoVideo" controls playsinline muted autoplay preload="auto" webkit-playsinline="true" disablepictureinpicture aria-label="Vídeo de demonstração"></video></section><section id="emptyDemo" style="display:none;min-height:calc(100svh - 54px);padding:28px 20px;align-items:center;justify-content:center;text-align:center;background:#02070e"><div style="max-width:520px;color:#dceaff;font-size:17px;line-height:1.6">Ainda não foi publicada nenhuma demonstração.<br>Quando for publicada, aparecerá aqui.</div></section>
+<section class="video-stage" id="videoStage" hidden><video id="demoVideo" controls playsinline preload="metadata" webkit-playsinline="true" disablepictureinpicture aria-label="Vídeo de demonstração"></video></section><section id="emptyDemo" style="display:none;min-height:calc(100svh - 54px);padding:28px 20px;align-items:center;justify-content:center;text-align:center;background:#02070e"><div style="max-width:520px;color:#dceaff;font-size:17px;line-height:1.6">Ainda não foi publicada nenhuma demonstração.<br>Quando for publicada, aparecerá aqui.</div></section>
 <section class="content" id="demoContent" hidden>
 <h1 id="courseTitle">Demonstração do curso</h1><p class="sub" id="teacherName"></p>
 <p class="muted">Gostou da demonstração? Preencha os seus dados para manifestar interesse e receber informações sobre a inscrição.</p>
@@ -66,18 +66,16 @@ function showDemo(demo){
  if(openEnrollmentFromLink){openEnrollmentForm();setTimeout(()=>$("enrollmentForm").scrollIntoView({behavior:"smooth",block:"start"}),150)}
  video.pause();
  video.removeAttribute("src");
- video.src=demo.videoUrl;
+ video.src=videoUrl;
  video.removeAttribute("type");
- video.muted=true;video.defaultMuted=true;video.autoplay=true;video.playsInline=true;
- video.setAttribute("autoplay","");
- video.setAttribute("muted","");
+ video.muted=false;video.defaultMuted=false;video.autoplay=false;video.playsInline=true;
+ video.removeAttribute("autoplay");
+ video.removeAttribute("muted");
  video.setAttribute("playsinline","");
- video.preload="auto";
+ video.preload="metadata";
  video.load();
  $("status").textContent="A iniciar a demonstração…";
- const play=()=>{if(!navigator.onLine)return;video.play().then(()=>$("status").textContent="").catch(()=>{$("status").textContent="A demonstração está carregada. Toque no vídeo para reproduzir."})};
- video.addEventListener("canplay",play,{once:true});
- play();
+ $("status").textContent="Demonstração carregada. Toque em Reproduzir para assistir.";
 }
 video.addEventListener("loadedmetadata",()=>{if(video.videoWidth&&video.videoHeight)video.style.aspectRatio=video.videoWidth+"/"+video.videoHeight});
 video.addEventListener("playing",()=>$("status").textContent="");
@@ -86,15 +84,15 @@ video.addEventListener("error",()=>{
  const code=video.error?.code;
  $("status").textContent=code===4?"O formato ou endereço deste vídeo não é compatível. O professor deve publicar novamente o ficheiro em MP4 ou WEBM.":"Não foi possível carregar o vídeo. Verifique a ligação à internet.";
 });
-window.addEventListener("online",()=>{if(video.src)video.play().catch(()=>{})});
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&navigator.onLine&&video.src)video.play().catch(()=>{})});
+
 if(!id){showEmpty("Não foi indicado o curso desta demonstração.");return;}
 
 // Consulta sempre o registo publicado directamente no Firebase Realtime Database.
 // O conteúdo integral do vídeo está guardado como data URL no próprio registo do Realtime Database.
 db.ref("publicTeacherDemos/"+id).once("value").then(snapshot=>{
  const demo=snapshot.val();
- if(!demo||!String(demo.videoUrl||"").startsWith("data:video/")){showEmpty("Ainda não foi publicada nenhuma demonstração directamente no Realtime Database. Quando for publicada, aparecerá aqui.");return;}
+ const videoUrl=String(demo?.videoUrl||"").trim();
+ if(!demo||!(/^(data:video\/|https?:\/\/)/i.test(videoUrl))){showEmpty("Ainda não foi carregado nenhum vídeo de demonstração. Quando for carregado, aparecerá aqui.");return;}
  showDemo(demo);
 }).catch(error=>{
  console.error("Erro ao consultar a demonstração no Realtime Database:",error);
