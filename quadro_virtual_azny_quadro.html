@@ -1519,7 +1519,10 @@ function bindClassSessionRealtime(){
  /* Pedidos completos são visíveis ao professor; cada sinalização WebRTC é
     subscrita individualmente para respeitar as regras por participante. */
  if(isStudent)return;
- sref.child("joinRequests").on("value",snap=>{
+ sref.child("joinRequests").on("value",async snap=>{
+  /* Consultar o estado directamente evita perder o primeiro pedido quando
+     o snapshot de joinRequests chega antes do snapshot status=active. */
+  try{const currentStatus=await sref.child("status").once("value");aznyObservedClassStatus=currentStatus.val()||"waiting"}catch(statusError){console.warn("AZNY estado da aula ao receber pedido:",statusError)}
   const data=snap.val()||{};
   if(aznyObservedClassStatus!=="active"){
    document.querySelectorAll("#cameraJoinRequests .join-request").forEach(el=>el.remove());
@@ -1566,6 +1569,9 @@ function bindClassSessionRealtime(){
     removeStudentVideoCard(id);
    }
   }
+ },error=>{
+  console.error("AZNY: falha ao receber pedidos de entrada:",error);
+  showNetworkNotice("Não foi possível carregar os pedidos de entrada. Verifique a ligação e a autorização da sala.","bad");
  });
 }
 
