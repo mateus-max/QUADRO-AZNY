@@ -48,72 +48,104 @@ textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e
 const cfg={apiKey:"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc",authDomain:"remot-board.firebaseapp.com",databaseURL:"https://remot-board-default-rtdb.firebaseio.com",projectId:"remot-board",storageBucket:"remot-board.firebasestorage.app",messagingSenderId:"931887981666",appId:"1:931887981666:web:08899cca83f1f514191d3b"};
 if(!firebase.apps.length)firebase.initializeApp(cfg);
 const db=firebase.database(),id=new URLSearchParams(location.search).get("id"),$=x=>document.getElementById(x);
-if(!id){$("status").textContent="Não foi indicado o curso desta demonstração.";throw new Error("Missing course id")}
-let course=null;const formspreeEndpoint="https://formspree.io/f/xdeeykja";
-async function startDemoPlayback(){const video=$("demoVideo");if(!video.src||!navigator.onLine)return;video.muted=true;video.defaultMuted=true;video.playsInline=true;video.setAttribute("playsinline","");video.setAttribute("autoplay","");try{await video.play();$("status").textContent=""}catch(err){if(video.readyState<2)$("status").textContent="A carregar a demonstração…";else $("status").textContent="A demonstração está pronta. Toque no vídeo para iniciar a reprodução."}}
-const demoVideo=$("demoVideo");demoVideo.addEventListener("loadedmetadata",()=>{if(demoVideo.videoWidth&&demoVideo.videoHeight)demoVideo.style.aspectRatio=demoVideo.videoWidth+"/"+demoVideo.videoHeight});demoVideo.addEventListener("canplay",()=>{if(navigator.onLine)startDemoPlayback()});demoVideo.addEventListener("playing",()=>$("status").textContent="");demoVideo.addEventListener("waiting",()=>$("status").textContent="A carregar o vídeo…");demoVideo.addEventListener("error",()=>$("status").textContent="Não foi possível reproduzir o vídeo. Verifique a ligação à internet e tente novamente.");window.addEventListener("online",()=>{if(demoVideo.src){$("status").textContent="Ligação restabelecida. A retomar a demonstração…";startDemoPlayback()}});document.addEventListener("visibilitychange",()=>{if(!document.hidden&&navigator.onLine&&demoV// Carrega curso e demonstração em paralelo. Assim que o registo do vídeo chega,
- // o vídeo é apresentado e a reprodução começa sem esperar pelos dados do curso.
- const courseRequest=db.ref("publicTeacherCourses/"+id).once("value").then(s=>{
-  course=s.val();
-  if(!course)throw new Error("Curso não encontrado.");
-  $("courseTitle").textContent=course.title||"Demonstração do curso";
-  const teacher=course.teacherSnapshot||course.profileSnapshot||{};
-  $("teacherName").textContent=teacher.name||"";
-  document.title="Demonstração — "+(course.title||"Curso");
- }).catch(err=>{console.warn("Dados do curso:",err)});
- const demoRequest=db.ref("publicTeacherDemos/"+id).once("value").then(s=>{
-  const demo=s.val();
-  if(!demo||!demo.videoUrl)throw new Error("Esta demonstração já não está disponível.");
-  const video=$("demoVideo");
-  $("videoStage").hidden=false;$("demoContent").hidden=false;
-  video.pause();
-  video.src=demo.videoUrl;
-  video.load();
-  video.muted=true;
-  video.defaultMuted=true;
-  video.autoplay=true;
-  video.playsInline=true;
-  video.setAttribute("autoplay","");
-  video.setAttribute("muted","");
-  video.setAttribute("playsinline","");
-  $("status").textContent="A iniciar a demonstração…";
-  return startDemoPlayback();
- }).catch(err=>{
-  $("videoStage").hidden=true;$("demoContent").hidden=true;
-  $("emptyDemo").style.display="flex";
-  $("showForm").disabled=true;
- });
- Promise.allSettled([courseRequest,demoRequest]);
-$("showForm").addEventListener("click",()=>{$("enrollmentForm").classList.add("open");$("showForm").textContent="Formulário de inscrição";$("fullName").focus();$("enrollmentForm").scrollIntoView({behavior:"smooth",block:"start"})});
-$("message").addEventListener("input",()=>{$("messageCount").textContent=$("message").value.length+"/50 caracteres"});
-$("enrollmentForm").addEventListener("submit",async e=>{e.preventDefault();const button=$("sendEnrollment");if(button.disabled)return;button.disabled=true;
-try{
- if(!course)throw new Error("O curso ainda não foi carregado.");
- const fullName=$("fullName").value.trim(),whatsapp=$("whatsapp").value.trim(),email=$("email").value.trim(),message=$("message").value.trim();
- if(!fullName||!whatsapp)throw new Error("Preencha o nome completo e o WhatsApp.");
- if(message.length>50)throw new Error("A mensagem deve ter no máximo 50 caracteres.");
- // Usa o mesmo endpoint e o mesmo formato multipart do formulário oficial da empresa.
- const payload=new FormData($("enrollmentForm"));
- payload.append("_subject","Novo pedido de inscrição — Remote Work Board");
- payload.append("tipoPedido","Inscrição em curso através de demonstração");
- payload.append("curso",course.title||"");
- payload.append("courseId",id);
- payload.append("professor",course.teacherSnapshot?.name||course.profileSnapshot?.name||"");
- payload.append("teacherUid",course.teacherUid||"");
- payload.append("nomeCompleto",fullName);
- payload.append("mensagem",message||"Sem mensagem");
- payload.append("origem","Vídeo de demonstração");
- payload.append("data",new Date().toLocaleString("pt-PT"));
- if(!email)payload.set("email","Não indicado");
- if(!message)payload.set("message","Sem mensagem");
- const response=await fetch(formspreeEndpoint,{method:"POST",body:payload,headers:{Accept:"application/json"}});
- if(!response.ok)throw new Error("Não foi possível enviar o pedido à empresa (Formspree HTTP "+response.status+"). Verifique a ligação e tente novamente.");
- const result=await response.json().catch(()=>({}));
- if(result.errors?.length)throw new Error(result.errors.map(item=>item.message||"Erro no formulário").join(";"));
- $("status").textContent="Pedido enviado com sucesso! A empresa recebeu os seus dados e dará seguimento à inscrição.";
- $("enrollmentForm").reset();$("messageCount").textContent="0/50 caracteres";
-}catch(err){$("status").textContent=err.message||"Não foi possível enviar o pedido. Tente novamente."}
-finally{button.disabled=false}
+const formspreeEndpoint="https://formspree.io/f/xdeeykja";
+let course=null,demoRecord=null;
+const video=$("demoVideo");
+function showEmpty(message){
+ $("videoStage").hidden=true;$("demoContent").hidden=true;
+ $("emptyDemo").style.display="flex";
+ $("emptyDemo").querySelector("div").textContent=message;
+}
+function showDemo(demo){
+ demoRecord=demo;
+ $("emptyDemo").style.display="none";
+ $("videoStage").hidden=false;
+ $("demoContent").hidden=false;
+ // O formulário fica disponível assim que o registo da demonstração é encontrado no Realtime Database.
+ $("showForm").disabled=false;
+ video.pause();
+ video.removeAttribute("src");
+ video.src=demo.videoUrl;
+ if(demo.videoMime)video.setAttribute("type",demo.videoMime);
+ video.muted=true;video.defaultMuted=true;video.autoplay=true;video.playsInline=true;
+ video.setAttribute("autoplay","");
+ video.setAttribute("muted","");
+ video.setAttribute("playsinline","");
+ video.preload="auto";
+ video.load();
+ $("status").textContent="A iniciar a demonstração…";
+ const play=()=>{if(!navigator.onLine)return;video.play().then(()=>$("status").textContent="").catch(()=>{$("status").textContent="A demonstração está carregada. Toque no vídeo para reproduzir."})};
+ video.addEventListener("canplay",play,{once:true});
+ play();
+}
+video.addEventListener("loadedmetadata",()=>{if(video.videoWidth&&video.videoHeight)video.style.aspectRatio=video.videoWidth+"/"+video.videoHeight});
+video.addEventListener("playing",()=>$("status").textContent="");
+video.addEventListener("waiting",()=>$("status").textContent="A carregar o vídeo…");
+video.addEventListener("error",()=>{
+ const code=video.error?.code;
+ $("status").textContent=code===4?"O formato ou endereço deste vídeo não é compatível. O professor deve publicar novamente o ficheiro em MP4 ou WEBM.":"Não foi possível carregar o vídeo. Verifique a ligação à internet.";
+});
+window.addEventListener("online",()=>{if(video.src)video.play().catch(()=>{})});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&navigator.onLine&&video.src)video.play().catch(()=>{})});
+if(!id){showEmpty("Não foi indicado o curso desta demonstração.");return;}
+
+// Consulta sempre o registo publicado directamente no Firebase Realtime Database.
+// O conteúdo do vídeo é servido pelo URL guardado nesse registo (Firebase Storage ou data URL legado).
+db.ref("publicTeacherDemos/"+id).once("value").then(snapshot=>{
+ const demo=snapshot.val();
+ if(!demo||!demo.videoUrl){showEmpty("Ainda não foi publicada nenhuma demonstração. Quando for publicada, aparecerá aqui.");return;}
+ showDemo(demo);
+}).catch(error=>{
+ console.error("Erro ao consultar a demonstração no Realtime Database:",error);
+ showEmpty("Não foi possível consultar a demonstração. Verifique a ligação e tente novamente.");
+});
+
+// Os dados do curso são carregados em paralelo; não bloqueiam o vídeo nem o botão de inscrição.
+db.ref("publicTeacherCourses/"+id).once("value").then(snapshot=>{
+ course=snapshot.val();
+ if(!course)return;
+ $("courseTitle").textContent=course.title||"Demonstração do curso";
+ const teacher=course.teacherSnapshot||course.profileSnapshot||{};
+ $("teacherName").textContent=teacher.name||"";
+ document.title="Demonstração — "+(course.title||"Curso");
+}).catch(error=>console.warn("Dados do curso:",error));
+
+$("showForm").addEventListener("click",()=>{
+ $("enrollmentForm").classList.add("open");
+ $("showForm").textContent="Formulário de inscrição";
+ $("fullName").focus();
+ $("enrollmentForm").scrollIntoView({behavior:"smooth",block:"start"});
+});
+$("message").addEventListener("input",()=>$("messageCount").textContent=$("message").value.length+"/50 caracteres");
+$("enrollmentForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ const button=$("sendEnrollment");if(button.disabled)return;button.disabled=true;
+ try{
+  if(!demoRecord)throw new Error("A demonstração ainda não está disponível.");
+  const fullName=$("fullName").value.trim(),whatsapp=$("whatsapp").value.trim(),email=$("email").value.trim(),message=$("message").value.trim();
+  if(!fullName||!whatsapp)throw new Error("Preencha o nome completo e o WhatsApp.");
+  if(message.length>50)throw new Error("A mensagem deve ter no máximo 50 caracteres.");
+  const payload=new FormData($("enrollmentForm"));
+  payload.append("_subject","Novo pedido de inscrição — Remote Work Board");
+  payload.append("tipoPedido","Inscrição em curso através de demonstração");
+  payload.append("curso",course?.title||demoRecord.courseTitle||"");
+  payload.append("courseId",id);
+  payload.append("professor",course?.teacherSnapshot?.name||course?.profileSnapshot?.name||demoRecord.teacherName||"");
+  payload.append("teacherUid",course?.teacherUid||demoRecord.teacherUid||"");
+  payload.append("nomeCompleto",fullName);
+  payload.append("mensagem",message||"Sem mensagem");
+  payload.append("origem","Vídeo de demonstração");
+  payload.append("data",new Date().toLocaleString("pt-PT"));
+  if(!email)payload.set("email","Não indicado");
+  if(!message)payload.set("message","Sem mensagem");
+  const response=await fetch(formspreeEndpoint,{method:"POST",body:payload,headers:{Accept:"application/json"}});
+  if(!response.ok)throw new Error("Não foi possível enviar o pedido à empresa. Verifique a ligação e tente novamente.");
+  const result=await response.json().catch(()=>({}));
+  if(result.errors?.length)throw new Error(result.errors.map(item=>item.message||"Erro no formulário").join(";"));
+  $("status").textContent="Pedido enviado com sucesso! A empresa recebeu os seus dados e dará seguimento à inscrição.";
+  $("enrollmentForm").reset();$("messageCount").textContent="0/50 caracteres";
+ }catch(error){$("status").textContent=error.message||"Não foi possível enviar o pedido. Tente novamente."}
+ finally{button.disabled=false}
 });
 })();
 </script>
