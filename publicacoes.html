@@ -116,8 +116,23 @@ const visitorId=(()=>{let id=localStorage.getItem('rwb_visitor_id');if(!id){id='
 function getPublicationVisitorName(){let name=String(localStorage.getItem("rwb_visitor_name")||"").trim();if(!name){name=String(prompt("Para gostar ou comentar, indique o seu nome:")||"").trim();if(name)localStorage.setItem("rwb_visitor_name",name)}return name.slice(0,60)}
 const postState={};
 const shareUrl=id=>location.origin+location.pathname+'#post-'+encodeURIComponent(id);
+function normalizeDirectionPost(raw,key){
+ if(!raw||typeof raw!=='object')return null;
+ const url=String(raw.url||raw.mediaUrl||raw.imageUrl||raw.videoUrl||'');
+ const caption=String(raw.caption??raw.text??raw.message??raw.html??'');
+ let type=String(raw.type||raw.mediaType||'').toLowerCase();
+ if(!['text','image','video','audio'].includes(type)){
+  if(/^data:image\//i.test(url)||/\.(png|jpe?g|gif|webp)(\?|$)/i.test(url))type='image';
+  else if(/^data:video\//i.test(url)||/\.(mp4|webm|mov)(\?|$)/i.test(url))type='video';
+  else if(/^data:audio\//i.test(url))type='audio';
+  else type='text';
+ }
+ if(type==='text'&&!caption.trim())return null;
+ if(type!=='text'&&!url)return null;
+ return {...raw,type,url,caption,createdAt:Number(raw.createdAt||raw.timestamp||raw.date||0),author:raw.author||raw.createdByName||'Equipa Remote Work Board',_key:key};
+}
 function render(snap){
- const posts=[];snap.forEach(ch=>{const p=ch.val();if(p&&((['image','video','audio'].includes(p.type)&&p.url)||(p.type==='text'&&p.caption)))posts.push({...p,_key:ch.key})});
+ const posts=[];snap.forEach(ch=>{const post=normalizeDirectionPost(ch.val(),ch.key);if(post)posts.push(post)});
  posts.sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));
  if(!posts.length){feed.innerHTML='<div class="empty">Ainda não existem publicações. Volte mais tarde para acompanhar as novidades.</div>';return}
  feed.innerHTML=posts.map(p=>'<article class="post" id="post-'+esc(p._key)+'" data-post="'+esc(p._key)+'"><header class="post-header"><div class="direction-avatar">'+peopleIcon+'</div><div><div class="post-author">Equipa Remote Work Board</div><div class="post-date">'+(p.createdAt?new Date(p.createdAt).toLocaleString('pt-PT',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'')+'</div></div><div class="post-menu-wrap"><button class="post-menu" type="button" aria-label="Mais opções da publicação" aria-expanded="false" data-post-menu="'+esc(p._key)+'">•••</button><div class="post-menu-options" data-post-menu-options="'+esc(p._key)+'"><button type="button" data-menu-copy="'+esc(p._key)+'">🔗 Copiar ligação</button><button type="button" data-menu-report="'+esc(p._key)+'">⚑ Denunciar publicação</button></div></div></header>'+(p.caption?'<div class="post-caption collapsed'+(p.type==='text'?' post-text':'')+'" data-caption>'+formatCaption(p.caption)+'</div><button class="caption-toggle" type="button" aria-expanded="false">Ver mais</button>':'')+(p.type==='image'?'<img class="post-media" loading="lazy" src="'+esc(p.url)+'" alt="Imagem publicada pela Equipa Remote Work Board">':p.type==='video'?'<video class="post-media" controls playsinline preload="metadata" src="'+esc(p.url)+'"></video>':p.type==='audio'?'<audio controls preload="metadata" src="'+esc(p.url)+'"></audio>':'')+'<div class="post-actions"><div class="post-stats"><span class="like-count">👍 0 Gostos</span><span class="comment-count">0 comentários</span><span class="share-count">↗ 0 partilhas</span></div><div class="interaction-names" aria-live="polite"><div class="like-names"></div><div class="share-names"></div></div><div class="post-action-buttons"><button class="post-action like-button" type="button" data-like="'+esc(p._key)+'">'+likeIcon+' Gostar</button><button class="post-action comment-button" type="button" data-comments="'+esc(p._key)+'">'+commentIcon+' Comentar</button><button class="post-action share-button" type="button" data-share="'+esc(p._key)+'">↗ Partilhar</button></div></div><section class="post-comments" data-comments-box="'+esc(p._key)+'"><form class="comment-form" data-comment-form="'+esc(p._key)+'"><label class="visitor-name-label">O seu nome<input name="author" maxlength="60" autocomplete="name" placeholder="Escreva o seu nome" required></label><div class="comment-compose"><input name="comment" maxlength="2000" placeholder="Escreva um comentário..." required><button type="submit">Enviar</button></div></form><div class="comment-list" data-comment-list="'+esc(p._key)+'">A carregar comentários...</div></section><div class="share-options" data-share-box="'+esc(p._key)+'"><button type="button" data-share-native="'+esc(p._key)+'">Instagram / Mais aplicações</button><button type="button" data-share-whatsapp="'+esc(p._key)+'">WhatsApp</button><button type="button" data-share-facebook="'+esc(p._key)+'">Facebook</button><button type="button" data-share-copy="'+esc(p._key)+'">Copiar ligação</button></div></article>').join('');
@@ -157,9 +172,22 @@ feed.addEventListener('click',async event=>{
 });
 feed.addEventListener('submit',async event=>{const form=event.target;if(!form.matches('[data-comment-form],[data-reply-form]'))return;event.preventDefault();const postId=form.dataset.commentForm||form.dataset.post,parent=form.dataset.replyForm||null,textInput=form.querySelector('[name=comment],[name=reply]'),nameInput=form.querySelector('[name=author]'),name=String(nameInput?.value||'').trim().slice(0,60),text=textInput.value.trim();if(!name||!text){if(!name)nameInput?.focus();return;}localStorage.setItem('rwb_visitor_name',name);const button=form.querySelector('button[type=submit]');button.disabled=true;try{await sendComment(postId,name,text,parent);textInput.value=''}catch(e){alert('Não foi possível enviar o comentário: '+e.message)}finally{button.disabled=false}});
 
-let publicationRetryTimer=null,publicationRetryDelay=1000,publicationListenerActive=false;
-function showPublicationLoading(message){if(!feed.querySelector('.post')&&!feed.querySelector('.empty'))feed.innerHTML='<div class="loading" role="status" aria-live="polite">'+message+'</div>'}
-function subscribePublications(){if(publicationListenerActive)return;publicationListenerActive=true;const ref=db.ref('publications');ref.off('value',render);ref.on('value',snap=>{publicationRetryDelay=1000;if(publicationRetryTimer){clearTimeout(publicationRetryTimer);publicationRetryTimer=null}render(snap)},error=>{publicationListenerActive=false;console.warn('Ligação às publicações temporariamente indisponível:',error);showPublicationLoading('A ligar às publicações... a tentar novamente automaticamente.');if(publicationRetryTimer)clearTimeout(publicationRetryTimer);publicationRetryTimer=setTimeout(()=>{publicationRetryTimer=null;subscribePublications()},publicationRetryDelay);publicationRetryDelay=Math.min(publicationRetryDelay*2,15000)})}
-subscribePublications();
+let publicationRetryTimer=null,publicationRetryDelay=1500,publicationListenerActive=false,publicationFirstLoadTimer=null;
+const directionPublicationsRef=db.ref('publications');
+function showPublicationState(message,isError=false){feed.innerHTML='<div class="'+(isError?'empty error':'loading')+'" role="status" aria-live="polite">'+esc(message)+'</div>'}
+function renderDirectionPublications(snapshot){try{render(snapshot);publicationRetryDelay=1500;if(publicationFirstLoadTimer){clearTimeout(publicationFirstLoadTimer);publicationFirstLoadTimer=null}}catch(error){console.error('Erro ao apresentar publicações da Direcção:',error);showPublicationState('As publicações chegaram do Firebase, mas ocorreu um erro ao apresentá-las: '+(error.message||'erro de apresentação'),true)}}
+function subscribeDirectionPublications(){
+ if(publicationListenerActive)return;
+ publicationListenerActive=true;
+ directionPublicationsRef.once('value').then(snapshot=>{
+  renderDirectionPublications(snapshot);
+  directionPublicationsRef.off('value',renderDirectionPublications);
+  directionPublicationsRef.on('value',renderDirectionPublications,error=>{publicationListenerActive=false;showPublicationState('Falha ao acompanhar /publications no Realtime Database: '+(error.message||'permissão ou ligação'),true);scheduleDirectionPublicationRetry()});
+ }).catch(error=>{publicationListenerActive=false;showPublicationState('Não foi possível ler /publications no Realtime Database: '+(error.message||'verifique as permissões Firebase'),true);scheduleDirectionPublicationRetry()});
+}
+function scheduleDirectionPublicationRetry(){if(publicationRetryTimer)clearTimeout(publicationRetryTimer);publicationRetryTimer=setTimeout(()=>{publicationRetryTimer=null;subscribeDirectionPublications()},publicationRetryDelay);publicationRetryDelay=Math.min(publicationRetryDelay*2,15000)}
+publicationFirstLoadTimer=setTimeout(()=>{if(!feed.querySelector('.post')&&!feed.querySelector('.empty'))showPublicationState('A leitura de /publications no Realtime Database ainda não respondeu. Verifique a ligação e as regras de leitura.',true)},10000);
+db.ref('.info/connected').on('value',snapshot=>{if(snapshot.val()===true&&!publicationListenerActive)subscribeDirectionPublications();else if(snapshot.val()===false&&!feed.querySelector('.post'))showPublicationState('Sem ligação ao Firebase. A aguardar reconexão…')});
+subscribeDirectionPublications();
 </script>
 </body></html>
