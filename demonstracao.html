@@ -8,7 +8,7 @@
 .top{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#0b2850}
 .top a{color:#dceaff;text-decoration:none;font-size:14px}
 .brand{font-weight:850;letter-spacing:.2px}
-.video-stage{min-height:calc(100svh - 54px);display:flex;align-items:center;justify-content:center;background:#02070e;padding:10px}
+.video-stage{min-height:calc(100svh - 54px);display:flex;align-items:center;justify-content:center;background:#02070e;padding:10px}.video-stage[hidden],#demoContent[hidden]{display:none!important}
 #demoVideo{display:block;width:min(100%,calc((100svh - 74px)*16/9));height:auto;aspect-ratio:16/9;max-height:calc(100svh - 74px);object-fit:contain;object-position:center;background:#02070e;flex:0 1 auto}
 .content{max-width:760px;margin:0 auto;padding:22px 16px 48px}
 h1{font-size:24px;margin:0 0 7px}.sub{color:#bdcce0;font-size:14px;margin:0 0 18px}
@@ -28,7 +28,7 @@ textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e
 <body>
 <header class="top"><span class="brand">Remote Work Board</span><a href="formadores.html">Voltar aos cursos</a></header>
 <main>
-<section class="video-stage" id="videoStage" hidden><video id="demoVideo" controls playsinline preload="metadata" webkit-playsinline="true" disablepictureinpicture aria-label="Vídeo de demonstração"></video></section><section id="emptyDemo" style="display:flex;min-height:calc(100svh - 54px);padding:32px 20px;align-items:center;justify-content:center;text-align:center;background:linear-gradient(145deg,#07182f,#02070e)"><div style="max-width:520px;padding:30px 24px;border:1px solid #29496d;border-radius:18px;background:#102b4c;color:#dceaff;font-size:17px;line-height:1.65;box-shadow:0 16px 42px #0005"><div style="font-size:42px;margin-bottom:12px" aria-hidden="true">▶</div><strong style="display:block;font-size:21px;margin-bottom:9px">Ainda não há vídeos de demonstração</strong><span>A demonstração deste curso ainda não foi publicada. Assim que o professor carregar um vídeo, ele aparecerá automaticamente nesta página.</span><p style="margin:20px 0 0"><a href="formadores.html" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#1476e8;color:#fff;text-decoration:none;font-weight:800">Explorar cursos disponíveis</a></p></div></section>
+<section class="video-stage" id="videoStage" hidden><video id="demoVideo" controls playsinline preload="metadata" webkit-playsinline="true" disablepictureinpicture aria-label="Vídeo de demonstração"></video></section><section id="emptyDemo" style="display:flex;min-height:calc(100svh - 54px);padding:32px 20px;align-items:center;justify-content:center;text-align:center;background:linear-gradient(145deg,#07182f,#02070e)"><div style="max-width:520px;padding:30px 24px;border:1px solid #29496d;border-radius:18px;background:#102b4c;color:#dceaff;font-size:17px;line-height:1.65;box-shadow:0 16px 42px #0005"><div style="font-size:42px;margin-bottom:12px" aria-hidden="true">▶</div><strong style="display:block;font-size:21px;margin-bottom:9px">Ainda não há vídeos de demonstração</strong><span data-empty-message>A demonstração deste curso ainda não foi publicada. Assim que o professor carregar um vídeo, ele aparecerá automaticamente nesta página.</span><p style="margin:20px 0 0"><a href="formadores.html" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#1476e8;color:#fff;text-decoration:none;font-weight:800">Explorar cursos disponíveis</a></p></div></section>
 <section class="content" id="demoContent" hidden>
 <h1 id="courseTitle">Demonstração do curso</h1><p class="sub" id="teacherName"></p>
 <p class="muted">Gostou da demonstração? Preencha os seus dados para manifestar interesse e receber informações sobre a inscrição.</p>
@@ -52,9 +52,11 @@ const formspreeEndpoint="https://formspree.io/f/xdeeykja";
 let course=null,demoRecord=null;
 const video=$("demoVideo");
 function showEmpty(message){
+ video.pause();video.removeAttribute("src");video.load();
  $("videoStage").hidden=true;$("demoContent").hidden=true;
  $("emptyDemo").style.display="flex";
- $("emptyDemo").querySelector("div").textContent=message;
+ const messageNode=$("emptyDemo").querySelector("[data-empty-message]");
+ if(messageNode)messageNode.textContent=message;
 }
 function showDemo(demo,videoUrl){
  demoRecord=demo;
