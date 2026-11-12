@@ -9,7 +9,7 @@
 .top a{color:#dceaff;text-decoration:none;font-size:14px}
 .brand{font-weight:850;letter-spacing:.2px}
 .video-stage{min-height:calc(100svh - 54px);display:flex;align-items:center;justify-content:center;background:#02070e;padding:10px}
-#demoVideo{display:block;width:100%;height:calc(100svh - 74px);max-height:calc(100svh - 74px);object-fit:contain;background:#02070e}
+#demoVideo{display:block;width:min(100%,calc((100svh - 74px)*16/9));height:auto;aspect-ratio:16/9;max-height:calc(100svh - 74px);object-fit:contain;background:#02070e}
 .content{max-width:760px;margin:0 auto;padding:22px 16px 48px}
 h1{font-size:24px;margin:0 0 7px}.sub{color:#bdcce0;font-size:14px;margin:0 0 18px}
 .primary{border:0;border-radius:12px;padding:14px 20px;background:#1476e8;color:#fff;font-weight:850;font-size:16px;cursor:pointer;width:100%}
@@ -27,7 +27,7 @@ textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e
 <body>
 <header class="top"><span class="brand">Remote Work Board</span><a href="formadores.html">Voltar aos cursos</a></header>
 <main>
-<section class="video-stage"><video id="demoVideo" controls playsinline preload="metadata" aria-label="Vídeo de demonstração"></video></section>
+<section class="video-stage"><video id="demoVideo" controls playsinline muted autoplay preload="auto" aria-label="Vídeo de demonstração"></video></section>
 <section class="content">
 <h1 id="courseTitle">Demonstração do curso</h1><p class="sub" id="teacherName"></p>
 <p class="muted">Gostou da demonstração? Preencha os seus dados para manifestar interesse e receber informações sobre a inscrição.</p>
@@ -48,8 +48,10 @@ const cfg={apiKey:"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc",authDomain:"remot-bo
 if(!firebase.apps.length)firebase.initializeApp(cfg);
 const db=firebase.database(),id=new URLSearchParams(location.search).get("id"),$=x=>document.getElementById(x);
 if(!id){$("status").textContent="Não foi indicado o curso desta demonstração.";throw new Error("Missing course id")}
-let course=null;
-db.ref("publicTeacherCourses/"+id).once("value").then(s=>{course=s.val();if(!course)throw new Error("Curso não encontrado.");$("courseTitle").textContent=course.title||"Demonstração do curso";const teacher=course.teacherSnapshot||course.profileSnapshot||{};$("teacherName").textContent=teacher.name||"";return db.ref("publicTeacherDemos/"+id).once("value")}).then(s=>{const demo=s.val();if(!demo||!demo.videoUrl)throw new Error("Esta demonstração já não está disponível.");$("demoVideo").src=demo.videoUrl;document.title="Demonstração — "+(course.title||"Curso")}).catch(err=>{$("courseTitle").textContent="Demonstração indisponível";$("status").textContent=err.message||"Não foi possível carregar este vídeo.";$("showForm").disabled=true});
+let course=null;const formspreeEndpoint="https://formspree.io/f/xdeeykja";
+async function startDemoPlayback(){const video=$("demoVideo");if(!video.src||!navigator.onLine)return;video.muted=true;video.playsInline=true;try{await video.play()}catch(err){$("status").textContent="O vídeo está carregado. Toque em reproduzir para iniciar."}}
+window.addEventListener("online",()=>{if($("demoVideo").src)startDemoPlayback()});
+db.ref("publicTeacherCourses/"+id).once("value").then(s=>{course=s.val();if(!course)throw new Error("Curso não encontrado.");$("courseTitle").textContent=course.title||"Demonstração do curso";const teacher=course.teacherSnapshot||course.profileSnapshot||{};$("teacherName").textContent=teacher.name||"";return db.ref("publicTeacherDemos/"+id).once("value")}).then(s=>{const demo=s.val();if(!demo||!demo.videoUrl)throw new Error("Esta demonstração já não está disponível.");$("demoVideo").src=demo.videoUrl;$("demoVideo").load();document.title="Demonstração — "+(course.title||"Curso");startDemoPlayback()}).catch(err=>{$("courseTitle").textContent="Demonstração indisponível";$("status").textContent=err.message||"Não foi possível carregar este vídeo.";$("showForm").disabled=true});
 $("showForm").addEventListener("click",()=>{$("enrollmentForm").classList.add("open");$("showForm").textContent="Formulário de inscrição";$("fullName").focus();$("enrollmentForm").scrollIntoView({behavior:"smooth",block:"start"})});
 $("message").addEventListener("input",()=>{$("messageCount").textContent=$("message").value.length+"/50 caracteres"});
 $("enrollmentForm").addEventListener("submit",async e=>{e.preventDefault();const button=$("sendEnrollment");if(button.disabled)return;button.disabled=true;
@@ -58,9 +60,12 @@ try{
  const fullName=$("fullName").value.trim(),whatsapp=$("whatsapp").value.trim(),email=$("email").value.trim(),message=$("message").value.trim();
  if(!fullName||!whatsapp)throw new Error("Preencha o nome completo e o WhatsApp.");
  if(message.length>50)throw new Error("A mensagem deve ter no máximo 50 caracteres.");
- const ref=db.ref("courseDemoEnrollments/"+id).push();
- await ref.set({courseId:id,courseTitle:course.title||"",teacherUid:course.teacherUid||"",fullName,whatsapp,email,message,createdAt:Date.now(),source:"video-demo"});
- $("status").textContent="Pedido enviado com sucesso! O professor poderá entrar em contacto consigo.";
+ const payload={_subject:"Novo pedido de inscrição — Remote Work Board",tipoPedido:"Inscrição em curso através de demonstração",curso:course.title||"",courseId:id,professor:course.teacherSnapshot?.name||course.profileSnapshot?.name||"",teacherUid:course.teacherUid||"",nomeCompleto:fullName,whatsapp,email:email||"Não indicado",mensagem:message||"Sem mensagem",origem:"Vídeo de demonstração",data:new Date().toLocaleString("pt-PT")};
+ const response=await fetch(formspreeEndpoint,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+ if(!response.ok)throw new Error("Não foi possível enviar o pedido à empresa (Formspree HTTP "+response.status+"). Verifique a ligação e tente novamente.");
+ const result=await response.json().catch(()=>({}));
+ if(result.errors?.length)throw new Error(result.errors.map(item=>item.message||"Erro no formulário").join("; "));
+ $("status").textContent="Pedido enviado com sucesso! A empresa recebeu os seus dados e dará seguimento à inscrição.";
  $("enrollmentForm").reset();$("messageCount").textContent="0/50 caracteres";
 }catch(err){$("status").textContent=err.message||"Não foi possível enviar o pedido. Tente novamente."}
 finally{button.disabled=false}
