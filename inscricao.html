@@ -14,7 +14,7 @@
 h1{font-size:24px;margin:0 0 7px}.sub{color:#bdcce0;font-size:14px;margin:0 0 18px}
 .primary{border:0;border-radius:12px;padding:14px 20px;background:#1476e8;color:#fff;font-weight:850;font-size:16px;cursor:pointer;width:100%}
 .form-panel{display:none;margin-top:16px;padding:18px;border:1px solid #27486e;border-radius:16px;background:#102b4c}
-.form-panel.open{display:block}.field{display:grid;gap:6px;margin:0 0 13px}
+.form-panel.open{display:block}.success-screen{min-height:calc(100svh - 54px);display:none;align-items:center;justify-content:center;padding:28px 20px;text-align:center}.success-card{width:min(100%,620px);padding:34px 24px;border:1px solid #27486e;border-radius:20px;background:#102b4c;box-shadow:0 14px 38px #0003}.success-icon{width:76px;height:76px;margin:0 auto 20px;border-radius:50%;display:grid;place-items:center;background:#0b8f59;color:#fff;font-size:42px;font-weight:900}.success-card h1{font-size:clamp(24px,5vw,32px);margin:0 0 14px}.success-card p{color:#d5e4f7;font-size:16px;line-height:1.65;margin:0}.success-card a{display:inline-block;margin-top:24px;padding:13px 20px;border-radius:11px;background:#1476e8;color:#fff;text-decoration:none;font-weight:800}.field{display:grid;gap:6px;margin:0 0 13px}
 label{font-size:13px;font-weight:750;color:#e4efff}
 input,textarea{width:100%;padding:12px;border:1px solid #b9cce3;border-radius:9px;background:#fff;color:#13243b;font:inherit}
 textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e4;font-size:13px;line-height:1.5}
@@ -37,7 +37,7 @@ textarea{resize:vertical;min-height:78px}small{color:#bfd0e5}.muted{color:#c5d2e
 <div class="field"><label for="message">Mensagem curta (máximo 50 caracteres)</label><textarea id="message" name="message" maxlength="50" placeholder="Tenho interesse neste curso…"></textarea><small id="messageCount">0/50 caracteres</small></div>
 <button class="primary" id="sendEnrollment" type="submit">Enviar pedido de inscrição</button>
 <div id="status" role="status" aria-live="polite"></div>
-</form></main><script>
+</form></main><section id="successScreen" class="success-screen" role="status" aria-live="polite"><div class="success-card"><div class="success-icon" aria-hidden="true">✓</div><h1>Inscrição submetida com sucesso!</h1><p>A sua inscrição foi recebida. A professora entrará em contacto consigo através do número de WhatsApp que forneceu no formulário para dar seguimento à sua inscrição.</p><a href="formadores.html">Voltar aos cursos</a></div></section><script>
 (()=>{"use strict";
 const cfg={apiKey:"AIzaSyAIKbk7l-CAGmwpRgLAhccpnra8cKTNRUc",authDomain:"remot-board.firebaseapp.com",databaseURL:"https://remot-board-default-rtdb.firebaseio.com",projectId:"remot-board",storageBucket:"remot-board.firebasestorage.app",messagingSenderId:"931887981666",appId:"1:931887981666:web:08899cca83f1f514191d3b"};
 if(!firebase.apps.length)firebase.initializeApp(cfg);
@@ -77,8 +77,7 @@ $("enrollmentForm").addEventListener("submit",async e=>{
   if(!response.ok)throw new Error("Não foi possível enviar o pedido. Verifique a ligação e tente novamente.");
   const result=await response.json().catch(()=>({}));
   if(result.errors?.length)throw new Error(result.errors.map(x=>x.message||"Erro no formulário").join(";"));
-  $("status").textContent="Pedido enviado com sucesso! A empresa recebeu os seus dados e dará seguimento à inscrição.";
-  $("enrollmentForm").reset();$("messageCount").textContent="0/50 caracteres";
+  document.querySelector("header.top").style.display="none";document.querySelector("main.content").style.display="none";$("successScreen").style.display="flex";window.scrollTo({top:0,behavior:"instant"});
  }catch(err){$("status").textContent=err.message||"Não foi possível enviar o pedido."}
  finally{button.disabled=false}
 });
