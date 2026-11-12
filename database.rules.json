@@ -302,6 +302,15 @@
       "$courseId": {
         ".write": "auth != null && (auth.token.email == 'suporte@domingas.com' || (newData.exists() && newData.child('teacherUid').val() == auth.uid) || (!newData.exists() && data.child('teacherUid').val() == auth.uid))"
       }
+    },
+    "courseEnrollments": {
+      "$courseId": {
+        ".read": "auth != null && (auth.token.email == 'suporte@domingas.com' || root.child('publicTeacherCourses').child($courseId).child('teacherUid').val() == auth.uid)",
+        "$enrollmentId": {
+          ".write": "!data.exists() && root.child('publicTeacherCourses').child($courseId).child('teacherUid').exists() && newData.child('courseId').val() == $courseId && newData.child('teacherUid').val() == root.child('publicTeacherCourses').child($courseId).child('teacherUid').val()",
+          ".validate": "newData.hasChildren(['courseId','courseTitle','teacherUid','fullName','whatsapp','email','message','status','createdAt']) && newData.child('courseId').val() == $courseId && newData.child('courseTitle').isString() && newData.child('teacherUid').isString() && newData.child('fullName').isString() && newData.child('fullName').val().length > 0 && newData.child('fullName').val().length <= 120 && newData.child('whatsapp').isString() && newData.child('whatsapp').val().length > 0 && newData.child('whatsapp').val().length <= 25 && newData.child('email').isString() && newData.child('email').val().length <= 150 && newData.child('message').isString() && newData.child('message').val().length <= 50 && newData.child('status').val() == 'new' && newData.child('createdAt').isNumber()"
+        }
+      }
     }
   }
 }
