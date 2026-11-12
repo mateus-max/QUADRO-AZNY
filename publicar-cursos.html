@@ -198,7 +198,7 @@ $("publishDemo").addEventListener("click",async()=>{
   if(!Number.isFinite(meta.duration)||meta.duration>60.2||meta.width<=meta.height)throw new Error("O vídeo deve estar na horizontal e ter no máximo 60 segundos.");
   const demo={courseId,teacherUid:user.uid,teacherName:course.teacherSnapshot?.name||course.profileSnapshot?.name||"",videoUrl,videoMime:selectedDemoBlob.type||"video/webm",durationSeconds:Math.min(60,Math.ceil(meta.duration)),updatedAt:Date.now()};
   const updates={};updates["publicTeacherDemos/"+courseId]=demo;updates["publicTeacherCourses/"+courseId+"/demoAvailable"]=true;updates["teacherCourseSubmissions/"+user.uid+"/"+courseId+"/demoAvailable"]=true;
-  await db.ref().update(updates);publishedDemoLoaded=true;$("demoMessage").textContent="Demonstração publicada com sucesso. O botão “Ver demonstração” já aparece no cartão do curso.";
+  await db.ref().update(updates);$("demoVideoPreview").src=videoUrl;$("demoVideoPreview").classList.remove("hidden");selectedDemoBlob=null;$("demoVideoFile").value="";publishedDemoLoaded=true;$("demoMessage").textContent="Demonstração publicada com sucesso. O botão “Ver demonstração” já aparece no cartão do curso.";
  }catch(err){$("demoMessage").textContent=err.message||"Não foi possível publicar a demonstração."}
  finally{button.disabled=false}
 });
