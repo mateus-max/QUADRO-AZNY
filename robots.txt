@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://remote.work.board.apsanlda.com/sitemap.xml
