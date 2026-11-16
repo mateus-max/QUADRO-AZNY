@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Remote Work Board",
-  "short_name": "Remote Work",
-  "description": "Plataforma de aulas online, quadro virtual e avaliações para professores e alunos.",
+  "name": "Quadro Virtual AZNY — Aulas Online",
+  "short_name": "Quadro AZNY",
+  "description": "Quadro Virtual AZNY: aulas online em tempo real, quadro interactivo, videoconferência e avaliações digitais.",
   "lang": "pt-AO",
   "start_url": "./",
   "scope": "./",
@@ -17,13 +17,13 @@
   "theme_color": "#071b33",
   "icons": [
     {
-      "src": "icons/remote-work-board-192.png",
+      "src": "icons/azny-board-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icons/remote-work-board-512.png",
+      "src": "icons/azny-board-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
